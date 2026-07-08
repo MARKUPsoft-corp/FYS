@@ -43,8 +43,6 @@ export async function loginWithGoogle() {
   const { user } = credential;
   const additionalUserInfo = getAdditionalUserInfo(credential);
 
-  console.log({ user, additionalUserInfo });
-
   // Only create the Firestore doc the first time
   if (additionalUserInfo?.isNewUser) {
     await createUserDoc(

@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { Outlet, LayoutComponent, useNavigate, useLocation } from 'rasengan';
-import { useAuthStore } from '@/stores/auth';
 import { Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth';
+import { DashboardShell } from '@/components/layout/DashboardShell';
 
 const AppLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
@@ -24,10 +25,18 @@ const AppLayout: LayoutComponent = () => {
     );
   }
 
+  if (isAuthRoute) {
+    return (
+      <React.Fragment>
+        <Outlet />
+      </React.Fragment>
+    );
+  }
+
   return (
-    <React.Fragment>
+    <DashboardShell>
       <Outlet />
-    </React.Fragment>
+    </DashboardShell>
   );
 };
 

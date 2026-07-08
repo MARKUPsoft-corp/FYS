@@ -7,7 +7,7 @@ type AppState = {
 };
 
 export const useAppStore = createStore<AppState>((set) => ({
-  sidebarOpen: false,
+  sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 }));
