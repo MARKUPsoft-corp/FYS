@@ -1,0 +1,1227 @@
+[
+  {
+    "id": "ananas",
+    "nom": "Ananas",
+    "nom_scientifique": "Ananas comosus",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 59,
+      "valeur_max": 59,
+      "badge": "modere",
+      "charge_glycemique": 6.5
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 50,
+        "eau_g": 86.0,
+        "glucides_g": 11.7,
+        "sucres_g": 9.85,
+        "fibres_g": 1.4,
+        "lipides_g": 0.12,
+        "acides_gras_satures_g": 0.01,
+        "proteines_g": 0.54
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 47.8, "pourcentage_vnr": 60 },
+        "vitamine_b1_mg": { "valeur": 0.079, "pourcentage_vnr": 7 },
+        "vitamine_b2_mg": { "valeur": 0.032, "pourcentage_vnr": 2 },
+        "vitamine_b3_mg": { "valeur": 0.5, "pourcentage_vnr": 3 },
+        "vitamine_b5_mg": { "valeur": 0.213, "pourcentage_vnr": 4 },
+        "vitamine_b6_mg": { "valeur": 0.112, "pourcentage_vnr": 8 },
+        "vitamine_b9_ug": { "valeur": 18, "pourcentage_vnr": 9 },
+        "equivalent_vitamine_a_ug": { "valeur": 3, "pourcentage_vnr": null },
+        "vitamine_e_mg": { "valeur": 0.02, "pourcentage_vnr": null },
+        "vitamine_k1_ug": { "valeur": 0.7, "pourcentage_vnr": null }
+      },
+      "mineraux": {
+        "manganese_mg": { "valeur": 0.93, "pourcentage_vnr": 46 },
+        "potassium_mg": { "valeur": 109, "pourcentage_vnr": 5 },
+        "calcium_mg": { "valeur": 13, "pourcentage_vnr": 2 },
+        "magnesium_mg": { "valeur": 12, "pourcentage_vnr": 3 },
+        "phosphore_mg": { "valeur": 8, "pourcentage_vnr": 1 },
+        "fer_mg": { "valeur": 0.29, "pourcentage_vnr": 2 },
+        "zinc_mg": { "valeur": 0.12, "pourcentage_vnr": 1 },
+        "cuivre_mg": { "valeur": 0.11, "pourcentage_vnr": 11 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Acide chlorogénique et acide férulique", "valeur_approx": "env. 130mg polyphénols totaux/100g" },
+        { "nom": "Bromélaïne", "description": "Enzyme protéolytique propre à l'ananas, active la digestion des protéines, propriétés anti-inflammatoires documentées" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine C — contribue au fonctionnement normal du système immunitaire et à la formation du collagène.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de manganèse — contribue à la protection des cellules contre le stress oxydatif et au métabolisme énergétique normal.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "La bromélaïne est associée à une aide à la digestion des protéines — effet documenté in vitro, moins établi in vivo aux doses alimentaires.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Digestion", "Immunité", "Anti-inflammatoire", "Énergie"],
+      "regles_ok": "Meilleure association : Acide + Sucré → Ananas + Pastèque ou Mangue. Bromélaïne (enzyme digestive) potentialisée par l'acidité du citron. Associer avec papaye pour double effet digestif (bromélaïne + papaïne).",
+      "precautions": "Consommation prolongée et quotidienne déconseillée : les fibres insolubles peuvent à terme irriter le côlon (accumulation des résidus → risque à long terme). Éviter de mélanger avec des fruits protéinés (altération de la texture organoleptique).",
+      "contre_indications": null,
+      "note_nutritionniste": "« La consommation à l'excès des fruits contenant des fibres solubles/insolubles (l'ananas) à la longue peut donner le cancer du côlon. Les fibres finissent par râcler tous les résidus de l'intestin et les stockent au niveau du côlon qui eux, finissent par être absorbés. C'est la dose qui fait l'effet. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Ananas",
+      "role_cocktail": "acide",
+      "benefices_cles": ["digestion", "immunité", "anti-inflammatoire", "énergie"],
+      "a_eviter_si": ["consommation quotidienne intensive prolongée (irritation du côlon à terme)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "pasteque",
+    "nom": "Pastèque",
+    "nom_scientifique": "Citrullus lanatus",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 72,
+      "valeur_max": 75,
+      "badge": "eleve",
+      "charge_glycemique": null,
+      "note": "IG élevé mais charge glycémique basse du fait de la forte teneur en eau (>90%)"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 30,
+        "eau_g": 91.5,
+        "glucides_g": 7.55,
+        "sucres_g": 6.2,
+        "fibres_g": 0.4,
+        "lipides_g": 0.15,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.61
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 8.1, "pourcentage_vnr": 10 },
+        "vitamine_b1_mg": { "valeur": 0.033, "pourcentage_vnr": 3 },
+        "vitamine_b6_mg": { "valeur": 0.045, "pourcentage_vnr": 3 },
+        "vitamine_b9_ug": { "valeur": 3, "pourcentage_vnr": 2 },
+        "equivalent_vitamine_a_ug": { "valeur": 28, "pourcentage_vnr": 3 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 112, "pourcentage_vnr": 6 },
+        "calcium_mg": { "valeur": 7, "pourcentage_vnr": 1 },
+        "magnesium_mg": { "valeur": 10, "pourcentage_vnr": 3 },
+        "phosphore_mg": { "valeur": 11, "pourcentage_vnr": 2 },
+        "fer_mg": { "valeur": 0.24, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Lycopène", "valeur_approx": "4100 à 4530µg/100g", "description": "Caroténoïde (pas un polyphénol) ; l'une des sources les plus concentrées après la tomate cuite, avec la goyave rose" },
+        { "nom": "Citrulline", "description": "Acide aminé précurseur de l'arginine, associée à la récupération musculaire" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine C.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "La forte teneur en eau (>90%) en fait un aliment à faible densité énergétique malgré un IG élevé — la charge glycémique réelle par portion reste basse.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Le lycopène est étudié pour son rôle antioxydant, sans allégation santé officiellement validée à ce jour.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Hydratation", "Antioxydant", "Peau", "Récupération sportive"],
+      "regles_ok": "IG élevé mais charge glycémique très basse (forte teneur en eau) → consommation possible avec modération pour diabétiques (préférer mi-mûre). Meilleure association : Ananas + Pastèque (acide + sucré = équilibre parfait).",
+      "precautions": "Diabétiques : éviter en grande quantité le soir (métabolisme au repos → risque hyperglycémie).",
+      "contre_indications": null,
+      "note_nutritionniste": "« Un diabétique peut consommer les pastèques mi-mûres car elles n'ont pas une sucrosité élevée. Le soir, le métabolisme est au repos, la glycémie peut augmenter jusqu'au stade de l'hyperglycémie. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Pastèque",
+      "role_cocktail": "sucre",
+      "benefices_cles": ["hydratation", "antioxydant", "peau", "récupération sportive"],
+      "a_eviter_si": ["diabète (grande quantité le soir)"],
+      "timing": "Le soir, éviter en grande quantité chez les diabétiques (métabolisme au repos)"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "mangue",
+    "nom": "Mangue",
+    "nom_scientifique": "Mangifera indica",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 56,
+      "valeur_max": 56,
+      "badge": "modere",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 60,
+        "eau_g": 83.0,
+        "glucides_g": 15,
+        "sucres_g": 13.7,
+        "fibres_g": 1.6,
+        "lipides_g": 0.38,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.82
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 36.4, "pourcentage_vnr": 46 },
+        "equivalent_vitamine_a_ug": { "valeur": 54, "pourcentage_vnr": 7, "beta_carotene_ug": 640 },
+        "vitamine_b6_mg": { "valeur": 0.119, "pourcentage_vnr": 8 },
+        "vitamine_b9_ug": { "valeur": 43, "pourcentage_vnr": 22 },
+        "vitamine_e_mg": { "valeur": 0.9, "pourcentage_vnr": 8 },
+        "vitamine_k1_ug": { "valeur": 4.2, "pourcentage_vnr": 6 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 168, "pourcentage_vnr": 8 },
+        "calcium_mg": { "valeur": 11, "pourcentage_vnr": 1 },
+        "magnesium_mg": { "valeur": 10, "pourcentage_vnr": 3 },
+        "phosphore_mg": { "valeur": 14, "pourcentage_vnr": 2 },
+        "fer_mg": { "valeur": 0.16, "pourcentage_vnr": 1 },
+        "zinc_mg": { "valeur": 0.09, "pourcentage_vnr": 1 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Mangiférine", "valeur_approx": "15 à 30mg/100g", "description": "Xanthonoïde propre à la mangue, reconnue pour son activité antioxydante en recherche préclinique" },
+        { "nom": "Caroténoïdes totaux", "description": "Élevés, bêta-carotène dominant" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine C et de folates (vitamine B9, qui contribue à la division cellulaire normale — pertinent en période de grossesse).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Contribution notable aux apports en vitamine A via les caroténoïdes (1 molécule de bêta-carotène → 2 molécules de rétinol après conversion hépatique).", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Peau", "Énergie", "Antioxydant", "Yeux"],
+      "regles_ok": "Association idéale : Mangue + Ananas + Citron (sucré + acide = biodisponibilité optimale des vitamines). Forte teneur en vitamine A → excellent pour l'immunité (« surtout la vitamine A »). Caroténoïdes → programme Éclat Peau.",
+      "precautions": "Fructose élevé → limiter en grande quantité pour profils rhumatologiques (goutte, arthrose, arthrite). Diabétiques : préférer le matin. Peut contribuer à l'insomnie si consommé après 20h (vitamine A).",
+      "contre_indications": null,
+      "note_nutritionniste": "« La vitamine A est la plus importante pour le système immunitaire. Les fruits sucrés comme la mangue contenant du fructose contribuent à l'énergie. Le fructose en grande quantité peut induire directement aux maladies rhumatologiques. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Mangue",
+      "role_cocktail": "sucre",
+      "benefices_cles": ["immunité", "peau", "énergie", "antioxydant", "yeux"],
+      "a_eviter_si": ["rhumatologie (goutte, arthrose, arthrite) en grande quantité", "diabète (préférer le matin)"],
+      "timing": "Éviter après 20h (vitamine A → insomnie potentielle)"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "papaye",
+    "nom": "Papaye",
+    "nom_scientifique": "Carica papaya",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 56,
+      "valeur_max": 60,
+      "badge": "modere",
+      "charge_glycemique": 5.5
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 43,
+        "eau_g": 88.0,
+        "glucides_g": 7.8,
+        "sucres_g": 7.8,
+        "fibres_g": 1.7,
+        "lipides_g": 0.26,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.47
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 60.9, "pourcentage_vnr": 76 },
+        "equivalent_vitamine_a_ug": { "valeur": 47, "pourcentage_vnr": 6, "beta_carotene_ug": 274, "lycopene_ug": 1828 },
+        "vitamine_b9_ug": { "valeur": 37, "pourcentage_vnr": 19 },
+        "vitamine_e_mg": { "valeur": 0.3, "pourcentage_vnr": 3 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 182, "pourcentage_vnr": 9 },
+        "calcium_mg": { "valeur": 20, "pourcentage_vnr": 3 },
+        "magnesium_mg": { "valeur": 21, "pourcentage_vnr": 6 },
+        "phosphore_mg": { "valeur": 10, "pourcentage_vnr": 1 },
+        "fer_mg": { "valeur": 0.25, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Lycopène", "valeur_approx": "1828µg/100g" },
+        { "nom": "Papaïne", "description": "Enzyme protéolytique propre à la papaye, fonctionnellement proche de la bromélaïne de l'ananas" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Riche en vitamine C — contribue au fonctionnement normal du système immunitaire et nerveux, à la protection contre le stress oxydatif, à la formation normale de collagène.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de folates.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "La papaïne est traditionnellement associée à une aide digestive, sans allégation santé officiellement validée pour la consommation alimentaire du fruit.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Digestion", "Immunité", "Peau", "Anti-inflammatoire"],
+      "regles_ok": "Synergique avec l'ananas : double enzyme digestive (papaïne + bromélaïne) → effet digestif maximal. Caroténoïdes → programme Éclat Peau.",
+      "precautions": "Grossesse : éviter la papaye verte en grande quantité (latex → contractions). Papaye mûre acceptable avec modération. Après 20h : déconseiller (vitamine A → insomnie potentielle).",
+      "contre_indications": null,
+      "note_nutritionniste": "« La peau va dépendre des fruits qui contiennent de la caroténoïde (une molécule de caroténoïde donne 2 molécules de vitamine A). La papaïne de la papaye fonctionne comme la bromélaïne de l'ananas pour la digestion. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Papaye",
+      "role_cocktail": "sucre",
+      "benefices_cles": ["digestion", "immunité", "peau", "anti-inflammatoire"],
+      "a_eviter_si": ["grossesse (papaye verte en grande quantité)"],
+      "timing": "Éviter après 20h (vitamine A → insomnie potentielle)"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "banane",
+    "nom": "Banane",
+    "nom_scientifique": "Musa spp.",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 45,
+      "valeur_max": 65,
+      "badge": "modere",
+      "charge_glycemique": null,
+      "note": "IG variable selon la maturité"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 89,
+        "eau_g": 75.0,
+        "glucides_g": 22.8,
+        "sucres_g": 12.2,
+        "fibres_g": 2.6,
+        "lipides_g": 0.33,
+        "acides_gras_satures_g": null,
+        "proteines_g": 1.09
+      },
+      "vitamines": {
+        "vitamine_b6_mg": { "valeur": 0.367, "pourcentage_vnr": 26 },
+        "vitamine_c_mg": { "valeur": 8.7, "pourcentage_vnr": 11 },
+        "vitamine_b9_ug": { "valeur": 20, "pourcentage_vnr": 10 },
+        "vitamine_b3_mg": { "valeur": 0.665, "pourcentage_vnr": 4 },
+        "tryptophane": { "present": true, "pourcentage_vnr": null }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 358, "pourcentage_vnr": 18 },
+        "manganese_mg": { "valeur": 0.27, "pourcentage_vnr": 14 },
+        "magnesium_mg": { "valeur": 27, "pourcentage_vnr": 7 },
+        "phosphore_mg": { "valeur": 22, "pourcentage_vnr": 3, "note": "Phosphore élevé si banane trop mûre" },
+        "fer_mg": { "valeur": 0.26, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Dopamine et catéchines", "valeur_approx": "env. 80 à 90mg/100g dans la pulpe", "description": "Composés phénoliques, concentrés surtout dans la peau" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine B6 — contribue au métabolisme énergétique normal, à la régulation de l'activité hormonale et à la formation normale des globules rouges.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de potassium — contribue au maintien d'une pression sanguine normale et au fonctionnement normal du système nerveux et musculaire.", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Énergie", "Tonus musculaire", "Sérénité", "Sommeil (tryptophane)"],
+      "regles_ok": "Excellent fruit énergétique pour pré/post-effort sportif. Tryptophane → précurseur de la sérotonine → effet apaisant.",
+      "precautions": "IG monte avec la maturité → préférer banane ferme pour diabétiques. Diabétiques : consommer de préférence le matin. Fructose élevé → modération pour profils rhumatologiques.",
+      "contre_indications": "Insuffisance rénale : exclure la banane trop mûre (phosphore élevé → risque de calcification des tissus mous pour les reins fragilisés).",
+      "note_nutritionniste": "« Les problèmes de santé au niveau des reins : les fruits contenant le phosphore (banane trop mûre, peau des carottes). Les fruits contenant beaucoup de minéraux peuvent entraîner la calcification des tissus mous. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Banane",
+      "role_cocktail": "sucre",
+      "benefices_cles": ["énergie", "tonus musculaire", "sérénité", "sommeil"],
+      "a_eviter_si": ["insuffisance rénale (banane trop mûre)", "rhumatologie (fructose élevé)"],
+      "timing": "Diabétiques : préférer le matin"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "citron",
+    "nom": "Citron",
+    "nom_scientifique": "Citrus limon",
+    "categorie": "fruit_principal",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 20,
+      "valeur_max": 20,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 29,
+        "eau_g": 89.0,
+        "glucides_g": 9.3,
+        "sucres_g": 2.5,
+        "fibres_g": 2.8,
+        "lipides_g": 0.3,
+        "acides_gras_satures_g": null,
+        "proteines_g": 1.1
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 53, "pourcentage_vnr": 66 },
+        "vitamine_b9_ug": { "valeur": 11, "pourcentage_vnr": 6 },
+        "vitamine_b6_mg": { "valeur": 0.08, "pourcentage_vnr": 6 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 138, "pourcentage_vnr": 7 },
+        "calcium_mg": { "valeur": 26, "pourcentage_vnr": 3 },
+        "magnesium_mg": { "valeur": 8, "pourcentage_vnr": 2 },
+        "phosphore_mg": { "valeur": 16, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Hespéridine et ériocitrine", "valeur_approx": "env. 30 à 40mg/100g", "description": "Flavonoïdes d'agrume, concentrés surtout dans la membrane blanche et le zeste" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Riche en vitamine C.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Les flavonoïdes d'agrumes sont étudiés pour leur rôle dans la protection de la paroi vasculaire, sans allégation santé officiellement validée pour la consommation du fruit entier.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Détox", "Digestion", "Équilibre acide", "Anti-infectieux"],
+      "regles_ok": "Rôle clé d'équilibre acide dans les cocktails : son acidité améliore la biodisponibilité des vitamines de tous les autres fruits. Indispensable si le cocktail est trop sucré (pomme + mangue → ajouter citron). La vitamine C du citron potentialise l'absorption du fer des aliments présents dans le même cocktail.",
+      "precautions": "Personnes avec reflux gastro-œsophagien : utiliser avec modération. Hypersensibilité dentaire : diluer.",
+      "contre_indications": null,
+      "note_nutritionniste": "« L'acidité de certains fruits contribue à la biodisponibilité de certaines vitamines d'autres fruits une fois mélangés : ça va commencer la digestion externe qui se terminera en interne. L'équilibre d'un cocktail : la sucrosité, la vitamine A, C et l'acidité (exemple : pomme-mangue-citron si les pommes et les mangues sont trop sucrées). »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Citron",
+      "role_cocktail": "acide",
+      "benefices_cles": ["immunité", "détox", "digestion", "équilibre acide", "anti-infectieux"],
+      "a_eviter_si": ["reflux gastro-œsophagien (excès)", "hypersensibilité dentaire (non dilué)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "corossol",
+    "nom": "Corossol (Graviola)",
+    "nom_scientifique": "Annona muricata",
+    "categorie": "fruit_rare_superfruit",
+    "statut_donnees": "partiel",
+    "sources": ["USDA FoodData Central", "Littérature scientifique tropicale (CIRAD / revue Fruits)", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 66,
+        "eau_g": 81.2,
+        "glucides_g": 16.8,
+        "sucres_g": 13.5,
+        "fibres_g": 3.3,
+        "lipides_g": 0.3,
+        "acides_gras_satures_g": null,
+        "proteines_g": 1.0
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 20.6, "pourcentage_vnr": 26 },
+        "vitamine_b1_mg": { "valeur": 0.07, "pourcentage_vnr": 6 },
+        "vitamine_b2_mg": { "valeur": 0.05, "pourcentage_vnr": 4 },
+        "vitamine_b6_mg": { "valeur": 0.059, "pourcentage_vnr": 4 },
+        "vitamine_b9_ug": { "valeur": 14, "pourcentage_vnr": 7 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 278, "pourcentage_vnr": 14, "note_variabilite": "Certaines études rapportent jusqu'à 626mg/100g" },
+        "calcium_mg": { "valeur": 14, "pourcentage_vnr": 2 },
+        "magnesium_mg": { "valeur": 21, "pourcentage_vnr": 6 },
+        "fer_mg": { "valeur": 0.6, "pourcentage_vnr": 4 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Acétogénines", "description": "Présentes surtout dans les feuilles et les graines, pas dans la pulpe du fruit frais", "restriction_usage": "aucune_allegation_sur_le_fruit_frais" },
+        { "nom": "Tanins, phytostérols et flavonoïdes", "description": "Présents en quantité notable dans le fruit" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine C et de potassium.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Aucune allégation santé ne peut être formulée pour le fruit frais en jus concernant les propriétés anticancéreuses étudiées sur extraits de feuilles.", "niveau_preuve": "interdit_par_absence_de_preuve_sur_le_fruit" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Santé cardiaque", "Digestion", "Antistress", "Anti-inflammatoire"],
+      "regles_ok": "Fruit en jus frais : bien toléré en quantité raisonnable. Richesse en potassium → santé cardiovasculaire. Acétogénines étudiées pour propriétés anticancéreuses (in vitro, feuilles uniquement).",
+      "precautions": "Consommation d'extraits concentrés (feuilles) : risque neurologique documenté (lien suspecté avec des troubles de type parkinsonien lors de consommation chronique importante) → s'en tenir au fruit frais en jus. Grossesse : éviter les extraits de feuilles.",
+      "contre_indications": "Traitements contre la dépression, l'hypertension ou le diabète : interaction médicamenteuse possible → consulter le médecin avant consommation régulière. Chimiothérapie : les acétogénines peuvent interagir avec certaines molécules.",
+      "note_nutritionniste": "Fruit rare et précieux du catalogue camerounais. Utiliser uniquement le fruit frais pressé en jus dans le FYS Lab — jamais d'extraits de feuilles, dont le profil de risque est totalement différent de celui de la pulpe fraîche."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Corossol",
+      "role_cocktail": "antioxydant",
+      "benefices_cles": ["immunité", "santé cardiaque", "digestion", "antistress"],
+      "a_eviter_si": ["traitement dépression/hypertension/diabète", "chimiothérapie", "grossesse (extraits de feuilles uniquement)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false,
+      "a_verifier": "Teneur en potassium variable selon les sources (278 à 626mg/100g)"
+    }
+  },
+  {
+    "id": "baobab",
+    "nom": "Baobab (pulpe séchée)",
+    "nom_scientifique": "Adansonia digitata",
+    "categorie": "fruit_rare_superfruit",
+    "statut_donnees": "partiel",
+    "sources": ["USDA FoodData Central", "Littérature scientifique tropicale (CIRAD / revue Fruits)", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null,
+      "note": "Associé dans une étude clinique (n=11) à une réduction de 28% de la réponse glycémique post-prandiale"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 230,
+        "eau_g": null,
+        "eau_pourcentage_approx": 12,
+        "glucides_g": 83,
+        "sucres_g": 29.5,
+        "fibres_g": 44,
+        "fibres_g_max": 54,
+        "fibres_solubles_g_approx": 20,
+        "lipides_g": 0.4,
+        "lipides_g_max": 0.8,
+        "proteines_g": 2.3,
+        "proteines_g_max": 2.9,
+        "unite_reference": "poudre séchée / 100g"
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 225, "valeur_max": 300, "pourcentage_vnr": 281, "pourcentage_vnr_max": 375 },
+        "vitamine_a": { "present": true, "quantification": "qualitative" },
+        "vitamine_b1": { "present": true, "quantification": "qualitative" },
+        "vitamine_b6": { "present": true, "quantification": "qualitative" }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 2250, "pourcentage_vnr": 113 },
+        "calcium_mg": { "valeur": 300, "pourcentage_vnr": 38 },
+        "fer_mg": { "valeur": 1.35, "pourcentage_vnr": 10 },
+        "zinc_mg": { "valeur": 7.5, "pourcentage_vnr": 75 },
+        "manganese_mg": { "valeur": 0.65, "pourcentage_vnr": 33 },
+        "sodium_mg": { "valeur": 5, "pourcentage_vnr": null }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "18 acides aminés dont 8 essentiels", "description": "Tryptophane, lysine, méthionine, phénylalanine, etc." },
+        { "nom": "Capacité antioxydante ORAC", "description": "Rapportée jusqu'à 35× celle du raisin selon certaines études, donnée à confirmer par mesure indépendante" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source exceptionnelle de vitamine C (jusqu'à 6 à 7 fois la teneur de l'orange) et de potassium (jusqu'à 6 fois la teneur de la banane).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de calcium (2 à 3 fois le lait de vache selon les mesures).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Riche en fibres solubles, associées dans une étude clinique à une réduction de 28% de la réponse glycémique post-prandiale lorsqu'incorporées à du pain blanc — résultat à interpréter avec prudence (échantillon réduit, n=11).", "niveau_preuve": "etude_clinique_limitee" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Énergie", "Os & dents", "Prébiotique", "Anti-fatigue", "Peau"],
+      "regles_ok": "Superfruit africain — le plus dense nutritionnellement du catalogue FYS. Synergique avec gingembre + fruit vitaminé → meilleure composition de base selon le nutritionniste. Grossesse : sûr avec modération (C + calcium + fer).",
+      "precautions": "Introduire progressivement en jus : teneur en fibres très élevée → ballonnements possibles si augmentation brutale de la dose (limiter à 20g/jour de poudre).",
+      "contre_indications": "Insuffisance rénale ou cardiaque : surveiller l'apport en potassium, très élevé.",
+      "note_nutritionniste": "Le baobab est la plante africaine la plus riche en vitamine C. La combinaison noix de coco + gingembre + baobab est la composition optimale du catalogue FYS. Les valeurs marquées comme variables devront être confirmées par une analyse en laboratoire local sur la pulpe effectivement utilisée par FYS."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Baobab",
+      "role_cocktail": "mineral",
+      "benefices_cles": ["immunité", "énergie", "os et dents", "prébiotique", "anti-fatigue", "peau"],
+      "a_eviter_si": ["insuffisance rénale ou cardiaque (potassium élevé)", "introduction brutale à forte dose (ballonnements)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false,
+      "a_verifier": "Analyse en laboratoire local recommandée pour confirmer les valeurs variables selon la littérature"
+    }
+  },
+  {
+    "id": "cassimango",
+    "nom": "Cassimango (Prune de Cythère)",
+    "nom_scientifique": "Spondias cytherea / Spondias dulcis",
+    "categorie": "fruit_rare_superfruit",
+    "statut_donnees": "partiel",
+    "sources": ["Littérature scientifique tropicale (variété Antilles françaises / Martinique)", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 47,
+        "eau_g": 86.9,
+        "glucides_g": 12.4,
+        "sucres_g": null,
+        "fibres_g": 1.1,
+        "lipides_g": 0.1,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.2
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 20, "valeur_max": 52, "pourcentage_vnr": 25, "pourcentage_vnr_max": 65, "note": "Plus élevée dans le fruit vert immature que mûr" },
+        "equivalent_vitamine_a_ug": { "valeur": 34.4, "pourcentage_vnr": 4 },
+        "vitamine_b1_mg": { "valeur": 0.05, "pourcentage_vnr": 5 },
+        "vitamine_b2_mg": { "valeur": 0.02, "pourcentage_vnr": 1 },
+        "vitamine_b3_mg": { "valeur": 1.4, "pourcentage_vnr": 9 }
+      },
+      "mineraux": {
+        "calcium_mg": { "valeur": 56, "pourcentage_vnr": 7 },
+        "potassium": { "present": true, "quantification": "qualitative_non_consolidee" },
+        "fer": { "present": true, "quantification": "qualitative_non_consolidee" },
+        "phosphore": { "present": true, "quantification": "qualitative_non_consolidee" }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Polyphénols totaux (fruit vert)", "valeur_approx": "349,5mg équivalent acide gallique/100g", "description": "Teneur élevée comparable à celle de petits fruits rouges" },
+        { "nom": "Pectine", "valeur_approx": "environ 10% de la composition", "description": "Associée à un effet sur le transit et le confort hépatique" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Riche en vitamine C, particulièrement à l'état vert/immature.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de calcium.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "La teneur élevée en polyphénols du fruit vert en fait un candidat pertinent pour un usage en cocktail acide-régulateur, au même titre que le citron — hypothèse à valider par les nutritionnistes partenaires.", "niveau_preuve": "hypothese_a_valider" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Os & dents", "Peau", "Énergie"],
+      "regles_ok": "Fruit typiquement camerounais → ancrage local fort pour FYS. Goût acidulé → rôle de régulateur acide dans les cocktails (similaire au citron). Associer avec fruits sucrés (mangue, banane) pour équilibrer la sucrosité.",
+      "precautions": "Données nutritionnelles disponibles principalement issues d'études sur la variété consommée aux Antilles françaises (Martinique) ; la variété camerounaise n'a pas encore fait l'objet d'une analyse spécifique — à planifier avec les nutritionnistes FYS.",
+      "contre_indications": null,
+      "note_nutritionniste": "Fruit important pour la valorisation du terroir camerounais dans le catalogue FYS. Son profil acide en fait un excellent équilibrant pour les cocktails très sucrés. Les données doivent être complétées et si possible vérifiées sur la variété locale lors des prochaines sessions avec les nutritionnistes partenaires."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Cassimango",
+      "role_cocktail": "acide",
+      "benefices_cles": ["immunité", "os et dents", "peau", "énergie"],
+      "a_eviter_si": [],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false,
+      "a_verifier": "Données non consolidées pour la variété camerounaise — analyse locale recommandée"
+    }
+  },
+  {
+    "id": "goyave",
+    "nom": "Goyave",
+    "nom_scientifique": "Psidium guajava",
+    "categorie": "fruit_rare_superfruit",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 25,
+      "valeur_max": 31,
+      "badge": "bas",
+      "charge_glycemique": 4
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 68,
+        "eau_g": 80.8,
+        "glucides_g": 14.3,
+        "sucres_g": 8.9,
+        "fibres_g": 5.4,
+        "lipides_g": 0.95,
+        "acides_gras_satures_g": null,
+        "proteines_g": 2.55
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 228, "pourcentage_vnr": 285 },
+        "equivalent_vitamine_a_ug": { "valeur": 31, "pourcentage_vnr": 4, "lycopene_ug_variete_rose": 5200 },
+        "vitamine_b9_ug": { "valeur": 49, "pourcentage_vnr": 25 },
+        "vitamine_e_mg": { "valeur": 0.73, "pourcentage_vnr": 7 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 417, "pourcentage_vnr": 21 },
+        "calcium_mg": { "valeur": 18, "pourcentage_vnr": 2 },
+        "magnesium_mg": { "valeur": 22, "pourcentage_vnr": 6 },
+        "phosphore_mg": { "valeur": 40, "pourcentage_vnr": 6 },
+        "fer_mg": { "valeur": 0.26, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Polyphénols totaux", "valeur_approx": "env. 250 à 300mg/100g", "description": "Dont quercétine et acide ellagique" },
+        { "nom": "Lycopène", "description": "Élevé dans les variétés à chair rose" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Riche en vitamine C (la plus concentrée du catalogue, largement supérieure aux seuils réglementaires de « riche en »).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de folates et de fibres alimentaires — contribue au transit intestinal normal.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "IG très bas, compatible avec un régime pauvre en sucres rapides.", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité n°1", "Digestion", "Peau", "Diabète-friendly", "Antioxydant"],
+      "regles_ok": "Meilleur fruit du catalogue pour l'immunité : 228mg de vitamine C contre 46mg pour l'ananas. IG très bas → recommandée pour diabétiques. Fibres élevées → satiété, transit et microbiote. Peut être consommée en grande quantité sans risque glycémique.",
+      "precautions": "Fibres élevées : introduire progressivement pour estomacs sensibles.",
+      "contre_indications": null,
+      "note_nutritionniste": "La goyave est le fruit le plus riche en vitamine C du catalogue FYS avec 228mg/100g. Combiner goyave (C élevée) avec mangue/papaye (A élevée) = cocktail immunité optimal."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Goyave",
+      "role_cocktail": "antioxydant",
+      "benefices_cles": ["immunité", "digestion", "peau", "diabète-friendly", "antioxydant"],
+      "a_eviter_si": ["estomac sensible (introduire progressivement)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "pomme",
+    "nom": "Pomme",
+    "nom_scientifique": "Malus domestica",
+    "categorie": "fruit_courant",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 36,
+      "valeur_max": 40,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 52,
+        "eau_g": 86.0,
+        "glucides_g": 13.8,
+        "sucres_g": 10.4,
+        "fibres_g": 2.4,
+        "lipides_g": 0.17,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.26
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 4.6, "pourcentage_vnr": 6 },
+        "vitamine_b9_ug": { "valeur": 3, "pourcentage_vnr": 2 },
+        "vitamine_k1_ug": { "valeur": 2.2, "pourcentage_vnr": 3 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 107, "pourcentage_vnr": 5 },
+        "calcium_mg": { "valeur": 6, "pourcentage_vnr": 1 },
+        "magnesium_mg": { "valeur": 5, "pourcentage_vnr": 1 },
+        "phosphore_mg": { "valeur": 11, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Quercétine et acide chlorogénique", "valeur_approx": "jusqu'à 136mg polyphénols totaux/100g avec la peau, contre env. 50mg sans peau", "description": "Flavonoïdes, principalement concentrés dans la peau" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source modérée de vitamine C.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "La pectine (fibre soluble, env. 1g/100g) est reconnue pour contribuer au maintien d'un taux de cholestérol normal.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Les polyphénols de la peau justifient une consommation avec peau lorsque le fruit est bien lavé.", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Digestion", "Énergie régulière", "Cholestérol", "Prébiotique"],
+      "regles_ok": "IG bas → recommandée pour diabétiques. Pectine → prébiotique naturel, utile pour le microbiote et la satiété. Association idéale : Pomme + Mangue + Citron (si mangue trop sucrée → la pomme rééquilibre avec son acidité naturelle).",
+      "precautions": "Fructose modéré → modération pour profils rhumatologiques.",
+      "contre_indications": null,
+      "note_nutritionniste": "« L'équilibre d'un cocktail : la sucrosité, les antioxydants, les minéraux et l'acidité (exemple : pomme-mangue-citron si les pommes et les mangues sont trop sucrées) ». La pomme joue ici le rôle d'équilibreur acide-sucré."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Pomme",
+      "role_cocktail": "acide",
+      "benefices_cles": ["digestion", "énergie régulière", "cholestérol", "prébiotique"],
+      "a_eviter_si": ["rhumatologie (fructose modéré)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "orange",
+    "nom": "Orange",
+    "nom_scientifique": "Citrus sinensis",
+    "categorie": "fruit_courant",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 40,
+      "valeur_max": 43,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 47,
+        "eau_g": 87.0,
+        "glucides_g": 11.75,
+        "sucres_g": 9.35,
+        "fibres_g": 2.4,
+        "lipides_g": 0.12,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.94
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 53.2, "pourcentage_vnr": 66 },
+        "vitamine_b9_ug": { "valeur": 30, "pourcentage_vnr": 15 },
+        "equivalent_vitamine_a_ug": { "valeur": 11, "pourcentage_vnr": 1 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 181, "pourcentage_vnr": 9 },
+        "calcium_mg": { "valeur": 40, "pourcentage_vnr": 5 },
+        "magnesium_mg": { "valeur": 10, "pourcentage_vnr": 3 },
+        "phosphore_mg": { "valeur": 14, "pourcentage_vnr": 2 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Hespéridine", "valeur_approx": "env. 40 à 60mg/100g dans le fruit entier", "description": "Flavonoïde principal des agrumes, concentré surtout dans l'albédo" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de vitamine C et de folates.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de calcium, notable pour un fruit (rare chez les agrumes).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Les caroténoïdes justifient un usage dans la catégorie Éclat Peau, en synergie avec la vitamine C.", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Immunité", "Peau", "Énergie", "Cardiovasculaire"],
+      "regles_ok": "Caroténoïdes → catégorie Éclat Peau avec carotte et betterave. IG bas → adapté aux diabétiques. Bonne source de vitamine C complémentaire.",
+      "precautions": "Après 20h : déconseiller (caroténoïdes → vitamine A → insomnie potentielle).",
+      "contre_indications": "PAMPLEMOUSSE EXCLU DU CATALOGUE FYS LAB : cousin de l'orange mais inhibe les cytochromes CYP3A4 pendant 3 jours → risque de surdosage médicamenteux grave. Ne jamais ajouter au catalogue.",
+      "note_nutritionniste": "« Le pamplemousse accélère le métabolisme, tout l'absorption se fait, la toxicité est plus aggravée. » (nutritionniste FYS) · Le pamplemousse contient des furanocoumarines qui détruisent les CYP3A4 pendant 3 jours. NutriFYS doit proposer l'orange comme alternative sûre au pamplemousse."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Orange",
+      "role_cocktail": "antioxydant",
+      "benefices_cles": ["immunité", "peau", "énergie", "cardiovasculaire"],
+      "a_eviter_si": [],
+      "timing": "Éviter après 20h (caroténoïdes → vitamine A → insomnie potentielle)"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "betterave",
+    "nom": "Betterave",
+    "nom_scientifique": "Beta vulgaris",
+    "categorie": "legume_fruit",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 30,
+      "valeur_max": 64,
+      "badge": "variable",
+      "charge_glycemique": null,
+      "note": "IG cru : 30 · IG cuit : 64. Charge glycémique reste basse même cuite."
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 43,
+        "eau_g": 87.6,
+        "glucides_g": 9.6,
+        "sucres_g": 6.8,
+        "fibres_g": 2.8,
+        "lipides_g": 0.17,
+        "acides_gras_satures_g": null,
+        "proteines_g": 1.61
+      },
+      "vitamines": {
+        "vitamine_b9_ug": { "valeur": 109, "pourcentage_vnr": 55 },
+        "equivalent_vitamine_a": { "present": true, "quantification": "qualitative" },
+        "vitamine_c_mg": { "valeur": 4.9, "pourcentage_vnr": 6 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 325, "pourcentage_vnr": 16 },
+        "fer_mg": { "valeur": 0.8, "pourcentage_vnr": 6 },
+        "manganese_mg": { "valeur": 0.33, "pourcentage_vnr": 17 },
+        "magnesium_mg": { "valeur": 23, "pourcentage_vnr": 6 },
+        "phosphore_mg": { "valeur": 40, "pourcentage_vnr": 6, "note": "Modéré" }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Bétaïne et bétalaïnes", "valeur_approx": "100 à 300mg/100g", "description": "Pigments propres à la betterave, antioxydants distincts des anthocyanes" },
+        { "nom": "Nitrates naturels", "valeur_approx": "env. 250mg/100g" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Excellente source de folates — contribue à la croissance des tissus maternels pendant la grossesse.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Les nitrates alimentaires sont convertis en monoxyde d'azote, associé à une aide à la vasodilatation — effet documenté en recherche sportive, sans allégation santé officiellement validée pour le grand public.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Peau (Éclat)", "Grossesse (B9)", "Sport", "Détox", "Énergie"],
+      "regles_ok": "Catégorie Éclat Peau avec carotte, orange, foléré. Femmes enceintes : excellente source de folates (B9). Sportifs : les nitrates naturels favorisent la vasodilatation → endurance et récupération.",
+      "precautions": "Diabétiques : utiliser crue (IG 30) de préférence à cuite (IG 64). Charge glycémique reste basse même cuite.",
+      "contre_indications": "Insuffisance rénale : éviter (phosphore → même règle que carotte).",
+      "note_nutritionniste": "« La peau va dépendre des fruits qui contiennent de la caroténoïde (une molécule de caroténoïde donne 2 molécules de vitamine A). Exemple : carotte, betterave, orange, foléré. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Betterave",
+      "role_cocktail": "mineral",
+      "benefices_cles": ["peau", "grossesse", "sport", "détox", "énergie"],
+      "a_eviter_si": ["insuffisance rénale (phosphore)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "carotte",
+    "nom": "Carotte",
+    "nom_scientifique": "Daucus carota",
+    "categorie": "legume_fruit",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 35,
+      "valeur_max": 47,
+      "badge": "bas",
+      "charge_glycemique": null,
+      "note": "IG cru : 35 · IG cuit : 47"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 41,
+        "eau_g": 88.0,
+        "glucides_g": 9.6,
+        "sucres_g": 4.7,
+        "fibres_g": 2.8,
+        "lipides_g": 0.24,
+        "acides_gras_satures_g": null,
+        "proteines_g": 0.93
+      },
+      "vitamines": {
+        "equivalent_vitamine_a_ug": { "valeur": 835, "pourcentage_vnr": 104, "beta_carotene_ug": 8285 },
+        "vitamine_k1_ug": { "valeur": 13.2, "pourcentage_vnr": 18 },
+        "vitamine_b6_mg": { "valeur": 0.138, "pourcentage_vnr": 10 },
+        "vitamine_c_mg": { "valeur": 5.9, "pourcentage_vnr": 7 }
+      },
+      "mineraux": {
+        "potassium_mg": { "valeur": 320, "pourcentage_vnr": 16 },
+        "calcium_mg": { "valeur": 33, "pourcentage_vnr": 4 },
+        "magnesium_mg": { "valeur": 12, "pourcentage_vnr": 3 },
+        "phosphore_mg": { "valeur": 35, "pourcentage_vnr": 5, "note": "Concentré surtout dans la peau" }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Caroténoïdes totaux (bêta-carotène et alpha-carotène)", "description": "Exceptionnels ; peu de polyphénols par ailleurs" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source très riche en vitamine A active (bêta-carotène converti à raison d'1 molécule pour 2 molécules de rétinol) — contribue au maintien d'une vision normale, au fonctionnement normal du système immunitaire et à l'entretien de la peau.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Source de vitamine K1.", "niveau_preuve": "reference_reglementaire_ue" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Peau n°1", "Vision", "Immunité", "Éclat du teint"],
+      "regles_ok": "La plus riche en bêta-carotène du catalogue → indispensable dans le programme Éclat Peau. L'acidité du citron améliore l'absorption du bêta-carotène dans un cocktail. Associer : Carotte + Orange + Citron = cocktail Peau optimal.",
+      "precautions": "Après 20h : déconseiller (vitamine A → insomnie potentielle). IG monte si cuite → préférer crue en jus.",
+      "contre_indications": "Insuffisance rénale : éviter surtout la peau (phosphore élevé). Utiliser carotte épluchée uniquement.",
+      "note_nutritionniste": "« Les problèmes de santé au niveau des reins : les fruits contenant le phosphore (banane trop mûre, peau des carottes). La peau de carotte contient du phosphore en concentration élevée. »"
+    },
+    "fiche_conversationnelle": {
+      "nom": "Carotte",
+      "role_cocktail": "antioxydant",
+      "benefices_cles": ["peau", "vision", "immunité", "éclat du teint"],
+      "a_eviter_si": ["insuffisance rénale (surtout la peau du fruit)"],
+      "timing": "Éviter après 20h (vitamine A → insomnie potentielle)"
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "folere",
+    "nom": "Foléré (Hibiscus / Bissap)",
+    "nom_scientifique": "Hibiscus sabdariffa",
+    "categorie": "supplement_herbe",
+    "statut_donnees": "partiel",
+    "sources": ["Littérature scientifique tropicale (variabilité Sénégal / Cameroun / Égypte)", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": null,
+        "calories_kcal_note": "Calice frais : env. 5 à 20 kcal/100g selon préparation. Infusion préparée : <5 kcal/100ml.",
+        "eau_g": null,
+        "glucides_g": null,
+        "sucres_g": null,
+        "fibres_g": null,
+        "lipides_g": null,
+        "proteines_g": null,
+        "note_variabilite": "Données précises fortement dépendantes de la méthode de préparation (calice cru vs infusion vs sirop sucré)"
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": null, "note": "Élevée dans le calice frais (plusieurs dizaines de mg/100g de calice frais) ; env. 8 à 12mg/100ml dans l'infusion préparée" },
+        "vitamines_groupe_b": { "present": true, "quantification": "modérée" }
+      },
+      "mineraux": {
+        "calcium": { "present": true, "quantification": "qualitative_variable" },
+        "fer": { "present": true, "quantification": "qualitative_variable" },
+        "magnesium": { "present": true, "quantification": "qualitative_variable", "note": "Teneurs variables selon variété et zone de culture" }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Anthocyanes", "valeur_approx": "jusqu'à 1,5g/kg de matière sèche du calice", "description": "71% delphinidine-3-sambubioside et 29% cyanidine-3-sambubioside — parmi les concentrations les plus élevées connues chez les végétaux comestibles" },
+        { "nom": "Acide hibiscique", "description": "Acide organique propre à la plante, responsable de l'acidité" },
+        { "nom": "Polyphénols totaux", "valeur_approx": "env. 150mg/tasse d'infusion" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source exceptionnelle d'anthocyanes, pigments antioxydants étudiés pour un effet sur la relaxation des parois vasculaires (vasodilatation via stimulation du monoxyde d'azote).", "niveau_preuve": "preclinique_prudence" },
+      { "texte": "Une méta-analyse de 5 essais cliniques randomisés (2015) rapporte une réduction moyenne de 7mmHg de la pression systolique et 3mmHg de la diastolique chez des sujets légèrement hypertendus consommant l'infusion quotidiennement — résultat à ne jamais présenter comme une garantie individuelle, et à formuler avec prudence auprès des utilisateurs sous traitement.", "niveau_preuve": "etude_clinique_limitee" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Antioxydant n°1", "Hypertension", "Cholestérol", "Immunité", "Anti-inflammatoire", "Peau"],
+      "regles_ok": "Antioxydant le plus puissant du catalogue (étude 2010 : meilleure boisson antioxydante parmi 283 testées). Anthocyanes → action hypotensive naturelle. Réduit LDL (mauvais cholestérol), augmente HDL. Recommandé dans tous les cocktails Immunité et Peau.",
+      "precautions": "Grossesse : éviter en grandes quantités (propriétés emménagogues rapportées en médecine traditionnelle). Effets hypotenseurs → surveiller si tension naturellement basse.",
+      "contre_indications": "Hypertension sous traitement médicamenteux : consulter le médecin (interaction possible avec les antihypertenseurs, effet cumulatif pouvant provoquer une hypotension). Améliore la sensibilité à l'insuline → surveiller si diabétique sous médication.",
+      "note_nutritionniste": "Le foléré est la molécule antioxydante la plus concentrée du catalogue FYS Lab. Les teneurs précises (vitamine C, minéraux) doivent être mesurées sur la variété et le mode de préparation effectivement utilisés par FYS, la littérature scientifique disponible étant très hétérogène selon l'origine géographique du calice."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Foléré",
+      "role_cocktail": "antioxydant",
+      "benefices_cles": ["antioxydant n°1", "hypertension", "cholestérol", "immunité", "anti-inflammatoire", "peau"],
+      "a_eviter_si": ["grossesse (grandes quantités)", "hypotension", "hypertension sous antihypertenseurs", "diabète sous médication"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false,
+      "a_verifier": "Teneurs précises à mesurer sur la variété et le mode de préparation effectivement utilisés par FYS"
+    }
+  },
+  {
+    "id": "gingembre",
+    "nom": "Gingembre",
+    "nom_scientifique": "Zingiber officinale",
+    "categorie": "supplement_herbe",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null,
+      "note": "Supplément universel — impact calorique réel négligeable du fait des faibles quantités utilisées en jus"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 80,
+        "eau_g": 79.0,
+        "glucides_g": 17.8,
+        "sucres_g": null,
+        "fibres_g": 2.0,
+        "lipides_g": 0.75,
+        "acides_gras_satures_g": null,
+        "proteines_g": 1.8
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 5, "pourcentage_vnr": 6 },
+        "vitamine_b3_mg": { "valeur": 0.75, "pourcentage_vnr": 5 },
+        "vitamine_b6_mg": { "valeur": 0.16, "pourcentage_vnr": 11 }
+      },
+      "mineraux": {
+        "manganese_mg": { "valeur": 0.23, "pourcentage_vnr": 12 },
+        "magnesium_mg": { "valeur": 43, "pourcentage_vnr": 11 },
+        "potassium_mg": { "valeur": 415, "pourcentage_vnr": 21 },
+        "phosphore_mg": { "valeur": 34, "pourcentage_vnr": 5 },
+        "cuivre_mg": { "valeur": 0.226, "pourcentage_vnr": 23 },
+        "zinc": { "present": true, "quantification": "qualitative" }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Gingérols et shogaols", "valeur_approx": "1 à 3g/100g selon fraîcheur", "description": "Composés phénoliques pungents propres au gingembre, responsables du goût piquant et de l'essentiel de l'activité biologique étudiée (anti-inflammatoire, anti-nauséeux)" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Source de manganèse et de cuivre.", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "Les gingérols sont étudiés pour un effet sur les nausées (y compris nausées de grossesse et du mal des transports) avec un niveau de preuve clinique relativement solide comparé à d'autres plantes ; formulation à garder prudente pour un produit alimentaire non médicamenteux.", "niveau_preuve": "etude_clinique_limitee" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Anti-inflammatoire", "Anti-fatigue", "Anti-nausées", "Digestion", "Récupération"],
+      "regles_ok": "Supplément universel → améliore quasiment tous les cocktails. Potentialise l'absorption des vitamines des autres fruits du cocktail. Recommandé par le nutritionniste FYS dans la meilleure composition (coco + gingembre + fruit vitaminé).",
+      "precautions": "Estomac sensible (reflux gastrique, gastrite) : utiliser en petite quantité. Enfants < 6 ans : éviter (effet brûlant).",
+      "contre_indications": "Anticoagulants (warfarine) : éviter en grande quantité (interaction possible avec la vitamine K et effet antiplaquettaire propre au gingembre). Profils sous médication : vérifier avec le médecin.",
+      "note_nutritionniste": "Le gingembre va gérer l'inflammation et la fatigue. C'est le supplément de base de la meilleure composition FYS : noix de coco + gingembre + n'importe quel fruit qui va apporter les vitamines."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Gingembre",
+      "role_cocktail": "base",
+      "benefices_cles": ["anti-inflammatoire", "anti-fatigue", "anti-nausées", "digestion", "récupération"],
+      "a_eviter_si": ["enfants de moins de 6 ans", "anticoagulants (grande quantité)", "estomac sensible (grande quantité)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "menthe",
+    "nom": "Menthe",
+    "nom_scientifique": "Mentha spp.",
+    "categorie": "supplement_herbe",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": null,
+      "valeur_max": null,
+      "badge": "bas",
+      "charge_glycemique": null,
+      "note": "Utilisée en très petite quantité — impact calorique réel négligeable"
+    },
+    "donnees_scientifiques": {
+      "macronutriments": {
+        "calories_kcal": 70,
+        "eau_g": 78.6,
+        "glucides_g": 14.9,
+        "sucres_g": null,
+        "fibres_g": 8.0,
+        "lipides_g": null,
+        "acides_gras_satures_g": null,
+        "proteines_g": 3.75,
+        "unite_reference": "plante entière / 100g — valeur botanique de référence, apport réel par portion marginal"
+      },
+      "vitamines": {
+        "vitamine_c_mg": { "valeur": 31.8, "pourcentage_vnr": 40 },
+        "equivalent_vitamine_a_ug": { "valeur": 212, "pourcentage_vnr": 27 },
+        "vitamine_b9_ug": { "valeur": 114, "pourcentage_vnr": 57, "note": "Très élevée pour une herbe aromatique" }
+      },
+      "mineraux": {
+        "calcium_mg": { "valeur": 243, "pourcentage_vnr": 30 },
+        "fer_mg": { "valeur": 5.08, "pourcentage_vnr": 36 },
+        "magnesium_mg": { "valeur": 80, "pourcentage_vnr": 21 },
+        "potassium_mg": { "valeur": 569, "pourcentage_vnr": 28 },
+        "manganese_mg": { "valeur": 1.18, "pourcentage_vnr": 59 }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Menthol", "description": "Principe actif propre à la menthe, responsable de l'effet rafraîchissant et antispasmodique" },
+        { "nom": "Acide rosmarinique", "description": "Antioxydant phénolique" }
+      ]
+    },
+    "allegations": [
+      { "texte": "Le menthol est associé à une aide au confort digestif et à un effet antispasmodique sur le tube digestif, documenté pour l'huile essentielle à dose concentrée ; l'usage en garniture de jus reste principalement organoleptique.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Digestion", "Fraîcheur", "Anti-nausées", "Détox", "Antispasmodique"],
+      "regles_ok": "Supplément digestif par excellence → associer avec papaye et ananas pour décupler l'effet digestif. Améliore le profil organoleptique (goût et fraîcheur) de tous les cocktails.",
+      "precautions": "Reflux gastro-œsophagien (RGO) : le menthol peut détendre le sphincter œsophagien → déconseiller pour profils avec RGO déclaré. Grossesse au 1er trimestre : modération.",
+      "contre_indications": null,
+      "note_nutritionniste": "La menthe est le supplément organoleptique n°1 du catalogue : elle améliore le goût et l'appétence de tous les cocktails FYS tout en apportant un bénéfice digestif réel grâce au menthol. Utiliser systématiquement dans les cocktails digestion."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Menthe",
+      "role_cocktail": "base",
+      "benefices_cles": ["digestion", "fraîcheur", "anti-nausées", "détox", "antispasmodique"],
+      "a_eviter_si": ["reflux gastro-œsophagien (RGO)", "grossesse premier trimestre (modération)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  },
+  {
+    "id": "noix_de_coco",
+    "nom": "Noix de Coco",
+    "nom_scientifique": "Cocos nucifera",
+    "categorie": "supplement_herbe",
+    "statut_donnees": "complet",
+    "sources": ["Ciqual 2020 (ANSES)", "Aprifel", "Nutritionnistes partenaires FYS"],
+    "index_glycemique": {
+      "valeur_min": 42,
+      "valeur_max": 42,
+      "badge": "bas",
+      "charge_glycemique": null,
+      "note": "IG chair : 42 · Eau de coco : IG très bas"
+    },
+    "donnees_scientifiques": {
+      "macronutriments_chair": {
+        "calories_kcal": 354,
+        "eau_g": 47.0,
+        "glucides_g": 15.2,
+        "fibres_g": 9.0,
+        "lipides_g": 33.5,
+        "acides_gras_satures_g": 29.7,
+        "proteines_g": 3.3
+      },
+      "macronutriments_eau_de_coco_100ml": {
+        "calories_kcal": 19,
+        "glucides_g": 3.7,
+        "proteines_g": 0.7,
+        "lipides_g": 0.1
+      },
+      "vitamines_chair": {
+        "vitamine_c_mg": { "valeur": 3.3, "pourcentage_vnr": 4 },
+        "vitamine_b1_mg": { "valeur": 0.066, "pourcentage_vnr": 6 },
+        "vitamine_b6_mg": { "valeur": 0.05, "pourcentage_vnr": 4 }
+      },
+      "vitamines_eau_de_coco": {
+        "vitamines_groupe_b": { "present": true, "quantification": "faible quantité" }
+      },
+      "mineraux_chair": {
+        "potassium_mg": { "valeur": 356, "pourcentage_vnr": 18 },
+        "magnesium_mg": { "valeur": 32, "pourcentage_vnr": 9 },
+        "phosphore_mg": { "valeur": 113, "pourcentage_vnr": 16 },
+        "fer_mg": { "valeur": 2.4, "pourcentage_vnr": 17 },
+        "zinc_mg": { "valeur": 1.1, "pourcentage_vnr": 11 },
+        "manganese_mg": { "valeur": 1.5, "pourcentage_vnr": 75 },
+        "cuivre_mg": { "valeur": 0.44, "pourcentage_vnr": 44 }
+      },
+      "mineraux_eau_de_coco": {
+        "potassium_mg": { "valeur": 250, "pourcentage_vnr": 13 },
+        "sodium_mg": { "valeur": 105, "pourcentage_vnr": null },
+        "magnesium_mg": { "valeur": 25, "pourcentage_vnr": null }
+      },
+      "polyphenols_composes_bioactifs": [
+        { "nom": "Acide laurique", "valeur_approx": "environ 50% des lipides totaux", "description": "Acide gras à chaîne moyenne, métabolisé différemment des acides gras à longue chaîne, propriété étudiée en nutrition sportive et métabolique" },
+        { "nom": "Acide caprique", "description": "Acide gras à chaîne moyenne" }
+      ]
+    },
+    "allegations": [
+      { "texte": "La chair de coco est riche en graisses saturées à chaîne moyenne (particularité métabolique par rapport aux graisses saturées classiques, sans que cela ne modifie la classification réglementaire « riche en graisses saturées »).", "niveau_preuve": "reference_reglementaire_ue" },
+      { "texte": "L'eau de coco est une bonne source de potassium et un liquide de réhydratation naturel étudié en contexte sportif, sans allégation santé officiellement validée à ce jour.", "niveau_preuve": "preclinique_prudence" }
+    ],
+    "terrain_nutrifys": {
+      "badges_benefices": ["Santé cardiaque", "Énergie", "Hydratation", "Anti-inflammatoire", "Base idéale"],
+      "regles_ok": "La meilleure base de cocktail selon le nutritionniste FYS. Eau de coco : très bien tolérée par tous les profils, apport minéral intéressant à faible coût calorique. La combinaison Coco + Gingembre + Fruit vitaminé = cocktail optimal recommandé.",
+      "precautions": "Chair de coco : riche en graisses saturées → modération pour profils cardiovasculaires fragiles (préférer l'eau de coco dans ce cas).",
+      "contre_indications": null,
+      "note_nutritionniste": "La noix de coco est riche en minéraux, en acides gras à chaîne moyenne et en protéines. C'est la meilleure base de cocktail pour le FYS Lab — distinguer systématiquement chair (calorique, lipidique) et eau de coco (légère, minérale) dans le moteur NutriFYS, car leurs profils nutritionnels sont radicalement différents."
+    },
+    "fiche_conversationnelle": {
+      "nom": "Noix de Coco",
+      "role_cocktail": "base",
+      "benefices_cles": ["santé cardiaque", "énergie", "hydratation", "anti-inflammatoire", "base idéale"],
+      "a_eviter_si": ["profil cardiovasculaire fragile (préférer l'eau de coco à la chair)"],
+      "timing": null
+    },
+    "metadata": {
+      "version": "2.0",
+      "derniere_mise_a_jour": "2026-07-04",
+      "valide_par_nutritionniste": false
+    }
+  }
+]

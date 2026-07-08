@@ -3,8 +3,11 @@ import '@/styles/index.css';
 import { useEffect } from 'react';
 import { type AppProps } from 'rasengan';
 import ThemeProvider, { useTheme } from '@rasenganjs/theme';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
+
+const queryClient = new QueryClient();
 
 function ThemeWatcher() {
   const { actualTheme } = useTheme();
@@ -31,11 +34,13 @@ export default function App({ Component, children }: AppProps) {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ThemeWatcher />
-      <TooltipProvider delayDuration={200}>
-        <Component>{children}</Component>
-      </TooltipProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ThemeWatcher />
+        <TooltipProvider delayDuration={200}>
+          <Component>{children}</Component>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

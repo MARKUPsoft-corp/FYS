@@ -29,7 +29,7 @@ export function Topbar() {
       className={cn(
         'fixed top-0 right-0 h-16 z-20',
         'flex items-center gap-4 px-4',
-        'bg-background/80 backdrop-blur-md border-b border-border',
+        'bg-card/80 backdrop-blur-md border-b border-border',
         'transition-all duration-300 ease-in-out',
         'left-0 lg:left-0',
         sidebarOpen ? 'lg:left-60' : 'lg:left-16',

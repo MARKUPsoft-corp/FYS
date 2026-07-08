@@ -26,7 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'customer-home',
     label: 'Accueil',
-    path: '/',
+    path: '/board',
     icon: Home,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: true,
@@ -34,7 +34,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'catalogue',
     label: 'Catalogue',
-    path: '/catalogue',
+    path: '/board/catalogue',
     icon: GlassWater,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: true,
@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'my-cocktails',
     label: 'Mes cocktails',
-    path: '/cocktails',
+    path: '/board/cocktails',
     icon: FlaskConical,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: true,
@@ -50,7 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'my-orders',
     label: 'Mes commandes',
-    path: '/orders',
+    path: '/board/orders',
     icon: ShoppingBag,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: true,
@@ -58,7 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'profile',
     label: 'Profil santé',
-    path: '/profile',
+    path: '/board/profile',
     icon: HeartPulse,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: false,
@@ -68,7 +68,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-home',
     label: 'Tableau de bord',
-    path: '/',
+    path: '/board',
     icon: LayoutDashboard,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,
@@ -76,7 +76,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'fruits',
     label: 'Fruits',
-    path: '/fruits',
+    path: '/board/fruits',
     icon: Apple,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,
@@ -84,7 +84,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'categories',
     label: 'Catégories',
-    path: '/categories',
+    path: '/board/categories',
     icon: Tag,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
@@ -92,7 +92,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-cocktails',
     label: 'Cocktails',
-    path: '/cocktails',
+    path: '/board/cocktails',
     icon: GlassWater,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,
@@ -100,7 +100,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-orders',
     label: 'Commandes',
-    path: '/orders',
+    path: '/board/orders',
     icon: ShoppingBag,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,
@@ -108,7 +108,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'users',
     label: 'Utilisateurs',
-    path: '/users',
+    path: '/board/users',
     icon: Users,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
