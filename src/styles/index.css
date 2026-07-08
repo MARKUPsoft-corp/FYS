@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-display: Fraunces, serif;
+  --font-body: Manrope, sans-serif;
+  --font-mono: IBM Plex Mono, monospace;
+}
+
+body,
+html {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 1rem;
+
+  --background: #FAF3E8;
+  --foreground: #2A241D;
+
+  --card: #FFFFFF;
+  --card-foreground: #2A241D;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #2A241D;
+
+  --primary: #F2694A;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #3F6D4E;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #F0E4CC;
+  --muted-foreground: #746A5B;
+
+  --accent: #AECBB2;
+  --accent-foreground: #28422F;
+
+  --destructive: #C9463C;
+  --destructive-foreground: #FFFFFF;
+
+  --border: rgba(42, 36, 29, 0.12);
+  --input: rgba(42, 36, 29, 0.12);
+  --ring: #F2694A;
+
+  --chart-1: #3F6D4E;
+  --chart-2: #F2694A;
+  --chart-3: #AECBB2;
+  --chart-4: #E0982E;
+  --chart-5: #28422F;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #2A241D;
+  --sidebar-primary: #3F6D4E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #AECBB2;
+  --sidebar-accent-foreground: #28422F;
+  --sidebar-border: rgba(42, 36, 29, 0.12);
+  --sidebar-ring: #F2694A;
+}
+
+.dark {
+  --background: #1A1F1B;
+  --foreground: #FAF3E8;
+
+  --card: #242B25;
+  --card-foreground: #FAF3E8;
+
+  --popover: #242B25;
+  --popover-foreground: #FAF3E8;
+
+  --primary: #F2694A;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #AECBB2;
+  --secondary-foreground: #28422F;
+
+  --muted: #2A342E;
+  --muted-foreground: #A89D8F;
+
+  --accent: #3F6D4E;
+  --accent-foreground: #FAF3E8;
+
+  --destructive: #C9463C;
+  --destructive-foreground: #FFFFFF;
+
+  --border: rgba(250, 243, 232, 0.12);
+  --input: rgba(250, 243, 232, 0.15);
+  --ring: #F2694A;
+
+  --chart-1: #AECBB2;
+  --chart-2: #F2694A;
+  --chart-3: #3F6D4E;
+  --chart-4: #E0982E;
+  --chart-5: #FBCBB4;
+
+  --sidebar: #242B25;
+  --sidebar-foreground: #FAF3E8;
+  --sidebar-primary: #AECBB2;
+  --sidebar-primary-foreground: #28422F;
+  --sidebar-accent: #3F6D4E;
+  --sidebar-accent-foreground: #FAF3E8;
+  --sidebar-border: rgba(250, 243, 232, 0.12);
+  --sidebar-ring: #F2694A;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
