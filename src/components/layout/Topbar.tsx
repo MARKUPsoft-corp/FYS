@@ -1,21 +1,15 @@
-import { useLocation } from 'rasengan';
-import { Menu } from 'lucide-react';
+import { Link, useLocation } from 'rasengan';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/stores';
 import { useAuthStore } from '@/stores/auth';
 import { getNavItemsForRole } from '@/data/navigation';
 import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 
 export function Topbar() {
-  const { sidebarOpen, toggleSidebar } = useAppStore();
   const { user } = useAuthStore();
   const location = useLocation();
 
   const navItems = user ? getNavItemsForRole(user.role) : [];
-  const currentItem = navItems.find((item) => item.path === location.pathname);
-  const pageTitle = currentItem?.label ?? 'FYS';
 
   const initials = user?.name
     .split(' ')
@@ -27,34 +21,53 @@ export function Topbar() {
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 h-16 z-20',
-        'flex items-center gap-4 px-4',
-        'bg-card/80 backdrop-blur-md border-b border-border',
+        'fixed top-0 left-0 right-0 h-20 z-20',
+        'flex items-center justify-between px-6 lg:px-12',
+        'bg-background/90 backdrop-blur-xl border-b border-border/40',
         'transition-all duration-300 ease-in-out',
-        'left-0 lg:left-0',
-        sidebarOpen ? 'lg:left-60' : 'lg:left-16',
       )}
     >
-      {/* Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleSidebar}
-        className="shrink-0 text-muted-foreground hover:text-foreground"
-      >
-        <Menu className="size-4" />
-      </Button>
+      {/* Removed Menu Toggle */}
 
-      {/* Page title */}
-      <h1 className="font-display font-semibold text-lg text-foreground flex-1 truncate">
-        {pageTitle}
-      </h1>
+      {/* Left: Brand logo */}
+      <div className="flex shrink-0">
+        <Link to="/board" className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
+          FYS<span className="text-secondary">.</span>
+        </Link>
+      </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Center: Sleek Desktop Navigation */}
+      <nav className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-10">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path || (item.path !== '/board' && location.pathname.startsWith(item.path));
+          return (
+            <Link 
+              key={item.key} 
+              to={item.path}
+              className={cn(
+                "relative py-2 text-[15px] font-semibold transition-colors duration-300 group",
+                isActive 
+                  ? "text-primary" 
+                  : "text-foreground/70 hover:text-foreground"
+              )}
+            >
+              <span>{item.label}</span>
+              <span 
+                className={cn(
+                  "absolute -bottom-1 left-0 h-[2px] bg-primary transition-all duration-300 rounded-full",
+                  isActive ? "w-full" : "w-0 group-hover:w-full"
+                )} 
+              />
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Right: Actions */}
+      <div className="flex items-center gap-4 shrink-0">
         <ButtonTheme />
-        <Avatar className="size-8">
-          <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+        <Avatar className="size-11 shadow-sm border-2 border-transparent hover:border-primary/20 cursor-pointer transition-all">
+          <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
             {initials}
           </AvatarFallback>
         </Avatar>

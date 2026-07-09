@@ -98,7 +98,7 @@ const Login: PageComponent = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-[54px] rounded-[16px] bg-white/[0.08] border-white/[0.12] text-white placeholder:text-white/30 focus-visible:ring-[#2D7A3A] px-4"
+              className="h-[54px] rounded-[16px] bg-white/[0.08] border-white/[0.12] text-white placeholder:text-white/30 focus-visible:ring-[#3F6D4E] px-4"
             />
           </div>
           <div className="space-y-2">
@@ -111,7 +111,7 @@ const Login: PageComponent = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-[54px] rounded-[16px] bg-white/[0.08] border-white/[0.12] text-white placeholder:text-white/30 focus-visible:ring-[#2D7A3A] px-4"
+              className="h-[54px] rounded-[16px] bg-white/[0.08] border-white/[0.12] text-white placeholder:text-white/30 focus-visible:ring-[#3F6D4E] px-4"
             />
           </div>
 
@@ -124,7 +124,7 @@ const Login: PageComponent = () => {
           <Button
             type="submit"
             form="login-form"
-            className="w-full rounded-full bg-[#2D7A3A] hover:bg-[#23632e] text-white font-semibold h-[54px] text-[15px] shadow-[0_4px_20px_rgba(45,122,58,0.35)] hover:-translate-y-[1px] transition-all"
+            className="w-full rounded-full bg-[#3F6D4E] hover:bg-[#32573e] text-white font-semibold h-[54px] text-[15px] shadow-[0_4px_20px_rgba(63,109,78,0.35)] hover:-translate-y-[1px] transition-all"
             disabled={loading || googleLoading}
           >
             {loading && <Loader2 className="size-5 animate-spin mr-3" />}
