@@ -1,5 +1,5 @@
 import { Link } from 'rasengan';
-import { Flame, Plus } from 'lucide-react';
+import { Flame, Plus, Sparkles, Beaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -251,24 +251,41 @@ export function CustomerHome({ name }: Props) {
 
         <hr className="border-border/50" />
 
-        {/* BANNER: Commande Express */}
+        {/* BANNER: FYS Lab (Core Product) - HERO STYLE */}
         <section>
-          <div
-            className="relative w-full rounded-[2.5rem] overflow-hidden min-h-[220px] flex items-center px-8 md:px-16"
-            style={{ backgroundImage: "url('https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+          <div 
+            className="relative w-full rounded-[3.5rem] overflow-hidden h-[450px] lg:h-[500px] flex items-end shadow-xl"
+            style={{ backgroundImage: "url('https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1200')", backgroundSize: 'cover', backgroundPosition: 'center' }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-            <div className="relative z-10 max-w-md">
-              <p className="text-secondary font-bold uppercase tracking-widest text-xs mb-3">Programme du jour</p>
-              <h3 className="font-display font-extrabold text-3xl md:text-4xl text-white leading-tight mb-4">
-                Trouve le jus <span className="text-secondary italic">parfait</span> pour toi.
-              </h3>
-              <Button
-                size="lg"
-                className="rounded-full bg-white text-primary font-bold hover:bg-white/90 active:scale-95 transition-all px-8 h-12 shadow-xl"
-              >
-                Explorer le catalogue
-              </Button>
+            {/* Cinematic Gradient overlay (Neutral dark gray fade from bottom to transparent) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-900/70 to-transparent" />
+            
+            <div className="relative z-10 w-full px-8 pb-12 md:pb-16 lg:px-16">
+              <div className="max-w-xl">
+                <div className="flex items-center gap-2 mb-4">
+                   <div className="size-8 rounded-full bg-secondary/20 flex items-center justify-center">
+                     <Beaker className="size-4 text-secondary drop-shadow-md" />
+                   </div>
+                   <p className="text-secondary font-bold uppercase tracking-widest text-xs drop-shadow-md">Le FYS Lab</p>
+                </div>
+                <h3 className="font-display font-extrabold text-4xl lg:text-5xl text-white leading-[1.15] mb-5">
+                  Créez votre propre <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#AECBB2] to-secondary italic drop-shadow-md">cocktail.</span>
+                </h3>
+                <p className="text-white/80 text-[17px] mb-8 font-medium leading-relaxed">
+                  Devenez l'artisan de votre boisson. Sélectionnez vos fruits et laissez notre IA <strong className="text-white font-bold">NutriFYS</strong> vérifier la compatibilité de la recette en temps réel.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <Link to="/lab" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="w-full rounded-full bg-primary text-white font-bold hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all px-10 h-14 shadow-[0_8px_30px_rgba(63,109,78,0.3)] text-base gap-3"
+                    >
+                      <Sparkles className="size-5" />
+                      Tester le FYS Lab
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
