@@ -15,7 +15,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       <main
         className={cn(
-          'min-h-screen pt-20 pb-[4.25rem] lg:pb-0',
+          'min-h-screen max-w-7xl mx-auto pt-32 pb-[4.25rem]',
           'transition-all duration-300 ease-in-out',
         )}
       >

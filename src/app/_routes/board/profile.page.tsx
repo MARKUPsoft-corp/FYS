@@ -34,7 +34,7 @@ const Profile: PageComponent = () => {
 
         {/* User banner */}
         <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm">
-          <h2 className="font-display font-bold text-xl text-foreground">MS tuto</h3>
+          <h2 className="font-display font-bold text-xl text-foreground">MS tuto</h2>
           <p className="text-sm text-muted-foreground mt-1">Membre FYS · Profil en cours de configuration</p>
           <Button size="sm" className="mt-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 px-6">
             Modifier mon profil

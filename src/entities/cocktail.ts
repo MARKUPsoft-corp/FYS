@@ -31,6 +31,7 @@ export interface Cocktail {
   name: string;
   description?: string;
   imageUrl?: string;
+  tag?: string;           // display label shown on the card (e.g. "New", "Popular")
   type: CocktailType;
   createdBy: string;      // uid du créateur (admin ou utilisateur)
   isActive: boolean;      // permet de retirer du catalogue sans supprimer
