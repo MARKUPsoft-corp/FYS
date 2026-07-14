@@ -4,6 +4,8 @@ export const COLLECTIONS = {
   CATEGORIES: 'categories',
   COCKTAILS: 'cocktails',
   ORDERS: 'orders',
+  CHATS: 'chats',
+  CONVERSATIONS: 'conversations',
 } as const;
 
 // Sous-collection profil santé, chemin: users/{uid}/profile/main

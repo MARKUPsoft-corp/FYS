@@ -1,80 +1,29 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   Loader2,
   Send,
   Sparkles,
-  Zap,
-  Leaf,
-  Moon,
   MessageSquare,
-  Shield,
+  History,
+  Plus,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { CocktailProposalCard } from '@/components/features/lab/CocktailProposalCard';
 import { HighlightedText, type HighlightTerm } from '@/components/features/lab/HighlightedText';
-import {
-  getNutriFYSReply,
-  type CocktailProposal,
-} from '@/data/nutrifys-chat';
+import type { CocktailProposal } from '@/data/nutrifys-chat';
+import { chatCocktail } from '@/services/ai';
+import { useAuthStore } from '@/stores/auth';
+import { getProfile } from '@/services/profile';
+import { createSession, getSessions, getSessionMessages, saveChatMessageToSession } from '@/services/chat';
+import { Timestamp } from 'firebase/firestore';
+import type { HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
 import { cn } from '@/lib/utils';
 
-type ChatRole = 'assistant' | 'user';
 
-type ChatMessage =
-  | {
-      id: string;
-      role: ChatRole;
-      type: 'text';
-      content: string;
-      timestamp: Date;
-    }
-  | {
-      id: string;
-      role: 'assistant';
-      type: 'proposal';
-      content: string;
-      proposal: CocktailProposal;
-      timestamp: Date;
-    };
 
-type Suggestion = {
-  id: string;
-  label: string;
-  message: string;
-  icon: typeof Zap;
-};
 
-type Props = {
-  onApplyProposal: (proposal: CocktailProposal) => void;
-  onAnalyzeProposal: (proposal: CocktailProposal) => void;
-};
-
-const SUGGESTIONS: Suggestion[] = [
-  {
-    id: 'energy',
-    label: 'Boost énergie',
-    message: 'Je cherche un cocktail énergisant pour bien démarrer la matinée.',
-    icon: Zap,
-  },
-  {
-    id: 'immunity',
-    label: 'Immunité',
-    message: 'Je veux un cocktail pour renforcer mes défenses naturelles.',
-    icon: Shield,
-  },
-  {
-    id: 'digestion',
-    label: 'Digestion',
-    message: 'Propose-moi un mélange léger et digeste pour après le repas.',
-    icon: Leaf,
-  },
-  {
-    id: 'sleep',
-    label: 'Détente',
-    message: "J'aimerais une boisson apaisante pour le soir, sans exciter.",
-    icon: Moon,
-  },
-];
 
 const EXAMPLE_PROMPTS = [
   'Un cocktail riche en vitamine C',
@@ -87,8 +36,12 @@ const HOW_IT_WORKS = [
   'Décrivez votre objectif ou votre ressenti du moment.',
   'NutriFYS compose une recette visuelle adaptée à votre profil.',
   'Vous recevez un verdict clair avec explications et précautions.',
-  'Appliquez la recette ou lancez l\'analyse complète.',
+  "Appliquez la recette ou lancez l'analyse complète.",
 ];
+
+type Props = {
+  onAnalyzeProposal: (proposal: CocktailProposal) => void;
+};
 
 const WELCOME_MESSAGE =
   'Bonjour ! Je suis NutriFYS, votre assistant nutritionnel. Décrivez ce que vous recherchez — énergie, digestion, immunité, récupération — et je composerai un cocktail adapté à votre profil de santé.';
@@ -97,23 +50,24 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function createTextMessage(role: ChatRole, content: string): ChatMessage {
-  return { id: createId(), role, type: 'text', content, timestamp: new Date() };
+function createTextMessage(role: ChatRole, content: string): ChatMessageEntity {
+  return { id: createId(), role, type: 'text', content, timestamp: Timestamp.now() };
 }
 
-function createProposalMessage(content: string, proposal: CocktailProposal): ChatMessage {
+function createProposalMessage(content: string, proposal: CocktailProposal): ChatMessageEntity {
   return {
     id: createId(),
     role: 'assistant',
     type: 'proposal',
     content,
     proposal,
-    timestamp: new Date(),
+    timestamp: Timestamp.now(),
   };
 }
 
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+function formatTime(t: Timestamp | Date) {
+  const d = t instanceof Date ? t : t.toDate?.() || new Date();
+  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function NutriFYSAuthorRow() {
@@ -129,13 +83,9 @@ function NutriFYSAuthorRow() {
 
 function ProposalMessageBubble({
   message,
-  applied,
-  onApply,
   onAnalyze,
 }: {
-  message: Extract<ChatMessage, { type: 'proposal' }>;
-  applied: boolean;
-  onApply: (proposal: CocktailProposal) => void;
+  message: Extract<ChatMessageEntity, { type: 'proposal' }>;
   onAnalyze: (proposal: CocktailProposal) => void;
 }) {
   const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds);
@@ -176,9 +126,7 @@ function ProposalMessageBubble({
           supplementIds={supplementIds}
           onToggleFruit={toggleFruit}
           onToggleSupplement={toggleSupplement}
-          onApply={onApply}
           onAnalyze={onAnalyze}
-          applied={applied}
           pulseId={pulseId}
           onTermClick={handleTermClick}
         />
@@ -192,21 +140,15 @@ function ProposalMessageBubble({
 
 function ChatBubble({
   message,
-  applied,
-  onApply,
   onAnalyze,
 }: {
-  message: ChatMessage;
-  applied: boolean;
-  onApply: (proposal: CocktailProposal) => void;
+  message: ChatMessageEntity;
   onAnalyze: (proposal: CocktailProposal) => void;
 }) {
   if (message.type === 'proposal') {
     return (
       <ProposalMessageBubble
-        message={message}
-        applied={applied}
-        onApply={onApply}
+        message={message as Extract<ChatMessageEntity, { type: 'proposal' }>}
         onAnalyze={onAnalyze}
       />
     );
@@ -266,7 +208,7 @@ function ChatComposer({
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [value]);
 
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSubmit();
@@ -340,43 +282,108 @@ function InfoSidebar() {
   );
 }
 
-export function NutrifysComposeTab({ onApplyProposal, onAnalyzeProposal }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
+  const [messages, setMessages] = useState<ChatMessageEntity[]>([
     createTextMessage('assistant', WELCOME_MESSAGE),
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [appliedMessageId, setAppliedMessageId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<HealthProfile | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [loadingSession, setLoadingSession] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const showSuggestions = messages.length <= 1;
+
+  const user = useAuthStore((s) => s.user);
+
+  // Load profile + session list on mount
+  useEffect(() => {
+    if (!user) return;
+    getProfile(user.uid)
+      .then((p: HealthProfile | null) => setProfile(p ?? null))
+      .catch(() => setProfile(null));
+    getSessions(user.uid).then(setSessions).catch(console.error);
+  }, [user]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } else {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
   }, [messages, isTyping]);
+
+  /** Start a fresh conversation (resets state, no Firestore session yet) */
+  function startNewConversation() {
+    setCurrentSessionId(null);
+    setMessages([createTextMessage('assistant', WELCOME_MESSAGE)]);
+    setIsHistoryOpen(false);
+  }
+
+  /** Load an existing session from history */
+  async function openSession(sessionId: string) {
+    if (!user || loadingSession) return;
+    setLoadingSession(sessionId);
+    try {
+      const msgs = await getSessionMessages(user.uid, sessionId);
+      if (msgs.length > 0) {
+        setMessages(msgs);
+        setCurrentSessionId(sessionId);
+      }
+      setIsHistoryOpen(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingSession(null);
+    }
+  }
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isTyping) return;
 
+    const userMsg = createTextMessage('user', trimmed);
     setInput('');
-    setMessages((prev) => [...prev, createTextMessage('user', trimmed)]);
+    setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    await new Promise((r) => setTimeout(r, 900));
+    // If first user message, create a session now
+    let sessionId = currentSessionId;
+    if (!sessionId && user) {
+      try {
+        const session = await createSession(user.uid, trimmed);
+        sessionId = session.id;
+        setCurrentSessionId(sessionId);
+        setSessions((prev) => [session, ...prev]);
+      } catch (e) { console.error(e); }
+    }
 
-    const reply = getNutriFYSReply(trimmed);
-    setMessages((prev) => [
-      ...prev,
-      reply.proposal
-        ? createProposalMessage(reply.text, reply.proposal)
-        : createTextMessage('assistant', reply.text),
-    ]);
-    setIsTyping(false);
-  }
+    try {
+      const historyForAI = [...messages, userMsg]
+        .filter((m) => !(m.role === 'assistant' && m.content === WELCOME_MESSAGE))
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-  function handleApply(proposal: CocktailProposal, messageId: string) {
-    onApplyProposal(proposal);
-    setAppliedMessageId(messageId);
+      const aiReply = await chatCocktail(historyForAI, profile);
+
+      const replyMsg = aiReply.proposal
+        ? createProposalMessage(aiReply.text, aiReply.proposal as CocktailProposal)
+        : createTextMessage('assistant', aiReply.text);
+
+      setMessages((prev) => [...prev, replyMsg]);
+
+      if (user && sessionId) {
+        saveChatMessageToSession(user.uid, sessionId, userMsg).catch(console.error);
+        saveChatMessageToSession(user.uid, sessionId, replyMsg).catch(console.error);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        createTextMessage('assistant', 'Je rencontre un problème de connexion. Réessayez dans un instant.'),
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   function handleSubmit(e?: FormEvent) {
@@ -384,54 +391,16 @@ export function NutrifysComposeTab({ onApplyProposal, onAnalyzeProposal }: Props
     sendMessage(input);
   }
 
-  function handleSuggestion(suggestion: Suggestion) {
-    sendMessage(suggestion.message);
-  }
 
-  const mobileSuggestions = SUGGESTIONS.slice(0, 3);
-
-  function renderSuggestions(className?: string) {
-    const items = showSuggestions ? SUGGESTIONS : mobileSuggestions;
-
-    return (
-      <div className={cn('shrink-0 border-t border-border/40 bg-background/50 px-3 lg:px-4 pt-3 pb-0', className)}>
-        {showSuggestions && (
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-            Suggestions rapides
-          </p>
-        )}
-        <div className={cn('flex gap-2', showSuggestions ? 'flex-wrap' : 'overflow-x-auto')} style={{ scrollbarWidth: 'none' }}>
-          {items.map((s) => {
-            const Icon = s.icon;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => handleSuggestion(s)}
-                disabled={isTyping}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary/5 border border-primary/15 font-bold text-primary hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50',
-                  showSuggestions ? 'text-xs' : 'text-[11px] shrink-0 whitespace-nowrap',
-                )}
-              >
-                <Icon className="size-3.5" />
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative z-20 mt-1 lg:mt-3">
       <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-        <div className="flex-1 min-w-0 w-full flex flex-col min-h-0">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg overflow-hidden flex flex-col min-h-[calc(100dvh-220px)] max-h-[calc(100dvh-220px)] lg:min-h-[calc(100vh-200px)] lg:max-h-[760px] lg:h-[calc(100vh-200px)]">
+        <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100vh-200px)]">
+          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70vh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-24 lg:mb-0">
 
-            <div className="bg-[#28422F] px-3 lg:px-4 py-4 flex items-center justify-between shrink-0">
+            <div className="bg-[#28422F] px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center border border-accent/30">
                   <Sparkles className="size-4 text-[#E0982E]" />
@@ -441,22 +410,81 @@ export function NutrifysComposeTab({ onApplyProposal, onAnalyzeProposal }: Props
                   <p className="text-white text-sm font-semibold">Assistant conversationnel</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-accent/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
-                </span>
-                <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">En ligne</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={startNewConversation}
+                  className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
+                >
+                  <Plus className="size-3.5" />
+                  <span className="hidden lg:inline">Nouvelle</span>
+                </Button>
+
+                <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
+                    >
+                      <History className="size-4" />
+                      <span className="hidden lg:inline">Historique</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col bg-card border-l border-border/40">
+                    <SheetHeader className="px-5 py-4 border-b border-border/40 bg-muted/20 shrink-0">
+                      <SheetTitle className="font-display flex items-center gap-2">
+                        <History className="size-4 text-primary" />
+                        Mes conversations
+                      </SheetTitle>
+                      <SheetDescription className="text-xs">
+                        Cliquez sur une conversation pour la rouvrir.
+                      </SheetDescription>
+                    </SheetHeader>
+
+                    <div className="flex-1 overflow-y-auto py-3">
+                      {sessions.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground flex flex-col items-center gap-3">
+                          <History className="size-8 opacity-20" />
+                          Aucune conversation enregistrée.
+                        </div>
+                      ) : (
+                        sessions.map((session) => (
+                          <button
+                            key={session.id}
+                            type="button"
+                            disabled={loadingSession === session.id}
+                            onClick={() => openSession(session.id)}
+                            className={cn(
+                              'w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-muted/50 transition-colors border-b border-border/30 last:border-none',
+                              currentSessionId === session.id && 'bg-primary/5 border-l-2 border-l-primary',
+                            )}
+                          >
+                            <MessageSquare className="size-4 text-primary/60 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{session.title}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                {formatTime(session.updatedAt)} • {session.messageCount} messages
+                              </p>
+                            </div>
+                            {loadingSession === session.id
+                              ? <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+                              : <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 lg:px-4 py-5 space-y-5">
+            <div ref={scrollRef} className="flex-1 flex flex-col lg:overflow-y-auto px-2 lg:px-4 py-5 space-y-5">
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}
                   message={msg}
-                  applied={appliedMessageId === msg.id}
-                  onApply={(p) => handleApply(p, msg.id)}
                   onAnalyze={onAnalyzeProposal}
                 />
               ))}
@@ -473,33 +501,9 @@ export function NutrifysComposeTab({ onApplyProposal, onAnalyzeProposal }: Props
               )}
             </div>
 
-            {showSuggestions && (
-              <div className="hidden lg:block px-3 lg:px-4 pb-3 shrink-0">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                  Suggestions rapides
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {SUGGESTIONS.map((s) => {
-                    const Icon = s.icon;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => handleSuggestion(s)}
-                        disabled={isTyping}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary/5 border border-primary/15 text-xs font-bold text-primary hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50"
-                      >
-                        <Icon className="size-3.5" />
-                        {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="hidden lg:block px-3 lg:px-4 pb-4 pt-2 shrink-0 border-t border-border/40 bg-background/50">
-              <form onSubmit={handleSubmit}>
+            {/* Input bar - desktop only */}
+            <div className="hidden lg:block z-30 shrink-0 w-full bg-background/50 backdrop-blur-md border-t border-border/40 px-4 pb-4 pt-2">
+              <form onSubmit={handleSubmit} className="w-full">
                 <ChatComposer
                   value={input}
                   onChange={setInput}
@@ -517,46 +521,9 @@ export function NutrifysComposeTab({ onApplyProposal, onAnalyzeProposal }: Props
         </div>
       </div>
 
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 pb-5 z-50">
-        <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-2">
-          {showSuggestions ? (
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                Suggestions rapides
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SUGGESTIONS.slice(0, 3).map((s) => {
-                  const Icon = s.icon;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => handleSuggestion(s)}
-                      disabled={isTyping}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary/5 border border-primary/15 text-[11px] font-bold text-primary whitespace-nowrap disabled:opacity-50"
-                    >
-                      <Icon className="size-3.5" />
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-              {SUGGESTIONS.slice(0, 3).map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSuggestion(s)}
-                  disabled={isTyping}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/15 text-[11px] font-bold text-primary whitespace-nowrap disabled:opacity-50"
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Input bar - mobile */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 pb-safe-5 z-50 shadow-t-xl">
+        <form onSubmit={handleSubmit} className="max-w-lg mx-auto">
           <ChatComposer
             value={input}
             onChange={setInput}

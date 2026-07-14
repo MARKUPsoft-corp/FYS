@@ -16,9 +16,7 @@ type Props = {
   supplementIds: string[];
   onToggleFruit: (id: string) => void;
   onToggleSupplement: (id: string) => void;
-  onApply: (proposal: CocktailProposal) => void;
   onAnalyze: (proposal: CocktailProposal) => void;
-  applied?: boolean;
   pulseId?: string | null;
   onTermClick?: (term: HighlightTerm) => void;
 };
@@ -91,9 +89,7 @@ export function CocktailProposalCard({
   supplementIds,
   onToggleFruit,
   onToggleSupplement,
-  onApply,
   onAnalyze,
-  applied,
   pulseId,
   onTermClick,
 }: Props) {
@@ -191,32 +187,11 @@ export function CocktailProposalCard({
         <Button
           type="button"
           size="sm"
-          variant="outline"
-          disabled={applied || !hasSelection}
-          onClick={() => onApply(activeProposal)}
-          className={cn(
-            'flex-1 rounded-xl h-11 font-bold text-sm gap-2 border-primary/30',
-            applied && 'bg-primary/5 text-primary border-primary/40',
-          )}
-        >
-          {applied ? (
-            <>
-              <Check className="size-4" /> Recette appliquée
-            </>
-          ) : (
-            <>
-              <FlaskConical className="size-4" /> Utiliser cette recette
-            </>
-          )}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
           disabled={!hasSelection}
           onClick={() => onAnalyze(activeProposal)}
           className="flex-1 rounded-xl h-11 font-bold text-sm gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_rgba(63,109,78,0.25)] disabled:opacity-40"
         >
-          <Sparkles className="size-4" /> Analyser
+          <Sparkles className="size-4" /> Analyser ce mélange
         </Button>
       </div>
     </div>
