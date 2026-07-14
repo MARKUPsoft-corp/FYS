@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -25,6 +26,12 @@ function stripUndefined(obj: any): any {
     );
   }
   return obj;
+}
+
+export async function getCocktailById(id: string): Promise<Cocktail | null> {
+  const snap = await getDoc(doc(db, COLLECTIONS.COCKTAILS, id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as Cocktail;
 }
 
 export async function getCocktails(): Promise<Cocktail[]> {

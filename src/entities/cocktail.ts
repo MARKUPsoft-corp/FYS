@@ -19,10 +19,33 @@ export interface CocktailIngredient {
   priceSnapshot: number;  // snapshot de Fruit.price au moment de la création
 }
 
+export interface NutrientInfo {
+  pourcentage: number; // % AJR (apport journalier recommandé) couvert par ce cocktail
+  valeur: string;      // valeur absolue estimée, ex. "45 mg", "2.3 g"
+}
+
+export type NiveauBenefice = 'faible' | 'modéré' | 'élevé';
+
+export interface BeneficeCible {
+  nom: string;           // ex. "immunité", "énergie", "digestion"
+  niveau: NiveauBenefice;
+}
+
 export interface AIAnalysis {
   verdict: AIVerdict;
   score: number; // 0-100
   notes: string; // explication générée par l'IA
+  profilNutritionnel: {
+    vitamineC?: NutrientInfo;
+    vitamineA?: NutrientInfo;
+    fibres?: NutrientInfo;
+    potassium?: NutrientInfo;
+    sucresNaturels?: NutrientInfo;
+    antioxydants?: NutrientInfo;
+  };
+  beneficesCibles: BeneficeCible[];
+  interactionsFruits: string[]; // synergies et effets produits par le mélange (2-3 points)
+  conseil: string;              // conseils de consommation pour maximiser les bénéfices
   analyzedAt: Timestamp;
 }
 

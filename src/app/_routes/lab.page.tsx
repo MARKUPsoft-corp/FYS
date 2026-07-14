@@ -3,15 +3,11 @@ import { Sparkles, Save } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
-import { ComposeTab, SavePanel } from '@/components/features/lab/ComposeTab';
+import { ComposeTab } from '@/components/features/lab/ComposeTab';
 import {
   SupplementsTab,
   getSupplementsSummaryItems,
@@ -20,14 +16,59 @@ import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab
 import { LAB_FRUITS } from '@/data/lab-items';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { LabItem } from '@/data/lab-items';
-import type { CocktailIngredient } from '@/entities';
+import type { CocktailIngredient, AIAnalysis } from '@/entities';
 import { CocktailType, BASE_COCKTAIL_PRICE } from '@/entities';
 import { getFruits } from '@/services/fruit';
 import { createCocktail } from '@/services/cocktail';
+import { analyzeCocktail } from '@/services/ai';
 import { useAuthStore } from '@/stores/auth';
+import { useProfileStore } from '@/stores/profile';
+
+// ── Mobile save sheet ─────────────────────────────────────────────────────────
+
+function MobileSaveSheet({
+  cocktailName,
+  onNameChange,
+  canSave,
+  saving,
+  onSave,
+}: {
+  cocktailName: string;
+  onNameChange: (v: string) => void;
+  canSave: boolean;
+  saving: boolean;
+  onSave: () => Promise<void>;
+}) {
+  return (
+    <div className="px-6 pt-6 pb-8 space-y-4">
+      <div className="w-12 h-1 bg-border rounded-full mx-auto mb-6" />
+      <h2 className="font-display font-bold text-xl text-foreground">Sauvegarder le cocktail</h2>
+      <p className="text-sm text-muted-foreground">
+        Donnez un nom à votre recette pour la retrouver dans vos créations.
+      </p>
+      <Input
+        value={cocktailName}
+        onChange={(e) => onNameChange(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && canSave && !saving && onSave()}
+        placeholder="Nom de mon cocktail…"
+        className="h-12 rounded-2xl text-base"
+        autoFocus
+      />
+      <Button
+        size="lg"
+        className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-2"
+        disabled={!canSave || saving}
+        onClick={onSave}
+      >
+        {saving ? 'Sauvegarde…' : <><Save className="size-5" /> Sauvegarder la recette</>}
+      </Button>
+    </div>
+  );
+}
 
 const FysLab: PageComponent = () => {
   const { user } = useAuthStore();
+  const { profile } = useProfileStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -38,6 +79,8 @@ const FysLab: PageComponent = () => {
   const [cocktailName, setCocktailName] = useState('');
   const [saving, setSaving] = useState(false);
   const [showMobileSave, setShowMobileSave] = useState(false);
+  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   // ── Supplements tab state (still mock-based) ───────────────────────────────
   const [selectedSupplements, setSelectedSupplements] = useState<string[]>([]);
@@ -51,6 +94,7 @@ const FysLab: PageComponent = () => {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function toggleFruit(id: string) {
+    setAnalysis(null); // reset analysis when composition changes
     setSelectedIngredients((prev) => {
       const next = new Map(prev);
       if (next.has(id)) next.delete(id);
@@ -60,11 +104,29 @@ const FysLab: PageComponent = () => {
   }
 
   function changeQuantity(fruitId: string, grams: number) {
+    setAnalysis(null); // reset analysis when quantities change
     setSelectedIngredients((prev) => {
       const next = new Map(prev);
       next.set(fruitId, grams);
       return next;
     });
+  }
+
+  async function handleAnalyze() {
+    if (selectedIngredients.size === 0) return;
+    setAnalyzing(true);
+    try {
+      const ingredients = [...selectedIngredients.entries()].map(([fruitId, grams]) => ({
+        fruit: fruits.find((f) => f.id === fruitId)!,
+        grams,
+      }));
+      const result = await analyzeCocktail(ingredients, profile);
+      setAnalysis(result);
+      // On mobile: open the save Sheet to show the verdict
+      setShowMobileSave(true);
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   const totalPrice =
@@ -89,7 +151,7 @@ const FysLab: PageComponent = () => {
           };
         },
       );
-      await createCocktail({
+      const cocktailId = await createCocktail({
         name: cocktailName.trim(),
         type: CocktailType.CUSTOM,
         createdBy: user.uid,
@@ -98,12 +160,14 @@ const FysLab: PageComponent = () => {
         ingredients,
         basePrice: BASE_COCKTAIL_PRICE,
         totalPrice,
+        ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
       setSelectedIngredients(new Map());
       setCocktailName('');
+      setAnalysis(null);
       setShowMobileSave(false);
-      navigate('/board/cocktails');
+      navigate(`/board/cocktails?cocktail=${cocktailId}`);
     } finally {
       setSaving(false);
     }
@@ -175,6 +239,9 @@ const FysLab: PageComponent = () => {
             totalPrice={totalPrice}
             onSave={handleSave}
             saving={saving}
+            analysis={analysis}
+            onAnalyze={handleAnalyze}
+            analyzing={analyzing}
           />
         )}
 
@@ -226,11 +293,20 @@ const FysLab: PageComponent = () => {
 
             <Button
               size="lg"
-              className="w-full h-14 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-[17px] shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-3"
-              disabled={selectedIngredients.size === 0}
-              onClick={() => setShowMobileSave(true)}
+              className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
+              style={analysis
+                ? { background: '#3F6D4E', color: '#fff', boxShadow: '0 8px 25px rgba(63,109,78,0.3)' }
+                : { background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }
+              }
+              disabled={selectedIngredients.size === 0 || analyzing}
+              onClick={analysis ? () => setShowMobileSave(true) : handleAnalyze}
             >
-              <Save className="size-5" /> Sauvegarder la recette
+              {analyzing
+                ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> Analyse…</>
+                : analysis
+                ? <><Save className="size-5" /> Sauvegarder</>
+                : <><span className="text-lg">✦</span> Analyser avec NutriFYS</>
+              }
             </Button>
           </div>
         </div>
@@ -271,23 +347,17 @@ const FysLab: PageComponent = () => {
       )}
 
       {/* ── Mobile save Sheet ─────────────────────────────────────────────────── */}
-      <Sheet open={showMobileSave} onOpenChange={setShowMobileSave}>
-        <SheetContent side="bottom" className="rounded-t-3xl pb-safe">
-          <SheetHeader className="mb-4">
-            <SheetTitle className="font-display text-xl">Sauvegarder votre cocktail</SheetTitle>
-          </SheetHeader>
-          <SavePanel
-            selectedFruits={fruits.filter((f) => selectedIngredients.has(f.id))}
-            selectedIngredients={selectedIngredients}
+      {/* <Sheet open={showMobileSave} onOpenChange={setShowMobileSave}>
+        <SheetContent side="bottom" className="rounded-t-3xl pb-safe px-0 pt-0">
+          <MobileSaveSheet
             cocktailName={cocktailName}
             onNameChange={setCocktailName}
-            totalPrice={totalPrice}
-            onSave={handleSave}
-            saving={saving}
             canSave={canSave}
+            saving={saving}
+            onSave={handleSave}
           />
         </SheetContent>
-      </Sheet>
+      </Sheet> */}
     </div>
   );
 };
