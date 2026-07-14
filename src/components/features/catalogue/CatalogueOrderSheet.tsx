@@ -79,7 +79,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
         user.uid,
         localAnalysis ?? undefined,
       );
-      await createOrder(user.uid, cloned, quantity);
+      await createOrder(user, cloned, quantity);
       setOrdered(true);
     } finally {
       setOrdering(false);

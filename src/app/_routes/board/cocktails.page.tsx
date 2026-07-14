@@ -166,7 +166,7 @@ const Cocktails: PageComponent = () => {
               window.history.replaceState(null, '', '/board/cocktails');
             }
           }}
-          userId={user.uid}
+          user={user}
         />
       )}
 

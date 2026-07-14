@@ -1,21 +1,26 @@
 import { Timestamp } from 'firebase/firestore';
 
 export enum OrderStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
+  PENDING   = 'pending',    // reçue, en attente de confirmation admin
+  CONFIRMED = 'confirmed',  // confirmée par l'admin
+  PREPARING = 'preparing',  // en cours de préparation
+  READY     = 'ready',      // prête à être livrée / récupérée
+  DELIVERED = 'delivered',  // livrée au client
+  CANCELLED = 'cancelled',  // annulée
 }
 
 export interface Order {
   id: string;
-  userId: string;               // FK vers User.uid
-  cocktailId: string;           // FK vers Cocktail.id
-  cocktailNameSnapshot: string; // dénormalisé pour affichage rapide
+  userId: string;
+  userNameSnapshot: string;
+  userEmailSnapshot: string;
+  userPhoneSnapshot?: string;
+  cocktailId: string;
+  cocktailNameSnapshot: string;
   quantity: number;
   cocktailPriceSnapshot: number; // Cocktail.totalPrice figé à la commande
-  deliveryFee: number;           // DELIVERY_FEE (500) ou 0 si retrait
-  totalPrice: number;            // cocktailPriceSnapshot + deliveryFee
+  deliveryFee: number;
+  totalPrice: number;            // cocktailPriceSnapshot * quantity + deliveryFee
   status: OrderStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;

@@ -1,5 +1,5 @@
 import {
- Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles,
+  Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -15,16 +15,18 @@ import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/
 
 type SheetTab = 'order' | 'nutrition';
 
+type UserInfo = { uid: string; name: string; email: string; phone?: string };
+
 export function OrderSheet({
   cocktail,
   open,
   onOpenChange,
-  userId,
+  user,
 }: {
   cocktail: Cocktail;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  userId: string;
+  user: UserInfo;
 }) {
   const [activeTab, setActiveTab] = useState<SheetTab>('order');
   const [quantity, setQuantity] = useState(1);
@@ -42,7 +44,7 @@ export function OrderSheet({
   async function handleOrder() {
     setOrdering(true);
     try {
-      await createOrder(userId, cocktail, quantity);
+      await createOrder(user, cocktail, quantity);
       setOrdered(true);
     } finally {
       setOrdering(false);
