@@ -86,10 +86,10 @@
 | `CustomerCatalogue` — hero banner, search, responsive card grid | ✅ |
 | `AdminCatalogue` — header + table + add button | ✅ |
 | Role-based switch on `catalogue.page.tsx` | ✅ |
-| Firestore service `cocktail.ts` (getCocktails, create, update, delete) | 🔲 |
-| `CocktailFormDrawer` — fruit picker, quantity, live price computation | 🔲 |
-| Replace mock data with real Firestore reads via React Query | 🔲 |
-| Activate / deactivate cocktail persisted to Firestore | 🔲 |
+| Firestore service `cocktail.ts` (getCocktails, create, update, delete) | ✅ |
+| `CocktailFormDrawer` — fruit picker, quantity, live price computation | ✅ |
+| Replace mock data with real Firestore reads via React Query | ✅ |
+| Activate / deactivate cocktail persisted to Firestore | ✅ |
 
 ---
 
@@ -98,11 +98,14 @@
 
 | Task | Status |
 |---|---|
-| Health profile form (conditions, allergies, goals) | 🔲 |
-| Create / update profile in `users/{uid}/profile/main` | 🔲 |
-| Profile completion indicator on dashboard | 🔲 |
-| Skip option with fallback to generic AI analysis | 🔲 |
-| Firestore service (`src/services/profile.ts`) | 🔲 |
+| Firestore service (`src/services/profile.ts`) | ✅ |
+| Profile store (`src/stores/profile.ts`) + `isProfileComplete` helper | ✅ |
+| Duolingo-style 3-step onboarding modal (fullscreen, chip selector, free text) | ✅ |
+| Auto-trigger modal on session start when profile is incomplete | ✅ |
+| Skip option — dismissed for current session, re-shown next login | ✅ |
+| `ProfileCompletionCard` on customer home (banner with CTA) | ✅ |
+| `ProfileFloatingButton` — fixed bottom-right with pulse indicator | ✅ |
+| Create / update profile in `users/{uid}/profile/main` | ✅ |
 
 ---
 
@@ -111,12 +114,18 @@
 
 | Task | Status |
 |---|---|
-| "My cocktails" list view | 🔲 |
-| Cocktail builder (fruit picker by category, gram quantity, live price) | 🔲 |
-| Save as draft (private by default, `type: 'custom'`) | 🔲 |
-| Publish cocktail (`isPublic: true`) | 🔲 |
-| Edit / delete own cocktail | 🔲 |
+| `getUserCocktails(uid)` + `toggleCocktailPublic` in Firestore service | ✅ |
+| Lab compose tab — real Fruit data from Firestore (image grid, quantity stepper per fruit) | ✅ |
+| Live price computation in lab (base + per-fruit prices) | ✅ |
+| Save cocktail as `type: 'custom'`, private by default | ✅ |
+| Desktop save panel (name input, price breakdown, save button) | ✅ |
+| Mobile bottom bar → Sheet with name input + save | ✅ |
+| "Mes Cocktails" page — list view wired to Firestore via React Query | ✅ |
+| Publish / unpublish toggle (`isPublic`) from card menu | ✅ |
+| Delete own cocktail with confirmation dialog | ✅ |
+| Admin redirected to catalogue from cocktails page | ✅ |
 | Browse public custom cocktails from other users | 🔲 |
+| Edit an existing custom cocktail in the lab | 🔲 |
 
 ---
 

@@ -10,7 +10,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { COLLECTIONS } from '@/entities';
+import { COLLECTIONS, CocktailType } from '@/entities';
 import type { Cocktail } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage } from './storage';
 
@@ -97,4 +97,21 @@ export async function deleteCocktail(id: string, imageUrl?: string): Promise<voi
     await deleteCocktailImage(imageUrl);
   }
   await deleteDoc(doc(db, COLLECTIONS.COCKTAILS, id));
+}
+
+export async function getUserCocktails(uid: string): Promise<Cocktail[]> {
+  const q = query(
+    collection(db, COLLECTIONS.COCKTAILS),
+    where('createdBy', '==', uid),
+    where('type', '==', CocktailType.CUSTOM),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Cocktail));
+}
+
+export async function toggleCocktailPublic(id: string, isPublic: boolean): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.COCKTAILS, id), {
+    isPublic,
+    updatedAt: serverTimestamp(),
+  });
 }
