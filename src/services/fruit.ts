@@ -13,6 +13,19 @@ import { COLLECTIONS } from '@/entities';
 import type { Fruit } from '@/entities';
 import { uploadFruitImage, deleteFruitImage } from './storage';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripUndefined(obj: any): any {
+  if (Array.isArray(obj)) return obj.map(stripUndefined);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefined(v)]),
+    );
+  }
+  return obj;
+}
+
 export async function getFruits(): Promise<Fruit[]> {
   const snap = await getDocs(collection(db, COLLECTIONS.FRUITS));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Fruit));
@@ -35,13 +48,13 @@ export async function createFruit(
     imageUrl = await uploadFruitImage(fruitRef.id, imageFile);
   }
 
-  await setDoc(fruitRef, {
+  await setDoc(fruitRef, stripUndefined({
     ...data,
     id: fruitRef.id,
     imageUrl: imageUrl ?? null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  }));
 
   return fruitRef.id;
 }
@@ -61,11 +74,11 @@ export async function updateFruit(
     imageUrl = await uploadFruitImage(id, imageFile);
   }
 
-  await updateDoc(doc(db, COLLECTIONS.FRUITS, id), {
+  await updateDoc(doc(db, COLLECTIONS.FRUITS, id), stripUndefined({
     ...data,
     imageUrl: imageUrl ?? null,
     updatedAt: serverTimestamp(),
-  });
+  }));
 }
 
 export async function deleteFruit(id: string, imageUrl?: string): Promise<void> {

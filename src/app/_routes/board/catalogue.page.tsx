@@ -1,50 +1,105 @@
 import { useState } from 'react';
 import { PageComponent } from 'rasengan';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { UserRole, type Cocktail } from '@/entities';
-import { MOCK_COCKTAILS } from '@/data/mock-cocktails';
+import { getCocktails, getPublicCocktails, createCocktail, updateCocktail, deleteCocktail, toggleCocktailActive } from '@/services/cocktail';
+import { getFruits } from '@/services/fruit';
+import { getCategories } from '@/services/category';
 import { CustomerCatalogue } from '@/components/features/catalogue/CustomerCatalogue';
 import { AdminCatalogue } from '@/components/features/catalogue/AdminCatalogue';
+import { CocktailFormDrawer } from '@/components/features/catalogue/CocktailFormDrawer';
 
 const Catalogue: PageComponent = () => {
   const { user } = useAuthStore();
-  const [cocktails, setCocktails] = useState<Cocktail[]>(MOCK_COCKTAILS);
+  const queryClient = useQueryClient();
+  const isAdmin = user?.role === UserRole.ADMIN;
 
-  // ── Admin handlers (stubs until Firestore service is wired) ──────────────
-  function handleEdit(cocktail: Cocktail) {
-    // TODO: open CocktailFormDrawer
-    console.log('edit', cocktail.id);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editing, setEditing] = useState<Cocktail | null>(null);
+
+  // Fetch cocktails — admins see all, customers see only active+public
+  const { data: cocktails = [], isLoading: cocktailsLoading } = useQuery({
+    queryKey: isAdmin ? ['cocktails', 'all'] : ['cocktails', 'public'],
+    queryFn: isAdmin ? getCocktails : getPublicCocktails,
+  });
+
+  // Fruits and categories needed by the form drawer (admin only)
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    enabled: isAdmin,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    enabled: isAdmin,
+  });
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ['cocktails'] });
   }
 
-  function handleDelete(cocktail: Cocktail) {
+  function openCreate() {
+    setEditing(null);
+    setDrawerOpen(true);
+  }
+
+  function openEdit(cocktail: Cocktail) {
+    setEditing(cocktail);
+    setDrawerOpen(true);
+  }
+
+  async function handleDelete(cocktail: Cocktail) {
     if (!confirm(`Delete "${cocktail.name}"?`)) return;
-    setCocktails((prev) => prev.filter((c) => c.id !== cocktail.id));
+    await deleteCocktail(cocktail.id, cocktail.imageUrl);
+    invalidate();
   }
 
-  function handleToggleActive(cocktail: Cocktail) {
-    setCocktails((prev) =>
-      prev.map((c) => c.id === cocktail.id ? { ...c, isActive: !c.isActive } : c),
-    );
+  async function handleToggleActive(cocktail: Cocktail) {
+    await toggleCocktailActive(cocktail.id, !cocktail.isActive);
+    invalidate();
   }
 
-  function handleAdd() {
-    // TODO: open CocktailFormDrawer in create mode
-    console.log('add cocktail');
+  async function handleSave(
+    data: Omit<Cocktail, 'id' | 'createdAt' | 'updatedAt'>,
+    imageFile: File | null,
+    cocktailId?: string,
+  ) {
+    if (cocktailId) {
+      await updateCocktail(cocktailId, data, imageFile ?? undefined);
+    } else {
+      await createCocktail(data, imageFile ?? undefined);
+    }
+    invalidate();
   }
 
-  if (user?.role === UserRole.ADMIN) {
+  if (isAdmin) {
     return (
-      <AdminCatalogue
-        cocktails={cocktails}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onToggleActive={handleToggleActive}
-        onAdd={handleAdd}
-      />
+      <>
+        <AdminCatalogue
+          cocktails={cocktails}
+          loading={cocktailsLoading}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
+          onAdd={openCreate}
+        />
+        <CocktailFormDrawer
+          open={drawerOpen}
+          cocktail={editing}
+          fruits={fruits}
+          categories={categories}
+          createdBy={user!.uid}
+          onClose={() => setDrawerOpen(false)}
+          onSave={handleSave}
+        />
+      </>
     );
   }
 
-  return <CustomerCatalogue cocktails={cocktails} />;
+  return <CustomerCatalogue cocktails={cocktails} loading={cocktailsLoading} />;
 };
 
 Catalogue.metadata = {

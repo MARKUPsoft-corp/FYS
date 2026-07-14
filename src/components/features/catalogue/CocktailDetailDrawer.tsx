@@ -112,7 +112,7 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <span>{ing.quantityGrams}g</span>
                       <span className="text-xs tabular-nums">
-                        {(ing.quantityGrams * ing.pricePerGramSnapshot).toLocaleString()} XAF
+                        {ing.priceSnapshot.toLocaleString()} XAF
                       </span>
                     </div>
                   </li>
@@ -121,12 +121,26 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
             )}
           </div>
 
-          {/* Total */}
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-sm font-semibold text-foreground">Total</span>
-            <span className="text-lg font-bold text-primary">
-              {cocktail.totalPrice.toLocaleString()} XAF
-            </span>
+          {/* Price breakdown */}
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>Base (50cl)</span>
+              <span>{cocktail.basePrice.toLocaleString()} XAF</span>
+            </div>
+            {cocktail.ingredients.map((ing, i) => (
+              <div key={i} className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{ing.fruitName}</span>
+                <span>+ {ing.priceSnapshot.toLocaleString()} XAF</span>
+              </div>
+            ))}
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Cocktail total</span>
+              <span className="text-lg font-bold text-primary">
+                {cocktail.totalPrice.toLocaleString()} XAF
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">+ 500 XAF delivery if applicable</p>
           </div>
         </div>
 

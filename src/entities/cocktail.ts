@@ -14,9 +14,9 @@ export enum AIVerdict {
 
 export interface CocktailIngredient {
   fruitId: string;
-  fruitName: string;            // dénormalisé pour éviter une lecture supplémentaire
-  quantityGrams: number;
-  pricePerGramSnapshot: number; // figé au moment de la création du cocktail
+  fruitName: string;      // dénormalisé pour éviter une lecture supplémentaire
+  quantityGrams: number;  // utile pour l'analyse nutritionnelle et l'IA
+  priceSnapshot: number;  // snapshot de Fruit.price au moment de la création
 }
 
 export interface AIAnalysis {
@@ -37,7 +37,8 @@ export interface Cocktail {
   isActive: boolean;      // permet de retirer du catalogue sans supprimer
   isPublic: boolean;      // visible par d'autres utilisateurs ou strictement privé
   ingredients: CocktailIngredient[];
-  totalPrice: number;     // calculé à partir des ingredients
+  basePrice: number;      // prix de base 50cl — BASE_COCKTAIL_PRICE (1500 XAF)
+  totalPrice: number;     // basePrice + sum(ingredients[].priceSnapshot)
   aiAnalysis?: AIAnalysis; // absent tant que l'IA n'a pas encore analysé
   createdAt: Timestamp;
   updatedAt: Timestamp;

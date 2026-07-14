@@ -206,7 +206,7 @@ function mapFruit(json: any): Omit<Fruit, 'createdAt' | 'updatedAt'> {
     id: json.id,
     name: json.nom,
     ...(json.nom_scientifique ? { scientificName: json.nom_scientifique } : {}),
-    pricePerGram: undefined,
+    price: undefined, // à définir manuellement via l'UI admin
     categoryIds: [json.categorie],
     imageUrl: undefined,
 

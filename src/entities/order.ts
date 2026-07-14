@@ -13,7 +13,9 @@ export interface Order {
   cocktailId: string;           // FK vers Cocktail.id
   cocktailNameSnapshot: string; // dénormalisé pour affichage rapide
   quantity: number;
-  totalPrice: number;           // figé au moment de la commande
+  cocktailPriceSnapshot: number; // Cocktail.totalPrice figé à la commande
+  deliveryFee: number;           // DELIVERY_FEE (500) ou 0 si retrait
+  totalPrice: number;            // cocktailPriceSnapshot + deliveryFee
   status: OrderStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;

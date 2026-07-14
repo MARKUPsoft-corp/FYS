@@ -6,9 +6,10 @@ import type { Cocktail } from '@/entities';
 
 type Props = {
   cocktails: Cocktail[];
+  loading?: boolean;
 };
 
-export function CustomerCatalogue({ cocktails }: Props) {
+export function CustomerCatalogue({ cocktails, loading }: Props) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Cocktail | null>(null);
 
@@ -64,7 +65,9 @@ export function CustomerCatalogue({ cocktails }: Props) {
         </div>
 
         {/* Grid */}
-        {visible.length === 0 ? (
+        {loading ? (
+          <p className="text-center text-sm text-muted-foreground py-12">Loading…</p>
+        ) : visible.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-12">No cocktails found.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-16 pb-8 pt-14">

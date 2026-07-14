@@ -90,9 +90,9 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: false,
   },
   {
-    key: 'admin-cocktails',
-    label: 'Cocktails',
-    path: '/board/cocktails',
+    key: 'admin-catalogue',
+    label: 'Catalogue',
+    path: '/board/catalogue',
     icon: GlassWater,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,

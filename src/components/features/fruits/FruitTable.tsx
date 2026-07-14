@@ -41,7 +41,7 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
             <th className="text-left font-medium text-muted-foreground px-4 py-3">Name</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Categories</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Role</th>
-            <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Price/g</th>
+            <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Price</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">Status</th>
             <th className="px-4 py-3 w-20" />
           </tr>
@@ -97,9 +97,9 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
               </td>
 
               {/* Price */}
-              <td className="px-4 py-3 hidden lg:table-cell text-foreground">
-                {fruit.pricePerGram != null
-                  ? `${fruit.pricePerGram.toFixed(2)} /g`
+              <td className="px-4 py-3 hidden lg:table-cell text-foreground tabular-nums">
+                {fruit.price != null
+                  ? `${fruit.price.toLocaleString()} XAF`
                   : <span className="text-muted-foreground">—</span>}
               </td>
 

@@ -6,13 +6,14 @@ import type { Cocktail } from '@/entities';
 
 type Props = {
   cocktails: Cocktail[];
+  loading?: boolean;
   onEdit: (cocktail: Cocktail) => void;
   onDelete: (cocktail: Cocktail) => void;
   onToggleActive: (cocktail: Cocktail) => void;
   onAdd: () => void;
 };
 
-export function AdminCatalogue({ cocktails, onEdit, onDelete, onToggleActive, onAdd }: Props) {
+export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleActive, onAdd }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -28,12 +29,16 @@ export function AdminCatalogue({ cocktails, onEdit, onDelete, onToggleActive, on
         </Button>
       </div>
 
-      <CocktailTable
-        cocktails={cocktails}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onToggleActive={onToggleActive}
-      />
+      {loading ? (
+        <p className="text-sm text-muted-foreground text-center py-16">Loading…</p>
+      ) : (
+        <CocktailTable
+          cocktails={cocktails}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onToggleActive={onToggleActive}
+        />
+      )}
     </div>
   );
 }

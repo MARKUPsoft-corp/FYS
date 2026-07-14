@@ -92,7 +92,7 @@ export interface Fruit {
   id: string;
   name: string;
   scientificName?: string;
-  pricePerGram?: number;
+  price?: number;               // prix fixe d'ajout au cocktail (XAF)
   categoryIds: string[];         // many-to-many with Category
   imageUrl?: string;
 

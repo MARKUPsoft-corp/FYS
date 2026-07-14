@@ -215,7 +215,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
   // Basic info
   const [name, setName] = useState('');
   const [scientificName, setScientificName] = useState('');
-  const [pricePerGram, setPricePerGram] = useState('');
+  const [price, setPricePerGram] = useState('');
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [cocktailRole, setCocktailRole] = useState<CocktailRole | ''>('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -260,7 +260,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
     if (fruit) {
       setName(fruit.name);
       setScientificName(fruit.scientificName ?? '');
-      setPricePerGram(numStr(fruit.pricePerGram));
+      setPricePerGram(numStr(fruit.price));
       setCategoryIds(fruit.categoryIds);
       setCocktailRole(fruit.cocktailRole ?? '');
       setImageFile(null);
@@ -314,7 +314,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
     const data: Omit<Fruit, 'id' | 'createdAt' | 'updatedAt'> = {
       name: name.trim(),
       scientificName: scientificName.trim() || undefined,
-      pricePerGram: toNum(pricePerGram),
+      price: toNum(price),
       categoryIds,
       imageUrl: fruit?.imageUrl,
       benefits,
@@ -404,7 +404,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
             <SectionTitle>Basic information</SectionTitle>
 
             <div className="flex gap-4 items-start">
-              <FruitImageUpload currentUrl={fruit?.imageUrl} onChange={setImageFile} />
+              <FruitImageUpload key={fruit?.id ?? 'new'} currentUrl={fruit?.imageUrl} onChange={setImageFile} />
               <div className="flex-1 space-y-3">
                 <div className="space-y-1">
                   <Label htmlFor="f-name">Name <span className="text-destructive">*</span></Label>
@@ -415,8 +415,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
                   <Input id="f-sci" value={scientificName} onChange={(e) => setScientificName(e.target.value)} placeholder="e.g. Mangifera indica" className="text-sm italic" />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="f-price" className="text-xs text-muted-foreground">Price per gram (XAF)</Label>
-                  <Input id="f-price" type="number" step="any" min="0" value={pricePerGram} onChange={(e) => setPricePerGram(e.target.value)} placeholder="0.00" className="h-9" />
+                  <Label htmlFor="f-price" className="text-xs text-muted-foreground">Price (XAF)</Label>
+                  <Input id="f-price" type="number" step="any" min="0" value={price} onChange={(e) => setPricePerGram(e.target.value)} placeholder="0.00" className="h-9" />
                 </div>
               </div>
             </div>
