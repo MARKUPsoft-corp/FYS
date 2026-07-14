@@ -9,6 +9,11 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { useState, useEffect } from 'react';
+import { useProfileStore, isProfileComplete } from '@/stores/profile';
+import { ProfileCompletionCard } from '@/components/features/profile/ProfileCompletionCard';
+import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
+import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
+import { useAuthStore } from '@/stores/auth';
 
 const SLIDES = [
   {
@@ -198,6 +203,20 @@ function HeroSlider() {
 
 export function CustomerHome({ name }: Props) {
   const [selectedFruit, setSelectedFruit] = useState<typeof FRUITS[0] | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { user } = useAuthStore();
+  const { profile, save: saveProfile } = useProfileStore();
+  const profileComplete = isProfileComplete(profile);
+
+  async function handleOnboardingComplete(data: {
+    healthConditions: string[];
+    allergies: string[];
+    goals: string[];
+  }) {
+    if (!user) return;
+    await saveProfile(user.uid, data);
+    setShowOnboarding(false);
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 overflow-x-hidden relative">
@@ -209,7 +228,12 @@ export function CustomerHome({ name }: Props) {
 
       {/* Content wrapper for things below hero */}
       <div className="px-2 space-y-10 mt-28 relative z-10">
-        
+
+        {/* Profile completion banner */}
+        {!profileComplete && (
+          <ProfileCompletionCard onStart={() => setShowOnboarding(true)} />
+        )}
+
         {/* 2. NOS CREATIONS */}
         <section>
           <div className="mb-10 block text-center">
@@ -330,6 +354,18 @@ export function CustomerHome({ name }: Props) {
         </section>
 
       </div>
+
+      {/* Floating profile button — only when profile incomplete */}
+      {!profileComplete && (
+        <ProfileFloatingButton onClick={() => setShowOnboarding(true)} />
+      )}
+
+      {/* Inline onboarding modal (triggered from card or floating button) */}
+      <OnboardingModal
+        open={showOnboarding}
+        onSkip={() => setShowOnboarding(false)}
+        onComplete={handleOnboardingComplete}
+      />
 
       {/* Fruit Details Bottom Sheet / Drawer */}
       <Drawer open={!!selectedFruit} onOpenChange={(open) => !open && setSelectedFruit(null)}>
