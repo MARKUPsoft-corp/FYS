@@ -63,6 +63,7 @@ export interface Cocktail {
   basePrice: number;      // prix de base 50cl — BASE_COCKTAIL_PRICE (1500 XAF)
   totalPrice: number;     // basePrice + sum(ingredients[].priceSnapshot)
   aiAnalysis?: AIAnalysis; // absent tant que l'IA n'a pas encore analysé
+  parentCocktailId?: string; // présent si ce cocktail est un clone d'un cocktail du catalogue
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

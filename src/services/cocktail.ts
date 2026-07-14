@@ -9,10 +9,11 @@ import {
   serverTimestamp,
   query,
   where,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, CocktailType } from '@/entities';
-import type { Cocktail } from '@/entities';
+import type { Cocktail, AIAnalysis } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage } from './storage';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,4 +122,37 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
     isPublic,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function cloneCocktailFromCatalogue(
+  source: Cocktail,
+  userId: string,
+  aiAnalysis?: AIAnalysis,
+): Promise<Cocktail> {
+  const ref = doc(collection(db, COLLECTIONS.COCKTAILS));
+  const now = Timestamp.now();
+  const cloned: Cocktail = {
+    id: ref.id,
+    name: source.name,
+    description: source.description,
+    imageUrl: source.imageUrl,
+    tag: source.tag,
+    type: CocktailType.CUSTOM,
+    createdBy: userId,
+    isActive: true,
+    isPublic: false,
+    ingredients: source.ingredients,
+    basePrice: source.basePrice,
+    totalPrice: source.totalPrice,
+    parentCocktailId: source.id,
+    ...(aiAnalysis ? { aiAnalysis } : {}),
+    createdAt: now,
+    updatedAt: now,
+  };
+  await setDoc(ref, stripUndefined({
+    ...cloned,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+  return cloned;
 }
