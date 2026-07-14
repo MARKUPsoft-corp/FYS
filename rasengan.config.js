@@ -2,13 +2,14 @@ import { defineConfig } from 'rasengan';
 import { rasengan } from 'rasengan/plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { configure } from "@rasenganjs/vercel";
 
 export default defineConfig(async () => {
   return {
     vite: {
       plugins: [
         tailwindcss(),
-        rasengan({}),
+        rasengan({ adapter: configure() }),
         VitePWA({
           // SW registration is handled manually in src/index.ts
           // because Rasengan generates HTML via writeBundle (post-Vite hooks)
