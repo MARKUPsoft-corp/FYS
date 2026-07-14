@@ -22,11 +22,13 @@ export function OrderSheet({
   open,
   onOpenChange,
   user,
+  onOrderSuccess,
 }: {
   cocktail: Cocktail;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   user: UserInfo;
+  onOrderSuccess?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<SheetTab>('order');
   const [quantity, setQuantity] = useState(1);
@@ -46,6 +48,7 @@ export function OrderSheet({
     try {
       await createOrder(user, cocktail, quantity);
       setOrdered(true);
+      onOrderSuccess?.();
     } finally {
       setOrdering(false);
     }

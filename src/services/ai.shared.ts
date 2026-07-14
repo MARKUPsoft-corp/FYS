@@ -261,3 +261,163 @@ export function parseAnalysisResponse(raw: string): AIAnalysis {
     analyzedAt: Timestamp.now(),
   };
 }
+
+// ── Conversational Chatbot (V3) ───────────────────────────────────────────────
+
+export type ChatHistoryMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ChatAIResponse = {
+  text: string;
+  proposal?: {
+    name: string;
+    profileLabel: string;
+    fruitIds: string[];
+    supplementIds: string[];
+    benefits: string[];
+    explanation: string;
+    score: number;
+    verdict: 'beneficial' | 'neutral' | 'caution' | 'not_recommended';
+  };
+};
+
+export function buildChatSystemPrompt(profile: HealthProfile | null): string {
+  const hasNoneCondition = profile?.healthConditions.some((c) =>
+    c.toLowerCase().includes('aucune'),
+  );
+  const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
+
+  const profileSection = profile
+    ? `PROFIL UTILISATEUR:
+- Conditions : ${hasNoneCondition ? 'aucune condition particulière' : profile.healthConditions.join(', ') || 'non renseigné'}
+- Allergies : ${hasNoneAllergy ? 'aucune allergie connue' : profile.allergies.join(', ') || 'non renseigné'}
+- Objectifs : ${(profile.goals ?? []).join(', ') || 'non spécifié'}`
+    : 'PROFIL UTILISATEUR: Aucun profil renseigné.';
+
+  // Build a generic knowledge context (without specifying ingredients)
+  const knowledgeContext = buildKnowledgeContext([], profile);
+
+  return `Tu es NutriFYS, un assistant nutritionnel expert et convivial. Ton but est de converser avec l'utilisateur pour comprendre ses envies (énergie, relax, digestion, immunité) et son profil santé, puis de lui recommer l'assemblage parfait de fruits et suppléments pour un cocktail sur-mesure.
+
+${profileSection}
+
+BASE DE CONNAISSANCES:
+${knowledgeContext}
+
+LISTE DES INGRÉDIENTS DISPONIBLES:
+Fruits: ananas, pasteque, mangue, papaye, banane, citron, corossol, baobab, orange, pomme, folere, goyave
+Suppléments: gingembre, menthe, curcuma, chia, miel
+
+DIRECTIVES:
+1. Ne te présente PAS par ton nom à chaque réponse. Ton nom n'apparaît qu'au début d'une toute nouvelle conversation (premier message vide = historique vide). Ensuite, continue la conversation naturellement.
+2. Sois très concis, chaleureux, et emploie le vouvoiement.
+3. Si le profil a une condition médicale, respecte strictement la base de connaissances.
+4. Si la demande de l'utilisateur est floue, pose une question courte pour préciser (ex: "Cherchez-vous plutôt de l'énergie ou à vous détendre ?").
+5. Si tu as assez d'éléments, propose un cocktail précis.
+
+Tu dois ABSOLUMENT générer ta réponse au format JSON selon ce schéma :
+{
+  "text": "<Ta réponse textuelle à l'utilisateur (2-3 phrases max)>",
+  "proposal": {
+    "name": "<Nom fun du cocktail>",
+    "profileLabel": "<Mot clé de l'objectif: Énergie, Immunité, etc.>",
+    "fruitIds": ["<id d'un fruit dispo>", ...],
+    "supplementIds": ["<id d'un supplément dispo>", ...],
+    "benefits": ["<Bénéfice 1>", "<Bénéfice 2>"],
+    "explanation": "<Pourquoi ce mélange est parfait pour lui>",
+    "score": <0-100 calculé selon le profil>,
+    "verdict": "beneficial" | "neutral" | "caution" | "not_recommended"
+  }
+}
+Note : Le champ "proposal" est optionnel si tu ne fais que poser une question de clarification. Si tu proposes un cocktail, "proposal" est obligatoire.
+Ne fournis que ce JSON valide, aucun autre texte avant ou après.`;
+}
+
+export function parseChatResponse(raw: string): ChatAIResponse {
+  const jsonText = raw
+    .trim()
+    .replace(/^```json?\s*/i, '')
+    .replace(/\s*```$/i, '');
+
+  try {
+    const parsed = JSON.parse(jsonText);
+    return {
+      text: parsed.text || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?",
+      proposal: parsed.proposal,
+    };
+  } catch (e) {
+    return {
+      text: "Je rencontre une difficulté avec ma connexion. Veuillez réessayer.",
+    };
+  }
+}
+
+// ── Supplements Recommendation ────────────────────────────────────────────────
+
+export type AIRecommendation = {
+  profileLabel: string;
+  recommendedIds: string[];
+  highlightedSupplementId: string;
+  why: string;
+};
+
+export function buildSupplementPrompt(
+  ingredients: { fruit: Fruit; grams: number }[],
+  profile: HealthProfile | null,
+): string {
+  const fruitLines = ingredients.map(({ fruit, grams }) => `• ${fruit.name} (${grams}g)`).join('\n');
+  
+  const hasNoneCondition = profile?.healthConditions.some((c) => c.toLowerCase().includes('aucune'));
+  const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
+
+  const profileSection = profile
+    ? `Profil de santé :
+- Conditions : ${hasNoneCondition ? 'aucune condition' : profile.healthConditions.join(', ') || 'non renseigné'}
+- Allergies : ${hasNoneAllergy ? 'aucune allergie' : profile.allergies.join(', ') || 'non renseigné'}
+- Objectifs : ${(profile.goals ?? []).join(', ') || 'non spécifié'}`
+    : 'Aucun profil de santé renseigné.';
+
+  const knowledgeContext = buildKnowledgeContext(ingredients, profile);
+
+  return `Tu es NutriFYS. L'utilisateur a composé ce mélange de fruits :
+${fruitLines}
+
+${profileSection}
+
+BASE DE CONNAISSANCES :
+${knowledgeContext}
+
+LISTE DES SUPPLÉMENTS DISPONIBLES :
+gingembre, menthe, curcuma, chia, miel
+
+MISSION:
+Sélectionne les meilleurs suppléments parmi la liste ci-dessus qui complèteraient parfaitement cette mixture, en tenant compte du PROFIL SANTÉ.
+Choisis particulièrement un supplément "mis en avant" et explique pourquoi.
+
+Réponds UNIQUEMENT par ce JSON stricte :
+{
+  "profileLabel": "<Ex: Énergie, Immunité, Détox...>",
+  "recommendedIds": ["id1", "id2"],
+  "highlightedSupplementId": "id1",
+  "why": "<Explication courte et ciblée, 1-2 phrases>"
+}
+Rappel: les IDs sont exactement les noms en minuscules ("gingembre", "menthe", "curcuma", "chia", "miel").`;
+}
+
+export function parseSupplementResponse(raw: string): AIRecommendation {
+  const jsonText = raw.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    const parsed = JSON.parse(jsonText);
+    return {
+      profileLabel: parsed.profileLabel || 'Vitalité',
+      recommendedIds: Array.isArray(parsed.recommendedIds) ? parsed.recommendedIds : [],
+      highlightedSupplementId: parsed.highlightedSupplementId || '',
+      why: parsed.why || '',
+    };
+  } catch (e) {
+    return { profileLabel: 'Vitalité', recommendedIds: [], highlightedSupplementId: '', why: 'Erreur réseau.' };
+  }
+}
+

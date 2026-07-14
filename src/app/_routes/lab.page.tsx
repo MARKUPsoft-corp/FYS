@@ -1,6 +1,6 @@
 import { PageComponent, useNavigate } from 'rasengan';
-import { Sparkles, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, Save, ShoppingBag } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
 import { ComposeTab } from '@/components/features/lab/ComposeTab';
+import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import {
   SupplementsTab,
   getSupplementsSummaryItems,
@@ -16,11 +17,11 @@ import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab
 import { LAB_FRUITS } from '@/data/lab-items';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { LabItem } from '@/data/lab-items';
-import type { CocktailIngredient, AIAnalysis } from '@/entities';
+import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
 import { CocktailType, BASE_COCKTAIL_PRICE } from '@/entities';
 import { getFruits } from '@/services/fruit';
 import { createCocktail } from '@/services/cocktail';
-import { analyzeCocktail } from '@/services/ai';
+import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 
@@ -57,7 +58,7 @@ function MobileSaveSheet({
       <Button
         size="lg"
         className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-2"
-        disabled={!canSave || saving}
+        disabled={(!canSave || saving) ? true : undefined}
         onClick={onSave}
       >
         {saving ? 'Sauvegarde…' : <><Save className="size-5" /> Sauvegarder la recette</>}
@@ -81,6 +82,7 @@ const FysLab: PageComponent = () => {
   const [showMobileSave, setShowMobileSave] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [showOrderSheet, setShowOrderSheet] = useState(false);
 
   // ── Supplements tab state (still mock-based) ───────────────────────────────
   const [selectedSupplements, setSelectedSupplements] = useState<string[]>([]);
@@ -89,6 +91,20 @@ const FysLab: PageComponent = () => {
   const { data: fruits = [], isLoading: fruitsLoading } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
+  });
+
+  // ── AI Supplements Recommendation ──────────────────────────────────────────
+  const { data: aiRecommendation, isLoading: supplementsLoading } = useQuery({
+    queryKey: ['supplements-recommendation', [...selectedIngredients.entries()]],
+    queryFn: () => {
+      const ingredients = [...selectedIngredients.entries()].map(([fruitId, grams]) => ({
+        fruit: fruits.find((f) => f.id === fruitId)!,
+        grams,
+      }));
+      return recommendSupplements(ingredients, profile);
+    },
+    enabled: activeTab === 'supplements' && selectedIngredients.size > 0 && fruits.length > 0,
+    staleTime: Infinity,
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -112,11 +128,12 @@ const FysLab: PageComponent = () => {
     });
   }
 
-  async function handleAnalyze() {
-    if (selectedIngredients.size === 0) return;
+  async function handleAnalyze(forcedIngredients?: Map<string, number>) {
+    const ingrMap = forcedIngredients || selectedIngredients;
+    if (ingrMap.size === 0) return;
     setAnalyzing(true);
     try {
-      const ingredients = [...selectedIngredients.entries()].map(([fruitId, grams]) => ({
+      const ingredients = [...ingrMap.entries()].map(([fruitId, grams]) => ({
         fruit: fruits.find((f) => f.id === fruitId)!,
         grams,
       }));
@@ -136,7 +153,34 @@ const FysLab: PageComponent = () => {
       return sum + (fruit?.price ?? 0);
     }, 0);
 
-  async function handleSave() {
+  const draftCocktail = useMemo(() => {
+    if (!user || selectedIngredients.size === 0) return null;
+    const ingredients: CocktailIngredient[] = [...selectedIngredients.entries()].map(
+      ([fruitId, quantityGrams]) => {
+        const fruit = fruits.find((f) => f.id === fruitId)!;
+        return {
+          fruitId,
+          fruitName: fruit.name,
+          quantityGrams,
+          priceSnapshot: fruit.price ?? 0,
+        };
+      },
+    );
+    return {
+      id: 'draft',
+      name: cocktailName.trim() || 'Mon Cocktail Personnalisé',
+      type: CocktailType.CUSTOM,
+      createdBy: user.uid,
+      isActive: true,
+      isPublic: false,
+      ingredients,
+      basePrice: BASE_COCKTAIL_PRICE,
+      totalPrice,
+      ...(analysis ? { aiAnalysis: analysis } : {}),
+    } as Cocktail;
+  }, [user, fruits, selectedIngredients, cocktailName, totalPrice, analysis]);
+
+  async function handleSave(silent = false) {
     if (!user || !cocktailName.trim() || selectedIngredients.size === 0) return;
     setSaving(true);
     try {
@@ -163,11 +207,14 @@ const FysLab: PageComponent = () => {
         ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
-      setSelectedIngredients(new Map());
-      setCocktailName('');
-      setAnalysis(null);
-      setShowMobileSave(false);
-      navigate(`/board/cocktails?cocktail=${cocktailId}`);
+      
+      if (!silent) {
+        setSelectedIngredients(new Map());
+        setCocktailName('');
+        setAnalysis(null);
+        setShowMobileSave(false);
+        navigate(`/board/cocktails?cocktail=${cocktailId}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -193,20 +240,14 @@ const FysLab: PageComponent = () => {
   const supplementSummaryItems = getSupplementsSummaryItems(selectedFruitLabItems, selectedSupplements);
   const supplementsCountLabel = `${supplementSummaryItems.length} élément${supplementSummaryItems.length > 1 ? 's' : ''}`;
 
-  function handleApplyProposal(proposal: CocktailProposal) {
-    const ids = proposal.fruitIds;
-    const next = new Map<string, number>();
-    ids.forEach((id) => next.set(id, 100));
-    setSelectedIngredients(next);
-    setSelectedSupplements(proposal.supplementIds);
-    setActiveTab('supplements');
-  }
-
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
     const next = new Map<string, number>();
     proposal.fruitIds.forEach((id) => next.set(id, 100));
     setSelectedIngredients(next);
     setSelectedSupplements(proposal.supplementIds);
+    setActiveTab('compose');
+    // Using setTimeout to guarantee React batched state update allows it to seamlessly render Assemble panel
+    setTimeout(() => handleAnalyze(next), 50);
   }
 
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
@@ -221,9 +262,9 @@ const FysLab: PageComponent = () => {
 
       <div
         className={cn(
-          'mx-auto',
+          'mx-auto w-full',
           activeTab === 'nutrifys'
-            ? 'max-w-[1480px] px-2 lg:px-5 pb-52 lg:pb-12'
+            ? 'max-w-[1480px] px-2 lg:px-5 pb-4 lg:pb-12'
             : 'max-w-6xl px-4 lg:px-16 pb-36 lg:pb-12',
         )}
       >
@@ -237,11 +278,12 @@ const FysLab: PageComponent = () => {
             cocktailName={cocktailName}
             onNameChange={setCocktailName}
             totalPrice={totalPrice}
-            onSave={handleSave}
+            onSave={() => handleSave()}
             saving={saving}
             analysis={analysis}
-            onAnalyze={handleAnalyze}
+            onAnalyze={() => handleAnalyze()}
             analyzing={analyzing}
+            onOrderRequest={() => setShowOrderSheet(true)}
           />
         )}
 
@@ -251,12 +293,13 @@ const FysLab: PageComponent = () => {
             selectedSupplements={selectedSupplements}
             onToggleSupplement={toggleSupplement}
             onAnalyze={() => {}}
+            aiRecommendation={aiRecommendation}
+            loadingAI={supplementsLoading}
           />
         )}
 
         {activeTab === 'nutrifys' && (
           <NutrifysComposeTab
-            onApplyProposal={handleApplyProposal}
             onAnalyzeProposal={handleAnalyzeFromProposal}
           />
         )}
@@ -299,7 +342,7 @@ const FysLab: PageComponent = () => {
                 : { background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }
               }
               disabled={selectedIngredients.size === 0 || analyzing}
-              onClick={analysis ? () => setShowMobileSave(true) : handleAnalyze}
+              onClick={analysis ? () => setShowMobileSave(true) : () => handleAnalyze()}
             >
               {analyzing
                 ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> Analyse…</>
@@ -354,10 +397,21 @@ const FysLab: PageComponent = () => {
             onNameChange={setCocktailName}
             canSave={canSave}
             saving={saving}
-            onSave={handleSave}
+            onSave={() => handleSave()}
           />
         </SheetContent>
       </Sheet> */}
+
+      {/* ── Order Sheet ────────────────────────────────────────────────────────── */}
+      {draftCocktail && user && (
+        <OrderSheet
+          cocktail={draftCocktail}
+          open={showOrderSheet}
+          onOpenChange={setShowOrderSheet}
+          user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
+          onOrderSuccess={() => handleSave(true)}
+        />
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Minus, Plus, FlaskConical, Sparkles, Save, RefreshCw, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
-  Lightbulb, Link2, ClipboardList,
+  Lightbulb, Link2, ClipboardList, ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -163,13 +163,13 @@ function NutritionalSheetContent({
   selectedFruits,
   analyzing,
   canAnalyze,
-  onReanalyze,
+  onOrderRequest,
 }: {
   analysis: AIAnalysis;
   selectedFruits: Fruit[];
   analyzing: boolean;
   canAnalyze: boolean;
-  onReanalyze: () => Promise<void>;
+  onOrderRequest: () => void;
 }) {
   const cfg = VERDICT_CONFIG[analysis.verdict];
 
@@ -273,20 +273,14 @@ function NutritionalSheetContent({
         )}
       </div>
 
-      {/* Footer: re-analyze */}
+      {/* Footer: Commander */}
       <div className="shrink-0 border-t border-border/40 px-6 py-4">
         <Button
-          variant="outline"
-          size="sm"
-          className="w-full rounded-xl gap-2 text-xs"
-          disabled={!canAnalyze || analyzing}
-          onClick={onReanalyze}
+          size="lg"
+          className="w-full h-12 rounded-xl gap-2 text-sm font-bold bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
+          onClick={onOrderRequest}
         >
-          {analyzing ? (
-            <><Loader2 className="size-3.5 animate-spin" /> Analyse en cours…</>
-          ) : (
-            <><RefreshCw className="size-3.5" /> Re-analyser ce mélange</>
-          )}
+          <ShoppingBag className="size-4" /> Commander
         </Button>
       </div>
     </div>
@@ -309,6 +303,7 @@ type Props = {
   analysis: AIAnalysis | null;
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
+  onOrderRequest: () => void;
 };
 
 export function ComposeTab({
@@ -325,6 +320,7 @@ export function ComposeTab({
   analysis,
   onAnalyze,
   analyzing,
+  onOrderRequest,
 }: Props) {
   const selectedFruits = fruits.filter((f) => selectedIngredients.has(f.id));
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
@@ -422,6 +418,7 @@ export function ComposeTab({
           onAnalyze={onAnalyze}
           analyzing={analyzing}
           canAnalyze={canAnalyze}
+          onOrderRequest={onOrderRequest}
         />
       </div>
     </div>
@@ -443,6 +440,7 @@ type SavePanelProps = {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   canAnalyze: boolean;
+  onOrderRequest: () => void;
 };
 
 export function SavePanel({
@@ -457,6 +455,7 @@ export function SavePanel({
   onAnalyze,
   analyzing,
   canAnalyze,
+  onOrderRequest,
 }: SavePanelProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -528,7 +527,7 @@ export function SavePanel({
               )}
               <Button
                 className="w-full h-11 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
-                disabled={!canAnalyze || analyzing}
+                disabled={(!canAnalyze || analyzing) ? true : undefined}
                 onClick={onAnalyze}
               >
                 {analyzing ? (
@@ -579,7 +578,7 @@ export function SavePanel({
           <Button
             size="lg"
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-2"
-            disabled={!canSave || saving}
+            disabled={(!canSave || saving) ? true : undefined}
             onClick={onSave}
           >
             {saving ? (
@@ -611,9 +610,9 @@ export function SavePanel({
               selectedFruits={selectedFruits}
               analyzing={analyzing}
               canAnalyze={canAnalyze}
-              onReanalyze={async () => {
+              onOrderRequest={() => {
                 setSheetOpen(false);
-                await onAnalyze();
+                onOrderRequest();
               }}
             />
           </SheetContent>
