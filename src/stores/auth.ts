@@ -19,12 +19,19 @@ export const useAuthStore = createStore<AuthState>((set) => ({
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const snap = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-        set({
-          firebaseUser,
-          user: snap.exists() ? (snap.data() as User) : null,
-          loading: false,
-        });
+        try {
+          const snap = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+          set({
+            firebaseUser,
+            user: snap.exists() ? (snap.data() as User) : null,
+            loading: false,
+          });
+        } catch (error) {
+          console.error(error);
+          set({
+            loading: false
+          })
+        }
       } else {
         set({ firebaseUser: null, user: null, loading: false });
       }

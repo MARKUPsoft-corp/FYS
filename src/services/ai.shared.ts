@@ -194,7 +194,19 @@ Règles de verdict :
 - beneficesCibles : liste uniquement les 2-4 bénéfices principaux réellement apportés par ce mélange
 - interactionsFruits : 2-3 points max sur les synergies chimiques ou nutritionnelles entre fruits du mélange
 - conseil : pratique et personnalisé (ex. heure, fréquence, à jeun ou non, chaud/froid, association recommandée)
-- Intègre les règles NutriFYS ci-dessus dans ton analyse`;
+- Intègre les règles NutriFYS ci-dessus dans ton analyse
+
+LANGAGE — RÈGLE ABSOLUE:
+Le client qui lira cette analyse n'est pas médecin ni nutritionniste. Rédige TOUS les champs textes (notes, interactionsFruits, conseil) dans un langage simple et accessible, comme si tu expliquais à un ami.
+- Jamais de jargon scientifique ou médical sans explication immédiate
+- Préfère des images concrètes et des mots du quotidien
+- Si un terme technique est incontournable, ajoute une courte explication entre parenthèses
+Exemples de reformulations attendues :
+  ❌ "inhibe l'enzyme CYP3A4" → ✅ "peut rendre certains médicaments plus puissants qu'attendu"
+  ❌ "propriétés anti-inflammatoires des polyphénols" → ✅ "aide le corps à mieux récupérer et à réduire les petites inflammations"
+  ❌ "charge glycémique élevée" → ✅ "fait monter le taux de sucre dans le sang assez rapidement"
+  ❌ "synergie entre les caroténoïdes et les acides gras" → ✅ "ces fruits s'associent bien : l'un aide l'autre à mieux agir dans le corps"
+  ❌ "potentiel antioxydant élevé" → ✅ "protège les cellules du corps contre le vieillissement prématuré"`;
 }
 
 // ── Response parser (shared between providers) ────────────────────────────────

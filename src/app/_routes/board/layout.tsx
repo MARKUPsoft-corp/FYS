@@ -18,6 +18,7 @@ const AppLayout: LayoutComponent = () => {
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
   useEffect(() => {
+    console.log({loading, user, isAuthRoute})
     if (!loading && !user && !isAuthRoute) {
       navigate('/auth/login');
     }
