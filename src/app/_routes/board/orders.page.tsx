@@ -570,8 +570,6 @@ const Orders: PageComponent = () => {
 
   const visible = orders.filter((o) => filterStatus === 'all' || o.status === filterStatus);
 
-  console.log({ visible, orders, user })
-
   const heroBg = isAdmin
     ? "url('https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200')"
     : "url('https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200')";
