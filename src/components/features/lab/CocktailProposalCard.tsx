@@ -101,7 +101,7 @@ export function CocktailProposalCard({
   return (
     <div className="mt-3 rounded-2xl border border-border/60 bg-background/80 overflow-hidden shadow-sm">
       <div className="px-4 py-3 bg-primary/5 border-b border-border/40 flex items-center gap-3">
-        <CompatibilityRing score={proposal.score} verdict={proposal.verdict} />
+        {/* <CompatibilityRing score={proposal.score} verdict={proposal.verdict} /> */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <FlaskConical className="size-3.5 text-primary shrink-0" />
@@ -189,7 +189,7 @@ export function CocktailProposalCard({
           size="sm"
           disabled={!hasSelection}
           onClick={() => onAnalyze(activeProposal)}
-          className="flex-1 rounded-xl h-11 font-bold text-sm gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_rgba(63,109,78,0.25)] disabled:opacity-40"
+          className="flex-1 rounded-xl h-11 p-4 font-bold text-sm gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_rgba(63,109,78,0.25)] disabled:opacity-40"
         >
           <Sparkles className="size-4" /> Analyser ce mélange
         </Button>

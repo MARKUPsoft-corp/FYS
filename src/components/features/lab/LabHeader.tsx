@@ -12,7 +12,6 @@ type Props = {
 
 const TABS: { id: LabTab; label: string; nutrifys?: boolean }[] = [
   { id: 'compose', label: 'Je compose' },
-  { id: 'supplements', label: 'Suppléments' },
   { id: 'nutrifys', label: 'compose', nutrifys: true },
 ];
 
