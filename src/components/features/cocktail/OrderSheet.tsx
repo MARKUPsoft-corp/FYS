@@ -10,6 +10,7 @@ import { DELIVERY_FEE } from '@/entities';
 import type { Cocktail } from '@/entities';
 import { createOrder } from '@/services/order';
 import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
+import { createCocktail } from '@/services/cocktail';
 
 // ── Order Sheet ───────────────────────────────────────────────────────────────
 
@@ -46,7 +47,15 @@ export function OrderSheet({
   async function handleOrder() {
     setOrdering(true);
     try {
-      await createOrder(user, cocktail, quantity);
+      if (cocktail.id === "draft") {
+        const cocktailId = await createCocktail({
+          ...cocktail,
+          createdBy: user.uid,
+        });
+        await createOrder(user, { ...cocktail, id: cocktailId }, quantity);
+      } else {
+        await createOrder(user, cocktail, quantity);
+      }
       setOrdered(true);
       onOrderSuccess?.();
     } finally {

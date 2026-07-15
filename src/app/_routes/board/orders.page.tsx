@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
 import { UserRole, OrderStatus } from '@/entities';
-import type { Order } from '@/entities';
+import type { Order, Cocktail } from '@/entities';
 import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
+import { getCocktailById } from '@/services/cocktail';
+import { VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -156,6 +158,92 @@ function OrderCard({
   );
 }
 
+// ── Cocktail info block ───────────────────────────────────────────────────────
+
+function CocktailInfoBlock({ cocktail, loading }: { cocktail: Cocktail | null | undefined; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="h-3 w-20 bg-muted rounded-full animate-pulse" />
+        <div className="rounded-2xl bg-muted h-[130px] animate-pulse" />
+      </div>
+    );
+  }
+  if (!cocktail) return null;
+
+  const analysis = cocktail.aiAnalysis;
+  const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cocktail</p>
+      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+
+        {/* Image / gradient banner */}
+        <div className="relative h-[128px] overflow-hidden">
+          {cocktail.imageUrl ? (
+            <img
+              src={cocktail.imageUrl}
+              alt={cocktail.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-5xl"
+              style={{ background: 'linear-gradient(135deg,#4A9E6A 0%,#2D6B48 60%,#3F8A5C 100%)' }}>
+              🍹
+            </div>
+          )}
+          {/* Gradient overlay for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          {/* Verdict badge */}
+          {vcfg && (
+            <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${vcfg.chip} border-transparent`}>
+              {vcfg.emoji} {vcfg.label}
+            </span>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-3.5 space-y-3">
+          {cocktail.description && (
+            <p className="text-[13px] text-muted-foreground leading-relaxed">{cocktail.description}</p>
+          )}
+
+          {/* Ingredients */}
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+              Ingrédients
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {cocktail.ingredients.map((ing) => (
+                <span
+                  key={ing.fruitId}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/40 text-accent-foreground text-[12px] font-semibold"
+                >
+                  {ing.fruitName}
+                  <span className="opacity-55 font-normal">{ing.quantityGrams}g</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* AI analysis score row */}
+          {analysis && vcfg && (
+            <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${vcfg.bg} ${vcfg.border}`}>
+              <span className={`text-[12px] font-bold ${vcfg.text}`}>
+                {vcfg.emoji} NutriFYS — {vcfg.label}
+              </span>
+              <span className={`text-[12px] font-bold tabular-nums ${vcfg.text}`}>
+                {analysis.score} / 100
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Client order detail sheet ─────────────────────────────────────────────────
 
 function ClientOrderSheet({
@@ -170,6 +258,13 @@ function ClientOrderSheet({
   onCancel: (orderId: string) => Promise<void>;
 }) {
   const [cancelling, setCancelling] = useState(false);
+
+  const { data: cocktail, isLoading: cocktailLoading } = useQuery({
+    queryKey: ['cocktail', order?.cocktailId],
+    queryFn: () => getCocktailById(order!.cocktailId),
+    enabled: !!order,
+    staleTime: 5 * 60_000,
+  });
 
   if (!order) return null;
 
@@ -200,6 +295,9 @@ function ClientOrderSheet({
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
+
+          {/* Cocktail info */}
+          <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
 
           {/* Status actuel */}
           <div className="flex items-center justify-between">
@@ -343,6 +441,13 @@ function AdminOrderSheet({
   const [updating, setUpdating] = useState<OrderStatus | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
+  const { data: cocktail, isLoading: cocktailLoading } = useQuery({
+    queryKey: ['cocktail', order?.cocktailId],
+    queryFn: () => getCocktailById(order!.cocktailId),
+    enabled: !!order,
+    staleTime: 5 * 60_000,
+  });
+
   if (!order) return null;
 
   const isCancelled = order.status === OrderStatus.CANCELLED;
@@ -386,6 +491,9 @@ function AdminOrderSheet({
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
+
+          {/* Cocktail info */}
+          <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
 
           {/* Contact client */}
           <div className="space-y-3">

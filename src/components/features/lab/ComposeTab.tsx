@@ -11,29 +11,6 @@ import {
 } from '@/components/ui/sheet';
 import type { Fruit, AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
 
-// ── Quantity stepper ──────────────────────────────────────────────────────────
-
-function QuantityStepper({ grams, onChange }: { grams: number; onChange: (g: number) => void }) {
-  return (
-    <div className="flex items-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(50, grams - 50))}
-        className="size-6 rounded-full bg-primary/15 text-primary flex items-center justify-center hover:bg-primary/25 active:scale-90 transition-all"
-      >
-        <Minus className="size-3" />
-      </button>
-      <span className="text-[11px] font-bold text-primary min-w-[38px] text-center">{grams}g</span>
-      <button
-        type="button"
-        onClick={() => onChange(grams + 50)}
-        className="size-6 rounded-full bg-primary/15 text-primary flex items-center justify-center hover:bg-primary/25 active:scale-90 transition-all"
-      >
-        <Plus className="size-3" />
-      </button>
-    </div>
-  );
-}
 
 // ── Verdict config ────────────────────────────────────────────────────────────
 

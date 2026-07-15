@@ -128,6 +128,7 @@ const FysLab: PageComponent = () => {
         },
       );
       const cocktailId = await createCocktail({
+        
         name: cocktailName.trim(),
         type: CocktailType.CUSTOM,
         createdBy: user.uid,
