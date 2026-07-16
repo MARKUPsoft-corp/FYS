@@ -40,7 +40,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
   // ── Always: core fruit interaction rules ─────────────────────────────────
   sections.push(
     `INTERACTIONS FRUITS:\n` +
-      FRUIT_INTERACTIONS.map((r) => `  • ${'rule' in r ? r.rule : ''}`).join('\n'),
+    FRUIT_INTERACTIONS.map((r) => `  • ${'rule' in r ? r.rule : ''}`).join('\n'),
   );
 
   // ── Pamplemousse: absolute critical alert (always check) ─────────────────
@@ -260,12 +260,12 @@ export function parseAnalysisResponse(raw: string): AIAnalysis {
     score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
     notes: String(parsed.notes || ''),
     profilNutritionnel: {
-      vitamineC:      parseNutrient(pn.vitamineC),
-      vitamineA:      parseNutrient(pn.vitamineA),
-      fibres:         parseNutrient(pn.fibres),
-      potassium:      parseNutrient(pn.potassium),
+      vitamineC: parseNutrient(pn.vitamineC),
+      vitamineA: parseNutrient(pn.vitamineA),
+      fibres: parseNutrient(pn.fibres),
+      potassium: parseNutrient(pn.potassium),
       sucresNaturels: parseNutrient(pn.sucresNaturels),
-      antioxydants:   parseNutrient(pn.antioxydants),
+      antioxydants: parseNutrient(pn.antioxydants),
     },
     beneficesCibles: parseBenefices(parsed.beneficesCibles),
     interactionsFruits,
@@ -324,7 +324,7 @@ Suppléments: gingembre, menthe, curcuma, chia, miel
 
 DIRECTIVES:
 1. Ne te présente PAS par ton nom à chaque réponse. Ton nom n'apparaît qu'au début d'une toute nouvelle conversation (premier message vide = historique vide). Ensuite, continue la conversation naturellement.
-2. COMPORTEMENT DE NUTRITIONNISTE THÉRAPEUTE : Ne te presse pas de proposer un cocktail ! Discute d'abord avec le client, pose-lui 1 ou 2 questions pertinentes sur ses habitudes ou son état, entraine-le dans une vraie discussion.
+2. COMPORTEMENT DE NUTRITIONNISTE THÉRAPEUTE : Ne te presse pas de proposer un cocktail ! Discute d'abord avec le client, entraine-le dans une vraie discussion jusqu'à ce qu'il te demande clairement de composer un cocktail. Tant qu'il ne t'a pas demandé de composer un cocktail ou donner l'autorisation de composer un cocktail que tu as suggéré ne le rempli pas le champ rpoposal. la discussion doit être naturelle comme avec un theurapeute. vous discuterez autant de fois tu lui posera des questions autant de fois jusqu'à ce qu'il soit satisfait. quand tu propose des fruits ne les propose pas dans le champ proposal. c'est quand il accepte ta proposition que tu rempli le champ proposal.
 3. VULGARISATION : N'utilise jamais de jargon médical ou scientifique sans l'expliquer immédiatement avec des mots très simples du quotidien et des images concrètes (ex: "ça aide vos cellules à respirer").
 4. SOLLICITE L'ACCORD : Fais des suggestions et demande l'accord du client (« Voulez-vous que je vous concocte une recette sur cette base ? »). C'est seulement lorsqu'il accepte explicitement la création que tu remplis le champ "proposal".
 5. Si l'utilisateur pose juste une question générale, réponds chaleureusement sans générer le champ "proposal".
@@ -380,7 +380,7 @@ export function buildSupplementPrompt(
   profile: HealthProfile | null,
 ): string {
   const fruitLines = ingredients.map(({ fruit, grams }) => `• ${fruit.name} (${grams}g)`).join('\n');
-  
+
   const hasNoneCondition = profile?.healthConditions.some((c) => c.toLowerCase().includes('aucune'));
   const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
 
