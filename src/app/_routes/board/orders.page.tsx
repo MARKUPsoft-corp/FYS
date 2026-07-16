@@ -13,7 +13,7 @@ import type { Order, Cocktail } from '@/entities';
 import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
 import { getCocktailById } from '@/services/cocktail';
 import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
-import { downloadPdfFromElement } from '@/lib/pdf';
+import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -345,7 +345,7 @@ function ClientOrderSheet({
               <Button
                 variant="outline"
                 className="w-full h-12 rounded-2xl font-bold gap-2"
-                onClick={() => downloadPdfFromElement(`pdf-nutrition-${order.id}`, `Fiche_NutriFYS_${order.cocktailNameSnapshot}`)}
+                onClick={() => downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot)}
               >
                 <Download className="size-4" /> Télécharger la Fiche (PDF)
               </Button>
@@ -498,7 +498,7 @@ function ClientOrderSheet({
             <Button
               variant="outline"
               className="w-full h-12 rounded-2xl font-bold gap-2"
-              onClick={() => downloadPdfFromElement(`pdf-facture-${order.id}`, `Facture_${order.id}`)}
+              onClick={() => downloadVectorFacture(order)}
             >
               <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
             </Button>
@@ -642,7 +642,7 @@ function AdminOrderSheet({
               <Button
                 variant="outline"
                 className="w-full h-12 rounded-2xl font-bold gap-2"
-                onClick={() => downloadPdfFromElement(`pdf-nutrition-${order.id}`, `Fiche_NutriFYS_${order.cocktailNameSnapshot}`)}
+                onClick={() => downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot)}
               >
                 <Download className="size-4" /> Télécharger la Fiche (PDF)
               </Button>
@@ -798,7 +798,7 @@ function AdminOrderSheet({
             <Button
               variant="outline"
               className="w-full h-12 rounded-2xl font-bold gap-2"
-              onClick={() => downloadPdfFromElement(`pdf-facture-${order.id}`, `Facture_${order.id}`)}
+              onClick={() => downloadVectorFacture(order)}
             >
               <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
             </Button>

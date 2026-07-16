@@ -17,12 +17,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { UserRole } from '@/entities/user';
 
 export function Topbar() {
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const playNotificationSound = () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {
+      console.warn("Audio generation failed", e);
+    }
+  };
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showToast, setShowToast] = useState<{ notif: AppNotification } | null>(null);
@@ -37,12 +67,15 @@ export function Topbar() {
         const unreadNew = data.find(n => !n.isRead && !toastedIds.current.has(n.id));
         if (unreadNew) {
           toastedIds.current.add(unreadNew.id);
-          // Only show toast if it's very recent (less than 10 seconds ago)
+          // Only show toast and play sound if it's very recent (less than 10 seconds ago)
           const now = Date.now();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const createdMs = unreadNew.createdAt && (unreadNew.createdAt as any).seconds 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ? (unreadNew.createdAt as any).seconds * 1000 
             : now;
           if (now - createdMs < 10000) {
+            playNotificationSound();
             setShowToast({ notif: unreadNew });
             setTimeout(() => setShowToast(null), 5000);
           }
@@ -123,8 +156,8 @@ export function Topbar() {
 
         {/* Notifications Bell */}
         {user && (
-          <DropdownMenu open={isNotifOpen} onOpenChange={setIsNotifOpen}>
-            <DropdownMenuTrigger asChild>
+          <Sheet open={isNotifOpen} onOpenChange={setIsNotifOpen}>
+            <SheetTrigger asChild>
               <button
                 type="button"
                 className="relative flex items-center justify-center size-10 rounded-xl transition-all text-muted-foreground hover:text-foreground hover:bg-muted/60 focus:outline-none"
@@ -134,24 +167,24 @@ export function Topbar() {
                   <span className="absolute top-2 right-2 size-2.5 rounded-full bg-red-500 border-2 border-background" />
                 )}
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[320px] p-0">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/20">
-                <p className="font-display font-bold text-sm">Notifications</p>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full max-w-[400px] p-0 flex flex-col">
+              <SheetHeader className="px-6 py-5 border-b border-border/40 shrink-0 text-left flex flex-row items-center justify-between">
+                <SheetTitle className="font-display text-lg">Notifications</SheetTitle>
                 {unreadCount > 0 && (
                   <button
                     type="button"
                     onClick={() => markAllNotificationsAsRead(user.uid)}
-                    className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+                    className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 mt-0"
                   >
                     <CheckCheck className="size-3" />
                     Tout marquer lu
                   </button>
                 )}
-              </div>
-              <div className="max-h-[360px] overflow-y-auto w-full flex flex-col">
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto w-full flex flex-col">
                 {notifications.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-10">
                     Aucune notification.
                   </p>
                 ) : (
@@ -161,25 +194,25 @@ export function Topbar() {
                       type="button"
                       onClick={() => handleNotifClick(n)}
                       className={cn(
-                        'flex flex-col gap-1 px-4 py-3 text-left transition-colors border-b border-border/40 last:border-0 hover:bg-muted/50 w-full',
+                        'flex flex-col gap-1.5 px-6 py-4 text-left transition-colors border-b border-border/40 last:border-0 hover:bg-muted/50 w-full',
                         !n.isRead && 'bg-primary/5'
                       )}
                     >
                       <div className="flex items-center justify-between gap-2 w-full">
-                        <span className={cn('text-xs font-bold truncate', !n.isRead ? 'text-foreground' : 'text-foreground/70')}>
+                        <span className={cn('text-sm font-bold truncate', !n.isRead ? 'text-foreground' : 'text-foreground/70')}>
                           {n.title}
                         </span>
-                        {!n.isRead && <span className="size-1.5 rounded-full bg-primary shrink-0" />}
+                        {!n.isRead && <span className="size-2 rounded-full bg-primary shrink-0" />}
                       </div>
-                      <span className={cn('text-[11px] leading-relaxed line-clamp-2', !n.isRead ? 'text-muted-foreground' : 'text-muted-foreground/60')}>
+                      <span className={cn('text-[12px] leading-relaxed', !n.isRead ? 'text-muted-foreground' : 'text-muted-foreground/60')}>
                         {n.message}
                       </span>
                     </button>
                   ))
                 )}
               </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SheetContent>
+          </Sheet>
         )}
 
         {/* Orders shortcut — customers only */}

@@ -1,45 +1,46 @@
-// Removed top-level imports of html2canvas and jspdf to avoid SSR crashes on Vercel.
-// They are imported dynamically inside the function, which only runs on the client.
-
 /**
- * Captures a DOM element precisely as rendered on screen and downloads it as a PDF.
- * Uses exact dimensions to preserve native UI proportions perfectly.
+ * NutriFYS — Vector PDF Generator
+ * Uses @react-pdf/renderer to produce true, selectable-text PDFs.
+ * All imports are dynamic to avoid SSR crashes on Vercel.
  */
-export async function downloadPdfFromElement(elementId: string, filename: string): Promise<void> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    console.error(`Element with id ${elementId} not found.`);
-    return;
-  }
 
+import type { Order } from '@/entities/order';
+import type { AIAnalysis } from '@/entities/cocktail';
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadVectorFacture(order: Order): Promise<void> {
   try {
-    // Dynamic import to prevent SSR crashes on Vercel
-    const html2canvas = (await import('html2canvas')).default;
-    const { jsPDF } = await import('jspdf');
+    const { pdf } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { FacturePDF } = await import('@/components/pdf/FacturePDF');
+    // Cast to any to bypass strict ReactElement type mismatch with @react-pdf
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blob = await pdf(React.createElement(FacturePDF, { order }) as any).toBlob();
+    triggerDownload(blob, `Facture_${order.id.slice(0, 8)}.pdf`);
+  } catch (err) {
+    console.error('Failed to generate vector PDF (Facture):', err);
+  }
+}
 
-    // scale: 2 for retina display high-res PDF
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff', // enforce solid background
-    });
-
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-    
-    // Create a precise PDF matching the DOM element footprint
-    // converting canvas css pixels to PDF pixels
-    const pdfWidth = element.offsetWidth;
-    const pdfHeight = element.offsetHeight;
-    
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'px',
-      format: [pdfWidth, pdfHeight],
-    });
-
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${filename}.pdf`);
-  } catch (error) {
-    console.error('Failed to generate PDF:', error);
+export async function downloadVectorNutrition(analysis: AIAnalysis, cocktailName?: string): Promise<void> {
+  try {
+    const { pdf } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { NutritionPDF } = await import('@/components/pdf/NutritionPDF');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blob = await pdf(React.createElement(NutritionPDF, { analysis, cocktailName }) as any).toBlob();
+    triggerDownload(blob, `Fiche_NutriFYS_${cocktailName ?? 'cocktail'}.pdf`);
+  } catch (err) {
+    console.error('Failed to generate vector PDF (Nutrition):', err);
   }
 }
