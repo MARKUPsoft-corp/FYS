@@ -19,6 +19,7 @@ export type NavItem = {
   icon: LucideIcon;
   roles: UserRole[];
   showInMobileTab: boolean;
+  showInDesktopNav?: boolean; // default: true
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -54,6 +55,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ShoppingBag,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: false,
+    showInDesktopNav: false, // visible via the topbar icon only
   },
   {
     key: 'fys-lab',
@@ -124,7 +126,7 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export function getNavItemsForRole(role: UserRole): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+  return NAV_ITEMS.filter((item) => item.roles.includes(role) && item.showInDesktopNav !== false);
 }
 
 export function getMobileNavItems(role: UserRole): NavItem[] {
