@@ -1,7 +1,7 @@
 import { PageComponent, useNavigate } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
-  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles
+  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import type { Order, Cocktail } from '@/entities';
 import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
 import { getCocktailById } from '@/services/cocktail';
 import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
+import { downloadPdfFromElement } from '@/lib/pdf';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -336,11 +337,23 @@ function ClientOrderSheet({
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
         {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <NutritionalView analysis={order.aiAnalysisSnapshot} />
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div id={`pdf-nutrition-${order.id}`} className="px-6 py-5 pb-8 bg-background shrink-0">
+              <NutritionalView analysis={order.aiAnalysisSnapshot} />
+            </div>
+            <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-2xl font-bold gap-2"
+                onClick={() => downloadPdfFromElement(`pdf-nutrition-${order.id}`, `Fiche_NutriFYS_${order.cocktailNameSnapshot}`)}
+              >
+                <Download className="size-4" /> Télécharger la Fiche (PDF)
+              </Button>
+            </div>
           </div>
         ) : (
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
           {/* Cocktail info */}
           <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
@@ -410,6 +423,38 @@ function ClientOrderSheet({
             </div>
           )}
 
+          {/* Informations de Livraison */}
+          {order.deliveryDetails && (
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Informations de Livraison</p>
+              <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
+                <div className="flex gap-3">
+                  <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] font-bold text-foreground">Quartier</p>
+                    <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.district}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Phone className="size-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] font-bold text-foreground">Téléphone (Livraison)</p>
+                    <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.phone}</p>
+                  </div>
+                </div>
+                {order.deliveryDetails.instructions && (
+                  <div className="flex gap-3">
+                    <MessageSquare className="size-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[13px] font-bold text-foreground">Indications</p>
+                      <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.instructions}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Résumé commande */}
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Récapitulatif</p>
@@ -447,6 +492,16 @@ function ClientOrderSheet({
                 </span>
               </div>
             </div>
+          </div>
+          </div>
+          <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-2xl font-bold gap-2"
+              onClick={() => downloadPdfFromElement(`pdf-facture-${order.id}`, `Facture_${order.id}`)}
+            >
+              <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
+            </Button>
           </div>
         </div>
         )}
@@ -579,11 +634,23 @@ function AdminOrderSheet({
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
         {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <NutritionalView analysis={order.aiAnalysisSnapshot} />
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div id={`pdf-nutrition-${order.id}`} className="px-6 py-5 pb-8 bg-background shrink-0">
+              <NutritionalView analysis={order.aiAnalysisSnapshot} />
+            </div>
+            <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-2xl font-bold gap-2"
+                onClick={() => downloadPdfFromElement(`pdf-nutrition-${order.id}`, `Fiche_NutriFYS_${order.cocktailNameSnapshot}`)}
+              >
+                <Download className="size-4" /> Télécharger la Fiche (PDF)
+              </Button>
+            </div>
           </div>
         ) : (
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
           {/* Cocktail info */}
           <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
@@ -619,6 +686,35 @@ function AdminOrderSheet({
                   <span className="text-[13px] font-semibold text-primary">{order.userPhoneSnapshot}</span>
                   <span className="ml-auto text-[11px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded-full">Appeler</span>
                 </a>
+              )}
+              {order.deliveryDetails && (
+                <div className="p-4 bg-muted/10">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
+                    Adresse de Livraison
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-[13px] font-semibold text-foreground leading-snug">
+                        {order.deliveryDetails.district}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Phone className="size-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-[13px] font-semibold text-foreground leading-snug">
+                        {order.deliveryDetails.phone}
+                      </span>
+                    </div>
+                    {order.deliveryDetails.instructions && (
+                      <div className="flex items-start gap-3">
+                        <MessageSquare className="size-4 text-primary shrink-0 mt-0.5" />
+                        <span className="text-[12px] text-muted-foreground leading-relaxed">
+                          {order.deliveryDetails.instructions}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -696,6 +792,16 @@ function AdminOrderSheet({
                 </span>
               </div>
             </div>
+          </div>
+          </div>
+          <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-2xl font-bold gap-2"
+              onClick={() => downloadPdfFromElement(`pdf-facture-${order.id}`, `Facture_${order.id}`)}
+            >
+              <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
+            </Button>
           </div>
         </div>
         )}

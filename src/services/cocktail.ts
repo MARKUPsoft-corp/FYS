@@ -15,6 +15,7 @@ import { db } from '@/lib/firebase';
 import { COLLECTIONS, CocktailType } from '@/entities';
 import type { Cocktail, AIAnalysis } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage } from './storage';
+import { notifyAdmins } from '@/services/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -118,10 +119,23 @@ export async function getUserCocktails(uid: string): Promise<Cocktail[]> {
 }
 
 export async function toggleCocktailPublic(id: string, isPublic: boolean): Promise<void> {
-  await updateDoc(doc(db, COLLECTIONS.COCKTAILS, id), {
+  const cocktailRef = doc(db, COLLECTIONS.COCKTAILS, id);
+  await updateDoc(cocktailRef, {
     isPublic,
     updatedAt: serverTimestamp(),
   });
+
+  if (isPublic) {
+    const snap = await getDoc(cocktailRef);
+    if (snap.exists()) {
+      const cocktail = snap.data() as Cocktail;
+      notifyAdmins({
+        title: 'Nouveau cocktail rendu public 🍹',
+        message: `La recette « ${cocktail.name} » a été partagée dans le catalogue.`,
+        link: '/board/cocktails',
+      }).catch(console.error);
+    }
+  }
 }
 
 export async function cloneCocktailFromCatalogue(

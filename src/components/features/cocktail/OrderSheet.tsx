@@ -1,5 +1,6 @@
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
+  MapPin, Phone, MessageSquare
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -39,9 +40,15 @@ export function OrderSheet({
   const [customName, setCustomName] = useState(cocktail.name);
   const [isEditingName, setIsEditingName] = useState(false);
 
+  const [district, setDistrict] = useState('');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [instructions, setInstructions] = useState('');
+
   useEffect(() => {
     setCustomName(cocktail.name);
   }, [cocktail.name]);
+
+  const canOrder = district.trim().length > 0 && phone.trim().length > 0;
 
   const hasAnalysis = !!cocktail.aiAnalysis;
   const analysis = cocktail.aiAnalysis;
@@ -54,15 +61,16 @@ export function OrderSheet({
   async function handleOrder() {
     setOrdering(true);
     try {
+      const details = { district, phone, instructions };
       if (cocktail.id === "draft") {
         const cocktailId = await createCocktail({
           ...cocktail,
           name: customName,
           createdBy: user.uid,
         });
-        await createOrder(user, { ...cocktail, name: customName, id: cocktailId }, quantity);
+        await createOrder(user, { ...cocktail, name: customName, id: cocktailId }, quantity, details);
       } else {
-        await createOrder(user, { ...cocktail, name: customName }, quantity);
+        await createOrder(user, { ...cocktail, name: customName }, quantity, details);
       }
       setOrdered(true);
       onOrderSuccess?.();
@@ -245,6 +253,50 @@ export function OrderSheet({
                 </div>
               </div>
 
+              {/* Informations de livraison */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Livraison
+                </p>
+                <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <MapPin className="size-3.5 text-primary" /> Quartier exact
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Ex: Bonamoussadi, Carrefour..."
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <Phone className="size-3.5 text-primary" /> Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Ex: 6 90 00 00 00"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <MessageSquare className="size-3.5 text-primary" /> Indications supplémentaires
+                    </label>
+                    <textarea
+                      className="w-full h-20 p-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                      placeholder="Ex: Derrière la pharmacie, portail noir..."
+                      value={instructions}
+                      onChange={(e) => setInstructions(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Récap total */}
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
@@ -276,12 +328,14 @@ export function OrderSheet({
             <div className="shrink-0 border-t border-border/40 px-6 py-5">
               <Button
                 size="lg"
-                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all"
-                disabled={ordering}
+                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] disabled:opacity-50 active:scale-95 transition-all"
+                disabled={ordering || !canOrder}
                 onClick={handleOrder}
               >
                 {ordering ? (
                   <><Loader2 className="size-5 animate-spin" /> Commande en cours…</>
+                ) : !canOrder ? (
+                  <>Remplissez l'adresse de livraison</>
                 ) : (
                   <><ShoppingBag className="size-5" /> Commander · {total.toLocaleString()} XAF</>
                 )}

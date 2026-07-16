@@ -4,3 +4,4 @@ export * from './cocktail';
 export * from './order';
 export * from './constants';
 export * from './chat';
+export * from './notification';

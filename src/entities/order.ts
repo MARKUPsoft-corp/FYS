@@ -24,6 +24,11 @@ export interface Order {
   deliveryFee: number;
   totalPrice: number;            // cocktailPriceSnapshot * quantity + deliveryFee
   status: OrderStatus;
+  deliveryDetails?: {
+    district: string;
+    phone: string;
+    instructions: string;
+  };
   aiAnalysisSnapshot?: AIAnalysis;
   createdAt: Timestamp;
   updatedAt: Timestamp;
