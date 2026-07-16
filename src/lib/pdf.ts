@@ -1,5 +1,5 @@
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+// Removed top-level imports of html2canvas and jspdf to avoid SSR crashes on Vercel.
+// They are imported dynamically inside the function, which only runs on the client.
 
 /**
  * Captures a DOM element precisely as rendered on screen and downloads it as a PDF.
@@ -13,6 +13,10 @@ export async function downloadPdfFromElement(elementId: string, filename: string
   }
 
   try {
+    // Dynamic import to prevent SSR crashes on Vercel
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
+
     // scale: 2 for retina display high-res PDF
     const canvas = await html2canvas(element, {
       scale: 2,
