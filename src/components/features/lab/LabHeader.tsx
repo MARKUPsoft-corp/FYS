@@ -1,6 +1,8 @@
 import { Link } from 'rasengan';
 import { ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
+import { NotificationBell } from '@/components/common/NotificationBell';
 
 export type LabTab = 'compose' | 'supplements' | 'nutrifys';
 
@@ -33,12 +35,18 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
       <div className="absolute inset-0 bg-gradient-to-b from-[#28422F]/95 via-gray-900/85 to-gray-950/95" />
 
       <div className={cn('relative z-10 mx-auto w-full', compact ? 'max-w-[1480px]' : 'max-w-6xl')}>
-        <Link
-          to="/board"
-          className="inline-flex items-center text-white/80 hover:text-white transition-colors text-sm font-medium mt-5 mb-4"
-        >
-          <ChevronLeft className="size-4 mr-1" /> Retour
-        </Link>
+        <div className="flex items-center justify-between mt-5 mb-4 w-full">
+          <Link
+            to="/board"
+            className="inline-flex items-center text-white/80 hover:text-white transition-colors text-sm font-medium"
+          >
+            <ChevronLeft className="size-4 mr-1" /> Retour
+          </Link>
+          <div className="flex items-center gap-3">
+            <ButtonTheme />
+            <NotificationBell />
+          </div>
+        </div>
 
         <div className="flex flex-col lg:flex-row items-center lg:justify-between gap-5 text-center lg:text-left mb-3">
           <div>

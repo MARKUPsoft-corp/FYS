@@ -1,6 +1,6 @@
 import {
   collection, doc, getDocs, setDoc, query, where, onSnapshot,
-  updateDoc, serverTimestamp, writeBatch,
+  updateDoc, serverTimestamp, writeBatch, deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { AppNotification, CreateNotificationPayload } from '@/entities/notification';
@@ -92,4 +92,17 @@ export function subscribeToNotifications(userId: string, callback: (notification
   }, (err) => {
     console.error('Failed to subscribe to notifications:', err);
   });
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTION_NAME, id));
+}
+
+export async function deleteAllNotifications(userId: string): Promise<void> {
+  const q = query(collection(db, COLLECTION_NAME), where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return;
+  const batch = writeBatch(db);
+  snapshot.forEach((docSnap) => batch.delete(docSnap.ref));
+  await batch.commit();
 }

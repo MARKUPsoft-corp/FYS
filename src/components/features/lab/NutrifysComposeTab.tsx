@@ -6,7 +6,10 @@ import {
   MessageSquare,
   History,
   Plus,
-  ChevronRight,
+  Trash2,
+  Edit2,
+  Check,
+  X as XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -16,7 +19,7 @@ import type { CocktailProposal } from '@/data/nutrifys-chat';
 import { chatCocktail } from '@/services/ai';
 import { useAuthStore } from '@/stores/auth';
 import { getProfile } from '@/services/profile';
-import { createSession, getSessions, getSessionMessages, saveChatMessageToSession } from '@/services/chat';
+import { createSession, getSessions, getSessionMessages, saveChatMessageToSession, deleteSession, deleteAllSessions, renameSession } from '@/services/chat';
 import { Timestamp } from 'firebase/firestore';
 import type { HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
 import { cn } from '@/lib/utils';
@@ -294,6 +297,8 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loadingSession, setLoadingSession] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const user = useAuthStore((s) => s.user);
 
@@ -323,7 +328,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
 
   /** Load an existing session from history */
   async function openSession(sessionId: string) {
-    if (!user || loadingSession) return;
+    if (!user || loadingSession || editingSessionId === sessionId) return;
     setLoadingSession(sessionId);
     try {
       const msgs = await getSessionMessages(user.uid, sessionId);
@@ -337,6 +342,27 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
     } finally {
       setLoadingSession(null);
     }
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!user) return;
+    await deleteSession(user.uid, sessionId);
+    setSessions((prev) => prev.filter(s => s.id !== sessionId));
+    if (currentSessionId === sessionId) startNewConversation();
+  }
+
+  async function handleDeleteAllSessions() {
+    if (!user) return;
+    await deleteAllSessions(user.uid);
+    setSessions([]);
+    startNewConversation();
+  }
+
+  async function handleRenameSubmit(sessionId: string) {
+    if (!user || !editTitle.trim()) return;
+    await renameSession(user.uid, sessionId, editTitle);
+    setSessions((prev) => prev.map(s => s.id === sessionId ? { ...s, title: editTitle.trim() } : s));
+    setEditingSessionId(null);
   }
 
   async function sendMessage(text: string) {
@@ -400,7 +426,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
         <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100vh-200px)]">
           <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70vh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-24 lg:mb-0">
 
-            <div className="bg-[#28422F] px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
+            <div className="bg-emerald-900/40 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center border border-accent/30">
                   <Sparkles className="size-4 text-[#E0982E]" />
@@ -433,14 +459,25 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col bg-card border-l border-border/40">
-                    <SheetHeader className="px-5 py-4 border-b border-border/40 bg-muted/20 shrink-0">
-                      <SheetTitle className="font-display flex items-center gap-2">
+                    <SheetHeader className="px-5 py-4 border-b border-border/40 bg-muted/20 shrink-0 relative">
+                      <SheetTitle className="font-display flex items-center gap-2 pr-20">
                         <History className="size-4 text-primary" />
                         Mes conversations
                       </SheetTitle>
                       <SheetDescription className="text-xs">
                         Cliquez sur une conversation pour la rouvrir.
                       </SheetDescription>
+
+                      {sessions.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDeleteAllSessions}
+                          className="absolute right-4 top-4 h-8 px-2 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="size-3 mr-1" /> Vider
+                        </Button>
+                      )}
                     </SheetHeader>
 
                     <div className="flex-1 overflow-y-auto py-3">
@@ -451,27 +488,85 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                         </div>
                       ) : (
                         sessions.map((session) => (
-                          <button
+                          <div
                             key={session.id}
-                            type="button"
-                            disabled={loadingSession === session.id}
-                            onClick={() => openSession(session.id)}
                             className={cn(
-                              'w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-muted/50 transition-colors border-b border-border/30 last:border-none',
+                              'w-full flex items-center gap-2 pl-4 pr-2 py-2 border-b border-border/30 last:border-none group',
                               currentSessionId === session.id && 'bg-primary/5 border-l-2 border-l-primary',
+                              editingSessionId === session.id ? 'bg-muted/30' : 'hover:bg-muted/50 cursor-pointer'
                             )}
+                            onClick={() => {
+                              if (editingSessionId !== session.id) openSession(session.id);
+                            }}
                           >
-                            <MessageSquare className="size-4 text-primary/60 shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-foreground truncate">{session.title}</p>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {formatTime(session.updatedAt)} • {session.messageCount} messages
-                              </p>
+                            <MessageSquare className="size-4 text-primary/60 shrink-0" />
+
+                            <div className="flex-1 min-w-0 pr-2">
+                              {editingSessionId === session.id ? (
+                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    autoFocus
+                                    className="w-full text-sm font-semibold bg-background border border-primary/40 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRenameSubmit(session.id);
+                                      if (e.key === 'Escape') setEditingSessionId(null);
+                                    }}
+                                  />
+                                  <button onClick={() => handleRenameSubmit(session.id)} className="p-1.5 bg-primary rounded text-white shadow-sm hover:opacity-90">
+                                    <Check className="size-3.5" />
+                                  </button>
+                                  <button onClick={() => setEditingSessionId(null)} className="p-1.5 bg-muted rounded hover:bg-muted/80">
+                                    <XIcon className="size-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-semibold text-foreground truncate">{session.title}</p>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    {formatTime(session.updatedAt)} • {session.messageCount} msgs
+                                  </p>
+                                </>
+                              )}
                             </div>
-                            {loadingSession === session.id
-                              ? <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-                              : <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />}
-                          </button>
+
+                            {editingSessionId !== session.id && (
+                              <div className="flex items-center shrink-0">
+                                {loadingSession === session.id ? (
+                                  <Loader2 className="size-4 animate-spin text-muted-foreground mr-3" />
+                                ) : (
+                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditTitle(session.title);
+                                        setEditingSessionId(session.id);
+                                      }}
+                                      className="size-7 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                                      title="Renommer la conversation"
+                                    >
+                                      <Edit2 className="size-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSession(session.id);
+                                      }}
+                                      className="size-7 text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                      title="Supprimer la conversation"
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         ))
                       )}
                     </div>

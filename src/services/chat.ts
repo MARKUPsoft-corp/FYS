@@ -1,6 +1,6 @@
 import {
   collection, doc, query, orderBy, getDocs, setDoc,
-  updateDoc, Timestamp,
+  updateDoc, Timestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
@@ -75,4 +75,33 @@ export async function saveChatMessage(uid: string, message: ChatMessageEntity) {
   const collectionRef = collection(db, COLLECTIONS.USERS, uid, COLLECTIONS.CHATS);
   const docRef = doc(collectionRef, message.id);
   await setDoc(docRef, message);
+}
+
+/** Renames a conversation session title. */
+export async function renameSession(uid: string, sessionId: string, newTitle: string): Promise<void> {
+  const sessionDocRef = doc(conversationsRef(uid), sessionId);
+  await updateDoc(sessionDocRef, { title: newTitle.trim() });
+}
+
+/** Deletes a conversation session and all its messages. */
+export async function deleteSession(uid: string, sessionId: string): Promise<void> {
+  // Delete all messages first
+  const msgs = await getDocs(messagesRef(uid, sessionId));
+  const batch = writeBatch(db);
+  msgs.forEach((m) => batch.delete(m.ref));
+  // Then delete the session document
+  batch.delete(doc(conversationsRef(uid), sessionId));
+  await batch.commit();
+}
+
+/** Deletes ALL conversation sessions and messages for a user. */
+export async function deleteAllSessions(uid: string): Promise<void> {
+  const sessions = await getDocs(conversationsRef(uid));
+  const batch = writeBatch(db);
+  for (const sessionDoc of sessions.docs) {
+    const msgs = await getDocs(messagesRef(uid, sessionDoc.id));
+    msgs.forEach((m) => batch.delete(m.ref));
+    batch.delete(sessionDoc.ref);
+  }
+  await batch.commit();
 }

@@ -14,6 +14,9 @@ import { ProfileCompletionCard } from '@/components/features/profile/ProfileComp
 import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
 import { useAuthStore } from '@/stores/auth';
+import { getFruits } from '@/services/fruit';
+import { useQuery } from '@tanstack/react-query';
+import type { Fruit } from '@/entities';
 
 const SLIDES = [
   {
@@ -112,26 +115,7 @@ const CREATIONS = [
   },
 ];
 
-const FRUITS = [
-  { name: 'Orange Sanguine', desc: 'Riche en Vitamine C', img: 'https://images.pexels.com/photos/42059/citrus-diet-food-fresh-42059.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Grenade Juteuse', desc: 'Antioxydants +++', img: 'https://images.pexels.com/photos/1611078/pexels-photo-1611078.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Fraise des bois', desc: 'Gourmandise pure', img: 'https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Citron Vert', desc: 'Détoxifiant', img: 'https://images.pexels.com/photos/2090902/pexels-photo-2090902.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Kiwi Zespri', desc: 'Fibre & Énergie', img: 'https://images.pexels.com/photos/51312/kiwi-fruit-vitamins-healthy-eating-51312.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Ananas Victoria', desc: 'Brûle-graisses', img: 'https://images.pexels.com/photos/461754/pexels-photo-461754.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Mangue', desc: 'Douceur dorée', img: 'https://images.pexels.com/photos/2294471/pexels-photo-2294471.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Pomme Granny', desc: 'Acidulée & Fraîche', img: 'https://images.pexels.com/photos/103566/pexels-photo-103566.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Myrtille', desc: 'Super-fruit', img: 'https://images.pexels.com/photos/1153655/pexels-photo-1153655.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Framboise', desc: 'Délicatesse', img: 'https://images.pexels.com/photos/60021/raspberry-fruit-berries-healthy-60021.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Pamplemousse', desc: 'Tonique matinal', img: 'https://images.pexels.com/photos/161559/grapefruit-citrus-fresh-fruit-161559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Melon Charentais', desc: 'Gorgé de soleil', img: 'https://images.pexels.com/photos/1314550/pexels-photo-1314550.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Pastèque', desc: 'Désaltérante', img: 'https://images.pexels.com/photos/1314550/pexels-photo-1314550.jpeg?auto=compress&cs=tinysrgb&w=600' }, 
-  { name: 'Pêche Plate', desc: 'Jus exquis', img: 'https://images.pexels.com/photos/592055/pexels-photo-592055.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Banane', desc: 'Texture crémeuse', img: 'https://images.pexels.com/photos/2872755/pexels-photo-2872755.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Cerise Burlat', desc: 'Ronde & Suave', img: 'https://images.pexels.com/photos/109274/pexels-photo-109274.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Gingembre', desc: 'Coup de fouet', img: 'https://images.pexels.com/photos/10543240/pexels-photo-10543240.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { name: 'Carotte', desc: 'Bonne mine', img: 'https://images.pexels.com/photos/143133/pexels-photo-143133.jpeg?auto=compress&cs=tinysrgb&w=600' },
-];
+
 
 type Props = { name: string };
 
@@ -203,11 +187,16 @@ function HeroSlider() {
 }
 
 export function CustomerHome({ name }: Props) {
-  const [selectedFruit, setSelectedFruit] = useState<typeof FRUITS[0] | null>(null);
+  const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { user } = useAuthStore();
   const { profile, save: saveProfile } = useProfileStore();
   const profileComplete = isProfileComplete(profile);
+
+  const { data: storeFruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+  });
 
   async function handleOnboardingComplete(data: {
     healthConditions: string[];
@@ -335,18 +324,18 @@ export function CustomerHome({ name }: Props) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-8">
             
-            {FRUITS.map((fruit, idx) => (
+            {storeFruits.map((fruit) => (
               <div 
-                key={idx} 
+                key={fruit.id} 
                 onClick={() => setSelectedFruit(fruit)}
                 className="bg-card w-full p-3 rounded-[2rem] border border-border/40 shadow-sm hover:shadow-md transition-shadow group flex flex-col items-center cursor-pointer"
               >
                  <div 
-                   className="w-full aspect-square rounded-[1.5rem] shadow-inner mb-3 bg-cover bg-center transition-transform group-hover:scale-105"
-                   style={{ backgroundImage: `url('${fruit.img}')` }}
+                   className="w-full aspect-square rounded-[1.5rem] shadow-inner mb-3 bg-cover bg-center transition-transform group-hover:scale-105 bg-muted"
+                   style={{ backgroundImage: fruit.imageUrl ? `url('${fruit.imageUrl}')` : 'none' }}
                  />
                  <h5 className="font-bold text-sm text-foreground text-center line-clamp-1 w-full px-1">{fruit.name}</h5>
-                 <p className="text-[11px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.desc}</p>
+                 <p className="text-[11px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.benefits?.[0] || 'Fruit Naturel'}</p>
                  
                  <Button 
                    variant="ghost" 
@@ -379,31 +368,60 @@ export function CustomerHome({ name }: Props) {
       <Drawer open={!!selectedFruit} onOpenChange={(open) => !open && setSelectedFruit(null)}>
         <DrawerContent className="max-w-md mx-auto">
           {selectedFruit && (
-            <div className="px-6 py-4 flex flex-col items-center">
+            <div className="px-6 py-5 flex flex-col items-center overflow-y-auto max-h-[85vh] scrollbar-hide pt-8">
               <div 
-                className="w-40 aspect-square rounded-[2rem] shadow-xl mb-4 bg-cover bg-center border-4 border-background -mt-16 z-10"
-                style={{ backgroundImage: `url('${selectedFruit.img}')` }}
+                className="w-40 aspect-square rounded-[2rem] shadow-xl mb-4 bg-cover bg-center border-4 border-background -mt-20 z-10 bg-muted"
+                style={{ backgroundImage: selectedFruit.imageUrl ? `url('${selectedFruit.imageUrl}')` : 'none' }}
               />
               <DrawerHeader className="pb-2 w-full">
-                <DrawerTitle className="text-3xl font-display font-bold text-center text-foreground">
+                <DrawerTitle className="text-3xl font-display font-bold text-center text-foreground mt-2">
                   {selectedFruit.name}
                 </DrawerTitle>
-                <DrawerDescription className="text-center font-medium text-base mt-2">
-                  {selectedFruit.desc}
+                <DrawerDescription className="text-center font-medium text-base mt-2 whitespace-pre-wrap">
+                  {selectedFruit.benefits?.join(' • ') || 'Sélection 100% naturel pressée à froid.'}
                 </DrawerDescription>
               </DrawerHeader>
-              <div className="w-full mt-4 space-y-4">
-                <p className="bg-primary/5 p-4 rounded-[1.5rem] text-sm text-center text-foreground font-medium border border-primary/10">
-                  100% Naturel, pressé à froid pour préserver un maximum de nutriments et de vitamines essentiels.
-                </p>
-                <div className="flex gap-3">
-                  <Button 
-                    className="w-full rounded-full font-bold h-14 bg-secondary text-white hover:bg-secondary/90 text-base" 
-                    size="lg" 
-                  >
-                    Ajouter au panier
-                  </Button>
-                </div>
+
+              <div className="w-full mt-2 flex items-center justify-center gap-4 text-sm font-bold">
+                <span className="bg-muted px-3 py-1 rounded-full text-muted-foreground text-xs uppercase tracking-widest">{selectedFruit.cocktailRole || 'BASE'}</span>
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">{selectedFruit.nutrients?.macros?.calories_kcal || 50} kcal / 100g</span>
+              </div>
+
+              <div className="w-full mt-6 space-y-4 text-left mb-6">
+                {selectedFruit.healthProfile?.benefitBadges && selectedFruit.healthProfile.benefitBadges.length > 0 && (
+                  <div>
+                    <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">Bienfaits (NutriFYS)</h4>
+                    <ul className="flex flex-wrap gap-2">
+                      {selectedFruit.healthProfile.benefitBadges.map((b, i) => (
+                        <li key={i} className="text-[11px] bg-secondary/10 text-secondary font-bold px-2 py-1 rounded border border-secondary/20">
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {selectedFruit.healthProfile?.nutritionistNote && (
+                  <div className="pt-2">
+                    <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">Conseil du Nutritionniste</h4>
+                    <p className="text-sm font-medium leading-relaxed bg-primary/5 p-4 rounded-[1.5rem] border border-primary/10">
+                      {selectedFruit.healthProfile.nutritionistNote}
+                    </p>
+                  </div>
+                )}
+                
+                {selectedFruit.warnings && selectedFruit.warnings.length > 0 && (
+                  <div className="pt-2">
+                    <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">Allégations & Précautions</h4>
+                    <ul className="flex flex-wrap gap-2">
+                      {selectedFruit.warnings.map((w, i) => (
+                        <li key={i} className="text-[11px] bg-amber-500/10 text-amber-600 font-semibold px-2 py-1 rounded border border-amber-500/20">
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
