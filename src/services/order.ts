@@ -32,6 +32,7 @@ export async function createOrder(
     deliveryFee: DELIVERY_FEE,
     totalPrice: cocktail.totalPrice * quantity + DELIVERY_FEE,
     status: OrderStatus.PENDING,
+    ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
   };
   await setDoc(ref, {
     ...order,

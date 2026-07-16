@@ -1,9 +1,9 @@
 import { PageComponent, useNavigate } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
-  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight,
+  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,7 +12,7 @@ import { UserRole, OrderStatus } from '@/entities';
 import type { Order, Cocktail } from '@/entities';
 import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
 import { getCocktailById } from '@/services/cocktail';
-import { VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
+import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -258,6 +258,11 @@ function ClientOrderSheet({
   onCancel: (orderId: string) => Promise<void>;
 }) {
   const [cancelling, setCancelling] = useState(false);
+  const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
+
+  useEffect(() => {
+    if (open) setActiveTab('order');
+  }, [open]);
 
   const { data: cocktail, isLoading: cocktailLoading } = useQuery({
     queryKey: ['cocktail', order?.cocktailId],
@@ -287,13 +292,54 @@ function ClientOrderSheet({
 
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
           <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
-            Commande du {formatDate(order.createdAt as unknown as { seconds: number })}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-[13px] text-muted-foreground">
+              Commande du {formatDate(order.createdAt as unknown as { seconds: number })}
+            </p>
+            {order.aiAnalysisSnapshot && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
+                {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].label}
+              </span>
+            )}
+          </div>
+          
+          {order.aiAnalysisSnapshot && (
+            <div className="flex gap-1 bg-muted rounded-xl p-1 mt-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab('order')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                  activeTab === 'order'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Package className="size-3.5" />
+                Détails commande
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('nutrition')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                  activeTab === 'nutrition'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Sparkles className="size-3.5" />
+                Fiche NutriFYS
+              </button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
+        {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <NutritionalView analysis={order.aiAnalysisSnapshot} />
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
 
           {/* Cocktail info */}
@@ -403,6 +449,7 @@ function ClientOrderSheet({
             </div>
           </div>
         </div>
+        )}
 
         {/* Footer — cancel */}
         {canCancel && (
@@ -440,6 +487,11 @@ function AdminOrderSheet({
 }) {
   const [updating, setUpdating] = useState<OrderStatus | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
+
+  useEffect(() => {
+    if (open) setActiveTab('order');
+  }, [open]);
 
   const { data: cocktail, isLoading: cocktailLoading } = useQuery({
     queryKey: ['cocktail', order?.cocktailId],
@@ -480,16 +532,57 @@ function AdminOrderSheet({
           <div className="flex items-start justify-between gap-2">
             <div>
               <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
-              <p className="text-[13px] text-muted-foreground mt-0.5">
-                {formatDate(order.createdAt as unknown as { seconds: number })}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[13px] text-muted-foreground">
+                  {formatDate(order.createdAt as unknown as { seconds: number })}
+                </p>
+                {order.aiAnalysisSnapshot && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
+                    {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].label}
+                  </span>
+                )}
+              </div>
             </div>
             <StatusBadge status={order.status} size="lg" />
           </div>
+
+          {order.aiAnalysisSnapshot && (
+            <div className="flex gap-1 bg-muted rounded-xl p-1 mt-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab('order')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                  activeTab === 'order'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Package className="size-3.5" />
+                Détails commande
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('nutrition')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                  activeTab === 'nutrition'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Sparkles className="size-3.5" />
+                Fiche NutriFYS
+              </button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="border-b border-border/40 mt-4 shrink-0" />
 
+        {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <NutritionalView analysis={order.aiAnalysisSnapshot} />
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
 
           {/* Cocktail info */}
@@ -605,6 +698,7 @@ function AdminOrderSheet({
             </div>
           </div>
         </div>
+        )}
 
         {/* Footer — cancel (admin) */}
         {!isCancelled && !isDelivered && (
@@ -687,7 +781,7 @@ const Orders: PageComponent = () => {
 
       {/* Hero Banner */}
       <div
-        className="relative w-full h-[220px] flex items-end px-6 pb-8 mb-12 overflow-hidden"
+        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
         style={{ backgroundImage: heroBg, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -700,7 +794,7 @@ const Orders: PageComponent = () => {
         </div>
       </div>
 
-      <div className="px-4 space-y-6">
+      <div className="px-3 md:px-4 space-y-6">
 
         {/* Section title */}
         <div className="text-center">

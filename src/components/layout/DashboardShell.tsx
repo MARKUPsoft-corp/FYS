@@ -19,7 +19,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           'transition-all duration-300 ease-in-out',
         )}
       >
-        <div className="w-full max-w-[1800px] mx-auto px-4 lg:px-6">
+        <div className="w-full max-w-[1800px] mx-auto px-3 md:px-4 lg:px-6">
           {children}
         </div>
       </main>

@@ -1,5 +1,5 @@
 import { PageComponent, useNavigate } from 'rasengan';
-import { Save } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
 import { ComposeTab } from '@/components/features/lab/ComposeTab';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
 import { CocktailType, BASE_COCKTAIL_PRICE } from '@/entities';
@@ -28,6 +30,7 @@ const FysLab: PageComponent = () => {
 
   // ── Compose tab state ──────────────────────────────────────────────────────
   const [selectedIngredients, setSelectedIngredients] = useState<Map<string, number>>(new Map());
+  const [showRenameSheet, setShowRenameSheet] = useState(false);
   const [cocktailName, setCocktailName] = useState('');
   const [saving, setSaving] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
@@ -241,9 +244,7 @@ const FysLab: PageComponent = () => {
                 : { background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }
               }
               disabled={selectedIngredients.size === 0 || analyzing}
-              onClick={analysis ? () => {
-                // TODO: Implement save logic
-              } : () => handleAnalyze()}
+              onClick={analysis ? () => setShowRenameSheet(true) : () => handleAnalyze()}
             >
               {analyzing
                 ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> Analyse…</>
@@ -255,6 +256,44 @@ const FysLab: PageComponent = () => {
           </div>
         </div>
       )}
+
+      {/* ── Mobile Rename Sheet ──────────────────────────────────────────────── */}
+      <Sheet open={showRenameSheet} onOpenChange={setShowRenameSheet}>
+        <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
+          <SheetHeader>
+            <SheetTitle className="font-display text-xl text-center">Nommez votre création</SheetTitle>
+            <SheetDescription className="text-center text-xs">
+              Donnez un nom unique à votre cocktail avant de le sauvegarder.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4">
+            <Input
+              value={cocktailName}
+              onChange={(e) => setCocktailName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && cocktailName.trim() && !saving) {
+                  setShowRenameSheet(false);
+                  handleSave();
+                }
+              }}
+              placeholder="Ex: Boost Matinal..."
+              className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
+              autoFocus
+            />
+            <Button
+              size="lg"
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95"
+              disabled={!cocktailName.trim() || saving}
+              onClick={() => {
+                setShowRenameSheet(false);
+                handleSave();
+              }}
+            >
+              {saving ? <><Loader2 className="size-4 animate-spin" /> Enregistrement…</> : <><Save className="size-4" /> Enregistrer le cocktail</>}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Order Sheet ────────────────────────────────────────────────────────── */}
       {draftCocktail && user && (

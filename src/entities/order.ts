@@ -9,6 +9,8 @@ export enum OrderStatus {
   CANCELLED = 'cancelled',  // annulée
 }
 
+import type { AIAnalysis } from './cocktail';
+
 export interface Order {
   id: string;
   userId: string;
@@ -22,6 +24,7 @@ export interface Order {
   deliveryFee: number;
   totalPrice: number;            // cocktailPriceSnapshot * quantity + deliveryFee
   status: OrderStatus;
+  aiAnalysisSnapshot?: AIAnalysis;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

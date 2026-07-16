@@ -49,9 +49,17 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'my-orders',
-    label: 'Mes commandes',
+    label: 'Commandes',
     path: '/board/orders',
     icon: ShoppingBag,
+    roles: [UserRole.CUSTOMER],
+    showInMobileTab: false,
+  },
+  {
+    key: 'fys-lab',
+    label: 'FYS Lab',
+    path: '/lab',
+    icon: FlaskConical,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: true,
   },

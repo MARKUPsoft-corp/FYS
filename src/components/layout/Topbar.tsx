@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { UserRole } from '@/entities/user';
 
 export function Topbar() {
   const { user } = useAuthStore();
@@ -38,7 +39,7 @@ export function Topbar() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 h-20 z-20',
-        'flex items-center justify-between px-6 lg:px-12',
+        'flex items-center justify-between px-3 md:px-6 lg:px-12',
         'bg-background/90 backdrop-blur-xl border-b border-border/40',
         'transition-all duration-300 ease-in-out',
       )}
@@ -78,8 +79,24 @@ export function Topbar() {
       </nav>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <ButtonTheme />
+
+        {/* Orders shortcut — customers only */}
+        {user?.role === UserRole.CUSTOMER && (
+          <Link
+            to="/board/orders"
+            className={cn(
+              'relative flex items-center justify-center size-10 rounded-xl transition-all',
+              location.pathname.startsWith('/board/orders')
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+            )}
+            aria-label="Mes commandes"
+          >
+            <ShoppingBag className="size-5" />
+          </Link>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

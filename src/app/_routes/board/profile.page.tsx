@@ -422,7 +422,7 @@ const Profile: PageComponent = () => {
 
       {/* Hero banner */}
       <div
-        className="relative w-full h-[220px] flex items-end px-6 pb-8 mb-16"
+        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-16"
         style={{
           backgroundImage: "url('https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200')",
           backgroundSize: 'cover',
@@ -442,7 +442,7 @@ const Profile: PageComponent = () => {
         </div>
       </div>
 
-      <div className="px-4 space-y-6 mt-6">
+      <div className="px-3 md:px-4 space-y-6 mt-6">
 
         {/* Identity card */}
         <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-start justify-between gap-4">

@@ -1,7 +1,7 @@
 import {
-  Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles,
+  Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -36,6 +36,13 @@ export function OrderSheet({
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
 
+  const [customName, setCustomName] = useState(cocktail.name);
+  const [isEditingName, setIsEditingName] = useState(false);
+
+  useEffect(() => {
+    setCustomName(cocktail.name);
+  }, [cocktail.name]);
+
   const hasAnalysis = !!cocktail.aiAnalysis;
   const analysis = cocktail.aiAnalysis;
   const verdictCfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
@@ -50,11 +57,12 @@ export function OrderSheet({
       if (cocktail.id === "draft") {
         const cocktailId = await createCocktail({
           ...cocktail,
+          name: customName,
           createdBy: user.uid,
         });
-        await createOrder(user, { ...cocktail, id: cocktailId }, quantity);
+        await createOrder(user, { ...cocktail, name: customName, id: cocktailId }, quantity);
       } else {
-        await createOrder(user, cocktail, quantity);
+        await createOrder(user, { ...cocktail, name: customName }, quantity);
       }
       setOrdered(true);
       onOrderSuccess?.();
@@ -80,8 +88,30 @@ export function OrderSheet({
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <SheetTitle className="font-display text-xl font-bold text-foreground leading-tight">
-                {cocktail.name}
+              <SheetTitle className="font-display text-xl font-bold text-foreground leading-tight flex items-center gap-2">
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    onBlur={() => setIsEditingName(false)}
+                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+                    autoFocus
+                    className="bg-transparent border-b-2 border-primary outline-none px-1 py-0.5 w-full font-display text-xl font-bold"
+                  />
+                ) : (
+                  <>
+                    {customName}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingName(true)}
+                      className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Renommer le cocktail"
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                  </>
+                )}
               </SheetTitle>
               <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
                 {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
@@ -137,7 +167,7 @@ export function OrderSheet({
             <h3 className="font-display font-bold text-2xl text-foreground">Commande passée !</h3>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
               Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong> de{' '}
-              <strong>{cocktail.name}</strong> a été enregistrée. Vous serez notifié de sa progression.
+              <strong>{customName}</strong> a été enregistrée. Vous serez notifié de sa progression.
             </p>
             <p className="text-primary font-bold text-lg">{total.toLocaleString()} XAF</p>
             <Button variant="outline" className="rounded-2xl px-8 mt-2" onClick={() => handleClose(false)}>

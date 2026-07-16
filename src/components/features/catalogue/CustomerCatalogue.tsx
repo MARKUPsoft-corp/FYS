@@ -25,7 +25,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
 
       {/* Hero Banner */}
       <div
-        className="relative w-full h-[220px] flex items-end px-6 pb-8 mb-12 overflow-hidden"
+        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
         style={{
           backgroundImage: "url('https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200')",
           backgroundSize: 'cover',
@@ -41,7 +41,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
         </div>
       </div>
 
-      <div className="px-4 space-y-10">
+      <div className="px-3 md:px-4 space-y-10">
 
         {/* Search */}
         <div className="relative">

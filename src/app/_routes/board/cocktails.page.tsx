@@ -63,7 +63,7 @@ const Cocktails: PageComponent = () => {
 
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-3 md:px-4">
         <FlaskConical className="size-12 text-primary/40" />
         <h2 className="font-display font-bold text-2xl text-foreground">Gestion des cocktails</h2>
         <p className="text-muted-foreground text-center max-w-xs">
@@ -81,7 +81,7 @@ const Cocktails: PageComponent = () => {
 
       {/* Hero Banner */}
       <div
-        className="relative w-full h-[220px] flex items-end px-6 pb-8 mb-16 overflow-hidden"
+        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-16 overflow-hidden"
         style={{
           backgroundImage: "url('https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=1200')",
           backgroundSize: 'cover',
@@ -97,7 +97,7 @@ const Cocktails: PageComponent = () => {
         </div>
       </div>
 
-      <div className="px-4 space-y-10">
+      <div className="px-3 md:px-4 space-y-10">
 
         <Button
           size="lg"
