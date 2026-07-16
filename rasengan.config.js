@@ -27,6 +27,7 @@ export default defineConfig(async () => {
           },
 
           workbox: {
+            maximumFileSizeToCacheInBytes: 5000000, // 5 MB limit
             // Precache all built assets
             globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
 
