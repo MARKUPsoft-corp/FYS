@@ -59,3 +59,8 @@ export async function loginWithGoogle() {
 export async function signOut() {
   await firebaseSignOut(auth);
 }
+
+export async function updateLastActive(uid: string) {
+  const ref = doc(db, COLLECTIONS.USERS, uid);
+  await setDoc(ref, { lastActiveAt: serverTimestamp() }, { merge: true });
+}

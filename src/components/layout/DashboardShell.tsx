@@ -1,4 +1,6 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
+import { useAuthStore } from '@/stores/auth';
+import { updateLastActive } from '@/services/auth';
 import { cn } from '@/lib/utils';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
@@ -8,8 +10,21 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({ children }: DashboardShellProps) {
+  const { user } = useAuthStore();
 
-  return (
+  useEffect(() => {
+    if (!user) return;
+    
+    // Mettre à jour immédiatement
+    updateLastActive(user.uid).catch(console.error);
+    
+    // Puis toutes les 3 minutes
+    const interval = setInterval(() => {
+      updateLastActive(user.uid).catch(console.error);
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user?.uid]);  return (
     <div className="min-h-screen bg-background">
       <Topbar />
 
