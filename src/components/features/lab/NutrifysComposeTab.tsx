@@ -9,17 +9,19 @@ import {
   Trash2,
   Edit2,
   Check,
-  X as XIcon,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { CocktailProposalCard } from '@/components/features/lab/CocktailProposalCard';
 import { HighlightedText, type HighlightTerm } from '@/components/features/lab/HighlightedText';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import { chatCocktail } from '@/services/ai';
 import { useAuthStore } from '@/stores/auth';
 import { getProfile } from '@/services/profile';
+import { getFruits } from '@/services/fruit';
 import { createSession, getSessions, getSessionMessages, saveChatMessageToSession, deleteSession, deleteAllSessions, renameSession } from '@/services/chat';
+import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
 import type { HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
 import { cn } from '@/lib/utils';
@@ -301,6 +303,11 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   const [editTitle, setEditTitle] = useState('');
 
   const user = useAuthStore((s) => s.user);
+  
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+  });
 
   // Load profile + session list on mount
   useEffect(() => {
@@ -390,7 +397,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
         .filter((m) => !(m.role === 'assistant' && m.content === WELCOME_MESSAGE))
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-      const aiReply = await chatCocktail(historyForAI, profile);
+      const aiReply = await chatCocktail(historyForAI, profile, fruits);
 
       const replyMsg = aiReply.proposal
         ? createProposalMessage(aiReply.text, aiReply.proposal as CocktailProposal)
@@ -458,26 +465,43 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                       <span className="hidden lg:inline">Historique</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col bg-card border-l border-border/40">
-                    <SheetHeader className="px-5 py-4 border-b border-border/40 bg-muted/20 shrink-0 relative">
-                      <SheetTitle className="font-display flex items-center gap-2 pr-20">
-                        <History className="size-4 text-primary" />
-                        Mes conversations
-                      </SheetTitle>
-                      <SheetDescription className="text-xs">
-                        Cliquez sur une conversation pour la rouvrir.
-                      </SheetDescription>
+                  <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-[420px] p-0 flex flex-col bg-card border-l border-border/40">
+                    <SheetHeader className="px-5 py-4 border-b border-border/40 bg-muted/20 shrink-0">
+                      <div className="flex flex-row items-start justify-between gap-2">
+                        <div className="text-left">
+                          <SheetTitle className="font-display flex items-center gap-2">
+                            <History className="size-4 text-primary" />
+                            Mes conversations
+                          </SheetTitle>
+                          <SheetDescription className="text-[11px] mt-1">
+                            Cliquez sur une conversation pour la rouvrir.
+                          </SheetDescription>
+                        </div>
 
-                      {sessions.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleDeleteAllSessions}
-                          className="absolute right-4 top-4 h-8 px-2 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="size-3 mr-1" /> Vider
-                        </Button>
-                      )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {sessions.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleDeleteAllSessions}
+                              className="text-[11px] font-semibold text-destructive hover:underline flex items-center gap-1 bg-destructive/10 px-2 py-1.5 rounded-md transition-colors hover:bg-destructive/20"
+                            >
+                              <Trash2 className="size-3" /> Vider
+                            </button>
+                          )}
+                          
+                          {sessions.length > 0 && <div className="w-px h-4 bg-border mx-1" />}
+                          
+                          <SheetClose asChild>
+                            <button
+                              type="button"
+                              className="text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 px-2 py-1.5 rounded-md"
+                            >
+                              <X className="size-3" />
+                              Fermer
+                            </button>
+                          </SheetClose>
+                        </div>
+                      </div>
                     </SheetHeader>
 
                     <div className="flex-1 overflow-y-auto py-3">
@@ -518,7 +542,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                                     <Check className="size-3.5" />
                                   </button>
                                   <button onClick={() => setEditingSessionId(null)} className="p-1.5 bg-muted rounded hover:bg-muted/80">
-                                    <XIcon className="size-3.5" />
+                                    <X className="size-3.5" />
                                   </button>
                                 </div>
                               ) : (

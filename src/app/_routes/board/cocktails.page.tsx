@@ -1,6 +1,6 @@
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
-  FlaskConical, Plus, Loader2
+  FlaskConical, Plus
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -119,8 +119,16 @@ const Cocktails: PageComponent = () => {
         </div>
 
         {isLoading && (
-          <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-3">
+                <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
+                <div className="px-2 space-y-2">
+                  <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

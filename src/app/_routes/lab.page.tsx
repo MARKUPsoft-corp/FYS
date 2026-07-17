@@ -160,6 +160,7 @@ const FysLab: PageComponent = () => {
     const next = new Map<string, number>();
     proposal.fruitIds.forEach((id) => next.set(id, 100));
     setSelectedIngredients(next);
+    setCocktailName(proposal.name);
     setActiveTab('compose');
     // Using setTimeout to guarantee React batched state update allows it to seamlessly render Assemble panel
     setTimeout(() => handleAnalyze(next), 50);

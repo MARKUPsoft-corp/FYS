@@ -21,9 +21,10 @@ export async function analyzeCocktail(
 export async function chatCocktail(
   history: ChatHistoryMessage[],
   profile: HealthProfile | null,
+  fruits: Fruit[] = [],
 ): Promise<ChatAIResponse> {
   // Currently only Gemini supports the conversational mode
-  return chatWithGemini(history, profile);
+  return chatWithGemini(history, profile, fruits);
 }
 
 export async function recommendSupplements(

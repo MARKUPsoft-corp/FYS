@@ -80,9 +80,11 @@ const s = StyleSheet.create({
 interface Props {
   analysis: AIAnalysis;
   cocktailName?: string;
+  userName?: string;
+  ingredients?: string[];
 }
 
-export function NutritionPDF({ analysis, cocktailName }: Props) {
+export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: Props) {
   const verdictCfg = VERDICT_CFG[analysis.verdict];
   const nutrients = Object.entries(analysis.profilNutritionnel)
     .filter(([, v]) => v) as [string, { pourcentage: number; valeur: string }][];
@@ -100,6 +102,8 @@ export function NutritionPDF({ analysis, cocktailName }: Props) {
           <View>
             <Text style={s.metaTitle}>FICHE NUTRITIONNELLE</Text>
             <Text style={s.metaSub}>{cocktailName ?? 'Analyse IA'}</Text>
+            {userName && <Text style={[s.metaSub, { marginTop: 4, fontFamily: 'Helvetica-Bold', color: TEXT }]}>{userName}</Text>}
+            {ingredients && ingredients.length > 0 && <Text style={s.metaSub}>{ingredients.join(' · ')}</Text>}
           </View>
         </View>
 

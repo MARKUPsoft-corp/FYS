@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
 import { LogOut, Settings, User, ShoppingBag } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
@@ -16,11 +17,42 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserRole } from '@/entities/user';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/entities';
 
 export function Topbar() {
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const [hasNewOrder, setHasNewOrder] = useState(false);
+  const [lastOrderCount, setLastOrderCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user || user.role !== UserRole.CUSTOMER) return;
+
+    const q = query(
+      collection(db, COLLECTIONS.ORDERS),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const count = snap.docs.length;
+      if (lastOrderCount !== null && count > lastOrderCount) {
+        setHasNewOrder(true);
+      }
+      setLastOrderCount(count);
+    });
+
+    return () => unsubscribe();
+  }, [user, lastOrderCount]);
+
+  // Clear badge when visiting the orders page
+  useEffect(() => {
+    if (location.pathname.startsWith('/board/orders')) {
+      setHasNewOrder(false);
+    }
+  }, [location.pathname]);
 
   const navItems = user ? getNavItemsForRole(user.role) : [];
 
@@ -91,6 +123,7 @@ export function Topbar() {
         {user?.role === UserRole.CUSTOMER && (
           <Link
             to="/board/orders"
+            onClick={() => setHasNewOrder(false)}
             className={cn(
               'relative flex items-center justify-center size-10 rounded-xl transition-all',
               location.pathname.startsWith('/board/orders')
@@ -100,6 +133,9 @@ export function Topbar() {
             aria-label="Mes commandes"
           >
             <ShoppingBag className="size-5" />
+            {hasNewOrder && (
+              <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-secondary border-2 border-background" />
+            )}
           </Link>
         )}
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { CocktailCard } from './CocktailCard';
 import { CatalogueOrderSheet } from './CatalogueOrderSheet';
 import type { Cocktail } from '@/entities';
@@ -68,8 +68,16 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
 
         {/* Grid */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-3">
+                <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
+                <div className="px-2 space-y-2">
+                  <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-12">

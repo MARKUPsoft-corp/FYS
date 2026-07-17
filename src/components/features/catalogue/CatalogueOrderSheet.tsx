@@ -5,7 +5,8 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
-  ShoppingBag, Sparkles, Loader2, Minus, Plus, Truck, CheckCircle2,
+  Plus, Loader2, Minus, ShoppingBag, Truck, CheckCircle2,
+  MapPin, Phone, MessageSquare, Sparkles,
 } from 'lucide-react';
 import { DELIVERY_FEE } from '@/entities';
 import type { Cocktail, AIAnalysis } from '@/entities';
@@ -37,6 +38,11 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
 
+  // Delivery details
+  const [district, setDistrict] = useState('');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [instructions, setInstructions] = useState('');
+
   // Fruits cached from react-query — needed for AI analysis
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
@@ -51,20 +57,25 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   const subtotal = perBottle * quantity;
   const total = subtotal + DELIVERY_FEE;
 
+  async function runAnalysis(): Promise<AIAnalysis | null> {
+    if (fruits.length === 0) return null;
+    const ingredients = cocktail!.ingredients
+      .map((ing) => {
+        const fruit = fruits.find((f: Fruit) => f.id === ing.fruitId);
+        return fruit ? { fruit, grams: ing.quantityGrams } : null;
+      })
+      .filter((x): x is { fruit: Fruit; grams: number } => x !== null);
+    return analyzeCocktail(ingredients, profile);
+  }
+
   async function handleAnalyze() {
-    if (fruits.length === 0) return;
     setAnalyzing(true);
     try {
-      const ingredients = cocktail!.ingredients
-        .map((ing) => {
-          const fruit = fruits.find((f: Fruit) => f.id === ing.fruitId);
-          return fruit ? { fruit, grams: ing.quantityGrams } : null;
-        })
-        .filter((x): x is { fruit: Fruit; grams: number } => x !== null);
-
-      const result = await analyzeCocktail(ingredients, profile);
-      setLocalAnalysis(result);
-      setActiveTab('nutrition');
+      const result = await runAnalysis();
+      if (result) {
+        setLocalAnalysis(result);
+        setActiveTab('nutrition');
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -74,12 +85,27 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
     if (!user) return;
     setOrdering(true);
     try {
+      // Run AI analysis in background if not already done
+      let analysis = localAnalysis;
+      if (!analysis) {
+        try {
+          analysis = await runAnalysis();
+          if (analysis) setLocalAnalysis(analysis);
+        } catch {
+          // analysis is optional — don't block the order
+        }
+      }
+
+      const deliveryDetails = district.trim()
+        ? { district: district.trim(), phone: phone.trim(), instructions: instructions.trim() }
+        : undefined;
+
       const cloned = await cloneCocktailFromCatalogue(
         cocktail!,
         user.uid,
-        localAnalysis ?? undefined,
+        analysis ?? undefined,
       );
-      await createOrder(user, cloned, quantity);
+      await createOrder(user, cloned, quantity, deliveryDetails);
       setOrdered(true);
     } finally {
       setOrdering(false);
@@ -92,9 +118,14 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
       setLocalAnalysis(null);
       setQuantity(1);
       setOrdered(false);
+      setDistrict('');
+      setPhone(user?.phone || '');
+      setInstructions('');
     }
     onOpenChange(v);
   }
+
+  const deliveryOk = district.trim().length > 0;
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -241,35 +272,6 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                 </div>
               </div>
 
-              {/* Prix par bouteille */}
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Détail des prix
-                </p>
-                <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Base 50cl</span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {cocktail.basePrice.toLocaleString()} XAF
-                    </span>
-                  </div>
-                  {cocktail.ingredients.map((ing) => (
-                    <div key={ing.fruitId} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">{ing.fruitName}</span>
-                      <span className="text-[13px] font-semibold text-foreground">
-                        + {ing.priceSnapshot.toLocaleString()} XAF
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between px-4 py-3.5 bg-primary/5">
-                    <span className="text-[13px] font-bold text-foreground">Prix / bouteille</span>
-                    <span className="text-[15px] font-bold text-primary">
-                      {perBottle.toLocaleString()} XAF
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {/* Nombre de bouteilles */}
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -302,6 +304,50 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                 </div>
               </div>
 
+              {/* Informations de livraison */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Livraison
+                </p>
+                <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <MapPin className="size-3.5 text-primary" /> Quartier exact
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Ex: Bonamoussadi, Carrefour..."
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <Phone className="size-3.5 text-primary" /> Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Ex: 6 90 00 00 00"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                      <MessageSquare className="size-3.5 text-primary" /> Indications supplémentaires
+                    </label>
+                    <textarea
+                      className="w-full h-20 p-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                      placeholder="Ex: Derrière la pharmacie, portail noir..."
+                      value={instructions}
+                      onChange={(e) => setInstructions(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Récap total */}
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
@@ -328,20 +374,14 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                 </div>
               </div>
 
-              {/* Nudge analyse si pas encore fait */}
+              {/* Info analyse auto */}
               {!hasAnalysis && (
-                <button
-                  type="button"
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-amber-300/60 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[13px] font-semibold transition-all hover:bg-amber-100 dark:hover:bg-amber-950/40 active:scale-95 disabled:opacity-60"
-                >
-                  {analyzing ? (
-                    <><Loader2 className="size-4 animate-spin" /> Analyse en cours…</>
-                  ) : (
-                    <><Sparkles className="size-4" /> Analyser avec NutriFYS avant de commander</>
-                  )}
-                </button>
+                <div className="flex items-start gap-3 px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-700/40">
+                  <Sparkles className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
+                    L'analyse NutriFYS sera lancée automatiquement à la validation de votre commande.
+                  </p>
+                </div>
               )}
             </div>
 
@@ -349,12 +389,14 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
             <div className="shrink-0 border-t border-border/40 px-6 py-5">
               <Button
                 size="lg"
-                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all"
-                disabled={ordering}
+                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={ordering || !deliveryOk}
                 onClick={handleOrder}
               >
                 {ordering ? (
                   <><Loader2 className="size-5 animate-spin" /> Commande en cours…</>
+                ) : !deliveryOk ? (
+                  <>Remplissez l'adresse de livraison</>
                 ) : (
                   <><ShoppingBag className="size-5" /> Commander · {total.toLocaleString()} XAF</>
                 )}

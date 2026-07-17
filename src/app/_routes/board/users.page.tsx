@@ -1,5 +1,5 @@
 import { PageComponent } from 'rasengan';
-import { Users as UsersIcon, Loader2, ShieldCheck, User } from 'lucide-react';
+import { Users as UsersIcon, ShieldCheck, User } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -160,9 +160,17 @@ const Users: PageComponent = () => {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
-              <Loader2 className="size-5 animate-spin" />
-              <span className="text-sm">Chargement des utilisateurs…</span>
+            <div className="px-5 divide-y divide-border/40">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="py-4 flex gap-4 w-full items-center">
+                  <div className="size-10 rounded-full bg-muted animate-pulse shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-1/3 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-1/4 bg-muted animate-pulse rounded" />
+                  </div>
+                  <div className="h-6 w-20 rounded-full bg-muted animate-pulse shrink-0" />
+                </div>
+              ))}
             </div>
           ) : visibleUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">

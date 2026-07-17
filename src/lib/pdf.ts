@@ -18,27 +18,27 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadVectorFacture(order: Order): Promise<void> {
+export async function downloadVectorFacture(order: Order, ingredientsStr?: string): Promise<void> {
   try {
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { FacturePDF } = await import('@/components/pdf/FacturePDF');
-    // Cast to any to bypass strict ReactElement type mismatch with @react-pdf
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(FacturePDF, { order }) as any).toBlob();
+    const blob = await pdf(React.createElement(FacturePDF, { order, ingredientsStr }) as any).toBlob();
     triggerDownload(blob, `Facture_${order.id.slice(0, 8)}.pdf`);
   } catch (err) {
     console.error('Failed to generate vector PDF (Facture):', err);
   }
 }
 
-export async function downloadVectorNutrition(analysis: AIAnalysis, cocktailName?: string): Promise<void> {
+export async function downloadVectorNutrition(analysis: AIAnalysis, cocktailName?: string, userName?: string, ingredientsStr?: string): Promise<void> {
   try {
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { NutritionPDF } = await import('@/components/pdf/NutritionPDF');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(NutritionPDF, { analysis, cocktailName }) as any).toBlob();
+    const ingredients = ingredientsStr ? ingredientsStr.split(' · ') : undefined;
+    const blob = await pdf(React.createElement(NutritionPDF, { analysis, cocktailName, userName, ingredients }) as any).toBlob();
     triggerDownload(blob, `Fiche_NutriFYS_${cocktailName ?? 'cocktail'}.pdf`);
   } catch (err) {
     console.error('Failed to generate vector PDF (Nutrition):', err);

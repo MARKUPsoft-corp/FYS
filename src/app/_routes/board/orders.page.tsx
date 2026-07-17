@@ -260,6 +260,8 @@ function ClientOrderSheet({
 }) {
   const [cancelling, setCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
+  const [downloadingNutrition, setDownloadingNutrition] = useState(false);
+  const [downloadingFacture, setDownloadingFacture] = useState(false);
 
   useEffect(() => {
     if (open) setActiveTab('order');
@@ -344,10 +346,20 @@ function ClientOrderSheet({
             <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
               <Button
                 variant="outline"
-                className="w-full h-12 rounded-2xl font-bold gap-2"
-                onClick={() => downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot)}
+                className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
+                disabled={downloadingNutrition}
+                onClick={async () => {
+                   setDownloadingNutrition(true);
+                   const ingStr = cocktail?.ingredients?.map((i) => i.fruitName).join(' · ');
+                   await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
+                   setDownloadingNutrition(false);
+                }}
               >
-                <Download className="size-4" /> Télécharger la Fiche (PDF)
+                {downloadingNutrition ? (
+                  <><Loader2 className="size-4 animate-spin" /> Génération en cours…</>
+                ) : (
+                  <><Download className="size-4" /> Télécharger la Fiche (PDF)</>
+                )}
               </Button>
             </div>
           </div>
@@ -497,10 +509,20 @@ function ClientOrderSheet({
           <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
             <Button
               variant="outline"
-              className="w-full h-12 rounded-2xl font-bold gap-2"
-              onClick={() => downloadVectorFacture(order)}
+              className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
+              disabled={downloadingFacture}
+              onClick={async () => {
+                setDownloadingFacture(true);
+                const ingStr = cocktail?.ingredients?.map(i => i.fruitName).join(' · ');
+                await downloadVectorFacture(order, ingStr);
+                setDownloadingFacture(false);
+              }}
             >
-              <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
+              {downloadingFacture ? (
+                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> Génération en cours…</>
+              ) : (
+                <><Download className="size-4 text-primary" /> Télécharger la Facture (PDF)</>
+              )}
             </Button>
           </div>
         </div>
@@ -543,6 +565,8 @@ function AdminOrderSheet({
   const [updating, setUpdating] = useState<OrderStatus | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
+  const [downloadingNutrition, setDownloadingNutrition] = useState(false);
+  const [downloadingFacture, setDownloadingFacture] = useState(false);
 
   useEffect(() => {
     if (open) setActiveTab('order');
@@ -641,10 +665,20 @@ function AdminOrderSheet({
             <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
               <Button
                 variant="outline"
-                className="w-full h-12 rounded-2xl font-bold gap-2"
-                onClick={() => downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot)}
+                className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
+                disabled={downloadingNutrition}
+                onClick={async () => {
+                   setDownloadingNutrition(true);
+                   const ingStr = cocktail?.ingredients?.map((i) => i.fruitName).join(' · ');
+                   await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
+                   setDownloadingNutrition(false);
+                }}
               >
-                <Download className="size-4" /> Télécharger la Fiche (PDF)
+                {downloadingNutrition ? (
+                  <><Loader2 className="size-4 animate-spin" /> Génération en cours…</>
+                ) : (
+                  <><Download className="size-4" /> Télécharger la Fiche (PDF)</>
+                )}
               </Button>
             </div>
           </div>
@@ -797,10 +831,20 @@ function AdminOrderSheet({
           <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
             <Button
               variant="outline"
-              className="w-full h-12 rounded-2xl font-bold gap-2"
-              onClick={() => downloadVectorFacture(order)}
+              className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
+              disabled={downloadingFacture}
+              onClick={async () => {
+                setDownloadingFacture(true);
+                const ingStr = cocktail?.ingredients?.map(i => i.fruitName).join(' · ');
+                await downloadVectorFacture(order, ingStr);
+                setDownloadingFacture(false);
+              }}
             >
-              <Download className="size-4 text-primary" /> Télécharger la Facture (PDF)
+              {downloadingFacture ? (
+                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> Génération en cours…</>
+              ) : (
+                <><Download className="size-4 text-primary" /> Télécharger la Facture (PDF)</>
+              )}
             </Button>
           </div>
         </div>
@@ -942,8 +986,17 @@ const Orders: PageComponent = () => {
 
         {/* Loading */}
         {isLoading && (
-          <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 rounded-3xl border border-border/60 bg-card p-4 flex gap-4 animate-pulse">
+                <div className="size-20 rounded-2xl bg-muted/70 shrink-0" />
+                <div className="flex-1 space-y-3 mt-1">
+                  <div className="h-4 w-1/2 bg-muted rounded" />
+                  <div className="h-3 w-1/3 bg-muted rounded" />
+                </div>
+                <div className="size-8 rounded-full bg-muted shrink-0" />
+              </div>
+            ))}
           </div>
         )}
 

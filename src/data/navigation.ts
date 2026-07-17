@@ -33,6 +33,14 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: true,
   },
   {
+    key: 'fys-lab',
+    label: 'FYS Lab',
+    path: '/lab',
+    icon: FlaskConical,
+    roles: [UserRole.CUSTOMER],
+    showInMobileTab: true,
+  },
+  {
     key: 'catalogue',
     label: 'Catalogue',
     path: '/board/catalogue',
@@ -57,14 +65,7 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: false,
     showInDesktopNav: false, // visible via the topbar icon only
   },
-  {
-    key: 'fys-lab',
-    label: 'FYS Lab',
-    path: '/lab',
-    icon: FlaskConical,
-    roles: [UserRole.CUSTOMER],
-    showInMobileTab: true,
-  },
+
   {
     key: 'profile',
     label: 'Profil santé',

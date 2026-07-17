@@ -497,8 +497,10 @@ const Profile: PageComponent = () => {
 
         {/* Loading skeleton */}
         {loading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="space-y-4">
+            <div className="h-32 rounded-[2rem] border border-border/50 bg-card p-5 animate-pulse" />
+            <div className="h-32 rounded-[2rem] border border-border/50 bg-card p-5 animate-pulse" />
+            <div className="h-32 rounded-[2rem] border border-border/50 bg-card p-5 animate-pulse" />
           </div>
         )}
 

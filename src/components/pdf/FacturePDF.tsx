@@ -63,9 +63,10 @@ const s = StyleSheet.create({
 
 interface Props {
   order: Order;
+  ingredientsStr?: string;
 }
 
-export function FacturePDF({ order }: Props) {
+export function FacturePDF({ order, ingredientsStr }: Props) {
   const statusCfg = STATUS_COLOR[order.status];
   const createdDate = order.createdAt?.toDate?.();
   const dateStr = createdDate
@@ -140,12 +141,24 @@ export function FacturePDF({ order }: Props) {
             <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>Total</Text>
           </View>
           {/* Product row */}
-          <View style={s.row}>
+          <View style={[s.row, { marginBottom: 2 }]}>
             <Text style={[s.value, { flex: 2 }]}>{order.cocktailNameSnapshot}</Text>
+
             <Text style={[s.value, { width: 30, textAlign: 'center' }]}>{order.quantity}</Text>
             <Text style={[s.value, { width: 70, textAlign: 'right' }]}>{order.cocktailPriceSnapshot.toLocaleString()} XAF</Text>
             <Text style={[s.value, { width: 80, textAlign: 'right' }]}>{subtotal.toLocaleString()} XAF</Text>
           </View>
+          {/* Fruits details */}
+          {ingredientsStr && (
+            <View style={s.row}>
+               <Text style={[s.label, { flex: 2, fontSize: 8, fontStyle: 'italic' }]}>
+                 Composition : {ingredientsStr}
+               </Text>
+               <Text style={{ width: 30 }}></Text>
+               <Text style={{ width: 70 }}></Text>
+               <Text style={{ width: 80 }}></Text>
+            </View>
+          )}
         </View>
 
         {/* ── Totaux ─────────────────────────────────────────────────── */}

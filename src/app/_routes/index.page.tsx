@@ -1,7 +1,6 @@
 import { PageComponent, useNavigate } from 'rasengan';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
-import { Loader2 } from 'lucide-react';
 
 const RootIndex: PageComponent = () => {
   const { user, loading } = useAuthStore();
@@ -15,8 +14,9 @@ const RootIndex: PageComponent = () => {
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Loader2 className="size-8 animate-spin text-primary" />
+    <div className="min-h-screen bg-background flex flex-col आइटms-center justify-center gap-6">
+      <div className="size-16 rounded-3xl bg-muted animate-pulse" />
+      <div className="w-32 h-4 rounded-full bg-muted animate-pulse" />
     </div>
   );
 };

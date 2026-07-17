@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CocktailTable } from './CocktailTable';
@@ -30,7 +29,18 @@ export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleA
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-16">Loading…</p>
+        <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/40">
+          <div className="bg-muted/30 h-10 w-full" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3 bg-card">
+              <div className="size-10 rounded-lg bg-muted animate-pulse shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="h-4 w-[150px] bg-muted animate-pulse rounded" />
+                <div className="h-3 w-[100px] bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <CocktailTable
           cocktails={cocktails}

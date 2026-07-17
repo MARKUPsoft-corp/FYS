@@ -17,6 +17,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from '@/components/ui/sheet';
 
 const playNotificationSound = () => {
@@ -97,7 +98,7 @@ export function NotificationBell() {
             )}
           </button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full max-w-[400px] p-0 flex flex-col">
+        <SheetContent side="right" showCloseButton={false} className="w-full max-w-[400px] p-0 flex flex-col">
           <SheetHeader className="px-6 py-5 border-b border-border/40 shrink-0 text-left flex flex-row items-center justify-between">
             <SheetTitle className="font-display text-lg">Notifications</SheetTitle>
             <div className="flex items-center gap-2">
@@ -115,12 +116,24 @@ export function NotificationBell() {
                 <button
                   type="button"
                   onClick={() => deleteAllNotifications(user.uid)}
-                  className="text-[11px] font-semibold text-destructive hover:underline flex items-center gap-1 mt-0"
+                  className="text-[11px] font-semibold text-destructive hover:underline flex items-center gap-1 mt-0 bg-destructive/10 px-2 py-1.5 rounded-md transition-colors hover:bg-destructive/20"
                 >
                   <Trash2 className="size-3" />
                   Vider
                 </button>
               )}
+              
+              <div className="w-px h-4 bg-border mx-1" />
+              
+              <SheetClose asChild>
+                <button
+                  type="button"
+                  className="text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 mt-0 px-2 py-1.5 rounded-md"
+                >
+                  <X className="size-3" />
+                  Fermer
+                </button>
+              </SheetClose>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto w-full flex flex-col relative">

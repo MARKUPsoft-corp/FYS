@@ -37,10 +37,11 @@ export async function analyzeWithGemini(
 export async function chatWithGemini(
   history: ChatHistoryMessage[],
   profile: HealthProfile | null,
+  fruits: Fruit[] = [],
 ): Promise<ChatAIResponse> {
   const chatModel = genai.getGenerativeModel({
     model: 'gemini-3.1-flash-lite',
-    systemInstruction: buildChatSystemPrompt(profile),
+    systemInstruction: buildChatSystemPrompt(profile, fruits),
     generationConfig: {
       responseMimeType: 'application/json',
       maxOutputTokens: 1000,
