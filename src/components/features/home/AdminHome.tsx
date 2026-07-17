@@ -5,7 +5,6 @@ import {
   XCircle, AlertCircle,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getAdminStats } from '@/services/stats';
 import { OrderStatus } from '@/entities';
@@ -110,7 +109,7 @@ export function AdminHome({ name }: Props) {
       icon: Apple,
       path: '/board/fruits',
       color: 'text-orange-500',
-      bg: 'bg-orange-50 dark:bg-orange-950/30',
+      bg: 'bg-orange-50 dark:bg-orange-950/30 border-orange-100',
     },
     {
       label: 'Cocktails',
@@ -118,7 +117,7 @@ export function AdminHome({ name }: Props) {
       icon: GlassWater,
       path: '/board/cocktails',
       color: 'text-primary',
-      bg: 'bg-primary/5',
+      bg: 'bg-primary/10 border-primary/20',
     },
     {
       label: 'Commandes',
@@ -126,7 +125,7 @@ export function AdminHome({ name }: Props) {
       icon: ShoppingBag,
       path: '/board/orders',
       color: 'text-secondary',
-      bg: 'bg-secondary/10',
+      bg: 'bg-secondary/10 border-secondary/20',
     },
     {
       label: 'Utilisateurs',
@@ -134,160 +133,191 @@ export function AdminHome({ name }: Props) {
       icon: Users,
       path: '/board/users',
       color: 'text-violet-500',
-      bg: 'bg-violet-50 dark:bg-violet-950/30',
+      bg: 'bg-violet-50 dark:bg-violet-950/30 border-violet-100',
     },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-muted-foreground">Bonjour,</p>
-        <h2 className="font-display font-semibold text-3xl text-foreground mt-0.5">{name} 👋</h2>
-        <p className="text-muted-foreground mt-1 text-sm">Voici un aperçu de votre application.</p>
+    <div className="min-h-screen bg-background pb-20 px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 space-y-12 max-w-7xl mx-auto">
+      
+      {/* ── HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Tableau de Bord</p>
+          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">
+            Bonjour, <span className="text-primary italic">{name}</span> 👋
+          </h2>
+          <p className="text-muted-foreground mt-3 font-medium text-lg">Bienvenue dans votre centre de contrôle administratif.</p>
+        </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── KPI CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statCards.map((s) => {
           const Icon = s.icon;
           return (
             <Link key={s.label} to={s.path} className="block group">
-              <Card className="transition-all duration-200 group-hover:shadow-md group-hover:-translate-y-0.5">
-                <CardContent className="pt-5 pb-4">
-                  <div className={`size-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-                    <Icon className={`size-5 ${s.color}`} />
-                  </div>
+              <div className="bg-card rounded-[2rem] p-6 border border-border/40 shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1.5 flex flex-col justify-between h-full relative overflow-hidden">
+                <div className={`absolute -right-4 -top-4 size-24 rounded-full ${s.bg} blur-2xl opacity-50 pointer-events-none transition-opacity group-hover:opacity-100`} />
+                <div className={`size-12 rounded-[1rem] ${s.bg} border flex items-center justify-center mb-6 relative z-10`}>
+                  <Icon className={`size-6 ${s.color}`} strokeWidth={2.5} />
+                </div>
+                <div className="relative z-10 mt-auto">
                   {isLoading ? (
-                    <Loader2 className="size-5 text-muted-foreground animate-spin mb-1" />
+                    <Loader2 className="size-6 text-muted-foreground animate-spin mb-1" />
                   ) : (
-                    <p className="font-display font-bold text-3xl text-foreground">{s.value}</p>
+                    <p className="font-display font-extrabold text-4xl text-foreground mb-1">{s.value}</p>
                   )}
-                  <p className="text-sm text-muted-foreground mt-0.5">{s.label}</p>
-                </CardContent>
-              </Card>
+                  <p className="text-sm font-semibold text-muted-foreground">{s.label}</p>
+                </div>
+              </div>
             </Link>
           );
         })}
       </div>
 
-      {/* Revenue + Orders by status */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        {/* Revenue */}
-        <Card>
-          <CardContent className="pt-5 pb-4">
-            <div className="size-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-3">
-              <TrendingUp className="size-5 text-emerald-500" />
+      {/* ── CHARTS & STATUS ── */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        
+        {/* BIG REVENUE METRIC */}
+        <div className="lg:col-span-1 bg-card rounded-[2rem] border border-border/40 shadow-sm p-8 flex flex-col justify-center relative overflow-hidden group">
+          <div className="absolute right-0 bottom-0 size-48 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+            <div className="size-12 rounded-[1rem] bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+               <TrendingUp className="size-6 text-emerald-500" strokeWidth={2.5} />
             </div>
+            <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d'Affaires</p>
+          </div>
+          <div className="relative z-10">
             {isLoading ? (
-              <Loader2 className="size-5 text-muted-foreground animate-spin mb-1" />
+              <Loader2 className="size-8 text-muted-foreground animate-spin" />
             ) : (
-              <p className="font-display font-bold text-2xl text-foreground">
-                {(stats?.totalRevenue ?? 0).toLocaleString()} XAF
+              <p className="font-display font-extrabold text-4xl md:text-5xl text-foreground">
+                {(stats?.totalRevenue ?? 0).toLocaleString()} <span className="text-2xl text-muted-foreground font-medium">XAF</span>
               </p>
             )}
-            <p className="text-sm text-muted-foreground mt-0.5">Chiffre d'affaires (livré)</p>
-          </CardContent>
-        </Card>
+            <p className="text-sm text-emerald-600 font-medium mt-3 bg-emerald-50 w-max px-3 py-1 rounded-full border border-emerald-100">
+               Commandes livrées uniquement
+            </p>
+          </div>
+        </div>
 
-        {/* Orders by status */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="font-display text-sm text-muted-foreground font-semibold uppercase tracking-wider">
-              Commandes par statut
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-2">
+        {/* ORDERS BY STATUS */}
+        <div className="lg:col-span-2 bg-card rounded-[2rem] border border-border/40 shadow-sm p-8">
+           <h3 className="font-display font-bold text-xl text-foreground mb-6">Répartition des Commandes</h3>
+           <div className="space-y-4">
             {isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="size-5 text-muted-foreground animate-spin" />
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="size-8 text-muted-foreground animate-spin" />
               </div>
             ) : (
-              STATUS_ORDER.map((status) => {
-                const cfg = STATUS_CONFIG[status];
-                const count = stats?.ordersByStatus?.[status] ?? 0;
-                const total = stats?.ordersCount ?? 0;
-                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-                if (count === 0) return null;
-                return (
-                  <div key={status} className="flex items-center gap-2">
-                    <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
-                    <span className="text-xs text-muted-foreground flex-1">{cfg.label}</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums">{count}</span>
-                    <span className="text-xs text-muted-foreground w-7 text-right">{pct}%</span>
-                  </div>
-                );
-              })
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
+                 {STATUS_ORDER.map((status) => {
+                  const cfg = STATUS_CONFIG[status];
+                  const count = stats?.ordersByStatus?.[status] ?? 0;
+                  const total = stats?.ordersCount ?? 0;
+                  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                  if (count === 0 && total > 0) return null;
+                  
+                  return (
+                    <div key={status} className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/30">
+                      <div className={`size-10 rounded-xl bg-background border flex items-center justify-center shrink-0 shadow-sm`}>
+                         <cfg.icon className={`size-5 text-muted-foreground drop-shadow-sm`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
+                          <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                           <div className={`h-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <span className="block text-lg font-bold text-foreground leading-none">{count}</span>
+                         <span className="text-xs font-semibold text-muted-foreground">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
             {!isLoading && stats?.ordersCount === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-2">Aucune commande</p>
+              <p className="text-sm font-medium text-muted-foreground text-center py-4 bg-muted/50 rounded-2xl">
+                 Aucune donnée de commande.
+              </p>
             )}
-          </CardContent>
-        </Card>
+           </div>
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        {quickActions.map((a) => {
-          const Icon = a.icon;
-          return (
-            <Card key={a.label}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className={`size-8 rounded-lg ${a.iconBg} flex items-center justify-center`}>
-                    <Icon className={`size-4 ${a.iconColor}`} />
-                  </div>
-                  <CardTitle className="text-base font-display">{a.label}</CardTitle>
-                </div>
-                <CardDescription>{a.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild size="sm" variant="outline" className="w-full">
-                  <Link to={a.path}>
-                    {a.cta}
-                    <ArrowRight className="size-3" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Recent orders */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div>
-            <CardTitle className="font-display text-base">Activité récente</CardTitle>
-            <CardDescription>Les 5 dernières commandes passées sur la plateforme.</CardDescription>
+      {/* ── BOTTOM SECTION: RECENT ACTIVITY & QUICK ACTIONS ── */}
+      <div className="grid lg:grid-cols-3 gap-6 items-start">
+        
+        {/* RECENT ORDERS LIST */}
+        <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+             <div>
+               <h3 className="font-display font-bold text-2xl text-foreground">Activité Récente</h3>
+               <p className="text-muted-foreground font-medium mt-1">Vos 5 dernières commandes reçues.</p>
+             </div>
+             <Button asChild size="lg" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors">
+                <Link to="/board/orders">
+                  Voir toutes les commandes <ArrowRight className="size-4 ml-2" />
+                </Link>
+             </Button>
           </div>
-          <Button asChild size="sm" variant="ghost" className="text-primary hover:text-primary/80 gap-1">
-            <Link to="/board/orders">
-              Voir tout <ArrowRight className="size-3" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="size-6 text-muted-foreground animate-spin" />
-            </div>
-          ) : stats?.recentOrders?.length ? (
-            <div>
-              {stats.recentOrders.map((order) => (
-                <RecentOrderRow key={order.id} order={order} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-              <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                <AlertCircle className="size-5 text-muted-foreground" />
+
+          <div>
+             {isLoading ? (
+               <div className="flex items-center justify-center py-12">
+                 <Loader2 className="size-8 text-muted-foreground animate-spin" />
+               </div>
+             ) : stats?.recentOrders?.length ? (
+               <div className="space-y-2">
+                 {stats.recentOrders.map((order) => (
+                   <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3 border border-border/30">
+                     <RecentOrderRow order={order} />
+                   </div>
+                 ))}
+               </div>
+             ) : (
+               <div className="flex flex-col items-center justify-center py-16 gap-4 text-center bg-muted/20 rounded-3xl border border-dashed border-border/60">
+                 <div className="size-16 rounded-full bg-background border flex items-center justify-center shadow-sm">
+                   <AlertCircle className="size-6 text-muted-foreground" />
+                 </div>
+                 <p className="text-base font-semibold text-muted-foreground">Aucune commande pour le moment.</p>
+               </div>
+             )}
+          </div>
+        </div>
+
+        {/* QUICK ACTIONS */}
+        <div className="space-y-4">
+           <h3 className="font-display font-bold text-xl text-foreground pl-2 mb-2">Actions Rapides</h3>
+           {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow">
+                <div className="flex gap-4">
+                  <div className={`size-12 rounded-[1rem] ${a.iconBg} border border-border/50 flex items-center justify-center shrink-0`}>
+                    <Icon className={`size-5 ${a.iconColor}`} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground text-lg">{a.label}</h4>
+                    <p className="text-sm font-medium text-muted-foreground leading-snug mt-1 mb-4">{a.description}</p>
+                    <Link to={a.path} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 transition-colors">
+                      {a.cta} <ArrowRight className="size-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">Aucune commande pour le moment.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            );
+          })}
+        </div>
+
+      </div>
+
     </div>
   );
 }

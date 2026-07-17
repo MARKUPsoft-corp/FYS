@@ -2,11 +2,9 @@ import { PageComponent } from 'rasengan';
 import { Users as UsersIcon, ShieldCheck, User } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
 import { getUsers } from '@/services/stats';
 import { UserRole } from '@/entities';
 import type { User as UserType } from '@/entities';
-
 // ── User card ────────────────────────────────────────────────────────────────
 
 function UserCard({ user }: { user: UserType }) {
@@ -117,26 +115,26 @@ const Users: PageComponent = () => {
     });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display font-semibold text-2xl text-foreground">Utilisateurs</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Liste des comptes clients et administrateurs.
+           <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Communauté</p>
+          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Utilisateurs</h2>
+          <p className="text-muted-foreground text-lg font-medium mt-3">
+            Gérez vos clients et administrateurs.
           </p>
         </div>
         {!isLoading && users.length > 0 && (
           <div className="flex flex-col gap-3 shrink-0 items-end">
             <div className="flex items-center gap-3">
-              <div className="text-center">
-                <p className="font-display font-bold text-xl text-primary">{adminCount}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Admins</p>
+              <div className="text-center bg-card rounded-2xl border border-border/40 p-3 shadow-sm min-w-[80px]">
+                <p className="font-display font-extrabold text-2xl text-primary">{adminCount}</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Admins</p>
               </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="font-display font-bold text-xl text-violet-500">{customerCount}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Clients</p>
+              <div className="text-center bg-card rounded-2xl border border-border/40 p-3 shadow-sm min-w-[80px]">
+                <p className="font-display font-extrabold text-2xl text-violet-500">{customerCount}</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Clients</p>
               </div>
             </div>
             
@@ -145,7 +143,7 @@ const Users: PageComponent = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as any)}
-                className="h-9 px-3 rounded-xl border border-border/60 bg-card text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all hover:bg-accent cursor-pointer appearance-none"
+                className="h-10 px-4 rounded-xl border border-border/40 bg-card shadow-sm text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all hover:bg-accent cursor-pointer appearance-none"
               >
                 <option value="recent">Plus récents</option>
                 <option value="online">En ligne actuellement</option>
@@ -157,8 +155,8 @@ const Users: PageComponent = () => {
       </div>
 
       {/* Content */}
-      <Card>
-        <CardContent className="p-0">
+      <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
+        <div>
           {isLoading ? (
             <div className="px-5 divide-y divide-border/40">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -173,24 +171,24 @@ const Users: PageComponent = () => {
               ))}
             </div>
           ) : visibleUsers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-              <div className="size-14 rounded-full bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center">
-                <UsersIcon className="size-6 text-violet-300" />
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+              <div className="size-16 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 flex items-center justify-center">
+                <UsersIcon className="size-6 text-violet-400" />
               </div>
-              <p className="text-sm font-medium text-foreground">Aucun utilisateur</p>
-              <p className="text-xs text-muted-foreground max-w-[220px]">
+              <p className="text-lg font-bold text-foreground mt-2">Aucun utilisateur</p>
+              <p className="text-sm text-muted-foreground font-medium max-w-[280px]">
                 {filterType === 'online' ? "Personne n'est en ligne actuellement." : "Les utilisateurs inscrits apparaîtront ici."}
               </p>
             </div>
           ) : (
-            <div className="px-5">
+            <div className="px-2 pb-2">
               {visibleUsers.map((user) => (
                 <UserCard key={user.uid} user={user} />
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

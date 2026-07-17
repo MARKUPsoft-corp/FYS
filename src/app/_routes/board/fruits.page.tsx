@@ -56,29 +56,34 @@ const Fruits: PageComponent = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display font-semibold text-2xl text-foreground">Fruits</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage the fruit catalogue, prices, and nutrients.
+          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Ingrédients</p>
+          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Fruits</h2>
+          <p className="text-muted-foreground text-lg font-medium mt-3">
+            Gérez le catalogue interne des fruits et légumes.
           </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="size-4 mr-1.5" />
-          Add fruit
+        <Button size="lg" onClick={openCreate} className="rounded-full shadow-sm">
+          <Plus className="size-5 mr-2" />
+          Ajouter un fruit
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-16">Loading…</p>
+        <div className="flex items-center justify-center py-20 bg-card rounded-[2rem] border border-border/40 shadow-sm">
+          <p className="text-sm font-semibold text-muted-foreground animate-pulse">Chargement en cours…</p>
+        </div>
       ) : (
-        <FruitTable
-          fruits={fruits}
-          categories={categories}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-        />
+        <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
+          <FruitTable
+            fruits={fruits}
+            categories={categories}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+          />
+        </div>
       )}
 
       <FruitFormDrawer

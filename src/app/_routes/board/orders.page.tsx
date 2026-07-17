@@ -129,7 +129,7 @@ function OrderCard({
   return (
     <div
       onClick={onClick}
-      className="bg-card rounded-[1.75rem] border border-border/50 p-5 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group"
+      className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -927,37 +927,58 @@ const Orders: PageComponent = () => {
     : "url('https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200')";
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className={`min-h-screen bg-background pb-20 ${isAdmin ? 'space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10' : ''}`}>
 
-      {/* Hero Banner */}
-      <div
-        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
-        style={{ backgroundImage: heroBg, backgroundSize: 'cover', backgroundPosition: 'center' }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        <div className="relative z-10">
-          <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">Suivi</p>
-          <h1 className="font-display font-extrabold text-4xl text-white">
-            {isAdmin ? 'Les ' : 'Mes '}
-            <span className="text-secondary italic">Commandes</span>
-          </h1>
+      {/* Hero Banner (Customer Only) */}
+      {!isAdmin && (
+        <div
+          className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
+          style={{ backgroundImage: heroBg, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="relative z-10">
+            <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">Suivi</p>
+            <h1 className="font-display font-extrabold text-4xl text-white">
+              Mes <span className="text-secondary italic">Commandes</span>
+            </h1>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="px-3 md:px-4 space-y-6">
-
-        {/* Section title */}
-        <div className="text-center">
-          <h3 className="font-display font-bold text-3xl">
-            <span className="text-foreground">{isAdmin ? 'Toutes les ' : 'Mes '}</span>
-            <span className="text-primary">Commandes</span>
-          </h3>
-          <p className="text-muted-foreground mt-2 font-medium text-sm">
-            {isAdmin
-              ? 'Toutes les commandes passées sur la plateforme.'
-              : "Suivez l'état de vos commandes en temps réel."}
-          </p>
+      {/* Admin Header */}
+      {isAdmin && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Historique</p>
+            <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Commandes</h2>
+            <p className="text-muted-foreground text-lg font-medium mt-3">
+              Supervisez la flotte de commandes.
+            </p>
+          </div>
+          {!isLoading && orders.length > 0 && (
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="bg-card rounded-2xl border border-border/40 p-3 px-5 shadow-sm min-w-[100px] text-center">
+                <p className="font-display font-extrabold text-2xl text-foreground">{orders.length}</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Total</p>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      <div className={isAdmin ? 'bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden p-6' : 'px-3 md:px-4 space-y-6'}>
+        {/* Section title (Customer Only) */}
+        {!isAdmin && (
+          <div className="text-center">
+            <h3 className="font-display font-bold text-3xl">
+              <span className="text-foreground">Mes </span>
+              <span className="text-primary">Commandes</span>
+            </h3>
+            <p className="text-muted-foreground mt-2 font-medium text-sm">
+              Suivez l'état de vos commandes en temps réel.
+            </p>
+          </div>
+        )}
 
         {/* Admin filter bar */}
         {isAdmin && (
