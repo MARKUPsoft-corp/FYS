@@ -17,6 +17,8 @@ export interface CocktailIngredient {
   fruitName: string;      // dénormalisé pour éviter une lecture supplémentaire
   quantityGrams: number;  // utile pour l'analyse nutritionnelle et l'IA
   priceSnapshot: number;  // snapshot de Fruit.price au moment de la création
+  /** Rôle dans le Lab : fruit principal (étape 1) ou supplément (étape 2) */
+  role?: 'fruit' | 'supplement';
 }
 
 export interface NutrientInfo {

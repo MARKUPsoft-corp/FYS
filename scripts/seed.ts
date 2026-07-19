@@ -210,6 +210,10 @@ function mapFruit(json: any): Omit<Fruit, 'createdAt' | 'updatedAt'> {
     categoryIds: [json.categorie],
     imageUrl: undefined,
 
+    // Dual-role defaults — herbs already in DB are also supplements
+    isMainFruit: true,
+    isSupplement: ['gingembre', 'menthe', 'noix_de_coco'].includes(json.id),
+
     benefits: mapBenefits(ter.badges_benefices ?? []),
     warnings,
     ...(fic.role_cocktail ? { cocktailRole: cocktailRole(fic.role_cocktail) } : {}),
@@ -241,6 +245,76 @@ function mapFruit(json: any): Omit<Fruit, 'createdAt' | 'updatedAt'> {
   };
 }
 
+// ── Suppléments additionnels (étape 2 Lab) ────────────────────────────────
+
+const EXTRA_SUPPLEMENTS: Array<Omit<Fruit, 'createdAt' | 'updatedAt'>> = [
+  {
+    id: 'sucre',
+    name: 'Sucre',
+    categoryIds: ['supplement_herbe'],
+    isMainFruit: false,
+    isSupplement: true,
+    price: 100,
+    benefits: ['Sweetness'],
+    warnings: ['Moderation advised for diabetics'],
+    nutrients: { macros: {}, vitamins: {}, minerals: {} },
+    dataStatus: 'partial',
+    validatedByNutritionist: false,
+  },
+  {
+    id: 'lait_concentre',
+    name: 'Lait concentré',
+    categoryIds: ['supplement_herbe'],
+    isMainFruit: false,
+    isSupplement: true,
+    price: 200,
+    benefits: ['Creaminess', 'Energy'],
+    warnings: ['Contains lactose'],
+    nutrients: { macros: {}, vitamins: {}, minerals: {} },
+    dataStatus: 'partial',
+    validatedByNutritionist: false,
+  },
+  {
+    id: 'cannelle',
+    name: 'Cannelle',
+    categoryIds: ['supplement_herbe'],
+    isMainFruit: false,
+    isSupplement: true,
+    price: 150,
+    benefits: ['Digestion', 'Glycemic balance'],
+    warnings: [],
+    nutrients: { macros: {}, vitamins: {}, minerals: {} },
+    dataStatus: 'partial',
+    validatedByNutritionist: false,
+  },
+  {
+    id: 'curcuma',
+    name: 'Curcuma',
+    categoryIds: ['supplement_herbe'],
+    isMainFruit: false,
+    isSupplement: true,
+    price: 150,
+    benefits: ['Anti-inflammatory'],
+    warnings: [],
+    nutrients: { macros: {}, vitamins: {}, minerals: {} },
+    dataStatus: 'partial',
+    validatedByNutritionist: false,
+  },
+  {
+    id: 'miel',
+    name: 'Miel',
+    categoryIds: ['supplement_herbe'],
+    isMainFruit: false,
+    isSupplement: true,
+    price: 200,
+    benefits: ['Energy', 'Soothing'],
+    warnings: ['Not for infants under 1 year'],
+    nutrients: { macros: {}, vitamins: {}, minerals: {} },
+    dataStatus: 'partial',
+    validatedByNutritionist: false,
+  },
+];
+
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function seed() {
@@ -259,7 +333,17 @@ async function seed() {
       createdAt: now,
       updatedAt: now,
     }));
-    console.log(`   ✓ ${fruit.name}`);
+    console.log(`   ✓ ${fruit.name}${fruit.isSupplement ? ' (aussi supplément)' : ''}`);
+  }
+
+  console.log('\n🌱  Seeding supplements…');
+  for (const item of EXTRA_SUPPLEMENTS) {
+    await setDoc(doc(db, 'fruits', item.id), stripUndefined({
+      ...item,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    console.log(`   ✓ ${item.name} (supplément)`);
   }
 
   console.log('\n✅  Seed complete.');

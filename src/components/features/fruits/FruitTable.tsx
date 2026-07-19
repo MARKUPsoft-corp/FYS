@@ -41,6 +41,7 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
             <th className="text-left font-medium text-muted-foreground px-4 py-3">Name</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Categories</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Role</th>
+            <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Lab</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Price</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">Status</th>
             <th className="px-4 py-3 w-20" />
@@ -94,6 +95,20 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
+              </td>
+
+              {/* Lab usage */}
+              <td className="px-4 py-3 hidden md:table-cell">
+                <div className="flex flex-wrap gap-1">
+                  {fruit.isMainFruit !== false && (
+                    <Badge variant="secondary" className="text-[10px]">Fruit</Badge>
+                  )}
+                  {fruit.isSupplement && (
+                    <Badge className="text-[10px] bg-secondary/15 text-secondary border-secondary/30" variant="outline">
+                      Supplément
+                    </Badge>
+                  )}
+                </div>
               </td>
 
               {/* Price */}

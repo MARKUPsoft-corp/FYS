@@ -30,8 +30,8 @@ export async function chatCocktail(
 export async function recommendSupplements(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  availableSupplements: Fruit[] = [],
 ) {
-  // We use Gemini for supplements recommendation
   const { recommendSupplementsWithGemini } = await import('./ai.gemini');
-  return recommendSupplementsWithGemini(ingredients, profile);
+  return recommendSupplementsWithGemini(ingredients, profile, availableSupplements);
 }

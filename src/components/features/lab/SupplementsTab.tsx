@@ -1,55 +1,100 @@
-import { Lightbulb, Sparkles, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  LAB_SUPPLEMENTS,
-  type LabItem,
-} from '@/data/lab-items';
+import { Lightbulb, Sparkles } from 'lucide-react';
+import type { Fruit } from '@/entities';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  selectedFruits: LabItem[];
-  selectedSupplements: string[];
+  selectedFruits: Fruit[];
+  supplements: Fruit[];
+  selectedSupplementIds: string[];
   onToggleSupplement: (id: string) => void;
-  onAnalyze: () => void;
-  aiRecommendation?: AIRecommendation;
+  aiRecommendation?: AIRecommendation | null;
   loadingAI?: boolean;
 };
 
+function ItemTile({
+  item,
+  selected,
+  onClick,
+  accent = 'primary',
+  badge,
+}: {
+  item: Fruit;
+  selected: boolean;
+  onClick: () => void;
+  accent?: 'primary' | 'secondary';
+  badge?: string;
+}) {
+  const selectedCls =
+    accent === 'primary'
+      ? 'bg-primary/10 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
+      : 'bg-secondary/10 border-secondary shadow-[0_4px_12px_rgba(242,105,74,0.15)] scale-[0.97]';
+  const textCls =
+    accent === 'primary' ? 'text-primary' : 'text-secondary';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 border-2',
+        selected
+          ? selectedCls
+          : 'bg-card border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5 opacity-80',
+      )}
+    >
+      {badge && (
+        <span className="absolute -top-1.5 -right-1.5 z-10 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#E0982E] text-white shadow-sm">
+          {badge}
+        </span>
+      )}
+      {item.imageUrl ? (
+        <div
+          className="w-full aspect-square rounded-xl bg-cover bg-center"
+          style={{ backgroundImage: `url('${item.imageUrl}')` }}
+        />
+      ) : (
+        <div className={cn(
+          'w-full aspect-square rounded-xl flex items-center justify-center text-2xl',
+          accent === 'primary' ? 'bg-primary/10' : 'bg-secondary/10',
+        )}>
+          ✦
+        </div>
+      )}
+      <span className={cn(
+        'text-[10px] font-semibold text-center line-clamp-1 w-full',
+        selected ? textCls : 'text-muted-foreground',
+      )}>
+        {item.name}
+      </span>
+      {item.price != null && (
+        <span className="text-[9px] text-muted-foreground tabular-nums">
+          +{item.price.toLocaleString()} XAF
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function SupplementsTab({
   selectedFruits,
-  selectedSupplements,
+  supplements,
+  selectedSupplementIds,
   onToggleSupplement,
-  onAnalyze,
   aiRecommendation,
   loadingAI,
 }: Props) {
-  const recommendedSupplements = LAB_SUPPLEMENTS.filter(
-    (s) => aiRecommendation?.recommendedIds.includes(s.id),
-  );
-  const highlighted = LAB_SUPPLEMENTS.find(
-    (s) => s.id === aiRecommendation?.highlightedSupplementId,
-  );
-  const totalCount = selectedFruits.length + selectedSupplements.length;
-
-  if (selectedFruits.length === 0) {
-    return (
-      <div className="relative z-20 -mt-5 lg:mt-8 bg-card rounded-2xl p-8 border border-border/60 shadow-lg text-center max-w-lg mx-auto">
-        <Sparkles className="size-8 text-[#E0982E] mx-auto mb-4" />
-        <h2 className="font-display font-bold text-xl text-foreground mb-2">Composez d&apos;abord votre base</h2>
-        <p className="text-sm text-muted-foreground font-medium">
-          Sélectionnez au moins un fruit dans l&apos;onglet « Je compose » pour recevoir des recommandations NutriFYS.
-        </p>
-      </div>
-    );
-  }
+  const recommendedIds = new Set(aiRecommendation?.recommendedIds ?? []);
+  const recommended = supplements.filter((s) => recommendedIds.has(s.id));
+  const others = supplements.filter((s) => !recommendedIds.has(s.id));
+  const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId);
 
   const fruitNames = selectedFruits.map((f) => f.name).join(' + ');
 
   return (
     <div className="space-y-6">
-      {/* Recommendation card — overlaps header */}
-      <div className="relative z-20 -mt-5 lg:mt-8 bg-[#28422F] rounded-2xl p-4 border border-primary/20 shadow-lg flex items-start gap-4 min-h-[100px]">
+      {/* NutriFYS recommendation card */}
+      <div className="relative z-20 bg-[#28422F] rounded-2xl p-4 border border-primary/20 shadow-lg flex items-start gap-4 min-h-[100px]">
         <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center shrink-0 border border-accent/30">
           <Sparkles className="size-4 text-[#E0982E]" />
         </div>
@@ -59,87 +104,87 @@ export function SupplementsTab({
           </span>
           {loadingAI ? (
             <div className="animate-pulse flex flex-col gap-2 mt-2 w-full">
-              <div className="h-3 bg-white/20 rounded w-full"></div>
-              <div className="h-3 bg-white/20 rounded w-4/5"></div>
+              <div className="h-3 bg-white/20 rounded w-full" />
+              <div className="h-3 bg-white/20 rounded w-4/5" />
             </div>
           ) : (
             <p className="text-white/90 text-[12px] md:text-[13px] font-medium leading-relaxed">
-              Basé sur votre sélection{' '}
-              <span className="text-white font-semibold">{fruitNames}</span>{' '}
-              <span className="text-[#E0982E] font-bold">(cocktail {aiRecommendation?.profileLabel})</span>
-              , voici les suppléments que je vous recommande :
+              Basé sur{' '}
+              <span className="text-white font-semibold">{fruitNames || 'votre sélection'}</span>
+              {aiRecommendation?.profileLabel && (
+                <>
+                  {' '}
+                  <span className="text-[#E0982E] font-bold">
+                    (profil {aiRecommendation.profileLabel})
+                  </span>
+                </>
+              )}
+              , voici les suppléments que je vous propose. Vous pouvez les retirer ou en ajouter d&apos;autres.
             </p>
           )}
         </div>
       </div>
 
-      {/* Base cocktail */}
+      {/* Base fruits summary */}
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-          Votre cocktail de base
+          Votre base fruitée
         </h3>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {selectedFruits.map((fruit) => (
             <div
               key={fruit.id}
-              className="flex flex-col items-center justify-center gap-1.5 w-[calc(33.333%-0.5rem)] min-w-[96px] max-w-[120px] aspect-square rounded-[1rem] bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.12)]"
+              className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/20"
             >
-              <span className="text-2xl">{fruit.emoji}</span>
-              <span className="text-[10px] font-semibold text-primary">{fruit.name}</span>
+              {fruit.imageUrl ? (
+                <div
+                  className="size-6 rounded-full bg-cover bg-center"
+                  style={{ backgroundImage: `url('${fruit.imageUrl}')` }}
+                />
+              ) : (
+                <span className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px]">🍓</span>
+              )}
+              <span className="text-[11px] font-semibold text-primary">{fruit.name}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Recommended supplements */}
+      {/* Recommended by NutriFYS */}
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
           <Sparkles className="size-3 text-[#E0982E]" />
-          Suppléments recommandés par NutriFYS
-          <Sparkles className="size-3 text-[#E0982E]" />
+          Propositions NutriFYS
         </h3>
-        
+
         {loadingAI ? (
-          <div className="flex flex-wrap gap-3">
-             <div className="w-[calc(33.333%-0.5rem)] min-w-[96px] max-w-[120px] aspect-square rounded-[1rem] bg-muted/60 animate-pulse" />
-             <div className="w-[calc(33.333%-0.5rem)] min-w-[96px] max-w-[120px] aspect-square rounded-[1rem] bg-muted/60 animate-pulse [animation-delay:150px]" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="aspect-square rounded-[1.25rem] bg-muted/60 animate-pulse" />
+            ))}
           </div>
+        ) : recommended.length === 0 ? (
+          <p className="text-sm text-muted-foreground font-medium py-4 px-3 rounded-xl bg-muted/30 border border-border/40">
+            Aucune suggestion pour l&apos;instant — choisissez librement dans la liste ci-dessous.
+          </p>
         ) : (
-          <div className="flex flex-wrap gap-3">
-            {recommendedSupplements.map((supplement) => {
-              const isSelected = selectedSupplements.includes(supplement.id);
-              return (
-                <button
-                  key={supplement.id}
-                  type="button"
-                  onClick={() => onToggleSupplement(supplement.id)}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-1.5 w-[calc(33.333%-0.5rem)] min-w-[96px] max-w-[120px] aspect-square rounded-[1rem] transition-all duration-200',
-                    isSelected
-                      ? 'bg-secondary/10 border-2 border-secondary shadow-[0_4px_12px_rgba(242,105,74,0.15)] scale-[0.97]'
-                      : 'bg-card border-2 border-border/60 hover:border-secondary/40 shadow-sm',
-                  )}
-                >
-                  <span className="text-2xl">{supplement.emoji}</span>
-                  <span
-                    className={cn(
-                      'text-[10px] font-semibold',
-                      isSelected ? 'text-secondary' : 'text-muted-foreground',
-                    )}
-                  >
-                    {supplement.name}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+            {recommended.map((s) => (
+              <ItemTile
+                key={s.id}
+                item={s}
+                selected={selectedSupplementIds.includes(s.id)}
+                onClick={() => onToggleSupplement(s.id)}
+                accent="secondary"
+                badge={s.id === highlighted?.id ? 'Top' : 'IA'}
+              />
+            ))}
           </div>
         )}
       </section>
 
-      {/* Why card — ambre réservé signalétique NutriFYS */}
-      {loadingAI ? (
-        <div className="bg-[#E0982E]/10 border border-[#E0982E]/30 rounded-2xl p-4 flex gap-3 h-20 animate-pulse" />
-      ) : highlighted && selectedSupplements.includes(highlighted.id) ? (
+      {/* Why card */}
+      {!loadingAI && highlighted && selectedSupplementIds.includes(highlighted.id) && aiRecommendation?.why && (
         <div className="bg-[#E0982E]/10 border border-[#E0982E]/30 rounded-2xl p-4 flex gap-3">
           <div className="size-9 rounded-xl bg-[#E0982E]/15 flex items-center justify-center shrink-0">
             <Lightbulb className="size-4 text-[#E0982E]" />
@@ -149,33 +194,39 @@ export function SupplementsTab({
               Pourquoi le {highlighted.name.toLowerCase()} ?
             </p>
             <p className="text-[12px] text-muted-foreground font-medium leading-relaxed">
-              {aiRecommendation?.why}
+              {aiRecommendation.why}
             </p>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* Desktop analyze CTA */}
-      <div className="hidden lg:block pt-2">
-        <Button
-          size="lg"
-          className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-[17px] shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-3"
-          disabled={totalCount === 0}
-          onClick={onAnalyze}
-        >
-          <Sparkles className="size-5" /> Analyser avec NutriFYS
-        </Button>
-      </div>
-
-      {/* Mobile sticky summary rendered by parent — expose count via nothing, parent handles it */}
+      {/* Full catalog */}
+      <section>
+        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
+          Tous les suppléments
+        </h3>
+        {supplements.length === 0 ? (
+          <p className="text-sm text-muted-foreground font-medium py-6 text-center rounded-xl border border-dashed border-border">
+            Aucun supplément en base. L&apos;admin peut en ajouter depuis Fruits &amp; suppléments.
+          </p>
+        ) : others.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            Tous les suppléments disponibles sont déjà proposés ci-dessus.
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+            {others.map((s) => (
+              <ItemTile
+                key={s.id}
+                item={s}
+                selected={selectedSupplementIds.includes(s.id)}
+                onClick={() => onToggleSupplement(s.id)}
+                accent="secondary"
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
-}
-
-export function getSupplementsSummaryItems(
-  fruits: LabItem[],
-  supplementIds: string[],
-): LabItem[] {
-  const supplements = LAB_SUPPLEMENTS.filter((s) => supplementIds.includes(s.id));
-  return [...fruits, ...supplements];
 }

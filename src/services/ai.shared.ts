@@ -412,6 +412,7 @@ export type AIRecommendation = {
 export function buildSupplementPrompt(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  availableSupplements: Fruit[] = [],
 ): string {
   const fruitLines = ingredients.map(({ fruit, grams }) => `• ${fruit.name} (${grams}g)`).join('\n');
 
@@ -427,6 +428,16 @@ export function buildSupplementPrompt(
 
   const knowledgeContext = buildKnowledgeContext(ingredients, profile);
 
+  const supplementCatalog = availableSupplements.length > 0
+    ? availableSupplements.map((s) => {
+        const benefits = s.benefits?.length ? s.benefits.join(', ') : 'non spécifié';
+        const warnings = s.warnings?.length ? s.warnings.join(', ') : 'aucun';
+        return `  • ${s.name} [id: ${s.id}] — Bénéfices: ${benefits} | Précautions: ${warnings}`;
+      }).join('\n')
+    : '  (aucun supplément en base — recommande une liste vide)';
+
+  const validIds = availableSupplements.map((s) => s.id).join(', ');
+
   return `Tu es NutriFYS. L'utilisateur a composé ce mélange de fruits :
 ${fruitLines}
 
@@ -435,21 +446,22 @@ ${profileSection}
 BASE DE CONNAISSANCES :
 ${knowledgeContext}
 
-LISTE DES SUPPLÉMENTS DISPONIBLES :
-gingembre, menthe, curcuma, chia, miel
+LISTE DES SUPPLÉMENTS DISPONIBLES (catalogue FYS en temps réel) :
+${supplementCatalog}
 
 MISSION:
-Sélectionne les meilleurs suppléments parmi la liste ci-dessus qui complèteraient parfaitement cette mixture, en tenant compte du PROFIL SANTÉ.
-Choisis particulièrement un supplément "mis en avant" et explique pourquoi.
+Sélectionne 1 à 3 meilleurs suppléments parmi la liste ci-dessus qui compléteraient parfaitement ce mélange, en tenant compte du PROFIL SANTÉ.
+Choisis un supplément "mis en avant" et explique pourquoi en langage simple.
+N'invente AUCUN id — utilise uniquement les ids fournis.
 
-Réponds UNIQUEMENT par ce JSON stricte :
+Réponds UNIQUEMENT par ce JSON strict :
 {
   "profileLabel": "<Ex: Énergie, Immunité, Détox...>",
   "recommendedIds": ["id1", "id2"],
   "highlightedSupplementId": "id1",
   "why": "<Explication courte et ciblée, 1-2 phrases>"
 }
-Rappel: les IDs sont exactement les noms en minuscules ("gingembre", "menthe", "curcuma", "chia", "miel").`;
+IDs valides: [${validIds}]`;
 }
 
 export function parseSupplementResponse(raw: string): AIRecommendation {

@@ -61,9 +61,19 @@ export async function chatWithGemini(
 export async function recommendSupplementsWithGemini(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  availableSupplements: Fruit[] = [],
 ): Promise<AIRecommendation> {
-  const prompt = buildSupplementPrompt(ingredients, profile);
+  const prompt = buildSupplementPrompt(ingredients, profile, availableSupplements);
   const result = await model.generateContent(prompt);
   const raw = result.response.text();
-  return parseSupplementResponse(raw);
+  const parsed = parseSupplementResponse(raw);
+  // Ne garder que des IDs réellement présents dans le catalogue
+  const validIds = new Set(availableSupplements.map((s) => s.id));
+  return {
+    ...parsed,
+    recommendedIds: parsed.recommendedIds.filter((id) => validIds.has(id)),
+    highlightedSupplementId: validIds.has(parsed.highlightedSupplementId)
+      ? parsed.highlightedSupplementId
+      : (parsed.recommendedIds.find((id) => validIds.has(id)) ?? ''),
+  };
 }

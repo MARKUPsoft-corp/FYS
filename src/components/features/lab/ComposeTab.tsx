@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import {
-  Minus, Plus, FlaskConical, Sparkles, Save, RefreshCw, Loader2,
+  Plus, FlaskConical, Sparkles, Save, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
   Lightbulb, Link2, ClipboardList, ShoppingBag,
+  Check, ChevronRight, ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { SupplementsTab } from '@/components/features/lab/SupplementsTab';
+import type { AIRecommendation } from '@/services/ai.shared';
 import type { Fruit, AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
+import { isUsableAsMainFruit } from '@/entities';
 
 
 // ── Verdict config ────────────────────────────────────────────────────────────
@@ -138,14 +143,10 @@ function BenefitChip({ nom, niveau }: { nom: string; niveau: string }) {
 function NutritionalSheetContent({
   analysis,
   selectedFruits,
-  analyzing,
-  canAnalyze,
   onOrderRequest,
 }: {
   analysis: AIAnalysis;
   selectedFruits: Fruit[];
-  analyzing: boolean;
-  canAnalyze: boolean;
   onOrderRequest: () => void;
 }) {
   const cfg = VERDICT_CONFIG[analysis.verdict];
@@ -264,13 +265,97 @@ function NutritionalSheetContent({
   );
 }
 
+// ── Compose stepper ───────────────────────────────────────────────────────────
+
+export type ComposeStep = 1 | 2;
+
+function ComposeStepper({
+  step,
+  onStepChange,
+  canGoStep2,
+}: {
+  step: ComposeStep;
+  onStepChange: (s: ComposeStep) => void;
+  canGoStep2: boolean;
+}) {
+  const steps = [
+    { n: 1 as const, label: 'Fruits', hint: 'Base fruitée' },
+    { n: 2 as const, label: 'Suppléments', hint: 'Assaisonnement' },
+  ];
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-0">
+        {steps.map((s, i) => {
+          const active = step === s.n;
+          const done = step > s.n;
+          const clickable = s.n === 1 || canGoStep2;
+          return (
+            <div key={s.n} className="flex items-center flex-1 min-w-0">
+              <button
+                type="button"
+                disabled={!clickable}
+                onClick={() => clickable && onStepChange(s.n)}
+                className={cn(
+                  'group flex items-center gap-3 w-full text-left rounded-2xl px-3 py-3 transition-all',
+                  active && 'bg-primary/8',
+                  !clickable && 'opacity-40 cursor-not-allowed',
+                )}
+              >
+                <span
+                  className={cn(
+                    'size-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 border-2 transition-all',
+                    active && 'bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_rgba(63,109,78,0.35)]',
+                    done && !active && 'bg-primary/15 text-primary border-primary/40',
+                    !active && !done && 'bg-muted text-muted-foreground border-border',
+                  )}
+                >
+                  {done && !active ? <Check className="size-4" /> : s.n}
+                </span>
+                <span className="min-w-0">
+                  <span className={cn(
+                    'block text-[11px] font-bold uppercase tracking-widest',
+                    active ? 'text-primary' : 'text-muted-foreground',
+                  )}>
+                    Étape {s.n}
+                  </span>
+                  <span className={cn(
+                    'block text-sm font-semibold truncate',
+                    active ? 'text-foreground' : 'text-muted-foreground',
+                  )}>
+                    {s.label}
+                  </span>
+                  <span className="hidden sm:block text-[10px] text-muted-foreground">{s.hint}</span>
+                </span>
+              </button>
+              {i < steps.length - 1 && (
+                <div
+                  className={cn(
+                    'h-0.5 w-6 sm:w-10 shrink-0 rounded-full mx-1 transition-colors',
+                    step > 1 ? 'bg-primary/50' : 'bg-border',
+                  )}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── ComposeTab ────────────────────────────────────────────────────────────────
 
 type Props = {
   fruits: Fruit[];
+  supplements: Fruit[];
   loading: boolean;
+  composeStep: ComposeStep;
+  onStepChange: (step: ComposeStep) => void;
   selectedIngredients: Map<string, number>;
+  selectedSupplements: Map<string, number>;
   onToggleFruit: (id: string) => void;
+  onToggleSupplement: (id: string) => void;
   onChangeQuantity: (fruitId: string, grams: number) => void;
   cocktailName: string;
   onNameChange: (name: string) => void;
@@ -281,14 +366,20 @@ type Props = {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   onOrderRequest: () => void;
+  aiRecommendation: AIRecommendation | null;
+  loadingAI: boolean;
 };
 
 export function ComposeTab({
   fruits,
+  supplements,
   loading,
+  composeStep,
+  onStepChange,
   selectedIngredients,
+  selectedSupplements,
   onToggleFruit,
-  onChangeQuantity,
+  onToggleSupplement,
   cocktailName,
   onNameChange,
   totalPrice,
@@ -298,93 +389,142 @@ export function ComposeTab({
   onAnalyze,
   analyzing,
   onOrderRequest,
+  aiRecommendation,
+  loadingAI,
 }: Props) {
-  const selectedFruits = fruits.filter((f) => selectedIngredients.has(f.id));
+  const mainFruits = fruits.filter(isUsableAsMainFruit);
+  const selectedFruits = mainFruits.filter((f) => selectedIngredients.has(f.id));
+  const selectedSupplementItems = supplements.filter((f) => selectedSupplements.has(f.id));
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
   const canAnalyze = selectedIngredients.size > 0;
+  const canGoStep2 = selectedIngredients.size > 0;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start">
 
-      {/* ── Fruit grid ── */}
       <div className="flex-1 min-w-0 w-full">
-        <div className="relative z-20 -mt-5 lg:mt-8 bg-card rounded-2xl p-4 mb-6 border border-border/60 shadow-lg flex items-center lg:items-start gap-4 mx-auto lg:mx-0 max-w-lg lg:max-w-none text-left">
-          <div className="size-10 rounded-full bg-[#E0982E]/10 flex items-center justify-center shrink-0 border border-[#E0982E]/20">
-            <Sparkles className="size-4 text-[#E0982E]" />
-          </div>
-          <div>
-            <span className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest block mb-0.5">
-              NutriFYS
-            </span>
-            <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-              Choisissez vos fruits 🍹, ajustez les quantités, puis laissez-moi analyser la compatibilité avec votre profil santé.
-            </p>
-          </div>
-        </div>
+        <ComposeStepper
+          step={composeStep}
+          onStepChange={onStepChange}
+          canGoStep2={canGoStep2}
+        />
 
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            Fruits disponibles · Pleine saison
-          </h3>
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-50" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
-          </span>
-        </div>
+        {composeStep === 1 && (
+          <>
+            <div className="relative z-20 bg-card rounded-2xl p-4 mb-6 border border-border/60 shadow-lg flex items-center lg:items-start gap-4 mx-auto lg:mx-0 max-w-lg lg:max-w-none text-left">
+              <div className="size-10 rounded-full bg-[#E0982E]/10 flex items-center justify-center shrink-0 border border-[#E0982E]/20">
+                <Sparkles className="size-4 text-[#E0982E]" />
+              </div>
+              <div>
+                <span className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest block mb-0.5">
+                  NutriFYS · Étape 1
+                </span>
+                <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
+                  Choisissez vos fruits de base. Ensuite, je vous proposerai des suppléments adaptés à votre mélange.
+                </p>
+              </div>
+            </div>
 
-        {loading ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-[1.25rem] bg-card border-2 border-border/40 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {fruits.map((fruit) => {
-              const isSelected = selectedIngredients.has(fruit.id);
-              // const grams = selectedIngredients.get(fruit.id) ?? 100;
-              return (
-                <button
-                  key={fruit.id}
-                  type="button"
-                  onClick={() => onToggleFruit(fruit.id)}
-                  className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
-                      : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
-                  }`}
-                >
-                  {fruit.imageUrl ? (
-                    <div
-                      className="w-full aspect-square rounded-xl bg-cover bg-center"
-                      style={{ backgroundImage: `url('${fruit.imageUrl}')` }}
-                    />
-                  ) : (
-                    <div className="w-full aspect-square rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
-                      🍓
-                    </div>
-                  )}
-                  <span className={`text-[10px] font-semibold text-center line-clamp-1 w-full ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {fruit.name}
-                  </span>
-                  {/* {isSelected && (
-                    <QuantityStepper
-                      grams={grams}
-                      onChange={(g) => onChangeQuantity(fruit.id, g)}
-                    />
-                  )} */}
-                </button>
-              );
-            })}
-          </div>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Fruits disponibles · Pleine saison
+              </h3>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-50" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-[1.25rem] bg-card border-2 border-border/40 animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                {mainFruits.map((fruit) => {
+                  const isSelected = selectedIngredients.has(fruit.id);
+                  return (
+                    <button
+                      key={fruit.id}
+                      type="button"
+                      onClick={() => onToggleFruit(fruit.id)}
+                      className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${
+                        isSelected
+                          ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
+                          : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
+                      }`}
+                    >
+                      {fruit.imageUrl ? (
+                        <div
+                          className="w-full aspect-square rounded-xl bg-cover bg-center"
+                          style={{ backgroundImage: `url('${fruit.imageUrl}')` }}
+                        />
+                      ) : (
+                        <div className="w-full aspect-square rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+                          🍓
+                        </div>
+                      )}
+                      <span className={`text-[10px] font-semibold text-center line-clamp-1 w-full ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {fruit.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Mobile / desktop next */}
+            <div className="mt-6 flex justify-end">
+              <Button
+                size="lg"
+                className="h-12 rounded-2xl px-6 font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)]"
+                disabled={!canGoStep2}
+                onClick={() => onStepChange(2)}
+              >
+                Suivant · Suppléments
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        {composeStep === 2 && (
+          <>
+            <div className="mb-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+                onClick={() => onStepChange(1)}
+              >
+                <ChevronLeft className="size-4" />
+                Modifier les fruits
+              </Button>
+            </div>
+            <SupplementsTab
+              selectedFruits={selectedFruits}
+              supplements={supplements}
+              selectedSupplementIds={[...selectedSupplements.keys()]}
+              onToggleSupplement={onToggleSupplement}
+              aiRecommendation={aiRecommendation}
+              loadingAI={loadingAI}
+            />
+          </>
         )}
       </div>
 
       {/* ── Desktop save panel ── */}
       <div className="hidden lg:block w-[360px] shrink-0">
         <SavePanel
+          composeStep={composeStep}
+          onStepChange={onStepChange}
           selectedFruits={selectedFruits}
-          selectedIngredients={selectedIngredients}
+          selectedSupplements={selectedSupplementItems}
+          selectedMainCount={selectedFruits.length}
+          selectedSupplementCount={selectedSupplementItems.length}
           cocktailName={cocktailName}
           onNameChange={onNameChange}
           totalPrice={totalPrice}
@@ -395,6 +535,7 @@ export function ComposeTab({
           onAnalyze={onAnalyze}
           analyzing={analyzing}
           canAnalyze={canAnalyze}
+          canGoStep2={canGoStep2}
           onOrderRequest={onOrderRequest}
         />
       </div>
@@ -405,8 +546,12 @@ export function ComposeTab({
 // ── SavePanel ─────────────────────────────────────────────────────────────────
 
 type SavePanelProps = {
+  composeStep: ComposeStep;
+  onStepChange: (step: ComposeStep) => void;
   selectedFruits: Fruit[];
-  selectedIngredients: Map<string, number>;
+  selectedSupplements: Fruit[];
+  selectedMainCount: number;
+  selectedSupplementCount: number;
   cocktailName: string;
   onNameChange: (name: string) => void;
   totalPrice: number;
@@ -417,12 +562,17 @@ type SavePanelProps = {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   canAnalyze: boolean;
+  canGoStep2: boolean;
   onOrderRequest: () => void;
 };
 
 export function SavePanel({
+  composeStep,
+  onStepChange,
   selectedFruits,
-  selectedIngredients,
+  selectedSupplements,
+  selectedMainCount,
+  selectedSupplementCount,
   cocktailName,
   onNameChange,
   onSave,
@@ -432,22 +582,22 @@ export function SavePanel({
   onAnalyze,
   analyzing,
   canAnalyze,
+  canGoStep2,
   onOrderRequest,
 }: SavePanelProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Auto-open sheet once analysis arrives
   useEffect(() => {
     if (analysis) setSheetOpen(true);
   }, [analysis]);
 
   const cfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
+  const hasComposition = selectedMainCount > 0 || selectedSupplementCount > 0;
 
   return (
     <>
       <div className="bg-card rounded-3xl border border-border/60 shadow-sm overflow-hidden sticky top-24 mt-8">
 
-        {/* Header */}
         <div className="bg-primary/5 border-b border-border/40 px-6 py-4 flex items-center gap-3">
           <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center">
             <FlaskConical className="size-5 text-primary" />
@@ -455,16 +605,19 @@ export function SavePanel({
           <div>
             <h2 className="font-display font-bold text-base text-foreground">Ma recette</h2>
             <p className="text-xs text-muted-foreground">
-              {selectedFruits.length === 0
+              {selectedMainCount === 0
                 ? 'Aucun fruit sélectionné'
-                : `${selectedFruits.length} fruit${selectedFruits.length > 1 ? 's' : ''} · composition en cours`}
+                : `${selectedMainCount} fruit${selectedMainCount > 1 ? 's' : ''}${
+                    selectedSupplementCount > 0
+                      ? ` · ${selectedSupplementCount} supplément${selectedSupplementCount > 1 ? 's' : ''}`
+                      : ''
+                  }`}
             </p>
           </div>
         </div>
 
-        {/* Composition chips */}
         <div className="px-6 py-4">
-          {selectedFruits.length === 0 ? (
+          {!hasComposition ? (
             <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
               <Plus className="size-6 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground font-medium">
@@ -479,11 +632,18 @@ export function SavePanel({
               <div className="flex flex-wrap gap-1.5">
                 {selectedFruits.map((f) => (
                   <span
-                    key={f.id}
-                    className="inline-flex items-center gap-1 bg-primary/8 text-primary border border-primary/15 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    key={`f-${f.id}`}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border bg-primary/8 text-primary border-primary/15"
                   >
                     {f.name}
-                    {/* <span className="text-primary/60 font-normal">{selectedIngredients.get(f.id)}g</span> */}
+                  </span>
+                ))}
+                {selectedSupplements.map((f) => (
+                  <span
+                    key={`s-${f.id}`}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border bg-secondary/10 text-secondary border-secondary/20"
+                  >
+                    {f.name}
                   </span>
                 ))}
               </div>
@@ -493,13 +653,21 @@ export function SavePanel({
 
         <div className="border-t border-border/40 mx-6" />
 
-        {/* Analyze / verdict preview */}
         <div className="px-6 py-4 space-y-3">
-          {!analysis ? (
+          {composeStep === 1 ? (
+            <Button
+              className="w-full h-11 rounded-2xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)]"
+              disabled={!canGoStep2}
+              onClick={() => onStepChange(2)}
+            >
+              Suivant · Suppléments
+              <ChevronRight className="size-4" />
+            </Button>
+          ) : !analysis ? (
             <>
-              {selectedFruits.length > 0 && (
+              {canAnalyze && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  Lancez l'analyse pour obtenir la fiche nutritionnelle
+                  Lancez l&apos;analyse pour obtenir la fiche nutritionnelle
                 </p>
               )}
               <Button
@@ -516,7 +684,6 @@ export function SavePanel({
             </>
           ) : (
             <>
-              {/* Compact verdict badge */}
               <div className={`rounded-xl border px-4 py-3 flex items-center justify-between ${cfg!.bg} ${cfg!.border}`}>
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${cfg!.text}`}>{cfg!.emoji}</span>
@@ -528,7 +695,6 @@ export function SavePanel({
                 </span>
               </div>
 
-              {/* Open sheet button */}
               <Button
                 variant="outline"
                 className="w-full h-10 rounded-xl gap-2 text-sm font-semibold border-primary/30 text-primary hover:bg-primary/5"
@@ -543,7 +709,6 @@ export function SavePanel({
 
         <div className="border-t border-border/40 mx-6" />
 
-        {/* Name + save */}
         <div className="px-6 py-5 space-y-3">
           <Input
             value={cocktailName}
@@ -567,15 +732,14 @@ export function SavePanel({
               </>
             )}
           </Button>
-          {!analysis && selectedFruits.length > 0 && (
+          {!analysis && composeStep === 2 && selectedMainCount > 0 && (
             <p className="text-center text-[11px] text-muted-foreground">
-              Analysez d'abord pour enrichir la fiche nutritionnelle
+              Analysez d&apos;abord pour enrichir la fiche nutritionnelle
             </p>
           )}
         </div>
       </div>
 
-      {/* Nutritional sheet */}
       {analysis && (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent
@@ -584,9 +748,7 @@ export function SavePanel({
           >
             <NutritionalSheetContent
               analysis={analysis}
-              selectedFruits={selectedFruits}
-              analyzing={analyzing}
-              canAnalyze={canAnalyze}
+              selectedFruits={[...selectedFruits, ...selectedSupplements]}
               onOrderRequest={() => {
                 setSheetOpen(false);
                 onOrderRequest();

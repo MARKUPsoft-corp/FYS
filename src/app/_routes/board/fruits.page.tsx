@@ -60,9 +60,9 @@ const Fruits: PageComponent = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Ingrédients</p>
-          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Fruits</h2>
+          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Fruits & suppléments</h2>
           <p className="text-muted-foreground text-lg font-medium mt-3">
-            Gérez le catalogue interne des fruits et légumes.
+            Gérez le catalogue : fruits principaux, suppléments, ou les deux.
           </p>
         </div>
         <Button size="lg" onClick={openCreate} className="rounded-full shadow-sm">

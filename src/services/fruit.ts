@@ -11,6 +11,7 @@ import {
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
 import type { Fruit } from '@/entities';
+import { isUsableAsMainFruit, isUsableAsSupplement } from '@/entities';
 import { uploadFruitImage, deleteFruitImage, isManagedImageUrl } from './storage';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +30,16 @@ function stripUndefined(obj: any): any {
 export async function getFruits(): Promise<Fruit[]> {
   const snap = await getDocs(collection(db, COLLECTIONS.FRUITS));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Fruit));
+}
+
+export async function getMainFruits(): Promise<Fruit[]> {
+  const all = await getFruits();
+  return all.filter(isUsableAsMainFruit);
+}
+
+export async function getSupplementFruits(): Promise<Fruit[]> {
+  const all = await getFruits();
+  return all.filter(isUsableAsSupplement);
 }
 
 export async function getFruitById(id: string): Promise<Fruit | null> {

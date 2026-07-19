@@ -219,6 +219,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [cocktailRole, setCocktailRole] = useState<CocktailRole | ''>('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isMainFruit, setIsMainFruit] = useState(true);
+  const [isSupplement, setIsSupplement] = useState(false);
 
   // Cocktail profile
   const [benefits, setBenefits] = useState<string[]>([]);
@@ -264,6 +266,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       setCategoryIds(fruit.categoryIds);
       setCocktailRole(fruit.cocktailRole ?? '');
       setImageFile(null);
+      setIsMainFruit(fruit.isMainFruit !== false);
+      setIsSupplement(fruit.isSupplement === true);
       setBenefits(fruit.benefits);
       setWarnings(fruit.warnings);
       setAvoidIf(fruit.avoidIf ?? []);
@@ -286,6 +290,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
     } else {
       setName(''); setScientificName(''); setPricePerGram('');
       setCategoryIds([]); setCocktailRole(''); setImageFile(null);
+      setIsMainFruit(true); setIsSupplement(false);
       setBenefits([]); setWarnings([]); setAvoidIf([]); setTiming('');
       setGiMin(''); setGiMax(''); setGiBadge(''); setGiLoad(''); setGiNote('');
       setNutrients(EMPTY_NUTRIENTS);
@@ -317,6 +322,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       price: toNum(price),
       categoryIds,
       imageUrl: fruit?.imageUrl,
+      isMainFruit,
+      isSupplement,
       benefits,
       warnings,
       cocktailRole: (cocktailRole as CocktailRole) || undefined,
@@ -458,6 +465,37 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
                   <SelectItem value="base">Base</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Usage dans le FYS Lab</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Un même item peut être fruit principal (étape 1) et/ou supplément (étape 2).
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMainFruit((v) => !v)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    isMainFruit
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary'
+                  }`}
+                >
+                  Fruit principal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSupplement((v) => !v)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    isSupplement
+                      ? 'bg-secondary text-secondary-foreground border-secondary'
+                      : 'border-border text-muted-foreground hover:border-secondary'
+                  }`}
+                >
+                  Supplément
+                </button>
+              </div>
             </div>
           </section>
 

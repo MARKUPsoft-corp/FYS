@@ -87,6 +87,7 @@ export interface FruitHealthProfile {
 }
 
 // ── Fruit document — collection: "fruits/{id}" ────────────────────────────
+// Un même item peut servir de fruit principal ET/OU de supplément (Lab stepper).
 
 export interface Fruit {
   id: string;
@@ -95,6 +96,17 @@ export interface Fruit {
   price?: number;               // prix fixe d'ajout au cocktail (XAF)
   categoryIds: string[];         // many-to-many with Category
   imageUrl?: string;
+
+  /**
+   * Disponible à l'étape 1 du Lab (sélection fruits).
+   * Défaut: true si le champ est absent (rétrocompatibilité).
+   */
+  isMainFruit?: boolean;
+  /**
+   * Disponible à l'étape 2 du Lab (suppléments).
+   * Défaut: false si le champ est absent.
+   */
+  isSupplement?: boolean;
 
   // Quick-access summary (for listings and AI prompts)
   benefits: string[];            // English labels, e.g. ["Immunity", "Digestion"]
@@ -125,4 +137,14 @@ export interface Fruit {
 export interface Category {
   id: string;
   name: string;
+}
+
+/** Fruit principal (étape 1) — défaut true pour les docs sans le champ */
+export function isUsableAsMainFruit(fruit: Fruit): boolean {
+  return fruit.isMainFruit !== false;
+}
+
+/** Supplément (étape 2) — défaut false */
+export function isUsableAsSupplement(fruit: Fruit): boolean {
+  return fruit.isSupplement === true;
 }
