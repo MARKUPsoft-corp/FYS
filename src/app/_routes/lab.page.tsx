@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Input } from '@/components/ui/input';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
-import { CocktailType, isUsableAsSupplement, sumIngredientPrices, pricePerBottle } from '@/entities';
+import { CocktailType, isUsableAsSupplement, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { getFruits } from '@/services/fruit';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail } from '@/services/cocktail';
@@ -111,8 +111,11 @@ const FysLab: PageComponent = () => {
     });
     setSelectedIngredients((prev) => {
       const next = new Map(prev);
-      if (next.has(id)) next.delete(id);
-      else next.set(id, 100);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_LAB_MAIN_FRUITS) {
+        next.set(id, 100);
+      }
       return next;
     });
   }
@@ -127,8 +130,11 @@ const FysLab: PageComponent = () => {
     });
     setSelectedSupplements((prev) => {
       const next = new Map(prev);
-      if (next.has(id)) next.delete(id);
-      else next.set(id, 20);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_LAB_SUPPLEMENTS) {
+        next.set(id, 20);
+      }
       return next;
     });
   }
@@ -164,7 +170,7 @@ const FysLab: PageComponent = () => {
       // Pré-sélectionner uniquement les suggestions NutriFYS (remplace l'ancienne sélection)
       setSelectedSupplements(() => {
         const next = new Map<string, number>();
-        for (const id of result.recommendedIds) {
+        for (const id of result.recommendedIds.slice(0, MAX_LAB_SUPPLEMENTS)) {
           if (!mains.has(id)) next.set(id, 20);
         }
         return next;
@@ -273,9 +279,9 @@ const FysLab: PageComponent = () => {
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
     const next = new Map<string, number>();
-    proposal.fruitIds.forEach((id) => next.set(id, 100));
+    proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS).forEach((id) => next.set(id, 100));
     const nextSupps = new Map<string, number>();
-    proposal.supplementIds.forEach((id) => {
+    proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS).forEach((id) => {
       if (!next.has(id)) nextSupps.set(id, 20);
     });
     setSelectedIngredients(next);

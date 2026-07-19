@@ -1,5 +1,6 @@
 import { Lightbulb, Sparkles } from 'lucide-react';
 import type { Fruit } from '@/entities';
+import { MAX_LAB_SUPPLEMENTS } from '@/entities';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { cn } from '@/lib/utils';
 
@@ -18,12 +19,14 @@ function ItemTile({
   onClick,
   accent = 'primary',
   badge,
+  disabled = false,
 }: {
   item: Fruit;
   selected: boolean;
   onClick: () => void;
   accent?: 'primary' | 'secondary';
   badge?: string;
+  disabled?: boolean;
 }) {
   const selectedCls =
     accent === 'primary'
@@ -35,11 +38,14 @@ function ItemTile({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         'relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 border-2',
         selected
           ? selectedCls
+          : disabled
+          ? 'bg-muted/40 border-border/30 opacity-45 cursor-not-allowed'
           : 'bg-card border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5 opacity-80',
       )}
     >
@@ -83,12 +89,28 @@ export function SupplementsTab({
   const recommended = supplements.filter((s) => recommendedIds.has(s.id));
   const others = supplements.filter((s) => !recommendedIds.has(s.id));
   const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId);
+  const atMaxSupplements = selectedSupplementIds.length >= MAX_LAB_SUPPLEMENTS;
 
   const fruitNames = selectedFruits.map((f) => f.name).join(' + ');
 
+  function renderTile(s: Fruit, accent: 'primary' | 'secondary', badge?: string) {
+    const selected = selectedSupplementIds.includes(s.id);
+    const disabled = !selected && atMaxSupplements;
+    return (
+      <ItemTile
+        key={s.id}
+        item={s}
+        selected={selected}
+        disabled={disabled}
+        onClick={() => onToggleSupplement(s.id)}
+        accent={accent}
+        badge={badge}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* NutriFYS recommendation card */}
       <div className="relative z-20 bg-[#28422F] rounded-2xl p-4 border border-primary/20 shadow-lg flex items-start gap-4 min-h-[100px]">
         <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center shrink-0 border border-accent/30">
           <Sparkles className="size-4 text-[#E0982E]" />
@@ -114,13 +136,12 @@ export function SupplementsTab({
                   </span>
                 </>
               )}
-              , voici les suppléments que je vous propose. Vous pouvez les retirer ou en ajouter d&apos;autres.
+              , voici les suppléments que je vous propose (max. {MAX_LAB_SUPPLEMENTS}). Vous pouvez les retirer ou en ajouter d&apos;autres.
             </p>
           )}
         </div>
       </div>
 
-      {/* Base fruits summary */}
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Votre base fruitée
@@ -145,12 +166,24 @@ export function SupplementsTab({
         </div>
       </section>
 
-      {/* Recommended by NutriFYS */}
       <section>
-        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-          <Sparkles className="size-3 text-[#E0982E]" />
-          Propositions NutriFYS
-        </h3>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <Sparkles className="size-3 text-[#E0982E]" />
+            Propositions NutriFYS
+          </h3>
+          <span className={`text-[11px] font-bold tabular-nums ${
+            atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'
+          }`}>
+            {selectedSupplementIds.length}/{MAX_LAB_SUPPLEMENTS}
+          </span>
+        </div>
+
+        {atMaxSupplements && (
+          <p className="text-[11px] text-secondary font-semibold mb-3">
+            Limite atteinte — retirez un supplément pour en ajouter un autre.
+          </p>
+        )}
 
         {loadingAI ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -164,21 +197,13 @@ export function SupplementsTab({
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {recommended.map((s) => (
-              <ItemTile
-                key={s.id}
-                item={s}
-                selected={selectedSupplementIds.includes(s.id)}
-                onClick={() => onToggleSupplement(s.id)}
-                accent="secondary"
-                badge={s.id === highlighted?.id ? 'Top' : 'IA'}
-              />
-            ))}
+            {recommended.map((s) =>
+              renderTile(s, 'secondary', s.id === highlighted?.id ? 'Top' : 'IA'),
+            )}
           </div>
         )}
       </section>
 
-      {/* Why card */}
       {!loadingAI && highlighted && selectedSupplementIds.includes(highlighted.id) && aiRecommendation?.why && (
         <div className="bg-[#E0982E]/10 border border-[#E0982E]/30 rounded-2xl p-4 flex gap-3">
           <div className="size-9 rounded-xl bg-[#E0982E]/15 flex items-center justify-center shrink-0">
@@ -195,7 +220,6 @@ export function SupplementsTab({
         </div>
       )}
 
-      {/* Full catalog */}
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Tous les suppléments
@@ -210,15 +234,7 @@ export function SupplementsTab({
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {others.map((s) => (
-              <ItemTile
-                key={s.id}
-                item={s}
-                selected={selectedSupplementIds.includes(s.id)}
-                onClick={() => onToggleSupplement(s.id)}
-                accent="secondary"
-              />
-            ))}
+            {others.map((s) => renderTile(s, 'secondary'))}
           </div>
         )}
       </section>

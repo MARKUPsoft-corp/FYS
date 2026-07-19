@@ -17,3 +17,7 @@ export const PROFILE_DOC_ID = 'main';
 export const BASE_COCKTAIL_PRICE = 1500;
 /** @deprecated Préférer PricingSettings.deliveryFee via getPricingSettings() */
 export const DELIVERY_FEE = 500;
+
+/** Limites composition FYS Lab (client) */
+export const MAX_LAB_MAIN_FRUITS = 5;
+export const MAX_LAB_SUPPLEMENTS = 3;

@@ -10,6 +10,7 @@ import {
 } from '@/data/nutrifys-chat';
 import { getLabItemById } from '@/data/lab-items';
 import type { Fruit } from '@/entities';
+import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 
 type Props = {
   proposal: CocktailProposal;
@@ -64,15 +65,18 @@ function IngredientTile({
   variant,
   selected,
   onClick,
+  disabled = false,
 }: {
   item: DisplayItem;
   variant: 'fruit' | 'supplement';
   selected: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
@@ -81,6 +85,8 @@ function IngredientTile({
           ? variant === 'fruit'
             ? 'bg-primary/10 border-primary shadow-[0_3px_10px_rgba(63,109,78,0.12)] scale-[0.98]'
             : 'bg-secondary/10 border-secondary shadow-[0_3px_10px_rgba(242,105,74,0.12)] scale-[0.98]'
+          : disabled
+          ? 'bg-muted/40 border-border/30 opacity-45 cursor-not-allowed'
           : 'bg-card border-border/60 opacity-55 hover:opacity-85 hover:border-primary/40',
       )}
     >
@@ -142,6 +148,8 @@ export function CocktailProposalCard({
   const verdictColor = getVerdictColor(proposal.verdict);
   const activeProposal = buildProposalSelection(proposal, fruitIds, supplementIds);
   const hasSelection = fruitIds.length > 0;
+  const atMaxFruits = fruitIds.length >= MAX_LAB_MAIN_FRUITS;
+  const atMaxSupplements = supplementIds.length >= MAX_LAB_SUPPLEMENTS;
 
   return (
     <div className="mt-3 rounded-2xl border border-border/60 bg-background/80 overflow-hidden shadow-sm">
@@ -166,15 +174,23 @@ export function CocktailProposalCard({
       </div>
 
       <p className="px-4 pt-3 text-[11px] text-muted-foreground font-medium">
-        Touchez un fruit ou un supplément pour l&apos;ajouter ou le retirer de la recette.
+        Touchez un fruit ou un supplément pour l&apos;ajouter ou le retirer (max. {MAX_LAB_MAIN_FRUITS} fruits · {MAX_LAB_SUPPLEMENTS} suppléments).
       </p>
 
       <div className="px-4 pt-3 pb-2">
-        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-          Fruits proposés
-        </p>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+            Fruits proposés
+          </p>
+          <span className={`text-[10px] font-bold tabular-nums ${atMaxFruits ? 'text-secondary' : 'text-muted-foreground'}`}>
+            {fruitIds.length}/{MAX_LAB_MAIN_FRUITS}
+          </span>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {fruits.map((fruit) => (
+          {fruits.map((fruit) => {
+            const selected = fruitIds.includes(fruit.id);
+            const disabled = !selected && atMaxFruits;
+            return (
             <div
               key={fruit.id}
               className={cn(pulseId === fruit.id && 'animate-pulse')}
@@ -182,30 +198,42 @@ export function CocktailProposalCard({
               <IngredientTile
                 item={fruit}
                 variant="fruit"
-                selected={fruitIds.includes(fruit.id)}
+                selected={selected}
+                disabled={disabled}
                 onClick={() => onToggleFruit(fruit.id)}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {supplements.length > 0 && (
         <div className="px-4 pb-2">
-          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-            Suppléments
-          </p>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+              Suppléments
+            </p>
+            <span className={`text-[10px] font-bold tabular-nums ${atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'}`}>
+              {supplementIds.length}/{MAX_LAB_SUPPLEMENTS}
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {supplements.map((sup) => (
+            {supplements.map((sup) => {
+              const selected = supplementIds.includes(sup.id);
+              const disabled = !selected && atMaxSupplements;
+              return (
               <div key={sup.id} className={cn(pulseId === sup.id && 'animate-pulse')}>
                 <IngredientTile
                   item={sup}
                   variant="supplement"
-                  selected={supplementIds.includes(sup.id)}
+                  selected={selected}
+                  disabled={disabled}
                   onClick={() => onToggleSupplement(sup.id)}
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

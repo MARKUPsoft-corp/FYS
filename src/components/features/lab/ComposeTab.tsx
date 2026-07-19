@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { SupplementsTab } from '@/components/features/lab/SupplementsTab';
 import type { AIRecommendation } from '@/services/ai.shared';
 import type { Fruit, AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
-import { isUsableAsMainFruit } from '@/entities';
+import { isUsableAsMainFruit, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 
 
 // ── Verdict config ────────────────────────────────────────────────────────────
@@ -393,6 +393,7 @@ export function ComposeTab({
   const mainFruits = fruits.filter(isUsableAsMainFruit);
   const selectedFruits = mainFruits.filter((f) => selectedIngredients.has(f.id));
   const selectedSupplementItems = supplements.filter((f) => selectedSupplements.has(f.id));
+  const atMaxFruits = selectedIngredients.size >= MAX_LAB_MAIN_FRUITS;
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
   const canAnalyze = selectedIngredients.size > 0;
   const canGoStep2 = selectedIngredients.size > 0;
@@ -418,20 +419,33 @@ export function ComposeTab({
                   NutriFYS · Étape 1
                 </span>
                 <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-                  Choisissez vos fruits de base. Ensuite, je vous proposerai des suppléments adaptés à votre mélange.
+                  Choisissez jusqu&apos;à {MAX_LAB_MAIN_FRUITS} fruits de base. Ensuite, jusqu&apos;à {MAX_LAB_SUPPLEMENTS} suppléments adaptés à votre mélange.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Fruits disponibles · Pleine saison
-              </h3>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-50" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Fruits disponibles · Pleine saison
+                </h3>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-50" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
+                </span>
+              </div>
+              <span className={`text-[11px] font-bold tabular-nums shrink-0 ${
+                atMaxFruits ? 'text-secondary' : 'text-muted-foreground'
+              }`}>
+                {selectedIngredients.size}/{MAX_LAB_MAIN_FRUITS}
               </span>
             </div>
+
+            {atMaxFruits && (
+              <p className="text-[11px] text-secondary font-semibold mb-3 -mt-1">
+                Limite atteinte — retirez un fruit pour en ajouter un autre.
+              </p>
+            )}
 
             {loading ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -443,14 +457,18 @@ export function ComposeTab({
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
                 {mainFruits.map((fruit) => {
                   const isSelected = selectedIngredients.has(fruit.id);
+                  const isDisabled = !isSelected && atMaxFruits;
                   return (
                     <button
                       key={fruit.id}
                       type="button"
+                      disabled={isDisabled}
                       onClick={() => onToggleFruit(fruit.id)}
                       className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${
                         isSelected
                           ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
+                          : isDisabled
+                          ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
                           : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
                       }`}
                     >
@@ -603,9 +621,9 @@ export function SavePanel({
             <p className="text-xs text-muted-foreground">
               {selectedMainCount === 0
                 ? 'Aucun fruit sélectionné'
-                : `${selectedMainCount} fruit${selectedMainCount > 1 ? 's' : ''}${
+                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} fruit${selectedMainCount > 1 ? 's' : ''}${
                     selectedSupplementCount > 0
-                      ? ` · ${selectedSupplementCount} supplément${selectedSupplementCount > 1 ? 's' : ''}`
+                      ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} supplément${selectedSupplementCount > 1 ? 's' : ''}`
                       : ''
                   }`}
             </p>

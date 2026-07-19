@@ -24,6 +24,7 @@ import { createSession, getSessions, getSessionMessages, saveChatMessageToSessio
 import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
 import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
+import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { cn } from '@/lib/utils';
 
 
@@ -95,18 +96,26 @@ function ProposalMessageBubble({
   onAnalyze: (proposal: CocktailProposal) => void;
   fruitsCatalog: Fruit[];
 }) {
-  const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds);
-  const [supplementIds, setSupplementIds] = useState(message.proposal.supplementIds);
+  const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS));
+  const [supplementIds, setSupplementIds] = useState(message.proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS));
   const [pulseId, setPulseId] = useState<string | null>(null);
 
   function toggleFruit(id: string) {
-    setFruitIds((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
+    setFruitIds((prev) => {
+      if (prev.includes(id)) return prev.filter((f) => f !== id);
+      if (prev.length >= MAX_LAB_MAIN_FRUITS) return prev;
+      return [...prev, id];
+    });
     setPulseId(id);
     setTimeout(() => setPulseId(null), 600);
   }
 
   function toggleSupplement(id: string) {
-    setSupplementIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    setSupplementIds((prev) => {
+      if (prev.includes(id)) return prev.filter((s) => s !== id);
+      if (prev.length >= MAX_LAB_SUPPLEMENTS) return prev;
+      return [...prev, id];
+    });
     setPulseId(id);
     setTimeout(() => setPulseId(null), 600);
   }
