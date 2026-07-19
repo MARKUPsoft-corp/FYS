@@ -1,6 +1,6 @@
 import { getLabItemById, type LabItem } from './lab-items';
 
-export type ProposalVerdict = 'beneficial' | 'neutral' | 'caution';
+export type ProposalVerdict = 'beneficial' | 'neutral' | 'caution' | 'not_recommended';
 
 export type CocktailProposal = {
   name: string;
@@ -153,6 +153,8 @@ export function getVerdictLabel(verdict: ProposalVerdict): string {
       return 'Neutre';
     case 'caution':
       return 'Prudence';
+    case 'not_recommended':
+      return 'Déconseillé';
   }
 }
 
@@ -163,6 +165,7 @@ export function getVerdictColor(verdict: ProposalVerdict): string {
     case 'neutral':
       return '#E0982E';
     case 'caution':
+    case 'not_recommended':
       return '#C9463C';
   }
 }

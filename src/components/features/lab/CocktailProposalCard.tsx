@@ -1,7 +1,6 @@
-import { Check, FlaskConical, Sparkles } from 'lucide-react';
+import { FlaskConical, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HighlightedText, buildProposalSelection, type HighlightTerm } from '@/components/features/lab/HighlightedText';
-
 import { cn } from '@/lib/utils';
 import {
   getVerdictColor,
@@ -9,6 +8,8 @@ import {
   resolveProposalItems,
   type CocktailProposal,
 } from '@/data/nutrifys-chat';
+import { getLabItemById } from '@/data/lab-items';
+import type { Fruit } from '@/entities';
 
 type Props = {
   proposal: CocktailProposal;
@@ -19,26 +20,43 @@ type Props = {
   onAnalyze: (proposal: CocktailProposal) => void;
   pulseId?: string | null;
   onTermClick?: (term: HighlightTerm) => void;
+  /** Catalogue Firestore — pour afficher les vraies images des fruits */
+  fruitsCatalog?: Fruit[];
 };
 
-function CompatibilityRing({ score, verdict }: { score: number; verdict: CocktailProposal['verdict'] }) {
-  const color = getVerdictColor(verdict);
-  const degrees = (score / 100) * 360;
+type DisplayItem = {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  emoji: string;
+};
 
-  return (
-    <div className="relative size-16 shrink-0">
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: `conic-gradient(${color} ${degrees}deg, rgba(42,36,29,0.08) ${degrees}deg)`,
-        }}
-      />
-      <div className="absolute inset-[5px] rounded-full bg-card flex flex-col items-center justify-center">
-        <span className="font-mono text-sm font-bold text-foreground leading-none">{score}</span>
-        <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">/ 100</span>
-      </div>
-    </div>
-  );
+function resolveFruitDisplays(
+  ids: string[],
+  catalog: Fruit[],
+): DisplayItem[] {
+  return ids.map((id) => {
+    const fromCatalog =
+      catalog.find((f) => f.id === id) ??
+      catalog.find((f) => f.name.toLowerCase() === id.toLowerCase());
+
+    if (fromCatalog) {
+      const labFallback = getLabItemById(fromCatalog.id);
+      return {
+        id: fromCatalog.id,
+        name: fromCatalog.name,
+        imageUrl: fromCatalog.imageUrl,
+        emoji: labFallback?.emoji ?? '🍓',
+      };
+    }
+
+    const lab = getLabItemById(id);
+    return {
+      id,
+      name: lab?.name ?? id,
+      emoji: lab?.emoji ?? '🍓',
+    };
+  });
 }
 
 function IngredientTile({
@@ -47,7 +65,7 @@ function IngredientTile({
   selected,
   onClick,
 }: {
-  item: { id: string; emoji: string; name: string };
+  item: DisplayItem;
   variant: 'fruit' | 'supplement';
   selected: boolean;
   onClick: () => void;
@@ -58,18 +76,32 @@ function IngredientTile({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        'flex flex-col items-center justify-center gap-1 aspect-square rounded-[0.875rem] border-2 p-1.5 min-w-[72px] transition-all duration-200',
+        'flex flex-col items-center justify-start gap-1.5 p-2 rounded-[1.25rem] border-2 min-w-[80px] w-[88px] transition-all duration-200',
         selected
           ? variant === 'fruit'
             ? 'bg-primary/10 border-primary shadow-[0_3px_10px_rgba(63,109,78,0.12)] scale-[0.98]'
             : 'bg-secondary/10 border-secondary shadow-[0_3px_10px_rgba(242,105,74,0.12)] scale-[0.98]'
-          : 'bg-muted/30 border-border/50 opacity-45 hover:opacity-70',
+          : 'bg-card border-border/60 opacity-55 hover:opacity-85 hover:border-primary/40',
       )}
     >
-      <span className="text-xl leading-none">{item.emoji}</span>
+      {item.imageUrl ? (
+        <div
+          className="w-full aspect-square rounded-xl bg-cover bg-center"
+          style={{ backgroundImage: `url('${item.imageUrl}')` }}
+        />
+      ) : (
+        <div
+          className={cn(
+            'w-full aspect-square rounded-xl flex items-center justify-center text-2xl',
+            variant === 'fruit' ? 'bg-primary/10' : 'bg-secondary/10',
+          )}
+        >
+          {item.emoji}
+        </div>
+      )}
       <span
         className={cn(
-          'text-[9px] font-bold text-center leading-tight',
+          'text-[10px] font-semibold text-center line-clamp-1 w-full',
           selected
             ? variant === 'fruit'
               ? 'text-primary'
@@ -92,8 +124,21 @@ export function CocktailProposalCard({
   onAnalyze,
   pulseId,
   onTermClick,
+  fruitsCatalog = [],
 }: Props) {
-  const { fruits, supplements } = resolveProposalItems(proposal);
+  // Toujours afficher les fruits de la proposal ; la sélection se gère via selected=
+  const fruits = resolveFruitDisplays(proposal.fruitIds, fruitsCatalog);
+  // Suppléments : catalogue lab statique (pas d'images Cloudinary pour l'instant)
+  const { supplements: labSupplements } = resolveProposalItems({
+    ...proposal,
+    fruitIds: [],
+  });
+  const supplements: DisplayItem[] = labSupplements.map((s) => ({
+    id: s.id,
+    name: s.name,
+    emoji: s.emoji,
+  }));
+
   const verdictColor = getVerdictColor(proposal.verdict);
   const activeProposal = buildProposalSelection(proposal, fruitIds, supplementIds);
   const hasSelection = fruitIds.length > 0;
@@ -101,7 +146,6 @@ export function CocktailProposalCard({
   return (
     <div className="mt-3 rounded-2xl border border-border/60 bg-background/80 overflow-hidden shadow-sm">
       <div className="px-4 py-3 bg-primary/5 border-b border-border/40 flex items-center gap-3">
-        {/* <CompatibilityRing score={proposal.score} verdict={proposal.verdict} /> */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <FlaskConical className="size-3.5 text-primary shrink-0" />
@@ -179,7 +223,12 @@ export function CocktailProposalCard({
 
       <div className="mx-4 mb-4 p-3 rounded-xl bg-muted/40 border border-border/30">
         <p className="text-[14px] lg:text-[15px] text-muted-foreground font-medium leading-relaxed">
-          <HighlightedText text={proposal.explanation} proposal={proposal} onTermClick={onTermClick} />
+          <HighlightedText
+            text={proposal.explanation}
+            proposal={proposal}
+            fruitsCatalog={fruitsCatalog}
+            onTermClick={onTermClick}
+          />
         </p>
       </div>
 

@@ -23,7 +23,7 @@ import { getFruits } from '@/services/fruit';
 import { createSession, getSessions, getSessionMessages, saveChatMessageToSession, deleteSession, deleteAllSessions, renameSession } from '@/services/chat';
 import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
-import type { HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
+import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
 import { cn } from '@/lib/utils';
 
 
@@ -89,9 +89,11 @@ function NutriFYSAuthorRow() {
 function ProposalMessageBubble({
   message,
   onAnalyze,
+  fruitsCatalog,
 }: {
   message: Extract<ChatMessageEntity, { type: 'proposal' }>;
   onAnalyze: (proposal: CocktailProposal) => void;
+  fruitsCatalog: Fruit[];
 }) {
   const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds);
   const [supplementIds, setSupplementIds] = useState(message.proposal.supplementIds);
@@ -122,6 +124,7 @@ function ProposalMessageBubble({
           <HighlightedText
             text={message.content}
             proposal={message.proposal}
+            fruitsCatalog={fruitsCatalog}
             onTermClick={handleTermClick}
           />
         </p>
@@ -134,6 +137,7 @@ function ProposalMessageBubble({
           onAnalyze={onAnalyze}
           pulseId={pulseId}
           onTermClick={handleTermClick}
+          fruitsCatalog={fruitsCatalog}
         />
       </div>
       <span className="text-[10px] text-muted-foreground mt-1 ml-1">
@@ -146,15 +150,18 @@ function ProposalMessageBubble({
 function ChatBubble({
   message,
   onAnalyze,
+  fruitsCatalog,
 }: {
   message: ChatMessageEntity;
   onAnalyze: (proposal: CocktailProposal) => void;
+  fruitsCatalog: Fruit[];
 }) {
   if (message.type === 'proposal') {
     return (
       <ProposalMessageBubble
         message={message as Extract<ChatMessageEntity, { type: 'proposal' }>}
         onAnalyze={onAnalyze}
+        fruitsCatalog={fruitsCatalog}
       />
     );
   }
@@ -166,7 +173,7 @@ function ChatBubble({
       <div className="flex flex-col w-full">
         <NutriFYSAuthorRow />
         <div className="rounded-2xl bg-card border border-border/60 text-foreground shadow-sm px-4 py-3.5 text-[15px] lg:text-base leading-relaxed font-medium w-full">
-          <HighlightedText text={message.content} />
+          <HighlightedText text={message.content} fruitsCatalog={fruitsCatalog} />
         </div>
         <span className="text-[10px] text-muted-foreground mt-1 ml-1">
           {formatTime(message.timestamp)}
@@ -605,6 +612,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                   key={msg.id}
                   message={msg}
                   onAnalyze={onAnalyzeProposal}
+                  fruitsCatalog={fruits}
                 />
               ))}
 

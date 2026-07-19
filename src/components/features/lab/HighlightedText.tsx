@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 import { resolveProposalItems, type CocktailProposal } from '@/data/nutrifys-chat';
+import { getLabItemById } from '@/data/lab-items';
+import type { Fruit } from '@/entities';
 
 export type HighlightTerm = {
   term: string;
@@ -21,7 +23,10 @@ const KEYWORD_TERMS: HighlightTerm[] = [
   { term: 'anti-inflammatoire', type: 'benefit' },
 ];
 
-export function getHighlightTerms(proposal?: CocktailProposal): HighlightTerm[] {
+export function getHighlightTerms(
+  proposal?: CocktailProposal,
+  fruitsCatalog: Fruit[] = [],
+): HighlightTerm[] {
   const terms: HighlightTerm[] = [...KEYWORD_TERMS];
 
   if (proposal) {
@@ -29,8 +34,16 @@ export function getHighlightTerms(proposal?: CocktailProposal): HighlightTerm[] 
     terms.push({ term: proposal.name, type: 'profile' });
     proposal.benefits.forEach((b) => terms.push({ term: b, type: 'benefit' }));
 
-    const { fruits, supplements } = resolveProposalItems(proposal);
-    fruits.forEach((f) => terms.push({ term: f.name, type: 'fruit', id: f.id }));
+    proposal.fruitIds.forEach((id) => {
+      const fromCatalog =
+        fruitsCatalog.find((f) => f.id === id) ??
+        fruitsCatalog.find((f) => f.name.toLowerCase() === id.toLowerCase());
+      const lab = getLabItemById(id);
+      const name = fromCatalog?.name ?? lab?.name;
+      if (name) terms.push({ term: name, type: 'fruit', id: fromCatalog?.id ?? id });
+    });
+
+    const { supplements } = resolveProposalItems({ ...proposal, fruitIds: [] });
     supplements.forEach((s) => terms.push({ term: s.name, type: 'supplement', id: s.id }));
   }
 
@@ -45,6 +58,7 @@ function escapeRegex(s: string) {
 type Props = {
   text: string;
   proposal?: CocktailProposal;
+  fruitsCatalog?: Fruit[];
   onTermClick?: (term: HighlightTerm) => void;
   className?: string;
 };
@@ -62,8 +76,8 @@ const HIGHLIGHT_STYLES: Record<HighlightTerm['type'], string> = {
     'text-[#E0982E] font-semibold',
 };
 
-export function HighlightedText({ text, proposal, onTermClick, className }: Props) {
-  const terms = getHighlightTerms(proposal);
+export function HighlightedText({ text, proposal, fruitsCatalog = [], onTermClick, className }: Props) {
+  const terms = getHighlightTerms(proposal, fruitsCatalog);
   if (terms.length === 0) {
     return <span className={className}>{text}</span>;
   }
