@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { getAdminStats } from '@/services/stats';
 import { OrderStatus } from '@/entities';
 import type { Order } from '@/entities';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 
 type Props = { name: string };
 
@@ -49,7 +50,7 @@ function RecentOrderRow({ order }: { order: Order }) {
     : '—';
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border/40 last:border-0">
+    <div className="flex items-center gap-3 min-w-0">
       <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
         <span className="text-primary font-bold text-sm">
           {order.userNameSnapshot.slice(0, 1).toUpperCase()}
@@ -59,7 +60,7 @@ function RecentOrderRow({ order }: { order: Order }) {
         <p className="text-sm font-semibold text-foreground truncate">{order.userNameSnapshot}</p>
         <p className="text-xs text-muted-foreground truncate">{order.cocktailNameSnapshot}</p>
       </div>
-      <div className="shrink-0 text-right space-y-0.5">
+      <div className="shrink-0 text-right space-y-0.5 hidden sm:block">
         <StatusBadge status={order.status} />
         <p className="text-xs text-muted-foreground">{dateStr}</p>
       </div>
@@ -67,6 +68,9 @@ function RecentOrderRow({ order }: { order: Order }) {
         <p className="text-sm font-bold text-foreground tabular-nums">
           {order.totalPrice.toLocaleString()} XAF
         </p>
+        <div className="sm:hidden mt-0.5">
+          <StatusBadge status={order.status} />
+        </div>
       </div>
     </div>
   );
@@ -147,35 +151,32 @@ export function AdminHome({ name }: Props) {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20 px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 space-y-12 max-w-7xl mx-auto">
-      
-      {/* ── HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Tableau de Bord</p>
-          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">
-            Bonjour, <span className="text-primary italic">{name}</span> 👋
-          </h2>
-          <p className="text-muted-foreground mt-3 font-medium text-lg">Bienvenue dans votre centre de contrôle administratif.</p>
-        </div>
-      </div>
-
+    <BoardPageShell
+      eyebrow="Tableau de bord"
+      titleBefore="Bonjour,"
+      titleHighlight={name}
+      sectionBefore="Centre de"
+      sectionHighlight="contrôle"
+      subtitle="Vue d'ensemble de l'activité FYS."
+      imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    >
+      <div className="space-y-10 max-w-7xl mx-auto w-full overflow-x-hidden">
       {/* ── KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statCards.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.label} to={s.path} className="block group">
-              <div className="bg-card rounded-[2rem] p-6 border border-border/40 shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1.5 flex flex-col justify-between h-full relative overflow-hidden">
+            <Link key={s.label} to={s.path} className="block group min-w-0">
+              <div className="bg-card rounded-[2rem] p-5 md:p-6 border border-border/40 shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1.5 flex flex-col justify-between h-full relative overflow-hidden">
                 <div className={`absolute -right-4 -top-4 size-24 rounded-full ${s.bg} blur-2xl opacity-50 pointer-events-none transition-opacity group-hover:opacity-100`} />
                 <div className={`size-12 rounded-[1rem] ${s.bg} border flex items-center justify-center mb-6 relative z-10`}>
                   <Icon className={`size-6 ${s.color}`} strokeWidth={2.5} />
                 </div>
-                <div className="relative z-10 mt-auto">
+                <div className="relative z-10 mt-auto min-w-0">
                   {isLoading ? (
                     <Loader2 className="size-6 text-muted-foreground animate-spin mb-1" />
                   ) : (
-                    <p className="font-display font-extrabold text-4xl text-foreground mb-1">{s.value}</p>
+                    <p className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-1 truncate">{s.value}</p>
                   )}
                   <p className="text-sm font-semibold text-muted-foreground">{s.label}</p>
                 </div>
@@ -189,30 +190,31 @@ export function AdminHome({ name }: Props) {
       <div className="grid lg:grid-cols-3 gap-6">
         
         {/* BIG REVENUE METRIC */}
-        <div className="lg:col-span-1 bg-card rounded-[2rem] border border-border/40 shadow-sm p-8 flex flex-col justify-center relative overflow-hidden group">
+        <div className="lg:col-span-1 bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 flex flex-col justify-center relative overflow-hidden group min-w-0">
           <div className="absolute right-0 bottom-0 size-48 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
           <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="size-12 rounded-[1rem] bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+            <div className="size-12 rounded-[1rem] bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
                <TrendingUp className="size-6 text-emerald-500" strokeWidth={2.5} />
             </div>
-            <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d'Affaires</p>
+            <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d&apos;Affaires</p>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 min-w-0">
             {isLoading ? (
               <Loader2 className="size-8 text-muted-foreground animate-spin" />
             ) : (
-              <p className="font-display font-extrabold text-4xl md:text-5xl text-foreground">
-                {(stats?.totalRevenue ?? 0).toLocaleString()} <span className="text-2xl text-muted-foreground font-medium">XAF</span>
+              <p className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl text-foreground break-words">
+                {(stats?.totalRevenue ?? 0).toLocaleString()}{' '}
+                <span className="text-xl md:text-2xl text-muted-foreground font-medium">XAF</span>
               </p>
             )}
-            <p className="text-sm text-emerald-600 font-medium mt-3 bg-emerald-50 w-max px-3 py-1 rounded-full border border-emerald-100">
+            <p className="text-sm text-emerald-600 font-medium mt-3 bg-emerald-50 inline-flex px-3 py-1 rounded-full border border-emerald-100">
                Commandes livrées uniquement
             </p>
           </div>
         </div>
 
         {/* ORDERS BY STATUS */}
-        <div className="lg:col-span-2 bg-card rounded-[2rem] border border-border/40 shadow-sm p-8">
+        <div className="lg:col-span-2 bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden">
            <h3 className="font-display font-bold text-xl text-foreground mb-6">Répartition des Commandes</h3>
            <div className="space-y-4">
             {isLoading ? (
@@ -229,20 +231,20 @@ export function AdminHome({ name }: Props) {
                   if (count === 0 && total > 0) return null;
                   
                   return (
-                    <div key={status} className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/30">
-                      <div className={`size-10 rounded-xl bg-background border flex items-center justify-center shrink-0 shadow-sm`}>
-                         <cfg.icon className={`size-5 text-muted-foreground drop-shadow-sm`} />
+                    <div key={status} className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/30 min-w-0">
+                      <div className="size-10 rounded-xl bg-background border flex items-center justify-center shrink-0 shadow-sm">
+                         <cfg.icon className="size-5 text-muted-foreground drop-shadow-sm" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
-                          <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
+                          <span className="text-sm font-semibold text-foreground truncate">{cfg.label}</span>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                            <div className={`h-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                          <span className="block text-lg font-bold text-foreground leading-none">{count}</span>
                          <span className="text-xs font-semibold text-muted-foreground">{pct}%</span>
                       </div>
@@ -264,20 +266,20 @@ export function AdminHome({ name }: Props) {
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         
         {/* RECENT ORDERS LIST */}
-        <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-             <div>
-               <h3 className="font-display font-bold text-2xl text-foreground">Activité Récente</h3>
-               <p className="text-muted-foreground font-medium mt-1">Vos 5 dernières commandes reçues.</p>
+        <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-5 md:p-8 min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
+             <div className="min-w-0">
+               <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">Activité Récente</h3>
+               <p className="text-muted-foreground font-medium mt-1 text-sm">Vos 5 dernières commandes reçues.</p>
              </div>
-             <Button asChild size="lg" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors">
-                <Link to="/board/orders">
-                  Voir toutes les commandes <ArrowRight className="size-4 ml-2" />
+             <Button asChild size="sm" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors shrink-0 self-start sm:self-auto">
+                <Link to="/board/orders" className="inline-flex items-center gap-1.5">
+                  Voir tout <ArrowRight className="size-4" />
                 </Link>
              </Button>
           </div>
 
-          <div>
+          <div className="min-w-0">
              {isLoading ? (
                <div className="flex items-center justify-center py-12">
                  <Loader2 className="size-8 text-muted-foreground animate-spin" />
@@ -285,7 +287,7 @@ export function AdminHome({ name }: Props) {
              ) : stats?.recentOrders?.length ? (
                <div className="space-y-2">
                  {stats.recentOrders.map((order) => (
-                   <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3 border border-border/30">
+                   <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3 border border-border/30 min-w-0 overflow-hidden">
                      <RecentOrderRow order={order} />
                    </div>
                  ))}
@@ -302,17 +304,17 @@ export function AdminHome({ name }: Props) {
         </div>
 
         {/* QUICK ACTIONS */}
-        <div className="space-y-4">
-           <h3 className="font-display font-bold text-xl text-foreground pl-2 mb-2">Actions Rapides</h3>
+        <div className="space-y-4 min-w-0">
+           <h3 className="font-display font-bold text-xl text-foreground mb-2">Actions Rapides</h3>
            {quickActions.map((a) => {
             const Icon = a.icon;
             return (
-              <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow">
-                <div className="flex gap-4">
+              <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow min-w-0 overflow-hidden">
+                <div className="flex gap-4 min-w-0">
                   <div className={`size-12 rounded-[1rem] ${a.iconBg} border border-border/50 flex items-center justify-center shrink-0`}>
                     <Icon className={`size-5 ${a.iconColor}`} />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h4 className="font-bold text-foreground text-lg">{a.label}</h4>
                     <p className="text-sm font-medium text-muted-foreground leading-snug mt-1 mb-4">{a.description}</p>
                     <Link to={a.path} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 transition-colors">
@@ -326,7 +328,7 @@ export function AdminHome({ name }: Props) {
         </div>
 
       </div>
-
-    </div>
+      </div>
+    </BoardPageShell>
   );
 }

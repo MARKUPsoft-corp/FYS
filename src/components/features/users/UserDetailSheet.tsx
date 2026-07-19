@@ -471,7 +471,7 @@ export function UserMonitoringCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-4 py-4 border-b border-border/40 last:border-0 hover:bg-accent/30 px-4 rounded-xl -mx-4 transition-colors text-left group"
+      className="w-full flex items-center gap-4 py-4 border-b border-border/40 last:border-0 hover:bg-accent/30 px-4 transition-colors text-left group"
     >
       <div className="relative shrink-0">
         <div className={`size-11 rounded-full flex items-center justify-center font-bold text-sm ${

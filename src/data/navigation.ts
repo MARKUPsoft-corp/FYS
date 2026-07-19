@@ -110,6 +110,14 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: true,
   },
   {
+    key: 'admin-cocktails',
+    label: 'Cocktails',
+    path: '/board/cocktails',
+    icon: FlaskConical,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+  },
+  {
     key: 'admin-orders',
     label: 'Commandes',
     path: '/board/orders',

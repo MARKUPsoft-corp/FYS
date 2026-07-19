@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { FruitTable } from '@/components/features/fruits/FruitTable';
 import { FruitFormDrawer } from '@/components/features/fruits/FruitFormDrawer';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getFruits, createFruit, updateFruit, deleteFruit } from '@/services/fruit';
 import { getCategories } from '@/services/category';
 import type { Fruit } from '@/entities';
@@ -56,35 +57,41 @@ const Fruits: PageComponent = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Ingrédients</p>
-          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Fruits & suppléments</h2>
-          <p className="text-muted-foreground text-lg font-medium mt-3">
-            Gérez le catalogue : fruits principaux, suppléments, ou les deux.
-          </p>
-        </div>
-        <Button size="lg" onClick={openCreate} className="rounded-full shadow-sm">
-          <Plus className="size-5 mr-2" />
-          Ajouter un fruit
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-20 bg-card rounded-[2rem] border border-border/40 shadow-sm">
-          <p className="text-sm font-semibold text-muted-foreground animate-pulse">Chargement en cours…</p>
-        </div>
-      ) : (
-        <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
-          <FruitTable
-            fruits={fruits}
-            categories={categories}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-          />
-        </div>
-      )}
+    <>
+      <BoardPageShell
+        eyebrow="Ingrédients"
+        titleBefore="Fruits &"
+        titleHighlight="suppléments"
+        sectionBefore="Le"
+        sectionHighlight="Catalogue"
+        subtitle="Gérez les fruits principaux, les suppléments, ou les deux."
+        imageUrl="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        actions={
+          <Button
+            size="lg"
+            onClick={openCreate}
+            className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
+          >
+            <Plus className="size-5" />
+            Ajouter un fruit
+          </Button>
+        }
+      >
+        {loading ? (
+          <div className="flex items-center justify-center py-20 rounded-[2rem] border border-border/40 bg-card shadow-sm">
+            <p className="text-sm font-semibold text-muted-foreground animate-pulse">Chargement en cours…</p>
+          </div>
+        ) : (
+          <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
+            <FruitTable
+              fruits={fruits}
+              categories={categories}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
+          </div>
+        )}
+      </BoardPageShell>
 
       <FruitFormDrawer
         open={drawerOpen}
@@ -93,7 +100,7 @@ const Fruits: PageComponent = () => {
         onClose={() => setDrawerOpen(false)}
         onSave={handleSave}
       />
-    </div>
+    </>
   );
 };
 

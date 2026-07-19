@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CocktailTable } from './CocktailTable';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import type { Cocktail } from '@/entities';
 
 type Props = {
@@ -14,21 +15,26 @@ type Props = {
 
 export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleActive, onAdd }: Props) {
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Carte</p>
-          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Catalogue</h2>
-          <p className="text-muted-foreground text-lg font-medium mt-3">
-            Définissez les cocktails visibles par les clients.
-          </p>
-        </div>
-        <Button size="lg" onClick={onAdd} className="rounded-full shadow-sm">
-          <Plus className="size-5 mr-2" />
+    <BoardPageShell
+      eyebrow="Carte"
+      titleBefore="Le"
+      titleHighlight="Catalogue"
+      sectionBefore="Créations"
+      sectionHighlight="publiques"
+      subtitle="Définissez les cocktails visibles par les clients."
+      imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      imagePosition="center top"
+      actions={
+        <Button
+          size="lg"
+          onClick={onAdd}
+          className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
+        >
+          <Plus className="size-5" />
           Ajouter un cocktail
         </Button>
-      </div>
-
+      }
+    >
       {loading ? (
         <div className="rounded-[2rem] border border-border/40 overflow-hidden shadow-sm bg-card divide-y divide-border/40">
           <div className="bg-muted/30 h-10 w-full" />
@@ -45,13 +51,13 @@ export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleA
       ) : (
         <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
           <CocktailTable
-          cocktails={cocktails}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onToggleActive={onToggleActive}
-        />
+            cocktails={cocktails}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleActive={onToggleActive}
+          />
         </div>
       )}
-    </div>
+    </BoardPageShell>
   );
 }

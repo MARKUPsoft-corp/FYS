@@ -17,42 +17,27 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserRole } from '@/entities/user';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { COLLECTIONS } from '@/entities';
+import { subscribeToNotifications } from '@/services/notifications';
 
 export function Topbar() {
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const [hasNewOrder, setHasNewOrder] = useState(false);
-  const [lastOrderCount, setLastOrderCount] = useState<number | null>(null);
+  const [unreadOrderNotifs, setUnreadOrderNotifs] = useState(0);
 
   useEffect(() => {
-    if (!user || user.role !== UserRole.CUSTOMER) return;
-
-    const q = query(
-      collection(db, COLLECTIONS.ORDERS),
-      where('userId', '==', user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const count = snap.docs.length;
-      if (lastOrderCount !== null && count > lastOrderCount) {
-        setHasNewOrder(true);
-      }
-      setLastOrderCount(count);
-    });
-
-    return () => unsubscribe();
-  }, [user, lastOrderCount]);
-
-  // Clear badge when visiting the orders page
-  useEffect(() => {
-    if (location.pathname.startsWith('/board/orders')) {
-      setHasNewOrder(false);
+    if (!user || user.role !== UserRole.CUSTOMER) {
+      setUnreadOrderNotifs(0);
+      return;
     }
-  }, [location.pathname]);
+
+    return subscribeToNotifications(user.uid, (data) => {
+      const count = data.filter(
+        (n) => !n.isRead && n.link?.includes('/board/orders'),
+      ).length;
+      setUnreadOrderNotifs(count);
+    });
+  }, [user]);
 
   const navItems = user ? getNavItemsForRole(user.role) : [];
 
@@ -77,14 +62,12 @@ export function Topbar() {
         'transition-all duration-300 ease-in-out',
       )}
     >
-      {/* Left: Brand logo */}
       <div className="flex shrink-0">
         <Link to="/board" className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
           FYS<span className="text-secondary">.</span>
         </Link>
       </div>
 
-      {/* Center: Desktop navigation */}
       <nav className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-10">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || (item.path !== '/board' && location.pathname.startsWith(item.path));
@@ -111,13 +94,11 @@ export function Topbar() {
         })}
       </nav>
 
-      {/* Right: Actions */}
       <div className="flex items-center gap-3 shrink-0">
         <ButtonTheme />
 
         <NotificationBell />
 
-        {/* Tarifs — admins only, same placement as notification */}
         {user?.role === UserRole.ADMIN && (
           <Link
             to="/board/pricing"
@@ -134,11 +115,9 @@ export function Topbar() {
           </Link>
         )}
 
-        {/* Orders shortcut — customers only */}
         {user?.role === UserRole.CUSTOMER && (
           <Link
             to="/board/orders"
-            onClick={() => setHasNewOrder(false)}
             className={cn(
               'relative flex items-center justify-center size-10 rounded-xl transition-all',
               location.pathname.startsWith('/board/orders')
@@ -148,8 +127,10 @@ export function Topbar() {
             aria-label="Mes commandes"
           >
             <ShoppingBag className="size-5" />
-            {hasNewOrder && (
-              <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-secondary border-2 border-background" />
+            {unreadOrderNotifs > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-background tabular-nums">
+                {unreadOrderNotifs > 99 ? '99+' : unreadOrderNotifs}
+              </span>
             )}
           </Link>
         )}
@@ -164,7 +145,6 @@ export function Topbar() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            {/* User info */}
             <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
               <span className="text-sm font-semibold text-foreground truncate">{user?.name}</span>
               <span className="text-xs text-muted-foreground font-normal truncate">{user?.email}</span>
@@ -194,8 +174,6 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-
     </header>
   );
 }

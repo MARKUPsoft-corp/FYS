@@ -6,6 +6,13 @@ import { getUsers } from '@/services/stats';
 import { UserRole } from '@/entities';
 import type { User as UserType } from '@/entities';
 import { UserDetailSheet, UserMonitoringCard } from '@/components/features/users/UserDetailSheet';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
+
+const FILTER_OPTIONS = [
+  { value: 'recent' as const, label: 'Récents' },
+  { value: 'online' as const, label: 'En ligne' },
+  { value: 'alpha' as const, label: 'A → Z' },
+];
 
 const Users: PageComponent = () => {
   const { data: users = [], isLoading } = useQuery({
@@ -14,7 +21,7 @@ const Users: PageComponent = () => {
     staleTime: 60_000,
   });
 
-  const [filterType, setFilterType] = useState<'all' | 'recent' | 'online' | 'alpha'>('recent');
+  const [filterType, setFilterType] = useState<'recent' | 'online' | 'alpha'>('recent');
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
   const adminCount = users.filter((u) => u.role === UserRole.ADMIN).length;
@@ -39,48 +46,56 @@ const Users: PageComponent = () => {
     });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Communauté</p>
-          <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Utilisateurs</h2>
-          <p className="text-muted-foreground text-lg font-medium mt-3">
-            Cliquez sur un utilisateur pour voir son profil, ses commandes et son suivi santé.
-          </p>
-        </div>
-        {!isLoading && users.length > 0 && (
-          <div className="flex flex-col gap-3 shrink-0 items-end">
-            <div className="flex items-center gap-3">
-              <div className="text-center bg-card rounded-2xl border border-border/40 p-3 shadow-sm min-w-[80px]">
-                <p className="font-display font-extrabold text-2xl text-primary">{adminCount}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Admins</p>
+    <>
+      <BoardPageShell
+        eyebrow="Communauté"
+        titleBefore="Les"
+        titleHighlight="Utilisateurs"
+        sectionBefore="Suivi"
+        sectionHighlight="clients"
+        subtitle="Cliquez sur un utilisateur pour voir son profil, ses commandes et son suivi santé."
+        imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        heroExtra={
+          !isLoading && users.length > 0 ? (
+            <div className="flex items-center gap-2 shrink-0 mb-0.5">
+              <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 py-2 text-center">
+                <p className="font-display font-extrabold text-lg text-white tabular-nums">{adminCount}</p>
+                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">Admins</p>
               </div>
-              <div className="text-center bg-card rounded-2xl border border-border/40 p-3 shadow-sm min-w-[80px]">
-                <p className="font-display font-extrabold text-2xl text-violet-500">{customerCount}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Clients</p>
+              <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 py-2 text-center">
+                <p className="font-display font-extrabold text-lg text-white tabular-nums">{customerCount}</p>
+                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">Clients</p>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-semibold text-muted-foreground mr-1">Afficher:</span>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as typeof filterType)}
-                className="h-10 px-4 rounded-xl border border-border/40 bg-card shadow-sm text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all hover:bg-accent cursor-pointer appearance-none"
-              >
-                <option value="recent">Plus récents</option>
-                <option value="online">En ligne actuellement</option>
-                <option value="alpha">Ordre alphabétique</option>
-              </select>
+          ) : undefined
+        }
+      >
+        <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
+          {/* Toolbar tri discret */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+              {visibleUsers.length} utilisateur{visibleUsers.length !== 1 ? 's' : ''}
+            </p>
+            <div className="inline-flex items-center rounded-full border border-border/50 bg-background p-0.5">
+              {FILTER_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFilterType(value)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+                    filterType === value
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">
-        <div>
           {isLoading ? (
-            <div className="px-5 divide-y divide-border/40">
+            <div className="px-4 divide-y divide-border/40">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="py-4 flex gap-4 w-full items-center">
                   <div className="size-10 rounded-full bg-muted animate-pulse shrink-0" />
@@ -93,7 +108,7 @@ const Users: PageComponent = () => {
               ))}
             </div>
           ) : visibleUsers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center px-4">
               <div className="size-16 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 flex items-center justify-center">
                 <UsersIcon className="size-6 text-violet-400" />
               </div>
@@ -103,7 +118,7 @@ const Users: PageComponent = () => {
               </p>
             </div>
           ) : (
-            <div className="px-2 pb-2">
+            <div>
               {visibleUsers.map((user) => (
                 <UserMonitoringCard
                   key={user.uid}
@@ -114,14 +129,14 @@ const Users: PageComponent = () => {
             </div>
           )}
         </div>
-      </div>
+      </BoardPageShell>
 
       <UserDetailSheet
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(v) => { if (!v) setSelectedUser(null); }}
       />
-    </div>
+    </>
   );
 };
 

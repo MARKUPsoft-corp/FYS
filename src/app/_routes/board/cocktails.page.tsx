@@ -1,8 +1,6 @@
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import {
-  FlaskConical, Plus
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { FlaskConical, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,11 +11,15 @@ import { useAuthStore } from '@/stores/auth';
 import { UserRole } from '@/entities';
 import type { Cocktail } from '@/entities';
 import {
-  getUserCocktails, deleteCocktail, toggleCocktailPublic, getCocktailById,
+  getUserCocktails,
+  getPublicCocktails,
+  deleteCocktail,
+  toggleCocktailPublic,
+  getCocktailById,
 } from '@/services/cocktail';
 import { CocktailCard } from '@/components/features/catalogue/CocktailCard';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
-
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 
 const Cocktails: PageComponent = () => {
   const { user } = useAuthStore();
@@ -30,11 +32,19 @@ const Cocktails: PageComponent = () => {
   const [deleting, setDeleting] = useState(false);
   const [orderTarget, setOrderTarget] = useState<Cocktail | null>(null);
 
-  const { data: cocktails = [], isLoading } = useQuery({
+  const { data: myCocktails = [], isLoading: myLoading } = useQuery({
     queryKey: ['user-cocktails', user?.uid],
     queryFn: () => getUserCocktails(user!.uid),
     enabled: !!user?.uid && !isAdmin,
   });
+
+  const { data: publicCocktails = [], isLoading: publicLoading } = useQuery({
+    queryKey: ['cocktails', 'public'],
+    queryFn: getPublicCocktails,
+    enabled: !!user?.uid,
+  });
+
+  const isLoading = isAdmin ? publicLoading : (myLoading || publicLoading);
 
   const cocktailParam = searchParams.get('cocktail');
   useEffect(() => {
@@ -47,6 +57,7 @@ const Cocktails: PageComponent = () => {
   async function handleTogglePublish(cocktail: Cocktail) {
     await toggleCocktailPublic(cocktail.id, !cocktail.isPublic);
     queryClient.invalidateQueries({ queryKey: ['user-cocktails', user?.uid] });
+    queryClient.invalidateQueries({ queryKey: ['cocktails', 'public'] });
   }
 
   async function handleDelete() {
@@ -55,31 +66,97 @@ const Cocktails: PageComponent = () => {
     try {
       await deleteCocktail(toDelete.id, toDelete.imageUrl);
       queryClient.invalidateQueries({ queryKey: ['user-cocktails', user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ['cocktails', 'public'] });
     } finally {
       setDeleting(false);
       setToDelete(null);
     }
   }
 
+  const communityPublic = useMemo(() => {
+    if (isAdmin) return publicCocktails;
+    const mineIds = new Set(myCocktails.map((c) => c.id));
+    return publicCocktails.filter((c) => !mineIds.has(c.id));
+  }, [isAdmin, publicCocktails, myCocktails]);
+
+  // ── Admin: all public cocktails ──
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-3 md:px-4">
-        <FlaskConical className="size-12 text-primary/40" />
-        <h2 className="font-display font-bold text-2xl text-foreground">Gestion des cocktails</h2>
-        <p className="text-muted-foreground text-center max-w-xs">
-          Les cocktails du catalogue sont gérés depuis la page Catalogue.
-        </p>
-        <Button onClick={() => navigate('/catalogue')} className="rounded-full px-8">
-          Aller au catalogue
-        </Button>
-      </div>
+      <BoardPageShell
+        eyebrow="Communauté"
+        titleBefore="Cocktails"
+        titleHighlight="publics"
+        sectionBefore="Toutes les"
+        sectionHighlight="créations"
+        subtitle="Tous les cocktails publiés par les clients de l'application."
+        imageUrl="https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        actions={
+          <Button
+            size="lg"
+            onClick={() => navigate('/board/catalogue')}
+            className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90"
+          >
+            <FlaskConical className="size-5" />
+            Gérer le catalogue officiel
+          </Button>
+        }
+      >
+        {isLoading && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-3">
+                <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
+                <div className="px-2 space-y-2">
+                  <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && publicCocktails.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {publicCocktails.map((c) => (
+              <CocktailCard
+                key={c.id}
+                cocktail={c}
+                onView={(cocktail) => setOrderTarget(cocktail)}
+              />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && publicCocktails.length === 0 && (
+          <div className="rounded-[2.5rem] border-2 border-dashed border-border/40 flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <FlaskConical className="size-8 text-muted-foreground/40" />
+            <p className="text-sm font-semibold text-foreground">Aucun cocktail public pour le moment</p>
+            <p className="text-xs text-muted-foreground max-w-[240px]">
+              Les créations publiées par les clients apparaîtront ici.
+            </p>
+          </div>
+        )}
+
+        {orderTarget && user && (
+          <OrderSheet
+            cocktail={orderTarget}
+            open={!!orderTarget}
+            onOpenChange={(v) => {
+              if (!v) {
+                setOrderTarget(null);
+                window.history.replaceState(null, '', '/board/cocktails');
+              }
+            }}
+            user={user}
+          />
+        )}
+      </BoardPageShell>
     );
   }
 
+  // ── Client: mes créations + publics ──
   return (
     <div className="min-h-screen bg-background pb-20">
-
-      {/* Hero Banner */}
       <div
         className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-16 overflow-hidden"
         style={{
@@ -97,8 +174,7 @@ const Cocktails: PageComponent = () => {
         </div>
       </div>
 
-      <div className="px-3 md:px-4 space-y-10">
-
+      <div className="px-3 md:px-4 space-y-12">
         <Button
           size="lg"
           onClick={() => navigate('/lab')}
@@ -108,62 +184,97 @@ const Cocktails: PageComponent = () => {
           Créer un nouveau cocktail
         </Button>
 
-        <div className="text-center">
-          <h3 className="font-display font-bold text-3xl">
-            <span className="text-foreground">Mes </span>
-            <span className="text-primary">Créations</span>
-          </h3>
-          <p className="text-muted-foreground mt-2 font-medium">
-            Vos mélanges personnalisés sauvegardés.
-          </p>
-        </div>
-
-        {isLoading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-3">
-                <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
-                <div className="px-2 space-y-2">
-                  <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
-                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!isLoading && cocktails.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
-            {cocktails.map((c) => (
-              <CocktailCard
-                key={c.id}
-                cocktail={c}
-                showActions
-                onTogglePublish={handleTogglePublish}
-                onDelete={setToDelete}
-                onView={(cocktail) => setOrderTarget(cocktail)}
-              />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && cocktails.length === 0 && (
-          <div
-            onClick={() => navigate('/lab')}
-            className="rounded-[2.5rem] border-2 border-dashed border-border/40 flex flex-col items-center justify-center py-16 gap-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
-          >
-            <div className="size-16 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-              <FlaskConical className="size-7 text-primary/50 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-sm font-semibold text-foreground">Créer votre premier mélange</p>
-            <p className="text-xs text-muted-foreground max-w-[200px]">
-              Sélectionnez vos fruits préférés et composez votre recette unique dans le FYS Lab.
+        {/* Mes créations */}
+        <section className="space-y-6">
+          <div className="text-center">
+            <h3 className="font-display font-bold text-3xl">
+              <span className="text-foreground">Mes </span>
+              <span className="text-primary">Créations</span>
+            </h3>
+            <p className="text-muted-foreground mt-2 font-medium">
+              Vos mélanges personnalisés sauvegardés.
             </p>
           </div>
-        )}
+
+          {isLoading && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-3">
+                  <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
+                  <div className="px-2 space-y-2">
+                    <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isLoading && myCocktails.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {myCocktails.map((c) => (
+                <CocktailCard
+                  key={c.id}
+                  cocktail={c}
+                  showActions
+                  onTogglePublish={handleTogglePublish}
+                  onDelete={setToDelete}
+                  onView={(cocktail) => setOrderTarget(cocktail)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && myCocktails.length === 0 && (
+            <div
+              onClick={() => navigate('/lab')}
+              className="rounded-[2.5rem] border-2 border-dashed border-border/40 flex flex-col items-center justify-center py-16 gap-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+            >
+              <div className="size-16 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                <FlaskConical className="size-7 text-primary/50 group-hover:text-primary transition-colors" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Créer votre premier mélange</p>
+              <p className="text-xs text-muted-foreground max-w-[200px]">
+                Sélectionnez vos fruits préférés et composez votre recette unique dans le FYS Lab.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Cocktails publics de l'app */}
+        <section className="space-y-6 pb-8">
+          <div className="text-center">
+            <h3 className="font-display font-bold text-3xl">
+              <span className="text-foreground">Cocktails </span>
+              <span className="text-primary">publics</span>
+            </h3>
+            <p className="text-muted-foreground mt-2 font-medium">
+              Les créations partagées par la communauté FYS.
+            </p>
+          </div>
+
+          {!isLoading && communityPublic.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {communityPublic.map((c) => (
+                <CocktailCard
+                  key={c.id}
+                  cocktail={c}
+                  onView={(cocktail) => setOrderTarget(cocktail)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && communityPublic.length === 0 && (
+            <div className="rounded-[2.5rem] border border-dashed border-border/40 flex flex-col items-center justify-center py-12 gap-2 text-center">
+              <p className="text-sm font-semibold text-muted-foreground">
+                Aucun autre cocktail public pour l&apos;instant
+              </p>
+            </div>
+          )}
+        </section>
       </div>
 
-      {/* Order + nutrition sheet */}
       {orderTarget && user && (
         <OrderSheet
           cocktail={orderTarget}
@@ -178,7 +289,6 @@ const Cocktails: PageComponent = () => {
         />
       )}
 
-      {/* Delete confirmation */}
       <Dialog open={!!toDelete} onOpenChange={(open: boolean) => !open && setToDelete(null)}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
@@ -206,8 +316,8 @@ const Cocktails: PageComponent = () => {
 };
 
 Cocktails.metadata = {
-  title: 'FYS — Mes Cocktails',
-  description: 'Vos créations personnalisées.',
+  title: 'FYS — Cocktails',
+  description: 'Créations personnelles et cocktails publics FYS.',
 };
 
 export default Cocktails;

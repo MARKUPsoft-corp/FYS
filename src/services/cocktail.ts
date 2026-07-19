@@ -132,7 +132,7 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
       notifyAdmins({
         title: 'Nouveau cocktail rendu public 🍹',
         message: `La recette « ${cocktail.name} » a été partagée dans le catalogue.`,
-        link: '/board/cocktails',
+        link: `/board/cocktails?cocktail=${id}`,
       }).catch(console.error);
     }
   }

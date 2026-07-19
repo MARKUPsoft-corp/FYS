@@ -78,8 +78,9 @@ export function NotificationBell() {
 
   function handleNotifClick(n: AppNotification) {
     if (!n.isRead) markNotificationAsRead(n.id);
-    if (n.link) navigate(n.link);
     setIsNotifOpen(false);
+    setShowToast(null);
+    if (n.link) navigate(n.link);
   }
 
   if (!user) return null;
@@ -94,7 +95,9 @@ export function NotificationBell() {
           >
             <Bell className="size-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 size-2.5 rounded-full bg-red-500 border-2 border-background" />
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-background tabular-nums">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </button>
         </SheetTrigger>
@@ -200,7 +203,7 @@ export function NotificationBell() {
                 <button
                   type="button"
                   onClick={() => {
-                    navigate(showToast.notif.link!);
+                    handleNotifClick(showToast.notif);
                     setShowToast(null);
                   }}
                   className="mt-2 text-[11px] font-bold text-primary hover:underline"

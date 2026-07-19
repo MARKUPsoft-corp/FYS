@@ -87,7 +87,14 @@ export async function createOrder(
   notifyAdmins({
     title: 'Nouvelle commande 🎉',
     message: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
-    link: '/board/orders',
+    link: `/board/orders?order=${ref.id}`,
+  }).catch(console.error);
+
+  createNotification({
+    userId: user.uid,
+    title: 'Commande enregistrée 🎉',
+    message: `Votre commande de ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}) a bien été reçue.`,
+    link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
   return ref.id;
@@ -133,7 +140,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
       userId: order.userId,
       title: 'Mise à jour commande',
       message: `Votre commande de ${order.cocktailNameSnapshot} est ${label}.`,
-      link: '/board/orders',
+      link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
   }
 }
@@ -152,7 +159,14 @@ export async function cancelOrder(orderId: string): Promise<void> {
     notifyAdmins({
       title: 'Commande annulée ❌',
       message: `${order.userNameSnapshot} a annulé sa commande de ${order.cocktailNameSnapshot}.`,
-      link: '/board/orders',
+      link: `/board/orders?order=${orderId}`,
+    }).catch(console.error);
+
+    createNotification({
+      userId: order.userId,
+      title: 'Commande annulée',
+      message: `Votre commande de ${order.cocktailNameSnapshot} a été annulée.`,
+      link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
   }
 }

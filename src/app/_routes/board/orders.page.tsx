@@ -1,7 +1,8 @@
-import { PageComponent, useNavigate } from 'rasengan';
+import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
-  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download
+  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
+  CalendarDays,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +18,13 @@ import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/
 import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
 import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
 import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
+import {
+  PeriodCalendar,
+  formatPeriodLabel,
+  getPeriodBounds,
+  type PeriodType,
+} from '@/components/features/orders/PeriodCalendar';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -913,26 +921,57 @@ function AdminOrderSheet({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Period filters ────────────────────────────────────────────────────────────
 
-const ADMIN_FILTER_STATUSES = [
-  { value: 'all', label: 'Toutes' },
+const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
+  { value: 'all', label: 'Tout' },
+  { value: 'day', label: 'Jour' },
+  { value: 'week', label: 'Semaine' },
+  { value: 'month', label: 'Mois' },
+  { value: 'year', label: 'Année' },
+];
+
+const STATUS_FILTERS = [
+  { value: 'all' as const, label: 'Toutes' },
   { value: OrderStatus.PENDING,   label: 'En attente' },
   { value: OrderStatus.CONFIRMED, label: 'Confirmées' },
   { value: OrderStatus.PREPARING, label: 'En préparation' },
   { value: OrderStatus.READY,     label: 'Prêtes' },
   { value: OrderStatus.DELIVERED, label: 'Livrées' },
   { value: OrderStatus.CANCELLED, label: 'Annulées' },
-] as const;
+];
+
+function orderCreatedMs(order: Order): number {
+  const ts = order.createdAt as { toDate?: () => Date; seconds?: number } | undefined;
+  if (!ts) return 0;
+  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+  if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+  return 0;
+}
+
+function orderInPeriod(order: Order, type: PeriodType, anchor: Date): boolean {
+  const bounds = getPeriodBounds(type, anchor);
+  if (!bounds) return true;
+  const ms = orderCreatedMs(order);
+  return ms >= bounds.start.getTime() && ms <= bounds.end.getTime();
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 const Orders: PageComponent = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === UserRole.ADMIN;
 
   const [selected, setSelected] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | OrderStatus>('all');
+  const [periodType, setPeriodType] = useState<PeriodType>('all');
+  const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const orderParam = searchParams.get('order');
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: isAdmin ? ['orders', 'all'] : ['orders', 'user', user?.uid],
@@ -941,6 +980,19 @@ const Orders: PageComponent = () => {
     },
     enabled: !!user?.uid,
   });
+
+  useEffect(() => {
+    if (!orderParam || isLoading) return;
+    const order = orders.find((o) => o.id === orderParam);
+    if (order) setSelected(order);
+  }, [orderParam, orders, isLoading]);
+
+  function closeOrderSheet() {
+    setSelected(null);
+    if (orderParam) {
+      window.history.replaceState(null, '', '/board/orders');
+    }
+  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -961,90 +1013,156 @@ const Orders: PageComponent = () => {
     }
   }
 
-  const visible = orders.filter((o) => filterStatus === 'all' || o.status === filterStatus);
+  function handlePeriodTypeChange(type: PeriodType) {
+    setPeriodType(type);
+    if (type === 'all') {
+      setCalendarOpen(false);
+      return;
+    }
+    setPeriodAnchor(new Date());
+    setCalendarOpen(true);
+  }
 
-  const heroBg = isAdmin
-    ? "url('https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200')"
-    : "url('https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200')";
+  const periodOrders = useMemo(
+    () => orders.filter((o) => orderInPeriod(o, periodType, periodAnchor)),
+    [orders, periodType, periodAnchor],
+  );
+
+  const visible = useMemo(
+    () => periodOrders.filter((o) => filterStatus === 'all' || o.status === filterStatus),
+    [periodOrders, filterStatus],
+  );
+
+  const periodLabel = formatPeriodLabel(periodType, periodAnchor);
+
+  const heroImageUrl = isAdmin
+    ? 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200'
+    : 'https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200';
+
+  const heroExtra = isAdmin && !isLoading && orders.length > 0 ? (
+    <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-2.5 text-center mb-0.5">
+      <p className="font-display font-extrabold text-xl text-white tabular-nums">{visible.length}</p>
+      <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">
+        {periodType === 'all' && filterStatus === 'all' ? 'Total' : 'Affichées'}
+      </p>
+    </div>
+  ) : undefined;
 
   return (
-    <div className={`min-h-screen bg-background pb-20 ${isAdmin ? 'space-y-8 max-w-7xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10' : ''}`}>
-
-      {/* Hero Banner (Customer Only) */}
-      {!isAdmin && (
-        <div
-          className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
-          style={{ backgroundImage: heroBg, backgroundSize: 'cover', backgroundPosition: 'center' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-          <div className="relative z-10">
-            <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">Suivi</p>
-            <h1 className="font-display font-extrabold text-4xl text-white">
-              Mes <span className="text-secondary italic">Commandes</span>
-            </h1>
+    <>
+      <BoardPageShell
+        eyebrow={isAdmin ? 'Gestion' : 'Suivi'}
+        titleBefore={isAdmin ? 'Les' : 'Mes'}
+        titleHighlight="Commandes"
+        sectionBefore={isAdmin ? 'Toutes les' : 'Mes'}
+        sectionHighlight="Commandes"
+        subtitle={
+          isAdmin
+            ? 'Filtrez, suivez et gérez chaque commande en temps réel.'
+            : "Suivez l'état de vos commandes en temps réel."
+        }
+        imageUrl={heroImageUrl}
+        heroExtra={heroExtra}
+      >
+        {/* Period + status filters (admin & client) */}
+        <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <CalendarDays className="size-3.5 text-muted-foreground" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Période</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+              {PERIOD_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handlePeriodTypeChange(value)}
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-[12px] font-bold transition-all border ${
+                    periodType === value
+                      ? 'bg-secondary text-white border-secondary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border/60 hover:border-secondary/40 hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Admin Header */}
-      {isAdmin && (
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">Historique</p>
-            <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">Commandes</h2>
-            <p className="text-muted-foreground text-lg font-medium mt-3">
-              Supervisez la flotte de commandes.
-            </p>
-          </div>
-          {!isLoading && orders.length > 0 && (
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="bg-card rounded-2xl border border-border/40 p-3 px-5 shadow-sm min-w-[100px] text-center">
-                <p className="font-display font-extrabold text-2xl text-foreground">{orders.length}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mt-0.5">Total</p>
-              </div>
+          {periodType !== 'all' && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCalendarOpen((v) => !v)}
+                className="w-full flex items-center justify-between gap-2 rounded-2xl border border-border/50 bg-card hover:bg-muted/40 px-4 py-3 transition-colors text-left shadow-sm"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
+                    {periodType === 'day' ? 'Jour sélectionné'
+                      : periodType === 'week' ? 'Semaine sélectionnée'
+                      : periodType === 'month' ? 'Mois sélectionné'
+                      : 'Année sélectionnée'}
+                  </p>
+                  <p className="text-[13px] font-semibold text-foreground capitalize truncate">
+                    {periodLabel}
+                  </p>
+                </div>
+                <CalendarDays className={`size-4 shrink-0 transition-colors ${calendarOpen ? 'text-secondary' : 'text-muted-foreground'}`} />
+              </button>
+
+              {calendarOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Fermer le calendrier"
+                    className="fixed inset-0 z-30 cursor-default"
+                    onClick={() => setCalendarOpen(false)}
+                  />
+                  <div className="absolute left-0 right-0 sm:left-auto sm:right-0 z-40 mt-2 rounded-2xl border border-border/60 bg-card shadow-xl overflow-hidden">
+                    <PeriodCalendar
+                      periodType={periodType}
+                      value={periodAnchor}
+                      onChange={setPeriodAnchor}
+                      onClose={() => setCalendarOpen(false)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Package className="size-3.5 text-muted-foreground" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Statut</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+              {STATUS_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFilterStatus(value)}
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-[12px] font-bold transition-all border ${
+                    filterStatus === value
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border/60 hover:border-primary/40 hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                  {value !== 'all' && (
+                    <span className="ml-1.5 opacity-60">
+                      {periodOrders.filter((o) => o.status === value).length}
+                    </span>
+                  )}
+                  {value === 'all' && periodType !== 'all' && (
+                    <span className="ml-1.5 opacity-60">{periodOrders.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
-
-      <div className={isAdmin ? 'bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden p-6' : 'px-3 md:px-4 space-y-6'}>
-        {/* Section title (Customer Only) */}
-        {!isAdmin && (
-          <div className="text-center">
-            <h3 className="font-display font-bold text-3xl">
-              <span className="text-foreground">Mes </span>
-              <span className="text-primary">Commandes</span>
-            </h3>
-            <p className="text-muted-foreground mt-2 font-medium text-sm">
-              Suivez l'état de vos commandes en temps réel.
-            </p>
-          </div>
-        )}
-
-        {/* Admin filter bar */}
-        {isAdmin && (
-          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {ADMIN_FILTER_STATUSES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setFilterStatus(value)}
-                className={`shrink-0 px-3.5 py-2 rounded-full text-[12px] font-bold transition-all border ${
-                  filterStatus === value
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-card text-muted-foreground border-border/60 hover:border-primary/40 hover:text-foreground'
-                }`}
-              >
-                {label}
-                {value !== 'all' && (
-                  <span className="ml-1.5 opacity-60">
-                    {orders.filter((o) => o.status === value).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Loading */}
         {isLoading && (
@@ -1083,11 +1201,20 @@ const Orders: PageComponent = () => {
               <Package className="size-7 text-secondary/50" />
             </div>
             <p className="text-sm font-semibold text-foreground">
-              {filterStatus !== 'all'
-                ? `Aucune commande "${STATUS_CONFIG[filterStatus as OrderStatus]?.label}"`
+              {filterStatus !== 'all' || periodType !== 'all'
+                ? 'Aucune commande pour ces filtres'
                 : 'Aucune commande pour le moment'}
             </p>
-            {!isAdmin && filterStatus === 'all' && (
+            {(filterStatus !== 'all' || periodType !== 'all') && (
+              <p className="text-xs text-muted-foreground max-w-[260px]">
+                {periodType !== 'all' && (
+                  <span className="capitalize">{periodLabel}</span>
+                )}
+                {periodType !== 'all' && filterStatus !== 'all' && ' · '}
+                {filterStatus !== 'all' && STATUS_CONFIG[filterStatus]?.label}
+              </p>
+            )}
+            {!isAdmin && filterStatus === 'all' && periodType === 'all' && (
               <>
                 <p className="text-xs text-muted-foreground max-w-[200px]">
                   Explorez le catalogue et passez votre première commande.
@@ -1101,16 +1228,30 @@ const Orders: PageComponent = () => {
                 </Button>
               </>
             )}
+            {(filterStatus !== 'all' || periodType !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full mt-1"
+                onClick={() => {
+                  setFilterStatus('all');
+                  setPeriodType('all');
+                }}
+              >
+                Réinitialiser les filtres
+              </Button>
+            )}
           </div>
         )}
-      </div>
+        </div>
+      </BoardPageShell>
 
       {/* Sheets */}
       {isAdmin ? (
         <AdminOrderSheet
           order={selected}
           open={!!selected}
-          onOpenChange={(v) => !v && setSelected(null)}
+          onOpenChange={(v) => { if (!v) closeOrderSheet(); }}
           onStatusChange={handleStatusChange}
           onCancel={handleCancel}
         />
@@ -1118,11 +1259,11 @@ const Orders: PageComponent = () => {
         <ClientOrderSheet
           order={selected}
           open={!!selected}
-          onOpenChange={(v) => !v && setSelected(null)}
+          onOpenChange={(v) => { if (!v) closeOrderSheet(); }}
           onCancel={handleCancel}
         />
       )}
-    </div>
+    </>
   );
 };
 

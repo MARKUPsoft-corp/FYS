@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getPricingSettings, updatePricingSettings } from '@/services/settings';
 import { BOTTLE_VOLUME_LABELS } from '@/entities';
 
@@ -47,20 +48,15 @@ const Pricing: PageComponent = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto px-3 md:px-4 lg:px-6 pt-6 lg:pt-10 pb-20">
-      <div>
-        <p className="text-sm text-muted-foreground font-semibold uppercase tracking-widest pl-1 mb-2">
-          Tarification
-        </p>
-        <h2 className="font-display font-bold text-4xl text-foreground leading-[1.1]">
-          Contenants & livraison
-        </h2>
-        <p className="text-muted-foreground text-lg font-medium mt-3">
-          Définissez le prix de base des bouteilles. Le client ne voit que le prix final par contenant
-          (base + mix), jamais le détail par fruit.
-        </p>
-      </div>
-
+    <BoardPageShell
+      eyebrow="Tarification"
+      titleBefore="Les"
+      titleHighlight="Tarifs"
+      sectionBefore="Contenants &"
+      sectionHighlight="livraison"
+      subtitle="Définissez le prix de base des bouteilles. Le client voit uniquement le prix final."
+      imageUrl="https://images.pexels.com/photos/1283219/pexels-photo-1283219.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    >
       {isLoading ? (
         <div className="flex items-center justify-center py-16 bg-card rounded-[2rem] border border-border/40">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -68,7 +64,7 @@ const Pricing: PageComponent = () => {
       ) : (
         <form
           onSubmit={handleSave}
-          className="bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 space-y-8"
+          className="bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 space-y-8 max-w-2xl mx-auto w-full"
         >
           <div className="flex items-start gap-4 pb-6 border-b border-border/40">
             <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -163,7 +159,7 @@ const Pricing: PageComponent = () => {
           </div>
         </form>
       )}
-    </div>
+    </BoardPageShell>
   );
 };
 

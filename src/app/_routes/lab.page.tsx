@@ -240,7 +240,7 @@ const FysLab: PageComponent = () => {
     } as Cocktail;
   }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing]);
 
-  async function handleSave(silent = false) {
+  async function handleSave() {
     if (!user || !cocktailName.trim() || selectedIngredients.size === 0) return;
     setSaving(true);
     try {
@@ -262,19 +262,27 @@ const FysLab: PageComponent = () => {
         ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
-
-      if (!silent) {
-        setSelectedIngredients(new Map());
-        setSelectedSupplements(new Map());
-        setCocktailName('');
-        setAnalysis(null);
-        setAiRecommendation(null);
-        setComposeStep(1);
-        navigate(`/board/cocktails?cocktail=${cocktailId}`);
-      }
+      setSelectedIngredients(new Map());
+      setSelectedSupplements(new Map());
+      setCocktailName('');
+      setAnalysis(null);
+      setAiRecommendation(null);
+      setComposeStep(1);
+      navigate(`/board/cocktails?cocktail=${cocktailId}`);
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Après commande : OrderSheet a déjà persisté le cocktail (draft) — pas de second createCocktail. */
+  function handleOrderSuccess() {
+    queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
+    setSelectedIngredients(new Map());
+    setSelectedSupplements(new Map());
+    setCocktailName('');
+    setAnalysis(null);
+    setAiRecommendation(null);
+    setComposeStep(1);
   }
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
@@ -457,7 +465,7 @@ const FysLab: PageComponent = () => {
           open={showOrderSheet}
           onOpenChange={setShowOrderSheet}
           user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
-          onOrderSuccess={() => handleSave(true)}
+          onOrderSuccess={handleOrderSuccess}
         />
       )}
     </div>
