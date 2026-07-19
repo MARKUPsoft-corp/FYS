@@ -1,19 +1,25 @@
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
-  MapPin, Phone, MessageSquare
+  MapPin, Phone, MessageSquare,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { DELIVERY_FEE } from '@/entities';
-import type { Cocktail } from '@/entities';
+import {
+  BOTTLE_LABELS,
+  getBottleBasePrice,
+  pricePerBottle,
+  type BottleSize,
+  type Cocktail,
+} from '@/entities';
 import { createOrder } from '@/services/order';
+import { getPricingSettings } from '@/services/settings';
 import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
 import { createCocktail } from '@/services/cocktail';
-
-// ── Order Sheet ───────────────────────────────────────────────────────────────
+import { BottleSizePicker } from '@/components/features/cocktail/BottleSizePicker';
 
 type SheetTab = 'order' | 'nutrition';
 
@@ -34,6 +40,7 @@ export function OrderSheet({
 }) {
   const [activeTab, setActiveTab] = useState<SheetTab>('order');
   const [quantity, setQuantity] = useState(1);
+  const [bottleSize, setBottleSize] = useState<BottleSize>('500ml');
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
 
@@ -43,6 +50,11 @@ export function OrderSheet({
   const [district, setDistrict] = useState('');
   const [phone, setPhone] = useState(user.phone || '');
   const [instructions, setInstructions] = useState('');
+
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
+  });
 
   useEffect(() => {
     setCustomName(cocktail.name);
@@ -54,23 +66,53 @@ export function OrderSheet({
   const analysis = cocktail.aiAnalysis;
   const verdictCfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
 
-  const perBottle = cocktail.totalPrice;
+  const price500 = pricing
+    ? pricePerBottle(pricing, '500ml', cocktail.ingredients)
+    : cocktail.totalPrice;
+  const price1L = pricing
+    ? pricePerBottle(pricing, '1L', cocktail.ingredients)
+    : Math.round(cocktail.totalPrice * 1.6);
+
+  const perBottle = bottleSize === '500ml' ? price500 : price1L;
+  const deliveryFee = pricing?.deliveryFee ?? 500;
   const subtotal = perBottle * quantity;
-  const total = subtotal + DELIVERY_FEE;
+  const total = subtotal + deliveryFee;
 
   async function handleOrder() {
+    if (!pricing) return;
     setOrdering(true);
     try {
       const details = { district, phone, instructions };
-      if (cocktail.id === "draft") {
+      const pricingPayload = {
+        bottleSize,
+        bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
+        pricePerBottle: perBottle,
+        deliveryFee,
+      };
+
+      if (cocktail.id === 'draft') {
         const cocktailId = await createCocktail({
           ...cocktail,
           name: customName,
           createdBy: user.uid,
+          basePrice: pricingPayload.bottleBasePrice,
+          totalPrice: perBottle,
         });
-        await createOrder(user, { ...cocktail, name: customName, id: cocktailId }, quantity, details);
+        await createOrder(
+          user,
+          { ...cocktail, name: customName, id: cocktailId, totalPrice: perBottle },
+          quantity,
+          pricingPayload,
+          details,
+        );
       } else {
-        await createOrder(user, { ...cocktail, name: customName }, quantity, details);
+        await createOrder(
+          user,
+          { ...cocktail, name: customName, totalPrice: perBottle },
+          quantity,
+          pricingPayload,
+          details,
+        );
       }
       setOrdered(true);
       onOrderSuccess?.();
@@ -82,6 +124,7 @@ export function OrderSheet({
   function handleClose(v: boolean) {
     if (!v) {
       setQuantity(1);
+      setBottleSize('500ml');
       setOrdered(false);
       setActiveTab('order');
     }
@@ -92,7 +135,6 @@ export function OrderSheet({
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
 
-        {/* Header */}
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -132,7 +174,6 @@ export function OrderSheet({
             )}
           </div>
 
-          {/* Tab switcher — only when analysis exists */}
           {hasAnalysis && (
             <div className="flex gap-1 bg-muted rounded-xl p-1 mt-4">
               <button
@@ -163,19 +204,17 @@ export function OrderSheet({
           )}
         </SheetHeader>
 
-        {/* Separator */}
         <div className="border-b border-border/40 mx-0 mt-4 shrink-0" />
 
         {ordered ? (
-          /* ── Success state ── */
           <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 text-center">
             <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
               <ShoppingBag className="size-9 text-primary" />
             </div>
             <h3 className="font-display font-bold text-2xl text-foreground">Commande passée !</h3>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
-              Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong> de{' '}
-              <strong>{customName}</strong> a été enregistrée. Vous serez notifié de sa progression.
+              Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong>{' '}
+              <strong>{BOTTLE_LABELS[bottleSize]}</strong> de <strong>{customName}</strong> a été enregistrée.
             </p>
             <p className="text-primary font-bold text-lg">{total.toLocaleString()} XAF</p>
             <Button variant="outline" className="rounded-2xl px-8 mt-2" onClick={() => handleClose(false)}>
@@ -183,45 +222,20 @@ export function OrderSheet({
             </Button>
           </div>
         ) : activeTab === 'nutrition' && analysis ? (
-          /* ── Nutrition tab ── */
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <NutritionalView analysis={analysis} />
           </div>
         ) : (
-          /* ── Order tab ── */
           <>
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
-              {/* Prix par bouteille */}
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Détail des prix
-                </p>
-                <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Base 50cl</span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {cocktail.basePrice.toLocaleString()} XAF
-                    </span>
-                  </div>
-                  {cocktail.ingredients.map((ing) => (
-                    <div key={ing.fruitId} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">{ing.fruitName}</span>
-                      <span className="text-[13px] font-semibold text-foreground">
-                        + {ing.priceSnapshot.toLocaleString()} XAF
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between px-4 py-3.5 bg-primary/5">
-                    <span className="text-[13px] font-bold text-foreground">Prix / bouteille</span>
-                    <span className="text-[15px] font-bold text-primary">
-                      {perBottle.toLocaleString()} XAF
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <BottleSizePicker
+                selected={bottleSize}
+                onSelect={setBottleSize}
+                price500ml={price500}
+                price1L={price1L}
+              />
 
-              {/* Nombre de bouteilles */}
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Nombre de bouteilles
@@ -240,7 +254,7 @@ export function OrderSheet({
                       {quantity}
                     </span>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      bouteille{quantity > 1 ? 's' : ''}
+                      × {BOTTLE_LABELS[bottleSize].toLowerCase()}
                     </p>
                   </div>
                   <button
@@ -253,7 +267,6 @@ export function OrderSheet({
                 </div>
               </div>
 
-              {/* Informations de livraison */}
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Livraison
@@ -297,11 +310,10 @@ export function OrderSheet({
                 </div>
               </div>
 
-              {/* Récap total */}
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-[13px] text-muted-foreground">
-                    {quantity} × {perBottle.toLocaleString()} XAF
+                    {quantity} × {BOTTLE_LABELS[bottleSize]} · {perBottle.toLocaleString()} XAF
                   </span>
                   <span className="text-[13px] font-semibold text-foreground">
                     {subtotal.toLocaleString()} XAF
@@ -312,7 +324,7 @@ export function OrderSheet({
                     <Truck className="size-3.5" /> Livraison
                   </span>
                   <span className="text-[13px] font-semibold text-foreground">
-                    {DELIVERY_FEE.toLocaleString()} XAF
+                    {deliveryFee.toLocaleString()} XAF
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
@@ -324,18 +336,17 @@ export function OrderSheet({
               </div>
             </div>
 
-            {/* Footer CTA */}
             <div className="shrink-0 border-t border-border/40 px-6 py-5">
               <Button
                 size="lg"
                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] disabled:opacity-50 active:scale-95 transition-all"
-                disabled={ordering || !canOrder}
+                disabled={ordering || !canOrder || !pricing}
                 onClick={handleOrder}
               >
                 {ordering ? (
                   <><Loader2 className="size-5 animate-spin" /> Commande en cours…</>
                 ) : !canOrder ? (
-                  <>Remplissez l'adresse de livraison</>
+                  <>Remplissez l&apos;adresse de livraison</>
                 ) : (
                   <><ShoppingBag className="size-5" /> Commander · {total.toLocaleString()} XAF</>
                 )}

@@ -98,49 +98,30 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
             </div>
           )}
 
-          {/* Ingredients */}
+          {/* Ingredients — noms seulement, pas de prix */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Ingredients</h3>
+            <h3 className="text-sm font-semibold text-foreground">Composition</h3>
             <Separator />
             {cocktail.ingredients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No ingredients listed.</p>
+              <p className="text-sm text-muted-foreground">Aucun ingrédient.</p>
             ) : (
-              <ul className="space-y-2">
-                {cocktail.ingredients.map((ing, i) => (
-                  <li key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground font-medium">{ing.fruitName}</span>
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <span>{ing.quantityGrams}g</span>
-                      <span className="text-xs tabular-nums">
-                        {ing.priceSnapshot.toLocaleString()} XAF
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-sm text-foreground font-medium leading-relaxed">
+                {cocktail.ingredients.map((ing) => ing.fruitName).join(' · ')}
+              </p>
             )}
           </div>
 
-          {/* Price breakdown */}
+          {/* Prix opaque — le détail est révélé à la commande via les contenants */}
           <div className="space-y-1.5 pt-2">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Base (50cl)</span>
-              <span>{cocktail.basePrice.toLocaleString()} XAF</span>
-            </div>
-            {cocktail.ingredients.map((ing, i) => (
-              <div key={i} className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{ing.fruitName}</span>
-                <span>+ {ing.priceSnapshot.toLocaleString()} XAF</span>
-              </div>
-            ))}
-            <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">Cocktail total</span>
+              <span className="text-sm font-semibold text-foreground">À partir de</span>
               <span className="text-lg font-bold text-primary">
                 {cocktail.totalPrice.toLocaleString()} XAF
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">+ 500 XAF delivery if applicable</p>
+            <p className="text-xs text-muted-foreground">
+              Prix selon le contenant (50 cl ou 1 L) choisi à la commande.
+            </p>
           </div>
         </div>
 

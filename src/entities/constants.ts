@@ -6,11 +6,14 @@ export const COLLECTIONS = {
   ORDERS: 'orders',
   CHATS: 'chats',
   CONVERSATIONS: 'conversations',
+  SETTINGS: 'settings',
 } as const;
 
 // Sous-collection profil santé, chemin: users/{uid}/profile/main
 export const PROFILE_DOC_ID = 'main';
 
-// ── Pricing constants (XAF) ───────────────────────────────────────────────────
-export const BASE_COCKTAIL_PRICE = 1500; // base 50cl (eau, sucre, etc.)
-export const DELIVERY_FEE = 500;         // supplément livraison
+// ── Pricing defaults (XAF) — surchargés par settings/pricing en Firestore ─────
+/** @deprecated Préférer PricingSettings.bottle500mlBase via getPricingSettings() */
+export const BASE_COCKTAIL_PRICE = 1500;
+/** @deprecated Préférer PricingSettings.deliveryFee via getPricingSettings() */
+export const DELIVERY_FEE = 500;

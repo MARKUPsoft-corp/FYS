@@ -146,7 +146,9 @@ function OrderCard({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {order.quantity} bouteille{order.quantity > 1 ? 's' : ''} · {order.cocktailPriceSnapshot.toLocaleString()} XAF / u
+        {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
+        {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+        {' · '}{order.cocktailPriceSnapshot.toLocaleString()} XAF / u
       </p>
 
       <div className="flex items-center justify-between pt-1 border-t border-border/40">
@@ -479,6 +481,7 @@ function ClientOrderSheet({
                 <span className="text-[13px] text-muted-foreground">Quantité</span>
                 <span className="text-[13px] font-semibold text-foreground">
                   {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
+                  {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
@@ -803,6 +806,7 @@ function AdminOrderSheet({
                 <span className="text-[13px] text-muted-foreground">Quantité</span>
                 <span className="text-[13px] font-semibold text-foreground">
                   {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
+                  {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">

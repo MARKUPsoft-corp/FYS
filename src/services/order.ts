@@ -3,8 +3,14 @@ import {
   serverTimestamp, query, where, orderBy,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { COLLECTIONS, DELIVERY_FEE, OrderStatus } from '@/entities';
-import type { Cocktail, Order } from '@/entities';
+import {
+  COLLECTIONS,
+  OrderStatus,
+  BOTTLE_LABELS,
+  type BottleSize,
+  type Cocktail,
+  type Order,
+} from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 
 const STATUS_NAMES = {
@@ -23,11 +29,19 @@ type UserInfo = {
   phone?: string;
 };
 
+export type CreateOrderPricing = {
+  bottleSize: BottleSize;
+  bottleBasePrice: number;
+  pricePerBottle: number;
+  deliveryFee: number;
+};
+
 export async function createOrder(
   user: UserInfo,
   cocktail: Cocktail,
   quantity: number,
-  deliveryDetails?: { district: string; phone: string; instructions: string }
+  pricing: CreateOrderPricing,
+  deliveryDetails?: { district: string; phone: string; instructions: string },
 ): Promise<string> {
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
@@ -39,9 +53,12 @@ export async function createOrder(
     cocktailId: cocktail.id,
     cocktailNameSnapshot: cocktail.name,
     quantity,
-    cocktailPriceSnapshot: cocktail.totalPrice,
-    deliveryFee: DELIVERY_FEE,
-    totalPrice: cocktail.totalPrice * quantity + DELIVERY_FEE,
+    bottleSize: pricing.bottleSize,
+    bottleSizeLabel: BOTTLE_LABELS[pricing.bottleSize],
+    bottleBasePriceSnapshot: pricing.bottleBasePrice,
+    cocktailPriceSnapshot: pricing.pricePerBottle,
+    deliveryFee: pricing.deliveryFee,
+    totalPrice: pricing.pricePerBottle * quantity + pricing.deliveryFee,
     status: OrderStatus.PENDING,
     ...(deliveryDetails ? { deliveryDetails } : {}),
     ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
@@ -54,7 +71,7 @@ export async function createOrder(
 
   notifyAdmins({
     title: 'Nouvelle commande 🎉',
-    message: `${user.name} a commandé ${quantity}x ${cocktail.name}.`,
+    message: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
     link: '/board/orders',
   }).catch(console.error);
 
@@ -62,8 +79,6 @@ export async function createOrder(
 }
 
 export async function getUserOrders(userId: string): Promise<Order[]> {
-  console.log({ userId })
-
   try {
     const q = query(
       collection(db, COLLECTIONS.ORDERS),
@@ -73,7 +88,7 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return [];
   }
 }
@@ -90,7 +105,7 @@ export async function getAllOrders(): Promise<Order[]> {
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
   const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
   const snap = await getDoc(orderRef);
-  
+
   await updateDoc(orderRef, {
     status,
     updatedAt: serverTimestamp(),

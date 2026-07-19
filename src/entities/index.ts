@@ -5,3 +5,4 @@ export * from './order';
 export * from './constants';
 export * from './chat';
 export * from './notification';
+export * from './settings';

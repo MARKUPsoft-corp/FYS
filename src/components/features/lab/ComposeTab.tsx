@@ -359,7 +359,6 @@ type Props = {
   onChangeQuantity: (fruitId: string, grams: number) => void;
   cocktailName: string;
   onNameChange: (name: string) => void;
-  totalPrice: number;
   onSave: () => Promise<void>;
   saving: boolean;
   analysis: AIAnalysis | null;
@@ -382,7 +381,6 @@ export function ComposeTab({
   onToggleSupplement,
   cocktailName,
   onNameChange,
-  totalPrice,
   onSave,
   saving,
   analysis,
@@ -527,7 +525,6 @@ export function ComposeTab({
           selectedSupplementCount={selectedSupplementItems.length}
           cocktailName={cocktailName}
           onNameChange={onNameChange}
-          totalPrice={totalPrice}
           onSave={onSave}
           saving={saving}
           canSave={canSave}
@@ -554,7 +551,6 @@ type SavePanelProps = {
   selectedSupplementCount: number;
   cocktailName: string;
   onNameChange: (name: string) => void;
-  totalPrice: number;
   onSave: () => Promise<void>;
   saving: boolean;
   canSave: boolean;

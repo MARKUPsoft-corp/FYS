@@ -8,16 +8,24 @@ import {
   Plus, Loader2, Minus, ShoppingBag, Truck, CheckCircle2,
   MapPin, Phone, MessageSquare, Sparkles,
 } from 'lucide-react';
-import { DELIVERY_FEE } from '@/entities';
-import type { Cocktail, AIAnalysis } from '@/entities';
-import type { Fruit } from '@/entities';
+import {
+  BOTTLE_LABELS,
+  getBottleBasePrice,
+  pricePerBottle,
+  type BottleSize,
+  type Cocktail,
+  type AIAnalysis,
+  type Fruit,
+} from '@/entities';
 import { analyzeCocktail } from '@/services/ai';
 import { cloneCocktailFromCatalogue } from '@/services/cocktail';
 import { createOrder } from '@/services/order';
 import { getFruits } from '@/services/fruit';
+import { getPricingSettings } from '@/services/settings';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
+import { BottleSizePicker } from '@/components/features/cocktail/BottleSizePicker';
 
 type Tab = 'order' | 'nutrition';
 
@@ -35,6 +43,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   const [localAnalysis, setLocalAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [bottleSize, setBottleSize] = useState<BottleSize>('500ml');
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
 
@@ -49,13 +58,27 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
     queryFn: getFruits,
   });
 
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
+  });
+
   if (!cocktail) return null;
 
   const hasAnalysis = !!localAnalysis;
   const verdictCfg = localAnalysis ? VERDICT_CONFIG[localAnalysis.verdict] : null;
-  const perBottle = cocktail.totalPrice;
+
+  const price500 = pricing
+    ? pricePerBottle(pricing, '500ml', cocktail.ingredients)
+    : cocktail.totalPrice;
+  const price1L = pricing
+    ? pricePerBottle(pricing, '1L', cocktail.ingredients)
+    : Math.round(cocktail.totalPrice * 1.6);
+
+  const perBottle = bottleSize === '500ml' ? price500 : price1L;
+  const deliveryFee = pricing?.deliveryFee ?? 500;
   const subtotal = perBottle * quantity;
-  const total = subtotal + DELIVERY_FEE;
+  const total = subtotal + deliveryFee;
 
   async function runAnalysis(): Promise<AIAnalysis | null> {
     if (fruits.length === 0) return null;
@@ -82,10 +105,9 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   }
 
   async function handleOrder() {
-    if (!user) return;
+    if (!user || !pricing) return;
     setOrdering(true);
     try {
-      // Run AI analysis in background if not already done
       let analysis = localAnalysis;
       if (!analysis) {
         try {
@@ -105,7 +127,18 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
         user.uid,
         analysis ?? undefined,
       );
-      await createOrder(user, cloned, quantity, deliveryDetails);
+      await createOrder(
+        user,
+        { ...cloned, totalPrice: perBottle },
+        quantity,
+        {
+          bottleSize,
+          bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
+          pricePerBottle: perBottle,
+          deliveryFee,
+        },
+        deliveryDetails,
+      );
       setOrdered(true);
     } finally {
       setOrdering(false);
@@ -117,6 +150,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
       setActiveTab('order');
       setLocalAnalysis(null);
       setQuantity(1);
+      setBottleSize('500ml');
       setOrdered(false);
       setDistrict('');
       setPhone(user?.phone || '');
@@ -125,7 +159,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
     onOpenChange(v);
   }
 
-  const deliveryOk = district.trim().length > 0;
+  const deliveryOk = district.trim().length > 0 && phone.trim().length > 0;
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -219,8 +253,8 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
             </div>
             <h3 className="font-display font-bold text-2xl text-foreground">Commande passée !</h3>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
-              Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong> de{' '}
-              <strong>{cocktail.name}</strong> a été enregistrée.
+              Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong>{' '}
+              <strong>{BOTTLE_LABELS[bottleSize]}</strong> de <strong>{cocktail.name}</strong> a été enregistrée.
               {hasAnalysis && ' La fiche nutritionnelle a été sauvegardée avec votre commande.'}
             </p>
             <p className="text-primary font-bold text-lg">{total.toLocaleString()} XAF</p>
@@ -245,34 +279,30 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
           <>
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
-              {/* Description */}
               {cocktail.description && (
                 <p className="text-[13px] text-muted-foreground leading-relaxed">
                   {cocktail.description}
                 </p>
               )}
 
-              {/* Ingrédients avec grammage */}
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Composition
                 </p>
-                <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-                  {cocktail.ingredients.map((ing) => (
-                    <div key={ing.fruitId} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] font-semibold text-foreground">{ing.fruitName}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[12px] text-muted-foreground">{ing.quantityGrams}g</span>
-                        <span className="text-[13px] font-bold text-foreground tabular-nums">
-                          {ing.priceSnapshot.toLocaleString()} XAF
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+                  <p className="text-[13px] text-foreground font-medium leading-relaxed">
+                    {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
+                  </p>
                 </div>
               </div>
 
-              {/* Nombre de bouteilles */}
+              <BottleSizePicker
+                selected={bottleSize}
+                onSelect={setBottleSize}
+                price500ml={price500}
+                price1L={price1L}
+              />
+
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Nombre de bouteilles
@@ -291,7 +321,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                       {quantity}
                     </span>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      bouteille{quantity > 1 ? 's' : ''}
+                      × {BOTTLE_LABELS[bottleSize].toLowerCase()}
                     </p>
                   </div>
                   <button
@@ -352,7 +382,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-[13px] text-muted-foreground">
-                    {quantity} × {perBottle.toLocaleString()} XAF
+                    {quantity} × {BOTTLE_LABELS[bottleSize]} · {perBottle.toLocaleString()} XAF
                   </span>
                   <span className="text-[13px] font-semibold text-foreground">
                     {subtotal.toLocaleString()} XAF
@@ -363,7 +393,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                     <Truck className="size-3.5" /> Livraison
                   </span>
                   <span className="text-[13px] font-semibold text-foreground">
-                    {DELIVERY_FEE.toLocaleString()} XAF
+                    {deliveryFee.toLocaleString()} XAF
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
@@ -390,7 +420,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
               <Button
                 size="lg"
                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={ordering || !deliveryOk}
+                disabled={ordering || !deliveryOk || !pricing}
                 onClick={handleOrder}
               >
                 {ordering ? (

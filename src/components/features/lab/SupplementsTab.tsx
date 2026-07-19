@@ -67,11 +67,6 @@ function ItemTile({
       )}>
         {item.name}
       </span>
-      {item.price != null && (
-        <span className="text-[9px] text-muted-foreground tabular-nums">
-          +{item.price.toLocaleString()} XAF
-        </span>
-      )}
     </button>
   );
 }

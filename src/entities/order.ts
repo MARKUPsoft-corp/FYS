@@ -1,15 +1,15 @@
 import { Timestamp } from 'firebase/firestore';
+import type { AIAnalysis } from './cocktail';
+import type { BottleSize } from './settings';
 
 export enum OrderStatus {
-  PENDING   = 'pending',    // reçue, en attente de confirmation admin
-  CONFIRMED = 'confirmed',  // confirmée par l'admin
-  PREPARING = 'preparing',  // en cours de préparation
-  READY     = 'ready',      // prête à être livrée / récupérée
-  DELIVERED = 'delivered',  // livrée au client
-  CANCELLED = 'cancelled',  // annulée
+  PENDING   = 'pending',
+  CONFIRMED = 'confirmed',
+  PREPARING = 'preparing',
+  READY     = 'ready',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
 }
-
-import type { AIAnalysis } from './cocktail';
 
 export interface Order {
   id: string;
@@ -20,9 +20,13 @@ export interface Order {
   cocktailId: string;
   cocktailNameSnapshot: string;
   quantity: number;
-  cocktailPriceSnapshot: number; // Cocktail.totalPrice figé à la commande
+  /** Contenant choisi — optionnel pour les commandes legacy */
+  bottleSize?: BottleSize;
+  bottleSizeLabel?: string;
+  bottleBasePriceSnapshot?: number;
+  cocktailPriceSnapshot: number;
   deliveryFee: number;
-  totalPrice: number;            // cocktailPriceSnapshot * quantity + deliveryFee
+  totalPrice: number;
   status: OrderStatus;
   deliveryDetails?: {
     district: string;

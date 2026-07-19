@@ -2,7 +2,7 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle,
+  XCircle, AlertCircle, Wallet,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -83,6 +83,15 @@ const quickActions = [
     iconColor: 'text-orange-500',
     path: '/board/fruits',
     cta: 'Gérer les fruits',
+  },
+  {
+    label: 'Tarifs',
+    description: 'Prix de base des contenants 50 cl / 1 L et livraison.',
+    icon: Wallet,
+    iconBg: 'bg-amber-50 dark:bg-amber-950/30',
+    iconColor: 'text-amber-600',
+    path: '/board/pricing',
+    cta: 'Configurer les tarifs',
   },
   {
     label: 'Catégories',

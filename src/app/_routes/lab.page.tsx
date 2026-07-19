@@ -12,8 +12,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Input } from '@/components/ui/input';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
-import { CocktailType, BASE_COCKTAIL_PRICE, isUsableAsSupplement } from '@/entities';
+import { CocktailType, isUsableAsSupplement, sumIngredientPrices, pricePerBottle } from '@/entities';
 import { getFruits } from '@/services/fruit';
+import { getPricingSettings } from '@/services/settings';
 import { createCocktail } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import type { AIRecommendation } from '@/services/ai.shared';
@@ -45,6 +46,11 @@ const FysLab: PageComponent = () => {
   const { data: fruits = [], isLoading: fruitsLoading } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
+  });
+
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
   });
 
   const supplements = useMemo(
@@ -196,16 +202,19 @@ const FysLab: PageComponent = () => {
     }
   }
 
-  const totalPrice =
-    BASE_COCKTAIL_PRICE +
-    [...buildCombinedMap().keys()].reduce((sum, fruitId) => {
-      const fruit = fruits.find((f) => f.id === fruitId);
-      return sum + (fruit?.price ?? 0);
-    }, 0);
+  const ingredientsOnlyTotal = useMemo(() => {
+    const ingredients = buildIngredients();
+    return sumIngredientPrices(ingredients);
+  }, [selectedIngredients, selectedSupplements, fruits]);
+
+  const defaultBottleTotal = pricing
+    ? pricePerBottle(pricing, '500ml', buildIngredients())
+    : ingredientsOnlyTotal + 1500;
 
   const draftCocktail = useMemo(() => {
     if (!user || selectedIngredients.size === 0) return null;
     const ingredients = buildIngredients();
+    const base = pricing?.bottle500mlBase ?? 1500;
     return {
       id: 'draft',
       name: cocktailName.trim() || 'Mon Cocktail Personnalisé',
@@ -214,17 +223,18 @@ const FysLab: PageComponent = () => {
       isActive: true,
       isPublic: false,
       ingredients,
-      basePrice: BASE_COCKTAIL_PRICE,
-      totalPrice,
+      basePrice: base,
+      totalPrice: defaultBottleTotal,
       ...(analysis ? { aiAnalysis: analysis } : {}),
     } as Cocktail;
-  }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, totalPrice, analysis]);
+  }, [user, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing]);
 
   async function handleSave(silent = false) {
     if (!user || !cocktailName.trim() || selectedIngredients.size === 0) return;
     setSaving(true);
     try {
       const ingredients = buildIngredients();
+      const base = pricing?.bottle500mlBase ?? 1500;
       const cocktailId = await createCocktail({
         name: cocktailName.trim(),
         type: CocktailType.CUSTOM,
@@ -232,8 +242,8 @@ const FysLab: PageComponent = () => {
         isActive: true,
         isPublic: false,
         ingredients,
-        basePrice: BASE_COCKTAIL_PRICE,
-        totalPrice,
+        basePrice: base,
+        totalPrice: defaultBottleTotal,
         ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
@@ -304,7 +314,6 @@ const FysLab: PageComponent = () => {
             onChangeQuantity={changeQuantity}
             cocktailName={cocktailName}
             onNameChange={setCocktailName}
-            totalPrice={totalPrice}
             onSave={() => handleSave()}
             saving={saving}
             analysis={analysis}
@@ -353,11 +362,6 @@ const FysLab: PageComponent = () => {
               {selectedIngredients.size === 0 && (
                 <span className="text-xs font-medium text-muted-foreground">
                   Aucun fruit sélectionné
-                </span>
-              )}
-              {(selectedIngredients.size > 0 || selectedSupplements.size > 0) && (
-                <span className="ml-auto text-xs font-bold text-primary whitespace-nowrap pl-2">
-                  {totalPrice.toLocaleString()} XAF
                 </span>
               )}
             </div>

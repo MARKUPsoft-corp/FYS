@@ -8,6 +8,7 @@ import {
   Apple,
   Tag,
   Users,
+  Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -115,6 +116,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ShoppingBag,
     roles: [UserRole.ADMIN],
     showInMobileTab: true,
+  },
+  {
+    key: 'pricing',
+    label: 'Tarifs',
+    path: '/board/pricing',
+    icon: Wallet,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: false, // icône topbar uniquement
   },
   {
     key: 'users',

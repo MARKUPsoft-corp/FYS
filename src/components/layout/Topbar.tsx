@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogOut, Settings, User, ShoppingBag } from 'lucide-react';
+import { LogOut, Settings, User, ShoppingBag, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
@@ -115,9 +115,24 @@ export function Topbar() {
       <div className="flex items-center gap-3 shrink-0">
         <ButtonTheme />
 
-        {/* Notifications Bell */}
-        {/* Notifications Bell */}
         <NotificationBell />
+
+        {/* Tarifs — admins only, same placement as notification */}
+        {user?.role === UserRole.ADMIN && (
+          <Link
+            to="/board/pricing"
+            className={cn(
+              'relative flex items-center justify-center size-10 rounded-xl transition-all',
+              location.pathname.startsWith('/board/pricing')
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+            )}
+            aria-label="Tarifs contenants"
+            title="Tarifs"
+          >
+            <Wallet className="size-5" />
+          </Link>
+        )}
 
         {/* Orders shortcut — customers only */}
         {user?.role === UserRole.CUSTOMER && (
