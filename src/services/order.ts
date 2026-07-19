@@ -36,13 +36,26 @@ export type CreateOrderPricing = {
   deliveryFee: number;
 };
 
+export type CreateOrderVisuals = {
+  cocktailImageSnapshot?: string;
+  ingredientImageSnapshots?: string[];
+};
+
 export async function createOrder(
   user: UserInfo,
   cocktail: Cocktail,
   quantity: number,
   pricing: CreateOrderPricing,
   deliveryDetails?: { district: string; phone: string; instructions: string },
+  visuals?: CreateOrderVisuals,
 ): Promise<string> {
+  const cover =
+    visuals?.cocktailImageSnapshot ??
+    cocktail.imageUrl ??
+    visuals?.ingredientImageSnapshots?.[0];
+
+  const fruitImgs = visuals?.ingredientImageSnapshots;
+
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
@@ -62,6 +75,8 @@ export async function createOrder(
     status: OrderStatus.PENDING,
     ...(deliveryDetails ? { deliveryDetails } : {}),
     ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
+    ...(cover ? { cocktailImageSnapshot: cover } : {}),
+    ...(fruitImgs?.length ? { ingredientImageSnapshots: fruitImgs } : {}),
   };
   await setDoc(ref, {
     ...order,

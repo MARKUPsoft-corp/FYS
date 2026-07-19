@@ -1,4 +1,5 @@
 import { Flame, Globe, Lock, MoreVertical, Trash2, ArrowRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,6 +9,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Cocktail, AIVerdict } from '@/entities';
+import { getFruits } from '@/services/fruit';
+import {
+  CocktailBanner,
+  buildFruitVisuals,
+} from '@/components/features/cocktail/CocktailBanner';
 
 // ── Ingredient summary helper ─────────────────────────────────────────────────
 
@@ -49,6 +55,16 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
   const summary = ingredientSummary(cocktail);
   const hasImage = !!cocktail.imageUrl;
 
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    staleTime: 5 * 60_000,
+    enabled: showActions || !hasImage,
+  });
+
+  const fruitVisuals = buildFruitVisuals(cocktail.ingredients, fruits);
+  const useDynamicLabel = showActions || (!hasImage && fruitVisuals.length > 0);
+
   return (
     <div
       onClick={() => onView?.(cocktail)}
@@ -57,8 +73,15 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
       {/* ── Image zone ── */}
       <div className="relative h-52 overflow-hidden">
 
-        {/* Background */}
-        {hasImage ? (
+        {useDynamicLabel ? (
+          <CocktailBanner
+            cocktailName={cocktail.name}
+            fruits={fruitVisuals}
+            showText={false}
+            heightClass="h-full"
+            className="absolute inset-0 scale-100 group-hover:scale-105 transition-transform duration-700 origin-center"
+          />
+        ) : hasImage ? (
           <div
             className="absolute inset-0 bg-cover bg-center scale-100 group-hover:scale-105 transition-transform duration-700"
             style={{ backgroundImage: `url('${cocktail.imageUrl}')` }}
@@ -70,7 +93,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
         )}
 
         {/* Gradient scrim — bottom fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent pointer-events-none" />
 
         {/* Tag — top left */}
         {cocktail.tag && !showActions && (
@@ -151,7 +174,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
 
         {/* Name + summary */}
         <div className="space-y-1">
-          <h4 className="font-display font-bold text-[1.05rem] text-foreground leading-tight line-clamp-1">
+          <h4 className="font-display font-bold text-[1.05rem] text-[#F2694A] leading-tight line-clamp-1">
             {cocktail.name}
           </h4>
           <p className="text-[11px] text-muted-foreground line-clamp-1 font-medium">

@@ -17,9 +17,11 @@ import {
 } from '@/entities';
 import { createOrder } from '@/services/order';
 import { getPricingSettings } from '@/services/settings';
-import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
+import { getFruits } from '@/services/fruit';
+import { NutritionalView } from '@/components/features/cocktail/NutritionalView';
 import { createCocktail } from '@/services/cocktail';
 import { BottleSizePicker } from '@/components/features/cocktail/BottleSizePicker';
+import { buildFruitVisuals, pickCocktailCoverUrl } from '@/components/features/cocktail/CocktailBanner';
 
 type SheetTab = 'order' | 'nutrition';
 
@@ -56,6 +58,18 @@ export function OrderSheet({
     queryFn: getPricingSettings,
   });
 
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+  });
+
+  const fruitVisuals = buildFruitVisuals(cocktail.ingredients, fruits);
+  const fruitImageUrls = fruitVisuals
+    .map((f) => f.imageUrl)
+    .filter((u): u is string => !!u);
+
+  const coverUrl = pickCocktailCoverUrl(cocktail.imageUrl, fruitImageUrls);
+
   useEffect(() => {
     setCustomName(cocktail.name);
   }, [cocktail.name]);
@@ -64,7 +78,6 @@ export function OrderSheet({
 
   const hasAnalysis = !!cocktail.aiAnalysis;
   const analysis = cocktail.aiAnalysis;
-  const verdictCfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
 
   const price500 = pricing
     ? pricePerBottle(pricing, '500ml', cocktail.ingredients)
@@ -97,21 +110,30 @@ export function OrderSheet({
           createdBy: user.uid,
           basePrice: pricingPayload.bottleBasePrice,
           totalPrice: perBottle,
+          ...(coverUrl ? { imageUrl: coverUrl } : {}),
         });
         await createOrder(
           user,
-          { ...cocktail, name: customName, id: cocktailId, totalPrice: perBottle },
+          { ...cocktail, name: customName, id: cocktailId, totalPrice: perBottle, imageUrl: coverUrl },
           quantity,
           pricingPayload,
           details,
+          {
+            cocktailImageSnapshot: coverUrl,
+            ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
+          },
         );
       } else {
         await createOrder(
           user,
-          { ...cocktail, name: customName, totalPrice: perBottle },
+          { ...cocktail, name: customName, totalPrice: perBottle, imageUrl: coverUrl ?? cocktail.imageUrl },
           quantity,
           pricingPayload,
           details,
+          {
+            cocktailImageSnapshot: coverUrl ?? cocktail.imageUrl,
+            ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
+          },
         );
       }
       setOrdered(true);
@@ -135,10 +157,10 @@ export function OrderSheet({
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
 
-        <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
+        <SheetHeader className="px-6 pt-5 pb-0 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <SheetTitle className="font-display text-xl font-bold text-foreground leading-tight flex items-center gap-2">
+              <SheetTitle className="font-display text-xl font-bold leading-tight flex items-center gap-2 text-[#F2694A]">
                 {isEditingName ? (
                   <input
                     type="text"
@@ -167,11 +189,6 @@ export function OrderSheet({
                 {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
               </p>
             </div>
-            {hasAnalysis && verdictCfg && (
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 mt-0.5 ${verdictCfg.chip}`}>
-                {verdictCfg.emoji} {verdictCfg.label}
-              </span>
-            )}
           </div>
 
           {hasAnalysis && (

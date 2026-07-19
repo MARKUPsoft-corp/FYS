@@ -138,6 +138,12 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
           deliveryFee,
         },
         deliveryDetails,
+        {
+          cocktailImageSnapshot: cocktail!.imageUrl,
+          ingredientImageSnapshots: cocktail!.ingredients.map(
+            (ing) => fruits.find((f) => f.id === ing.fruitId)?.imageUrl ?? '',
+          ),
+        },
       );
       setOrdered(true);
     } finally {

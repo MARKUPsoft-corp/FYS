@@ -3,7 +3,7 @@ import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,7 +12,10 @@ import { UserRole, OrderStatus } from '@/entities';
 import type { Order, Cocktail } from '@/entities';
 import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
 import { getCocktailById } from '@/services/cocktail';
+import { getFruits } from '@/services/fruit';
 import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
+import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
+import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
 import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
 
 // ── Status display config ─────────────────────────────────────────────────────
@@ -163,85 +166,105 @@ function OrderCard({
 
 // ── Cocktail info block ───────────────────────────────────────────────────────
 
-function CocktailInfoBlock({ cocktail, loading }: { cocktail: Cocktail | null | undefined; loading: boolean }) {
+function CocktailInfoBlock({
+  cocktail,
+  loading,
+  orderImageUrl,
+  orderFruitImages,
+  clientName,
+  cocktailNameFallback,
+}: {
+  cocktail: Cocktail | null | undefined;
+  loading: boolean;
+  orderImageUrl?: string;
+  orderFruitImages?: string[];
+  clientName?: string;
+  cocktailNameFallback?: string;
+}) {
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    staleTime: 5 * 60_000,
+  });
+
+  const fruitVisuals = useMemo(() => {
+    if (cocktail?.ingredients?.length) {
+      return buildFruitVisuals(cocktail.ingredients, fruits, orderFruitImages);
+    }
+    if (orderFruitImages?.length) {
+      return orderFruitImages.map((url) => ({ imageUrl: url || null }));
+    }
+    return [];
+  }, [orderFruitImages, cocktail, fruits]);
+
   if (loading) {
     return (
       <div className="space-y-3">
         <div className="h-3 w-20 bg-muted rounded-full animate-pulse" />
-        <div className="rounded-2xl bg-muted h-[130px] animate-pulse" />
+        <div className="rounded-2xl bg-muted h-[200px] animate-pulse" />
       </div>
     );
   }
-  if (!cocktail) return null;
+  if (!cocktail && !orderImageUrl && !fruitVisuals.length && !cocktailNameFallback) return null;
 
-  const analysis = cocktail.aiAnalysis;
+  const analysis = cocktail?.aiAnalysis;
   const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
+  const name = cocktail?.name ?? cocktailNameFallback ?? 'Cocktail';
+  const fruitNames = cocktail?.ingredients.map((i) => i.fruitName) ?? [];
 
   return (
     <div className="space-y-3">
       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cocktail</p>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-
-        {/* Image / gradient banner */}
-        <div className="relative h-[128px] overflow-hidden">
-          {cocktail.imageUrl ? (
-            <img
-              src={cocktail.imageUrl}
-              alt={cocktail.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-5xl"
-              style={{ background: 'linear-gradient(135deg,#4A9E6A 0%,#2D6B48 60%,#3F8A5C 100%)' }}>
-              🍹
-            </div>
-          )}
-          {/* Gradient overlay for legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          {/* Verdict badge */}
-          {vcfg && (
-            <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${vcfg.chip} border-transparent`}>
-              {vcfg.emoji} {vcfg.label}
-            </span>
-          )}
-        </div>
-
-        {/* Body */}
-        <div className="px-4 py-3.5 space-y-3">
-          {cocktail.description && (
-            <p className="text-[13px] text-muted-foreground leading-relaxed">{cocktail.description}</p>
-          )}
-
-          {/* Ingredients */}
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-              Ingrédients
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {cocktail.ingredients.map((ing) => (
-                <span
-                  key={ing.fruitId}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/40 text-accent-foreground text-[12px] font-semibold"
-                >
-                  {ing.fruitName}
-                  <span className="opacity-55 font-normal">{ing.quantityGrams}g</span>
+        <CocktailLabelExport
+            cocktailName={name}
+            clientName={clientName}
+            imageUrl={fruitVisuals.length ? undefined : (orderImageUrl ?? cocktail?.imageUrl)}
+            fruits={fruitVisuals}
+            fruitNames={fruitNames}
+            badge={
+              vcfg ? (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm ${vcfg.chip}`}>
+                  {vcfg.emoji} {vcfg.label}
                 </span>
-              ))}
-            </div>
-          </div>
+              ) : undefined
+            }
+          />
 
-          {/* AI analysis score row */}
-          {analysis && vcfg && (
-            <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${vcfg.bg} ${vcfg.border}`}>
-              <span className={`text-[12px] font-bold ${vcfg.text}`}>
-                {vcfg.emoji} NutriFYS — {vcfg.label}
-              </span>
-              <span className={`text-[12px] font-bold tabular-nums ${vcfg.text}`}>
-                {analysis.score} / 100
-              </span>
+        {cocktail && (
+          <div className="px-4 py-3.5 space-y-3">
+            {cocktail.description && (
+              <p className="text-[13px] text-muted-foreground leading-relaxed">{cocktail.description}</p>
+            )}
+
+            <div>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                Ingrédients
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {cocktail.ingredients.map((ing) => (
+                  <span
+                    key={ing.fruitId}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/40 text-accent-foreground text-[12px] font-semibold"
+                  >
+                    {ing.fruitName}
+                  </span>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+
+            {analysis && vcfg && (
+              <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${vcfg.bg} ${vcfg.border}`}>
+                <span className={`text-[12px] font-bold ${vcfg.text}`}>
+                  {vcfg.emoji} NutriFYS — {vcfg.label}
+                </span>
+                <span className={`text-[12px] font-bold tabular-nums ${vcfg.text}`}>
+                  {analysis.score} / 100
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -370,7 +393,14 @@ function ClientOrderSheet({
           <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
           {/* Cocktail info */}
-          <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
+          <CocktailInfoBlock
+            cocktail={cocktail}
+            loading={cocktailLoading}
+            orderImageUrl={order.cocktailImageSnapshot}
+            orderFruitImages={order.ingredientImageSnapshots}
+            clientName={order.userNameSnapshot}
+            cocktailNameFallback={order.cocktailNameSnapshot}
+          />
 
           {/* Status actuel */}
           <div className="flex items-center justify-between">
@@ -690,7 +720,14 @@ function AdminOrderSheet({
           <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
           {/* Cocktail info */}
-          <CocktailInfoBlock cocktail={cocktail} loading={cocktailLoading} />
+          <CocktailInfoBlock
+            cocktail={cocktail}
+            loading={cocktailLoading}
+            orderImageUrl={order.cocktailImageSnapshot}
+            orderFruitImages={order.ingredientImageSnapshots}
+            clientName={order.userNameSnapshot}
+            cocktailNameFallback={order.cocktailNameSnapshot}
+          />
 
           {/* Contact client */}
           <div className="space-y-3">

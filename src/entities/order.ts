@@ -34,6 +34,10 @@ export interface Order {
     instructions: string;
   };
   aiAnalysisSnapshot?: AIAnalysis;
+  /** Image figée à la commande (catalogue ou fruit principal / collage source) */
+  cocktailImageSnapshot?: string;
+  /** Photos fruits figées pour collage si pas d'image cocktail */
+  ingredientImageSnapshots?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
