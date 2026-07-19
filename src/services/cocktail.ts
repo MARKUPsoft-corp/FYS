@@ -14,7 +14,7 @@ import {
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, CocktailType } from '@/entities';
 import type { Cocktail, AIAnalysis } from '@/entities';
-import { uploadCocktailImage, deleteCocktailImage } from './storage';
+import { uploadCocktailImage, deleteCocktailImage, isManagedImageUrl } from './storage';
 import { notifyAdmins } from '@/services/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,8 +81,8 @@ export async function updateCocktail(
   let imageUrl = data.imageUrl;
 
   if (imageFile) {
-    if (data.imageUrl?.includes('firebasestorage')) {
-      await deleteCocktailImage(data.imageUrl);
+    if (isManagedImageUrl(data.imageUrl)) {
+      await deleteCocktailImage(data.imageUrl!);
     }
     imageUrl = await uploadCocktailImage(id, imageFile);
   }
@@ -102,8 +102,8 @@ export async function toggleCocktailActive(id: string, isActive: boolean): Promi
 }
 
 export async function deleteCocktail(id: string, imageUrl?: string): Promise<void> {
-  if (imageUrl?.includes('firebasestorage')) {
-    await deleteCocktailImage(imageUrl);
+  if (isManagedImageUrl(imageUrl)) {
+    await deleteCocktailImage(imageUrl!);
   }
   await deleteDoc(doc(db, COLLECTIONS.COCKTAILS, id));
 }

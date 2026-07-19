@@ -53,12 +53,12 @@ export default defineConfig(async () => {
                   cacheableResponse: { statuses: [0, 200] },
                 },
               },
-              // Firebase Storage — cache-first (images are immutable)
+              // Cloudinary images — cache-first
               {
-                urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+                urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
                 handler: 'CacheFirst',
                 options: {
-                  cacheName: 'firebase-storage',
+                  cacheName: 'cloudinary-images',
                   expiration: {
                     maxEntries: 100,
                     maxAgeSeconds: 7 * 24 * 60 * 60,

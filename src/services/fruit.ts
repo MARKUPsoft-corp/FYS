@@ -11,7 +11,7 @@ import {
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
 import type { Fruit } from '@/entities';
-import { uploadFruitImage, deleteFruitImage } from './storage';
+import { uploadFruitImage, deleteFruitImage, isManagedImageUrl } from './storage';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -67,9 +67,8 @@ export async function updateFruit(
   let imageUrl = data.imageUrl;
 
   if (imageFile) {
-    // Delete old image if it was from Storage
-    if (data.imageUrl?.includes('firebasestorage')) {
-      await deleteFruitImage(data.imageUrl);
+    if (isManagedImageUrl(data.imageUrl)) {
+      await deleteFruitImage(data.imageUrl!);
     }
     imageUrl = await uploadFruitImage(id, imageFile);
   }
@@ -82,8 +81,8 @@ export async function updateFruit(
 }
 
 export async function deleteFruit(id: string, imageUrl?: string): Promise<void> {
-  if (imageUrl?.includes('firebasestorage')) {
-    await deleteFruitImage(imageUrl);
+  if (isManagedImageUrl(imageUrl)) {
+    await deleteFruitImage(imageUrl!);
   }
   await deleteDoc(doc(db, COLLECTIONS.FRUITS, id));
 }
