@@ -20,11 +20,13 @@ import {
 import { CocktailCard } from '@/components/features/catalogue/CocktailCard';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
+import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 const Cocktails: PageComponent = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const closeHistoryParam = useCloseHistoryParam();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === UserRole.ADMIN;
 
@@ -49,12 +51,34 @@ const Cocktails: PageComponent = () => {
   const isLoading = isAdmin ? publicLoading : (myLoading || publicLoading);
 
   const cocktailParam = searchParams.get('cocktail');
+
   useEffect(() => {
-    if (!cocktailParam || !user?.uid) return;
+    if (!cocktailParam) {
+      setOrderTarget(null);
+      return;
+    }
+    if (orderTarget?.id === cocktailParam) return;
     getCocktailById(cocktailParam).then((c) => {
       if (c) setOrderTarget(c);
     });
-  }, [cocktailParam, user?.uid]);
+  }, [cocktailParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function openCocktail(cocktail: Cocktail) {
+    setOrderTarget(cocktail);
+    pushHistoryParam(setSearchParams, 'cocktail', cocktail.id);
+  }
+
+  function closeCocktailSheet(open: boolean) {
+    if (open) return;
+    if (!closeHistoryParam('cocktail')) {
+      setOrderTarget(null);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('cocktail');
+        return next;
+      }, { replace: true });
+    }
+  }
 
   async function handleTogglePublish(cocktail: Cocktail) {
     setPublishError(null);
@@ -128,7 +152,7 @@ const Cocktails: PageComponent = () => {
               <CocktailCard
                 key={c.id}
                 cocktail={c}
-                onView={(cocktail) => setOrderTarget(cocktail)}
+                onView={openCocktail}
               />
             ))}
           </div>
@@ -148,12 +172,7 @@ const Cocktails: PageComponent = () => {
           <OrderSheet
             cocktail={orderTarget}
             open={!!orderTarget}
-            onOpenChange={(v) => {
-              if (!v) {
-                setOrderTarget(null);
-                window.history.replaceState(null, '', '/board/cocktails');
-              }
-            }}
+            onOpenChange={closeCocktailSheet}
             user={user}
           />
         )}
@@ -238,7 +257,7 @@ const Cocktails: PageComponent = () => {
                 showActions
                 onTogglePublish={handleTogglePublish}
                 onDelete={setToDelete}
-                onView={(cocktail) => setOrderTarget(cocktail)}
+                onView={openCocktail}
               />
             ))}
           </div>
@@ -265,7 +284,7 @@ const Cocktails: PageComponent = () => {
               <CocktailCard
                 key={c.id}
                 cocktail={c}
-                onView={(cocktail) => setOrderTarget(cocktail)}
+                onView={openCocktail}
               />
             ))}
           </div>
@@ -284,12 +303,7 @@ const Cocktails: PageComponent = () => {
         <OrderSheet
           cocktail={orderTarget}
           open={!!orderTarget}
-          onOpenChange={(v) => {
-            if (!v) {
-              setOrderTarget(null);
-              window.history.replaceState(null, '', '/board/cocktails');
-            }
-          }}
+          onOpenChange={closeCocktailSheet}
           user={user}
         />
       )}

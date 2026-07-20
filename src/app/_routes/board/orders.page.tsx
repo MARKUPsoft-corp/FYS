@@ -25,6 +25,7 @@ import {
   type PeriodType,
 } from '@/components/features/orders/PeriodCalendar';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
+import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -961,7 +962,8 @@ function orderInPeriod(order: Order, type: PeriodType, anchor: Date): boolean {
 const Orders: PageComponent = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const closeHistoryParam = useCloseHistoryParam();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === UserRole.ADMIN;
 
@@ -983,15 +985,28 @@ const Orders: PageComponent = () => {
   });
 
   useEffect(() => {
-    if (!orderParam || isLoading) return;
+    if (!orderParam) {
+      setSelected(null);
+      return;
+    }
+    if (isLoading) return;
     const order = orders.find((o) => o.id === orderParam);
     if (order) setSelected(order);
   }, [orderParam, orders, isLoading]);
 
+  function openOrder(order: Order) {
+    setSelected(order);
+    pushHistoryParam(setSearchParams, 'order', order.id);
+  }
+
   function closeOrderSheet() {
-    setSelected(null);
-    if (orderParam) {
-      window.history.replaceState(null, '', '/board/orders');
+    if (!closeHistoryParam('order')) {
+      setSelected(null);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('order');
+        return next;
+      }, { replace: true });
     }
   }
 
@@ -1210,7 +1225,7 @@ const Orders: PageComponent = () => {
                 key={order.id}
                 order={order}
                 showCustomer={isAdmin}
-                onClick={() => setSelected(order)}
+                onClick={() => openOrder(order)}
               />
             ))}
           </div>

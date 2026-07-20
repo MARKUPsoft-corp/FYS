@@ -1,4 +1,4 @@
-import { PageComponent, useNavigate } from 'rasengan';
+import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import { Save, Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,25 +20,32 @@ import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
+import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 const FysLab: PageComponent = () => {
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const closeHistoryParam = useCloseHistoryParam();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<LabTab>('compose');
-  const [composeStep, setComposeStep] = useState<ComposeStep>(1);
+  const tabParam = searchParams.get('tab');
+  const stepParam = searchParams.get('step');
+  const sheetParam = searchParams.get('sheet');
+
+  const activeTab: LabTab = tabParam === 'nutrifys' ? 'nutrifys' : 'compose';
+  const composeStep: ComposeStep = stepParam === '2' ? 2 : 1;
+  const showRenameSheet = sheetParam === 'rename';
+  const showOrderSheet = sheetParam === 'order';
 
   const [selectedIngredients, setSelectedIngredients] = useState<Map<string, number>>(new Map());
   const [selectedSupplements, setSelectedSupplements] = useState<Map<string, number>>(new Map());
-  const [showRenameSheet, setShowRenameSheet] = useState(false);
   const [cocktailName, setCocktailName] = useState('');
   const nameTouchedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [showOrderSheet, setShowOrderSheet] = useState(false);
 
   const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -204,11 +211,72 @@ const FysLab: PageComponent = () => {
     }
   }
 
+  function handleTabChange(tab: LabTab) {
+    if (tab === activeTab) return;
+    if (tab === 'nutrifys') {
+      pushHistoryParam(setSearchParams, 'tab', 'nutrifys');
+      return;
+    }
+    // Retour vers "Je compose"
+    if (!closeHistoryParam('tab')) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('tab');
+        return next;
+      }, { replace: true });
+    }
+  }
+
   function handleStepChange(step: ComposeStep) {
     if (step === 2 && selectedIngredients.size === 0) return;
-    setComposeStep(step);
+    if (step === composeStep) return;
     if (step === 2) {
+      pushHistoryParam(setSearchParams, 'step', '2');
+      return;
+    }
+    if (!closeHistoryParam('step')) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('step');
+        return next;
+      }, { replace: true });
+    }
+  }
+
+  // Charger les suggestions suppléments à l'arrivée sur l'étape 2 (y compris via retour historique)
+  useEffect(() => {
+    if (composeStep === 2 && selectedIngredients.size > 0) {
       fetchSupplementRecommendations(selectedIngredients);
+    }
+  }, [composeStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function openRenameSheet() {
+    pushHistoryParam(setSearchParams, 'sheet', 'rename');
+  }
+
+  function closeRenameSheet(open: boolean) {
+    if (open) return;
+    if (!closeHistoryParam('sheet')) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('sheet');
+        return next;
+      }, { replace: true });
+    }
+  }
+
+  function openOrderSheet() {
+    pushHistoryParam(setSearchParams, 'sheet', 'order');
+  }
+
+  function closeOrderSheet(open: boolean) {
+    if (open) return;
+    if (!closeHistoryParam('sheet')) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('sheet');
+        return next;
+      }, { replace: true });
     }
   }
 
@@ -292,7 +360,7 @@ const FysLab: PageComponent = () => {
       nameTouchedRef.current = false;
       setAnalysis(null);
       setAiRecommendation(null);
-      setComposeStep(1);
+      setSearchParams({}, { replace: true });
       navigate(`/board/cocktails?cocktail=${cocktailId}`);
     } finally {
       setSaving(false);
@@ -308,7 +376,7 @@ const FysLab: PageComponent = () => {
     nameTouchedRef.current = false;
     setAnalysis(null);
     setAiRecommendation(null);
-    setComposeStep(1);
+    setSearchParams({}, { replace: true });
   }
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
@@ -322,23 +390,27 @@ const FysLab: PageComponent = () => {
     setSelectedSupplements(nextSupps);
     setCocktailName(proposal.name);
     nameTouchedRef.current = true;
-    setActiveTab('compose');
-    setComposeStep(2);
+    // Remplacer la vue chatbot par l'étape 2 compose
+    setSearchParams({ step: '2' }, { replace: true });
     setTimeout(() => handleAnalyze(next, nextSupps), 50);
   }
 
-  // Reset analysis when leaving step 2 back to 1 with fruit changes already handled
+  // Si plus de fruits et qu'on est sur step 2 dans l'URL, revenir à l'étape 1
   useEffect(() => {
-    if (selectedIngredients.size === 0 && composeStep === 2) {
-      setComposeStep(1);
+    if (selectedIngredients.size === 0 && stepParam === '2') {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('step');
+        return next;
+      }, { replace: true });
     }
-  }, [selectedIngredients.size, composeStep]);
+  }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-background">
       <LabHeader
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         compact={activeTab === 'nutrifys'}
       />
 
@@ -369,7 +441,7 @@ const FysLab: PageComponent = () => {
             analysis={analysis}
             onAnalyze={() => handleAnalyze()}
             analyzing={analyzing}
-            onOrderRequest={() => setShowOrderSheet(true)}
+            onOrderRequest={openOrderSheet}
             aiRecommendation={aiRecommendation}
             loadingAI={loadingAI}
           />
@@ -435,7 +507,7 @@ const FysLab: PageComponent = () => {
                   : { background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }
                 }
                 disabled={selectedIngredients.size === 0 || analyzing}
-                onClick={analysis ? () => setShowRenameSheet(true) : () => handleAnalyze()}
+                onClick={analysis ? openRenameSheet : () => handleAnalyze()}
               >
                 {analyzing
                   ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> Analyse…</>
@@ -449,7 +521,7 @@ const FysLab: PageComponent = () => {
         </div>
       )}
 
-      <Sheet open={showRenameSheet} onOpenChange={setShowRenameSheet}>
+      <Sheet open={showRenameSheet} onOpenChange={closeRenameSheet}>
         <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
           <SheetHeader>
             <SheetTitle className="font-display text-xl text-center">Nommez votre création</SheetTitle>
@@ -463,7 +535,7 @@ const FysLab: PageComponent = () => {
               onChange={(e) => setCocktailNameFromUser(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && cocktailName.trim() && !saving) {
-                  setShowRenameSheet(false);
+                  closeRenameSheet(false);
                   handleSave();
                 }
               }}
@@ -476,7 +548,7 @@ const FysLab: PageComponent = () => {
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95"
               disabled={!cocktailName.trim() || saving}
               onClick={() => {
-                setShowRenameSheet(false);
+                closeRenameSheet(false);
                 handleSave();
               }}
             >
@@ -490,7 +562,7 @@ const FysLab: PageComponent = () => {
         <OrderSheet
           cocktail={draftCocktail}
           open={showOrderSheet}
-          onOpenChange={setShowOrderSheet}
+          onOpenChange={closeOrderSheet}
           user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
           onOrderSuccess={handleOrderSuccess}
         />

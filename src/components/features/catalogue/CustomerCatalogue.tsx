@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
+import { useSearchParams } from 'rasengan';
 import { CocktailCard } from './CocktailCard';
 import { CatalogueOrderSheet } from './CatalogueOrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import type { Cocktail } from '@/entities';
+import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 type Props = {
   cocktails: Cocktail[];
@@ -13,6 +15,36 @@ type Props = {
 export function CustomerCatalogue({ cocktails, loading }: Props) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Cocktail | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const closeHistoryParam = useCloseHistoryParam();
+
+  const cocktailParam = searchParams.get('cocktail');
+
+  useEffect(() => {
+    if (!cocktailParam) {
+      setSelected(null);
+      return;
+    }
+    const found = cocktails.find((c) => c.id === cocktailParam) ?? null;
+    setSelected(found);
+  }, [cocktailParam, cocktails]);
+
+  function openCocktail(cocktail: Cocktail) {
+    setSelected(cocktail);
+    pushHistoryParam(setSearchParams, 'cocktail', cocktail.id);
+  }
+
+  function closeSheet(open: boolean) {
+    if (open) return;
+    if (!closeHistoryParam('cocktail')) {
+      setSelected(null);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('cocktail');
+        return next;
+      }, { replace: true });
+    }
+  }
 
   const visible = cocktails.filter(
     (c) =>
@@ -67,7 +99,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
               <CocktailCard
                 key={cocktail.id}
                 cocktail={cocktail}
-                onView={setSelected}
+                onView={openCocktail}
               />
             ))}
           </div>
@@ -77,7 +109,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
       <CatalogueOrderSheet
         cocktail={selected}
         open={!!selected}
-        onOpenChange={(v) => !v && setSelected(null)}
+        onOpenChange={closeSheet}
       />
     </>
   );
