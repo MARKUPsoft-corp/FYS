@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { ProfileCompletionCard } from '@/components/features/profile/ProfileCompletionCard';
 import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
@@ -17,40 +17,7 @@ import { useAuthStore } from '@/stores/auth';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import type { Fruit } from '@/entities';
-
-const SLIDES = [
-  {
-    bg: "url('https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')",
-    label: 'Notre signature',
-    title: 'Créez votre',
-    highlight: 'élixir',
-    titleEnd: 'de vie.',
-    cta: 'Composer un jus',
-    ctaLink: '/lab',
-    breakout: "url('https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')",
-  },
-  {
-    bg: "url('https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')",
-    label: 'Fruits frais du jour',
-    title: 'Boost ton',
-    highlight: 'énergie',
-    titleEnd: 'dès maintenant.',
-    cta: 'Voir le catalogue',
-    ctaLink: '/board/catalogue',
-    breakout: "url('https://images.pexels.com/photos/42059/citrus-diet-food-fresh-42059.jpeg?auto=compress&cs=tinysrgb&w=600')",
-  },
-  {
-    bg: "url('https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')",
-    label: 'NutriFYS actif',
-    title: 'Prends soin de',
-    highlight: 'toi',
-    titleEnd: 'chaque jour.',
-    cta: 'Mon profil santé',
-    ctaLink: '/board/profile',
-    breakout: "url('https://images.pexels.com/photos/1603901/pexels-photo-1603901.jpeg?auto=compress&cs=tinysrgb&w=600')",
-  },
-];
-
+import { HeroSlider } from '@/components/features/home/HeroSlider';
 
 const CREATIONS = [
   {
@@ -118,73 +85,6 @@ const CREATIONS = [
 
 
 type Props = { name: string };
-
-function HeroSlider() {
-  const [active, setActive] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setActive(p => (p + 1) % SLIDES.length), 4000);
-    return () => clearInterval(t);
-  }, []);
-  const slide = SLIDES[active];
-  return (
-    <section className="relative z-0 w-full h-[420px] rounded-b-[3rem] shadow-[0_20px_50px_rgba(63,109,78,0.25)]">
-      {/* Isolated Background Layer */}
-      <div
-        key={active}
-        className="absolute inset-0 bg-cover bg-center overflow-hidden rounded-b-[3rem] transition-all duration-700"
-        style={{ backgroundImage: slide.bg }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/50 to-black/20" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/40 rounded-full blur-3xl pointer-events-none" />
-      </div>
-
-      {/* Text Area */}
-      <div className="relative z-30 flex flex-col h-[420px] justify-center px-4">
-        <p className="text-white/80 text-xs mb-2 font-bold uppercase tracking-[0.2em] drop-shadow-md">
-          {slide.label}
-        </p>
-        <h1 className="font-display font-extrabold text-5xl md:text-6xl text-white leading-[1.05] mb-2 drop-shadow-lg">
-          {slide.title}
-        </h1>
-        <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-[1.05] mb-6 drop-shadow-lg">
-          <span className="text-secondary italic">{slide.highlight}</span>{' '}
-          <span className="text-white">{slide.titleEnd}</span>
-        </h1>
-
-        <Button
-          asChild
-          size="lg"
-          className="w-max rounded-full bg-white text-primary hover:bg-stone-50 hover:scale-105 active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.25)] font-bold px-8 h-12"
-        >
-          <Link to={slide.ctaLink}>{slide.cta}</Link>
-        </Button>
-
-        {/* Dot indicators */}
-        <div className="flex gap-2 mt-8">
-          {SLIDES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? 'w-6 bg-white' : 'w-1.5 bg-white/40'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Breakout Image (overflows below) */}
-      <div className="absolute -bottom-12 -right-2 w-44 h-60 z-20 pointer-events-none drop-shadow-2xl opacity-95 md:w-64 md:h-96 md:-right-4 md:-bottom-20">
-        <div
-          key={`breakout-${active}`}
-          className="w-full h-full bg-cover bg-center rounded-[2rem] border-4 border-white/40 shadow-2xl rotate-[-8deg] transition-all duration-700"
-          style={{ backgroundImage: slide.breakout }}
-        />
-      </div>
-    </section>
-  );
-}
 
 export function CustomerHome({ name }: Props) {
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);

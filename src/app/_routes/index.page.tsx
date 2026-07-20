@@ -8,13 +8,13 @@ const RootIndex: PageComponent = () => {
 
   useEffect(() => {
     if (!loading) {
-      if (user) navigate('/board');
-      else navigate('/auth/login');
+      if (user) navigate('/board', { replace: true });
+      else navigate('/auth/login', { replace: true });
     }
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col आइटms-center justify-center gap-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
       <div className="size-16 rounded-3xl bg-muted animate-pulse" />
       <div className="w-32 h-4 rounded-full bg-muted animate-pulse" />
     </div>

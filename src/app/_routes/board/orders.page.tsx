@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays,
+  CalendarDays, Search,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -970,6 +970,7 @@ const Orders: PageComponent = () => {
   const [periodType, setPeriodType] = useState<PeriodType>('all');
   const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const orderParam = searchParams.get('order');
 
@@ -1028,10 +1029,21 @@ const Orders: PageComponent = () => {
     [orders, periodType, periodAnchor],
   );
 
-  const visible = useMemo(
-    () => periodOrders.filter((o) => filterStatus === 'all' || o.status === filterStatus),
-    [periodOrders, filterStatus],
-  );
+  const visible = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return periodOrders.filter((o) => {
+      if (filterStatus !== 'all' && o.status !== filterStatus) return false;
+      if (!q) return true;
+      return (
+        o.cocktailNameSnapshot.toLowerCase().includes(q) ||
+        o.userNameSnapshot.toLowerCase().includes(q) ||
+        (o.userEmailSnapshot?.toLowerCase().includes(q) ?? false) ||
+        (o.userPhoneSnapshot?.toLowerCase().includes(q) ?? false) ||
+        (o.deliveryDetails?.phone?.toLowerCase().includes(q) ?? false) ||
+        o.id.toLowerCase().includes(q)
+      );
+    });
+  }, [periodOrders, filterStatus, searchQuery]);
 
   const periodLabel = formatPeriodLabel(periodType, periodAnchor);
 
@@ -1066,6 +1078,16 @@ const Orders: PageComponent = () => {
       >
         {/* Period + status filters (admin & client) */}
         <div className="space-y-6">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={isAdmin ? 'Rechercher (cocktail, client, email, téléphone…)…' : 'Rechercher une commande…'}
+            className="w-full h-12 pl-11 pr-4 rounded-2xl bg-card border border-border/60 text-foreground placeholder:text-muted-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+          />
+        </div>
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 shrink-0">

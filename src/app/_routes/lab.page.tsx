@@ -34,6 +34,7 @@ const FysLab: PageComponent = () => {
   const [selectedSupplements, setSelectedSupplements] = useState<Map<string, number>>(new Map());
   const [showRenameSheet, setShowRenameSheet] = useState(false);
   const [cocktailName, setCocktailName] = useState('');
+  const nameTouchedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -100,6 +101,21 @@ const FysLab: PageComponent = () => {
     return list;
   }
 
+  function provisionalNameFromIds(ids: Iterable<string>): string {
+    const names = [...ids]
+      .map((id) => fruits.find((f) => f.id === id)?.name)
+      .filter((n): n is string => !!n);
+    if (names.length === 0) return '';
+    if (names.length === 1) return `Élixir ${names[0]}`;
+    if (names.length === 2) return `${names[0]} & ${names[1]}`;
+    return `${names[0]}, ${names[1]} & cie`;
+  }
+
+  function setCocktailNameFromUser(name: string) {
+    nameTouchedRef.current = true;
+    setCocktailName(name);
+  }
+
   function toggleFruit(id: string) {
     setAnalysis(null);
     setAiRecommendation(null);
@@ -119,6 +135,11 @@ const FysLab: PageComponent = () => {
       return next;
     });
   }
+
+  useEffect(() => {
+    if (nameTouchedRef.current) return;
+    setCocktailName(provisionalNameFromIds(selectedIngredients.keys()));
+  }, [selectedIngredients, fruits]);
 
   function toggleSupplement(id: string) {
     setAnalysis(null);
@@ -203,6 +224,9 @@ const FysLab: PageComponent = () => {
       })).filter((i) => i.fruit);
       const result = await analyzeCocktail(ingredients, profile);
       setAnalysis(result);
+      if (!nameTouchedRef.current && result.suggestedName?.trim()) {
+        setCocktailName(result.suggestedName.trim());
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -227,7 +251,7 @@ const FysLab: PageComponent = () => {
     const imageUrl = fruitUrls[0];
     return {
       id: 'draft',
-      name: cocktailName.trim() || 'Mon Cocktail Personnalisé',
+      name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || 'Création FYS',
       type: CocktailType.CUSTOM,
       createdBy: user.uid,
       isActive: true,
@@ -265,6 +289,7 @@ const FysLab: PageComponent = () => {
       setSelectedIngredients(new Map());
       setSelectedSupplements(new Map());
       setCocktailName('');
+      nameTouchedRef.current = false;
       setAnalysis(null);
       setAiRecommendation(null);
       setComposeStep(1);
@@ -280,6 +305,7 @@ const FysLab: PageComponent = () => {
     setSelectedIngredients(new Map());
     setSelectedSupplements(new Map());
     setCocktailName('');
+    nameTouchedRef.current = false;
     setAnalysis(null);
     setAiRecommendation(null);
     setComposeStep(1);
@@ -295,6 +321,7 @@ const FysLab: PageComponent = () => {
     setSelectedIngredients(next);
     setSelectedSupplements(nextSupps);
     setCocktailName(proposal.name);
+    nameTouchedRef.current = true;
     setActiveTab('compose');
     setComposeStep(2);
     setTimeout(() => handleAnalyze(next, nextSupps), 50);
@@ -336,7 +363,7 @@ const FysLab: PageComponent = () => {
             onToggleSupplement={toggleSupplement}
             onChangeQuantity={changeQuantity}
             cocktailName={cocktailName}
-            onNameChange={setCocktailName}
+            onNameChange={setCocktailNameFromUser}
             onSave={() => handleSave()}
             saving={saving}
             analysis={analysis}
@@ -433,14 +460,14 @@ const FysLab: PageComponent = () => {
           <div className="space-y-4">
             <Input
               value={cocktailName}
-              onChange={(e) => setCocktailName(e.target.value)}
+              onChange={(e) => setCocktailNameFromUser(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && cocktailName.trim() && !saving) {
                   setShowRenameSheet(false);
                   handleSave();
                 }
               }}
-              placeholder="Ex: Boost Matinal..."
+              placeholder="Nom suggéré par NutriFYS…"
               className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
               autoFocus
             />

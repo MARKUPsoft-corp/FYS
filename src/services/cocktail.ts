@@ -120,6 +120,19 @@ export async function getUserCocktails(uid: string): Promise<Cocktail[]> {
 
 export async function toggleCocktailPublic(id: string, isPublic: boolean): Promise<void> {
   const cocktailRef = doc(db, COLLECTIONS.COCKTAILS, id);
+
+  if (isPublic) {
+    const snap = await getDoc(cocktailRef);
+    if (!snap.exists()) throw new Error('Cocktail introuvable');
+    const cocktail = { id: snap.id, ...snap.data() } as Cocktail;
+    const duplicate = await findPublicDuplicateMix(cocktail);
+    if (duplicate) {
+      throw new Error(
+        `Ce mélange est déjà publié sous le nom « ${duplicate.name} ». Choisissez une autre composition.`,
+      );
+    }
+  }
+
   await updateDoc(cocktailRef, {
     isPublic,
     updatedAt: serverTimestamp(),
@@ -136,6 +149,27 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
       }).catch(console.error);
     }
   }
+}
+
+/** Signature stable d'un mélange (ids + rôles, sans quantités) pour détecter les doublons publics */
+export function mixSignature(ingredients: Cocktail['ingredients']): string {
+  return ingredients
+    .map((i) => `${i.fruitId}:${i.role ?? 'fruit'}`)
+    .sort()
+    .join('|');
+}
+
+export async function findPublicDuplicateMix(
+  cocktail: Pick<Cocktail, 'id' | 'ingredients'>,
+): Promise<Cocktail | null> {
+  const signature = mixSignature(cocktail.ingredients);
+  if (!signature) return null;
+  const publics = await getPublicCocktails();
+  return (
+    publics.find(
+      (c) => c.id !== cocktail.id && mixSignature(c.ingredients) === signature,
+    ) ?? null
+  );
 }
 
 export async function cloneCocktailFromCatalogue(

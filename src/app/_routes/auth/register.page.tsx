@@ -32,7 +32,7 @@ const Register: PageComponent = () => {
     setLoading(true);
     try {
       await registerWithEmail(name, email, password);
-      navigate('/');
+      navigate('/board', { replace: true });
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/email-already-in-use') {
@@ -52,7 +52,7 @@ const Register: PageComponent = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      navigate('/');
+      navigate('/board', { replace: true });
     } catch {
       setError('Connexion Google annulée ou impossible.');
     } finally {

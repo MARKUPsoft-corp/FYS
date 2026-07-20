@@ -31,7 +31,7 @@ const Login: PageComponent = () => {
     setLoading(true);
     try {
       await loginWithEmail(email, password);
-      navigate('/');
+      navigate('/board', { replace: true });
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
@@ -49,7 +49,7 @@ const Login: PageComponent = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      navigate('/');
+      navigate('/board', { replace: true });
     } catch {
       setError('Connexion Google annulée ou impossible.');
     } finally {

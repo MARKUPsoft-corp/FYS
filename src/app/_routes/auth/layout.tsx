@@ -8,7 +8,7 @@ const AuthLayout: LayoutComponent = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/board');
+      navigate('/board', { replace: true });
     }
   }, [user, loading]);
 

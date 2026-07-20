@@ -166,6 +166,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant ni après) :
 {
   "verdict": "beneficial" | "neutral" | "caution" | "not_recommended",
   "score": <entier 0-100>,
+  "suggestedName": "<nom créatif court en français pour ce cocktail, 2 à 4 mots max, sans guillemets>",
   "notes": "<2-3 phrases en français, spécifiques à ce mélange et ce profil>",
   "profilNutritionnel": {
     "vitamineC":     { "pourcentage": <0-100>, "valeur": "<X mg>" },
@@ -190,6 +191,7 @@ Règles de verdict :
 - "caution" : bénéfice présent mais précaution notable
 - "not_recommended" : conflit avec une condition, allergie ou contre-indication
 - score = bénéfice santé global (100 = excellent, 0 = contre-indiqué)
+- suggestedName : invente un nom original et appétissant (jamais "Mon cocktail", "Cocktail personnalisé" ou générique)
 - profilNutritionnel : estime les valeurs à partir des fruits et quantités fournis (AJR adulte standard)
 - beneficesCibles : liste uniquement les 2-4 bénéfices principaux réellement apportés par ce mélange
 - interactionsFruits : 2-3 points max sur les synergies chimiques ou nutritionnelles entre fruits du mélange
@@ -259,6 +261,9 @@ export function parseAnalysisResponse(raw: string): AIAnalysis {
     verdict,
     score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
     notes: String(parsed.notes || ''),
+    ...(typeof parsed.suggestedName === 'string' && parsed.suggestedName.trim()
+      ? { suggestedName: parsed.suggestedName.trim().slice(0, 48) }
+      : {}),
     profilNutritionnel: {
       vitamineC: parseNutrient(pn.vitamineC),
       vitamineA: parseNutrient(pn.vitamineA),

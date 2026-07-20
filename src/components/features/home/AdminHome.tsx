@@ -2,7 +2,7 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle, Wallet,
+  XCircle, AlertCircle, Wallet, Image,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -87,6 +87,15 @@ const quickActions = [
     iconColor: 'text-orange-500',
     path: '/board/fruits',
     cta: 'Gérer les fruits',
+  },
+  {
+    label: 'Hero slides',
+    description: 'Images et textes de la page d’accueil client.',
+    icon: Image,
+    iconBg: 'bg-sky-50 dark:bg-sky-950/30',
+    iconColor: 'text-sky-600',
+    path: '/board/hero',
+    cta: 'Modifier les slides',
   },
   {
     label: 'Tarifs',

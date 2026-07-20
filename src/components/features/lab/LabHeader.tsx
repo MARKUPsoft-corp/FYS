@@ -1,4 +1,4 @@
-import { Link } from 'rasengan';
+import { useNavigate } from 'rasengan';
 import { ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
@@ -18,6 +18,16 @@ const TABS: { id: LabTab; label: string; nutrifys?: boolean }[] = [
 ];
 
 export function LabHeader({ activeTab, onTabChange, compact }: Props) {
+  const navigate = useNavigate();
+
+  function handleBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/board');
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -36,12 +46,13 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
 
       <div className={cn('relative z-10 mx-auto w-full', compact ? 'max-w-[1480px]' : 'max-w-6xl')}>
         <div className="flex items-center justify-between mt-5 mb-4 w-full">
-          <Link
-            to="/board"
+          <button
+            type="button"
+            onClick={handleBack}
             className="inline-flex items-center text-white/80 hover:text-white transition-colors text-sm font-medium"
           >
             <ChevronLeft className="size-4 mr-1" /> Retour
-          </Link>
+          </button>
           <div className="flex items-center gap-3">
             <ButtonTheme />
             <NotificationBell />

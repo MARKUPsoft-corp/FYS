@@ -37,6 +37,8 @@ export interface AIAnalysis {
   verdict: AIVerdict;
   score: number; // 0-100
   notes: string; // explication générée par l'IA
+  /** Nom créatif suggéré par l'IA (éditable par l'utilisateur) */
+  suggestedName?: string;
   profilNutritionnel: {
     vitamineC?: NutrientInfo;
     vitamineA?: NutrientInfo;

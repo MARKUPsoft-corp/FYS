@@ -31,6 +31,8 @@ const Cocktails: PageComponent = () => {
   const [toDelete, setToDelete] = useState<Cocktail | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [orderTarget, setOrderTarget] = useState<Cocktail | null>(null);
+  const [listTab, setListTab] = useState<'mine' | 'public'>('mine');
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const { data: myCocktails = [], isLoading: myLoading } = useQuery({
     queryKey: ['user-cocktails', user?.uid],
@@ -55,9 +57,14 @@ const Cocktails: PageComponent = () => {
   }, [cocktailParam, user?.uid]);
 
   async function handleTogglePublish(cocktail: Cocktail) {
-    await toggleCocktailPublic(cocktail.id, !cocktail.isPublic);
-    queryClient.invalidateQueries({ queryKey: ['user-cocktails', user?.uid] });
-    queryClient.invalidateQueries({ queryKey: ['cocktails', 'public'] });
+    setPublishError(null);
+    try {
+      await toggleCocktailPublic(cocktail.id, !cocktail.isPublic);
+      queryClient.invalidateQueries({ queryKey: ['user-cocktails', user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ['cocktails', 'public'] });
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : 'Impossible de publier ce mélange.');
+    }
   }
 
   async function handleDelete() {
@@ -156,124 +163,122 @@ const Cocktails: PageComponent = () => {
 
   // ── Client: mes créations + publics ──
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div
-        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-16 overflow-hidden"
-        style={{
-          backgroundImage: "url('https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=1200')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        <div className="relative z-10 flex-1">
-          <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">Mes mélanges</p>
-          <h1 className="font-display font-extrabold text-4xl text-white">
-            Mes <span className="text-secondary italic">Cocktails</span>
-          </h1>
-        </div>
-      </div>
-
-      <div className="px-3 md:px-4 space-y-12">
-        <Button
-          size="lg"
-          onClick={() => navigate('/lab')}
-          className="w-full rounded-[2rem] h-16 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
-        >
-          <Plus className="size-5" />
-          Créer un nouveau cocktail
-        </Button>
-
-        {/* Mes créations */}
-        <section className="space-y-6">
-          <div className="text-center">
-            <h3 className="font-display font-bold text-3xl">
-              <span className="text-foreground">Mes </span>
-              <span className="text-primary">Créations</span>
-            </h3>
-            <p className="text-muted-foreground mt-2 font-medium">
-              Vos mélanges personnalisés sauvegardés.
-            </p>
-          </div>
-
-          {isLoading && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex flex-col gap-3">
-                  <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
-                  <div className="px-2 space-y-2">
-                    <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
-                    <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!isLoading && myCocktails.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {myCocktails.map((c) => (
-                <CocktailCard
-                  key={c.id}
-                  cocktail={c}
-                  showActions
-                  onTogglePublish={handleTogglePublish}
-                  onDelete={setToDelete}
-                  onView={(cocktail) => setOrderTarget(cocktail)}
-                />
-              ))}
-            </div>
-          )}
-
-          {!isLoading && myCocktails.length === 0 && (
-            <div
+    <>
+      <BoardPageShell
+        eyebrow="Mes mélanges"
+        titleBefore="Mes"
+        titleHighlight="Cocktails"
+        sectionBefore={listTab === 'mine' ? 'Mes' : 'Créations'}
+        sectionHighlight={listTab === 'mine' ? 'Créations' : 'publiques'}
+        subtitle={
+          listTab === 'mine'
+            ? 'Vos mélanges personnalisés sauvegardés.'
+            : 'Les créations partagées par la communauté FYS.'
+        }
+        imageUrl="https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        actions={
+          <div className="space-y-4">
+            <Button
+              size="lg"
               onClick={() => navigate('/lab')}
-              className="rounded-[2.5rem] border-2 border-dashed border-border/40 flex flex-col items-center justify-center py-16 gap-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+              className="w-full rounded-[2rem] h-16 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
             >
-              <div className="size-16 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                <FlaskConical className="size-7 text-primary/50 group-hover:text-primary transition-colors" />
-              </div>
-              <p className="text-sm font-semibold text-foreground">Créer votre premier mélange</p>
-              <p className="text-xs text-muted-foreground max-w-[200px]">
-                Sélectionnez vos fruits préférés et composez votre recette unique dans le FYS Lab.
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* Cocktails publics de l'app */}
-        <section className="space-y-6 pb-8">
-          <div className="text-center">
-            <h3 className="font-display font-bold text-3xl">
-              <span className="text-foreground">Cocktails </span>
-              <span className="text-primary">publics</span>
-            </h3>
-            <p className="text-muted-foreground mt-2 font-medium">
-              Les créations partagées par la communauté FYS.
-            </p>
-          </div>
-
-          {!isLoading && communityPublic.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {communityPublic.map((c) => (
-                <CocktailCard
-                  key={c.id}
-                  cocktail={c}
-                  onView={(cocktail) => setOrderTarget(cocktail)}
-                />
+              <Plus className="size-5" />
+              Créer un nouveau cocktail
+            </Button>
+            <div className="flex p-1 rounded-full bg-muted/50 border border-border/50 max-w-md mx-auto">
+              {(
+                [
+                  { id: 'mine' as const, label: 'Mes cocktails' },
+                  { id: 'public' as const, label: 'Publics' },
+                ]
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setListTab(tab.id)}
+                  className={`flex-1 rounded-full py-2.5 text-[13px] font-bold transition-all ${
+                    listTab === tab.id
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
-          )}
-
-          {!isLoading && communityPublic.length === 0 && (
-            <div className="rounded-[2.5rem] border border-dashed border-border/40 flex flex-col items-center justify-center py-12 gap-2 text-center">
-              <p className="text-sm font-semibold text-muted-foreground">
-                Aucun autre cocktail public pour l&apos;instant
+            {publishError && (
+              <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-2xl px-4 py-3 text-center">
+                {publishError}
               </p>
+            )}
+          </div>
+        }
+      >
+        {isLoading && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-3">
+                <div className="w-full aspect-[4/5] rounded-[1.75rem] border border-border/50 bg-muted/30 animate-pulse" />
+                <div className="px-2 space-y-2">
+                  <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && listTab === 'mine' && myCocktails.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {myCocktails.map((c) => (
+              <CocktailCard
+                key={c.id}
+                cocktail={c}
+                showActions
+                onTogglePublish={handleTogglePublish}
+                onDelete={setToDelete}
+                onView={(cocktail) => setOrderTarget(cocktail)}
+              />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && listTab === 'mine' && myCocktails.length === 0 && (
+          <div
+            onClick={() => navigate('/lab')}
+            className="rounded-[2.5rem] border-2 border-dashed border-border/40 flex flex-col items-center justify-center py-16 gap-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+          >
+            <div className="size-16 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+              <FlaskConical className="size-7 text-primary/50 group-hover:text-primary transition-colors" />
             </div>
-          )}
-        </section>
-      </div>
+            <p className="text-sm font-semibold text-foreground">Créer votre premier mélange</p>
+            <p className="text-xs text-muted-foreground max-w-[200px]">
+              Sélectionnez vos fruits préférés et composez votre recette unique dans le FYS Lab.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && listTab === 'public' && communityPublic.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {communityPublic.map((c) => (
+              <CocktailCard
+                key={c.id}
+                cocktail={c}
+                onView={(cocktail) => setOrderTarget(cocktail)}
+              />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && listTab === 'public' && communityPublic.length === 0 && (
+          <div className="rounded-[2.5rem] border border-dashed border-border/40 flex flex-col items-center justify-center py-12 gap-2 text-center">
+            <p className="text-sm font-semibold text-muted-foreground">
+              Aucun autre cocktail public pour l&apos;instant
+            </p>
+          </div>
+        )}
+      </BoardPageShell>
 
       {orderTarget && user && (
         <OrderSheet
@@ -311,7 +316,7 @@ const Cocktails: PageComponent = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 

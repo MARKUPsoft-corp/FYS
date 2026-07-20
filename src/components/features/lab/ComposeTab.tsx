@@ -284,7 +284,7 @@ function ComposeStepper({
   ];
 
   return (
-    <div className="mb-6">
+    <div className="mb-0">
       <div className="flex items-center gap-0">
         {steps.map((s, i) => {
           const active = step === s.n;
@@ -402,15 +402,15 @@ export function ComposeTab({
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start">
 
       <div className="flex-1 min-w-0 w-full">
-        <ComposeStepper
-          step={composeStep}
-          onStepChange={onStepChange}
-          canGoStep2={canGoStep2}
-        />
+        <div className="sticky top-0 z-30 -mx-1 px-1 pt-2 pb-3 mb-3 bg-background/95 backdrop-blur-md border-b border-border/40">
+          <ComposeStepper
+            step={composeStep}
+            onStepChange={onStepChange}
+            canGoStep2={canGoStep2}
+          />
 
-        {composeStep === 1 && (
-          <>
-            <div className="relative z-20 bg-card rounded-2xl p-4 mb-6 border border-border/60 shadow-lg flex items-center lg:items-start gap-4 mx-auto lg:mx-0 max-w-lg lg:max-w-none text-left">
+          {composeStep === 1 ? (
+            <div className="relative z-20 bg-card rounded-2xl p-4 mt-3 border border-border/60 shadow-lg flex items-center lg:items-start gap-4 mx-auto lg:mx-0 max-w-lg lg:max-w-none text-left">
               <div className="size-10 rounded-full bg-[#E0982E]/10 flex items-center justify-center shrink-0 border border-[#E0982E]/20">
                 <Sparkles className="size-4 text-[#E0982E]" />
               </div>
@@ -423,7 +423,25 @@ export function ComposeTab({
                 </p>
               </div>
             </div>
+          ) : (
+            <div className="relative z-20 bg-card rounded-2xl p-4 mt-3 border border-border/60 shadow-lg flex items-center lg:items-start gap-4 mx-auto lg:mx-0 max-w-lg lg:max-w-none text-left">
+              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                <Sparkles className="size-4 text-primary" />
+              </div>
+              <div>
+                <span className="text-primary text-[10px] font-bold uppercase tracking-widest block mb-0.5">
+                  NutriFYS · Étape 2
+                </span>
+                <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
+                  Affinez avec jusqu&apos;à {MAX_LAB_SUPPLEMENTS} suppléments. NutriFYS propose ceux qui collent le mieux à votre mélange.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
+        {composeStep === 1 && (
+          <>
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -491,8 +509,8 @@ export function ComposeTab({
               </div>
             )}
 
-            {/* Mobile / desktop next */}
-            <div className="mt-6 flex justify-end">
+            {/* Desktop only — mobile uses the fixed bottom bar */}
+            <div className="mt-6 hidden lg:flex justify-end">
               <Button
                 size="lg"
                 className="h-12 rounded-2xl px-6 font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)]"
@@ -508,7 +526,7 @@ export function ComposeTab({
 
         {composeStep === 2 && (
           <>
-            <div className="mb-4">
+            <div className="mb-4 space-y-3">
               <Button
                 type="button"
                 variant="ghost"
@@ -519,6 +537,17 @@ export function ComposeTab({
                 <ChevronLeft className="size-4" />
                 Modifier les fruits
               </Button>
+              <div className="lg:hidden">
+                <Input
+                  value={cocktailName}
+                  onChange={(e) => onNameChange(e.target.value)}
+                  placeholder="Nom du cocktail…"
+                  className="h-11 rounded-xl text-sm font-semibold"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1.5 px-0.5">
+                  Nom généré par NutriFYS — vous pouvez le modifier
+                </p>
+              </div>
             </div>
             <SupplementsTab
               selectedFruits={selectedFruits}
@@ -728,9 +757,12 @@ export function SavePanel({
             value={cocktailName}
             onChange={(e) => onNameChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && canSave && !saving && onSave()}
-            placeholder="Nom de mon cocktail…"
+            placeholder="Nom du cocktail (NutriFYS)…"
             className="h-10 rounded-xl text-sm"
           />
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            Suggéré par l&apos;IA — librement modifiable
+          </p>
           <Button
             size="lg"
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-2"

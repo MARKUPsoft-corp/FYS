@@ -19,7 +19,7 @@ const AppLayout: LayoutComponent = () => {
   useEffect(() => {
     console.log({loading, user, isAuthRoute})
     if (!loading && !user && !isAuthRoute) {
-      navigate('/auth/login');
+      navigate('/auth/login', { replace: true });
     }
   }, [user, loading, isAuthRoute]);
 

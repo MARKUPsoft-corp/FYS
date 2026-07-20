@@ -9,6 +9,7 @@ import {
   Tag,
   Users,
   Wallet,
+  Image,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -133,6 +134,15 @@ export const NAV_ITEMS: NavItem[] = [
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
     showInDesktopNav: false, // icône topbar uniquement
+  },
+  {
+    key: 'hero-slides',
+    label: 'Hero',
+    path: '/board/hero',
+    icon: Image,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: false,
   },
   {
     key: 'users',
