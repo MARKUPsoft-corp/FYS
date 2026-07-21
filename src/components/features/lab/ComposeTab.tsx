@@ -69,12 +69,12 @@ const VERDICT_CONFIG: Record<AIVerdict, {
 // ── Nutrient bar ──────────────────────────────────────────────────────────────
 
 const NUTRIENT_META: Record<string, { label: string; bar: string }> = {
-  vitamineC:     { label: 'Vitamine C',   bar: 'bg-orange-400'  },
-  vitamineA:     { label: 'Vitamine A',   bar: 'bg-yellow-400'  },
-  fibres:        { label: 'Fibres',       bar: 'bg-emerald-500' },
-  potassium:     { label: 'Potassium',    bar: 'bg-sky-400'     },
-  sucresNaturels:{ label: 'Sucres nat.',  bar: 'bg-rose-400'    },
-  antioxydants:  { label: 'Antioxydants', bar: 'bg-violet-500'  },
+  vitamineC: { label: 'Vitamine C', bar: 'bg-orange-400' },
+  vitamineA: { label: 'Vitamine A', bar: 'bg-yellow-400' },
+  fibres: { label: 'Fibres', bar: 'bg-emerald-500' },
+  potassium: { label: 'Potassium', bar: 'bg-sky-400' },
+  sucresNaturels: { label: 'Sucres nat.', bar: 'bg-rose-400' },
+  antioxydants: { label: 'Antioxydants', bar: 'bg-violet-500' },
 };
 
 function NutrientRow({ id, info }: { id: string; info: NutrientInfo }) {
@@ -103,20 +103,20 @@ function NutrientRow({ id, info }: { id: string; info: NutrientInfo }) {
 // ── Benefit chip ──────────────────────────────────────────────────────────────
 
 const BENEFIT_ICONS: Record<string, React.ElementType> = {
-  immunité:            Shield,
-  énergie:             Zap,
-  digestion:           Leaf,
-  hydratation:         Droplets,
+  immunité: Shield,
+  énergie: Zap,
+  digestion: Leaf,
+  hydratation: Droplets,
   'anti-inflammatoire': Heart,
-  peau:                Sparkles,
-  sommeil:             Moon,
-  stress:              Wind,
+  peau: Sparkles,
+  sommeil: Moon,
+  stress: Wind,
 };
 
 const BENEFIT_LEVEL: Record<string, { chip: string; dots: number }> = {
-  faible: { chip: 'bg-muted text-muted-foreground border border-border/60',           dots: 1 },
-  modéré: { chip: 'bg-primary/10 text-primary border border-primary/20',              dots: 2 },
-  élevé:  { chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700', dots: 3 },
+  faible: { chip: 'bg-muted text-muted-foreground border border-border/60', dots: 1 },
+  modéré: { chip: 'bg-primary/10 text-primary border border-primary/20', dots: 2 },
+  élevé: { chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700', dots: 3 },
 };
 
 function BenefitChip({ nom, niveau }: { nom: string; niveau: string }) {
@@ -452,9 +452,8 @@ export function ComposeTab({
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
                 </span>
               </div>
-              <span className={`text-[11px] font-bold tabular-nums shrink-0 ${
-                atMaxFruits ? 'text-secondary' : 'text-muted-foreground'
-              }`}>
+              <span className={`text-[11px] font-bold tabular-nums shrink-0 ${atMaxFruits ? 'text-secondary' : 'text-muted-foreground'
+                }`}>
                 {selectedIngredients.size}/{MAX_LAB_MAIN_FRUITS}
               </span>
             </div>
@@ -482,13 +481,12 @@ export function ComposeTab({
                       type="button"
                       disabled={isDisabled}
                       onClick={() => onToggleFruit(fruit.id)}
-                      className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${
-                        isSelected
+                      className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${isSelected
                           ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
                           : isDisabled
-                          ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
-                          : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
-                      }`}
+                            ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
+                            : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
+                        }`}
                     >
                       {fruit.imageUrl ? (
                         <div
@@ -650,11 +648,10 @@ export function SavePanel({
             <p className="text-xs text-muted-foreground">
               {selectedMainCount === 0
                 ? 'Aucun fruit sélectionné'
-                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} fruit${selectedMainCount > 1 ? 's' : ''}${
-                    selectedSupplementCount > 0
-                      ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} supplément${selectedSupplementCount > 1 ? 's' : ''}`
-                      : ''
-                  }`}
+                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} fruit${selectedMainCount > 1 ? 's' : ''}${selectedSupplementCount > 0
+                  ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} supplément${selectedSupplementCount > 1 ? 's' : ''}`
+                  : ''
+                }`}
             </p>
           </div>
         </div>
