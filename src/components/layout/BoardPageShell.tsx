@@ -34,7 +34,7 @@ export function BoardPageShell({
   children,
 }: Props) {
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-dvh bg-background pb-4">
       <div
         className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
         style={{

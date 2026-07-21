@@ -418,7 +418,7 @@ const Profile: PageComponent = () => {
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-dvh bg-background pb-4">
 
       {/* Hero banner */}
       <div

@@ -44,7 +44,7 @@ const AppLayout: LayoutComponent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      <div className="min-h-dvh bg-background flex flex-col md:flex-row">
         {/* Mobile topbar skeleton */}
         <div className="md:hidden h-16 border-b border-border/40 flex items-center justify-between px-6 shrink-0">
           <div className="size-8 rounded-xl bg-muted animate-pulse" />

@@ -14,7 +14,7 @@ const AuthLayout: LayoutComponent = () => {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      className="min-h-dvh flex items-center justify-center p-4 relative overflow-hidden"
       style={{
         backgroundImage: "url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop')",
         backgroundSize: 'cover',

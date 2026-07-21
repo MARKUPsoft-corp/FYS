@@ -1,6 +1,8 @@
 import {
   collection, doc, setDoc, updateDoc, getDocs, getDoc,
-  serverTimestamp, query, where, orderBy,
+  serverTimestamp, query, where, orderBy, onSnapshot,
+  type Unsubscribe,
+  type QuerySnapshot,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
@@ -98,6 +100,70 @@ export async function createOrder(
   }).catch(console.error);
 
   return ref.id;
+}
+
+function mapOrderSnapshot(snapshot: QuerySnapshot): Order[] {
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
+}
+
+export function subscribeToUserOrders(
+  userId: string,
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.ORDERS),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc'),
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => callback(mapOrderSnapshot(snapshot)),
+    (err) => {
+      console.error('subscribeToUserOrders failed:', err);
+      onError?.(err);
+    },
+  );
+}
+
+export function subscribeToAllOrders(
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.ORDERS),
+    orderBy('createdAt', 'desc'),
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => callback(mapOrderSnapshot(snapshot)),
+    (err) => {
+      console.error('subscribeToAllOrders failed:', err);
+      onError?.(err);
+    },
+  );
+}
+
+export function subscribeToOrder(
+  orderId: string,
+  callback: (order: Order | null) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
+  return onSnapshot(
+    orderRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        callback(null);
+        return;
+      }
+      callback({ id: snapshot.id, ...snapshot.data() } as Order);
+    },
+    (err) => {
+      console.error('subscribeToOrder failed:', err);
+      onError?.(err);
+    },
+  );
 }
 
 export async function getUserOrders(userId: string): Promise<Order[]> {

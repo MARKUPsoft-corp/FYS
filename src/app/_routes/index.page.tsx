@@ -14,7 +14,7 @@ const RootIndex: PageComponent = () => {
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 animate-in fade-in duration-700">
+    <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-8 animate-in fade-in duration-700">
       {/* Orbital FYS Logo */}
       <style>{`
         @keyframes orbit {

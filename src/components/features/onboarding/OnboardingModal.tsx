@@ -210,12 +210,12 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md px-safe py-safe">
 
       {/* Skip */}
       <button
         onClick={onSkip}
-        className="absolute top-5 right-5 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="absolute top-[calc(var(--sat)+1.25rem)] right-[calc(var(--sar)+1.25rem)] flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         Passer <X className="size-4" />
       </button>

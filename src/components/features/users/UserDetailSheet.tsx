@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useUserOrders } from '@/hooks/useOrders';
 import {
   Mail, Phone, ShieldCheck, User, Clock, HeartPulse,
   ShoppingBag, FlaskConical, Globe, Lock, Loader2,
@@ -10,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { UserRole, OrderStatus } from '@/entities';
 import type { User as UserType, Order, Cocktail } from '@/entities';
 import { getProfile } from '@/services/profile';
-import { getUserOrders } from '@/services/order';
 import { getUserCocktails } from '@/services/cocktail';
 import { isProfileComplete } from '@/stores/profile';
 
@@ -176,12 +176,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
     staleTime: 30_000,
   });
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-user-orders', user?.uid],
-    queryFn: () => getUserOrders(user!.uid),
-    enabled: !!user && open,
-    staleTime: 30_000,
-  });
+  const { orders, isLoading: ordersLoading } = useUserOrders(user?.uid, !!user && open);
 
   const { data: cocktails = [], isLoading: cocktailsLoading } = useQuery({
     queryKey: ['admin-user-cocktails', user?.uid],

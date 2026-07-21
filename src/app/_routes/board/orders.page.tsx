@@ -5,15 +5,16 @@ import {
   CalendarDays, Search,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
 import { UserRole, OrderStatus } from '@/entities';
 import type { Order, Cocktail } from '@/entities';
-import { getUserOrders, getAllOrders, updateOrderStatus, cancelOrder } from '@/services/order';
 import { getCocktailById } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
+import { updateOrderStatus, cancelOrder } from '@/services/order';
+import { useQuery } from '@tanstack/react-query';
+import { useOrders, useOrder } from '@/hooks/useOrders';
 import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
 import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
 import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
@@ -964,10 +965,8 @@ const Orders: PageComponent = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const closeHistoryParam = useCloseHistoryParam();
-  const queryClient = useQueryClient();
   const isAdmin = user?.role === UserRole.ADMIN;
 
-  const [selected, setSelected] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | OrderStatus>('all');
   const [periodType, setPeriodType] = useState<PeriodType>('all');
   const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
@@ -976,32 +975,20 @@ const Orders: PageComponent = () => {
 
   const orderParam = searchParams.get('order');
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: isAdmin ? ['orders', 'all'] : ['orders', 'user', user?.uid],
-    queryFn: isAdmin ? getAllOrders : async () => {
-      return await getUserOrders(user!.uid);
-    },
-    enabled: !!user?.uid,
-  });
+  const { orders, isLoading } = useOrders(user?.uid, isAdmin);
+  const { order: liveOrder } = useOrder(orderParam ?? undefined, !!orderParam);
 
-  useEffect(() => {
-    if (!orderParam) {
-      setSelected(null);
-      return;
-    }
-    if (isLoading) return;
-    const order = orders.find((o) => o.id === orderParam);
-    if (order) setSelected(order);
-  }, [orderParam, orders, isLoading]);
+  const selected = useMemo(() => {
+    if (!orderParam) return null;
+    return liveOrder ?? orders.find((o) => o.id === orderParam) ?? null;
+  }, [orderParam, liveOrder, orders]);
 
   function openOrder(order: Order) {
-    setSelected(order);
     pushHistoryParam(setSearchParams, 'order', order.id);
   }
 
   function closeOrderSheet() {
     if (!closeHistoryParam('order')) {
-      setSelected(null);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.delete('order');
@@ -1010,23 +997,12 @@ const Orders: PageComponent = () => {
     }
   }
 
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-  }
-
   async function handleStatusChange(orderId: string, status: OrderStatus) {
     await updateOrderStatus(orderId, status);
-    invalidate();
-    // Update selected order in-place so the sheet reflects the new status
-    if (selected?.id === orderId) setSelected((prev) => prev ? { ...prev, status } : prev);
   }
 
   async function handleCancel(orderId: string) {
     await cancelOrder(orderId);
-    invalidate();
-    if (selected?.id === orderId) {
-      setSelected((prev) => prev ? { ...prev, status: OrderStatus.CANCELLED } : prev);
-    }
   }
 
   function handlePeriodTypeChange(type: PeriodType) {
@@ -1287,7 +1263,7 @@ const Orders: PageComponent = () => {
       {isAdmin ? (
         <AdminOrderSheet
           order={selected}
-          open={!!selected}
+          open={!!orderParam}
           onOpenChange={(v) => { if (!v) closeOrderSheet(); }}
           onStatusChange={handleStatusChange}
           onCancel={handleCancel}
@@ -1295,7 +1271,7 @@ const Orders: PageComponent = () => {
       ) : (
         <ClientOrderSheet
           order={selected}
-          open={!!selected}
+          open={!!orderParam}
           onOpenChange={(v) => { if (!v) closeOrderSheet(); }}
           onCancel={handleCancel}
         />

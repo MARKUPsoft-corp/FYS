@@ -56,18 +56,12 @@ export function Topbar() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-20',
+        'fixed top-0 left-0 right-0 z-20 pt-safe',
         'bg-background/90 backdrop-blur-xl border-b border-border/40',
         'transition-all duration-300 ease-in-out',
       )}
-      // Safe-area top padding pushes content below the notch on iOS;
-      // on Android/desktop env() returns 0 so nothing changes.
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      {/* Fixed-height content row — always 80px (h-20) */}
-      <div className={cn(
-        'h-20 flex items-center justify-between px-3 md:px-6 lg:px-12',
-      )}>
+      <div className="h-20 flex items-center justify-between px-3 md:px-6 lg:px-12">
         <div className="flex shrink-0">
           <Link to="/board" className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
             FYS<span className="text-secondary">.</span>

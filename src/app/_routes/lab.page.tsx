@@ -415,7 +415,7 @@ const FysLab: PageComponent = () => {
   }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background overflow-x-clip">
       <LabHeader
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -427,7 +427,7 @@ const FysLab: PageComponent = () => {
           'mx-auto w-full',
           activeTab === 'nutrifys'
             ? 'max-w-[1480px] px-2 lg:px-5 pb-4 lg:pb-12'
-            : 'max-w-6xl px-4 lg:px-16 pb-36 lg:pb-12',
+            : 'max-w-6xl px-4 lg:px-16 pb-lab-bar lg:pb-12',
         )}
       >
         {activeTab === 'compose' && (
@@ -464,7 +464,7 @@ const FysLab: PageComponent = () => {
 
       {/* ── Mobile sticky bottom bar ─────────────────────────────────────────── */}
       {activeTab === 'compose' && (
-        <div className="fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 pb-6 z-50 rounded-t-3xl lg:hidden">
+        <div className="fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 fixed-bottom-safe z-50 rounded-t-3xl lg:hidden">
           <div className="max-w-lg mx-auto space-y-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {[...selectedIngredients.keys()].map((fruitId) => {

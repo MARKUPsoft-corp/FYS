@@ -109,7 +109,7 @@ export function CustomerHome({ name }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 overflow-x-hidden relative">
+    <div className="min-h-dvh bg-background pb-4 overflow-x-clip relative">
 
       {/* 1. Massive Full Bleed Hero — SLIDER */}
       <div className="lg:px-2">

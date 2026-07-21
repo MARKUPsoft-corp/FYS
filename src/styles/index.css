@@ -17,9 +17,66 @@ html {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  width: 100vw;
-  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100dvh;
   overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe-area tokens (iOS notch / home indicator) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --topbar-h: 5rem;
+  --bottom-nav-h: 4.25rem;
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: var(--sat);
+  }
+  .pb-safe {
+    padding-bottom: var(--sab);
+  }
+  .px-safe {
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+  }
+  /* Content offset below fixed topbar (notch + bar) */
+  .pt-topbar {
+    padding-top: calc(var(--sat) + var(--topbar-h));
+  }
+  /* Content offset above fixed bottom nav (home bar + nav) */
+  .pb-bottom-nav {
+    padding-bottom: calc(var(--sab) + var(--bottom-nav-h));
+  }
+  /* Fixed panel sitting on home indicator */
+  .fixed-bottom-safe {
+    padding-bottom: max(0.75rem, var(--sab));
+  }
+  .bottom-above-nav {
+    bottom: calc(var(--sab) + var(--bottom-nav-h) + 0.5rem);
+  }
+  /* Lab mobile sticky bar (no bottom nav on /lab) */
+  .pb-lab-bar {
+    padding-bottom: calc(var(--sab) + 10rem);
+  }
+  .mb-chat-bar {
+    margin-bottom: calc(var(--sab) + 5.5rem);
+  }
+  /* Full-screen overlay respecting notch / home bar */
+  .inset-safe {
+    top: var(--sat);
+    right: var(--sar);
+    bottom: var(--sab);
+    left: var(--sal);
+  }
+  .max-h-screen-safe {
+    max-height: calc(100dvh - var(--sat) - var(--sab));
+  }
 }
 
 @theme inline {

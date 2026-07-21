@@ -11,8 +11,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border z-30 lg:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border z-30 lg:hidden pb-safe"
     >
       <div className="flex h-[4.25rem] items-stretch">
         {items.map((item) => {

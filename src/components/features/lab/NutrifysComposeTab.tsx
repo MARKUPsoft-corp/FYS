@@ -487,8 +487,8 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
     <div className="relative z-20 mt-1 lg:mt-3">
       <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-        <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100vh-200px)]">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70vh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-24 lg:mb-0">
+        <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100dvh-200px)]">
+          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70dvh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-chat-bar lg:mb-0">
 
             <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
               <div className="flex items-center gap-3">
@@ -700,7 +700,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
       </div>
 
       {/* Input bar - mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 pb-safe-5 z-50 shadow-t-xl">
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 fixed-bottom-safe z-50 shadow-t-xl">
         <form onSubmit={handleSubmit} className="max-w-lg mx-auto">
           <ChatComposer
             value={input}

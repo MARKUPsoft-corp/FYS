@@ -65,7 +65,7 @@ export function HeroSlider() {
 
   return (
     <section
-      className="relative z-0 w-full h-[420px] rounded-b-[3rem] shadow-[0_20px_50px_rgba(63,109,78,0.25)] touch-pan-y select-none"
+      className="relative z-0 w-full h-[420px] rounded-b-[3rem] shadow-[0_20px_50px_rgba(63,109,78,0.25)] touch-pan-y select-none overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >

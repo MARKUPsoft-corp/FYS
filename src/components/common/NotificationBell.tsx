@@ -101,8 +101,8 @@ export function NotificationBell() {
             )}
           </button>
         </SheetTrigger>
-        <SheetContent side="right" showCloseButton={false} className="w-full max-w-[400px] p-0 flex flex-col">
-          <SheetHeader className="px-6 py-5 border-b border-border/40 shrink-0 text-left flex flex-row items-center justify-between">
+        <SheetContent side="right" showCloseButton={false} className="w-full max-w-[400px] p-0 flex flex-col gap-0">
+          <SheetHeader className="px-6 py-4 border-b border-border/40 shrink-0 text-left flex flex-row items-center justify-between space-y-0">
             <SheetTitle className="font-display text-lg">Notifications</SheetTitle>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
@@ -181,7 +181,7 @@ export function NotificationBell() {
       </Sheet>
 
       {showToast && (
-        <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-right-4 fade-in duration-300">
+        <div className="fixed top-[calc(var(--sat)+5rem)] right-4 z-50 animate-in slide-in-from-right-4 fade-in duration-300">
           <div className="bg-card border border-border/60 shadow-xl rounded-2xl p-4 w-72 md:w-80 flex items-start gap-3 relative">
             <button
               type="button"
