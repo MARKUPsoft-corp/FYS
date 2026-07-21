@@ -10,8 +10,11 @@ export function BottomNav() {
   const items = user ? getMobileNavItems(user.role) : [];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-[4.25rem] bg-card/90 backdrop-blur-md border-t border-border z-30 lg:hidden">
-      <div className="flex h-full items-stretch">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border z-30 lg:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="flex h-[4.25rem] items-stretch">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;

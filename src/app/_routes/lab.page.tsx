@@ -30,6 +30,14 @@ const FysLab: PageComponent = () => {
   const closeHistoryParam = useCloseHistoryParam();
   const queryClient = useQueryClient();
 
+  // ── Scroll to top whenever we land on this page or switch tabs ──
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+
   const tabParam = searchParams.get('tab');
   const stepParam = searchParams.get('step');
   const sheetParam = searchParams.get('sheet');
