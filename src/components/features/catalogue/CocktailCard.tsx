@@ -8,35 +8,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Cocktail, AIVerdict } from '@/entities';
+import type { Cocktail } from '@/entities';
 import { getFruits } from '@/services/fruit';
 import {
   CocktailBanner,
   buildFruitVisuals,
+  shouldUseFruitCollage,
 } from '@/components/features/cocktail/CocktailBanner';
 
 // ── Ingredient summary helper ─────────────────────────────────────────────────
 
 export function ingredientSummary(cocktail: Cocktail): string {
   return cocktail.ingredients.map((i) => i.fruitName).join(' · ');
-}
-
-// ── AI verdict pill ───────────────────────────────────────────────────────────
-
-const VERDICT_STYLES: Record<AIVerdict, { label: string; className: string }> = {
-  beneficial:       { label: '✦ Bénéfique',        className: 'bg-emerald-500/90 text-white' },
-  neutral:          { label: '◈ Neutre',            className: 'bg-slate-500/90 text-white' },
-  caution:          { label: '⚠ Avec réserve',      className: 'bg-amber-500/90 text-white' },
-  not_recommended:  { label: '✕ Déconseillé',       className: 'bg-destructive/90 text-white' },
-};
-
-function VerdictPill({ verdict }: { verdict: AIVerdict }) {
-  const { label, className } = VERDICT_STYLES[verdict];
-  return (
-    <span className={`text-[9px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full backdrop-blur-sm ${className}`}>
-      {label}
-    </span>
-  );
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
@@ -53,17 +36,16 @@ type Props = {
 
 export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, onDelete }: Props) {
   const summary = ingredientSummary(cocktail);
-  const hasImage = !!cocktail.imageUrl;
+  const useCollage = shouldUseFruitCollage(cocktail);
 
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
     staleTime: 5 * 60_000,
-    enabled: showActions || !hasImage,
+    enabled: useCollage,
   });
 
   const fruitVisuals = buildFruitVisuals(cocktail.ingredients, fruits);
-  const useDynamicLabel = showActions || (!hasImage && fruitVisuals.length > 0);
 
   return (
     <div
@@ -73,7 +55,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
       {/* ── Image zone ── */}
       <div className="relative h-52 overflow-hidden">
 
-        {useDynamicLabel ? (
+        {useCollage && fruitVisuals.length > 0 ? (
           <CocktailBanner
             cocktailName={cocktail.name}
             fruits={fruitVisuals}
@@ -81,7 +63,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
             heightClass="h-full"
             className="absolute inset-0 scale-100 group-hover:scale-105 transition-transform duration-700 origin-center"
           />
-        ) : hasImage ? (
+        ) : cocktail.imageUrl ? (
           <div
             className="absolute inset-0 bg-cover bg-center scale-100 group-hover:scale-105 transition-transform duration-700"
             style={{ backgroundImage: `url('${cocktail.imageUrl}')` }}
@@ -114,13 +96,6 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
                 <Lock className="size-3" /> Privé
               </Badge>
             )}
-          </div>
-        )}
-
-        {/* AI verdict — top right (catalogue, when analysis present) */}
-        {!showActions && cocktail.aiAnalysis && (
-          <div className="absolute top-3 right-3 z-10">
-            <VerdictPill verdict={cocktail.aiAnalysis.verdict} />
           </div>
         )}
 

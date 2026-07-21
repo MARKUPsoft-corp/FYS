@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CocktailType, type Cocktail } from '@/entities';
 import { cn } from '@/lib/utils';
 
 export type FruitVisual = {
@@ -277,9 +278,15 @@ export function buildFruitVisuals(
 }
 
 export function pickCocktailCoverUrl(
-  cocktailImageUrl: string | undefined | null,
+  cocktail: Pick<Cocktail, 'type' | 'imageUrl'>,
   fruitImageUrls: string[],
 ): string | undefined {
-  if (cocktailImageUrl) return cocktailImageUrl;
+  if (cocktail.type === CocktailType.CUSTOM) return undefined;
+  if (cocktail.imageUrl) return cocktail.imageUrl;
   return fruitImageUrls.find(Boolean);
+}
+
+/** Collage multi-fruits pour les créations perso ; photo pour le catalogue admin. */
+export function shouldUseFruitCollage(cocktail: Pick<Cocktail, 'type' | 'imageUrl'>): boolean {
+  return cocktail.type === CocktailType.CUSTOM || !cocktail.imageUrl;
 }

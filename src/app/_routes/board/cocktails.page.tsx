@@ -18,6 +18,7 @@ import {
   getCocktailById,
 } from '@/services/cocktail';
 import { CocktailCard } from '@/components/features/catalogue/CocktailCard';
+import { CatalogueOrderSheet } from '@/components/features/catalogue/CatalogueOrderSheet';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
@@ -173,11 +174,10 @@ const Cocktails: PageComponent = () => {
         )}
 
         {orderTarget && user && (
-          <OrderSheet
+          <CatalogueOrderSheet
             cocktail={orderTarget}
             open={!!orderTarget}
             onOpenChange={closeCocktailSheet}
-            user={user}
           />
         )}
       </BoardPageShell>
@@ -308,12 +308,20 @@ const Cocktails: PageComponent = () => {
       </BoardPageShell>
 
       {orderTarget && user && (
-        <OrderSheet
-          cocktail={orderTarget}
-          open={!!orderTarget}
-          onOpenChange={closeCocktailSheet}
-          user={user}
-        />
+        orderTarget.createdBy !== user.uid ? (
+          <CatalogueOrderSheet
+            cocktail={orderTarget}
+            open={!!orderTarget}
+            onOpenChange={closeCocktailSheet}
+          />
+        ) : (
+          <OrderSheet
+            cocktail={orderTarget}
+            open={!!orderTarget}
+            onOpenChange={closeCocktailSheet}
+            user={user}
+          />
+        )
       )}
 
       <Dialog open={!!toDelete} onOpenChange={(open: boolean) => !open && setToDelete(null)}>

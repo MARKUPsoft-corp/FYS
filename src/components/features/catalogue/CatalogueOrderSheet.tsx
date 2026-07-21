@@ -16,6 +16,7 @@ import {
   type Cocktail,
   type AIAnalysis,
   type Fruit,
+  CocktailType,
 } from '@/entities';
 import { analyzeCocktail } from '@/services/ai';
 import { cloneCocktailFromCatalogue } from '@/services/cocktail';
@@ -139,7 +140,8 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
         },
         deliveryDetails,
         {
-          cocktailImageSnapshot: cocktail!.imageUrl,
+          cocktailImageSnapshot:
+            cocktail!.type === CocktailType.CATALOG ? cocktail!.imageUrl : undefined,
           ingredientImageSnapshots: cocktail!.ingredients.map(
             (ing) => fruits.find((f) => f.id === ing.fruitId)?.imageUrl ?? '',
           ),
@@ -170,22 +172,6 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   return (
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
-
-        {/* Cocktail image banner */}
-        {cocktail.imageUrl && (
-          <div className="relative h-44 shrink-0 overflow-hidden">
-            <div
-              className="absolute inset-0 bg-cover bg-center scale-100 transition-transform duration-700"
-              style={{ backgroundImage: `url('${cocktail.imageUrl}')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-            {cocktail.tag && (
-              <div className="absolute top-4 left-4 bg-secondary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow">
-                {cocktail.tag}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Header */}
         <SheetHeader className="px-6 pt-5 pb-0 shrink-0">

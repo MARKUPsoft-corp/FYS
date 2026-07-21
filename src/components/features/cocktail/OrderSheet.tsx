@@ -68,7 +68,7 @@ export function OrderSheet({
     .map((f) => f.imageUrl)
     .filter((u): u is string => !!u);
 
-  const coverUrl = pickCocktailCoverUrl(cocktail.imageUrl, fruitImageUrls);
+  const coverUrl = pickCocktailCoverUrl(cocktail, fruitImageUrls);
 
   useEffect(() => {
     setCustomName(cocktail.name);

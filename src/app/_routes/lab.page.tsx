@@ -325,10 +325,6 @@ const FysLab: PageComponent = () => {
     if (!user || selectedIngredients.size === 0) return null;
     const ingredients = buildIngredients();
     const base = pricing?.bottle500mlBase ?? 1500;
-    const fruitUrls = ingredients
-      .map((ing) => fruits.find((f) => f.id === ing.fruitId)?.imageUrl)
-      .filter((u): u is string => !!u);
-    const imageUrl = fruitUrls[0];
     return {
       id: 'draft',
       name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || 'Création FYS',
@@ -339,7 +335,6 @@ const FysLab: PageComponent = () => {
       ingredients,
       basePrice: base,
       totalPrice: defaultBottleTotal,
-      ...(imageUrl ? { imageUrl } : {}),
       ...(analysis ? { aiAnalysis: analysis } : {}),
     } as Cocktail;
   }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing]);
@@ -350,9 +345,6 @@ const FysLab: PageComponent = () => {
     try {
       const ingredients = buildIngredients();
       const base = pricing?.bottle500mlBase ?? 1500;
-      const fruitUrls = ingredients
-        .map((ing) => fruits.find((f) => f.id === ing.fruitId)?.imageUrl)
-        .filter((u): u is string => !!u);
       const cocktailId = await createCocktail({
         name: cocktailName.trim(),
         type: CocktailType.CUSTOM,
@@ -362,7 +354,6 @@ const FysLab: PageComponent = () => {
         ingredients,
         basePrice: base,
         totalPrice: defaultBottleTotal,
-        ...(fruitUrls[0] ? { imageUrl: fruitUrls[0] } : {}),
         ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
