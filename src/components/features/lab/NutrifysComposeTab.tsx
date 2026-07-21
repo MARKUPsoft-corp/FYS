@@ -29,8 +29,6 @@ import { cn } from '@/lib/utils';
 
 
 
-
-
 const EXAMPLE_PROMPTS = [
   'Un cocktail riche en vitamine C',
   'Quel mix pour un sportif ?',
@@ -51,6 +49,23 @@ type Props = {
 
 const WELCOME_MESSAGE =
   'Bonjour ! Je suis NutriFYS, votre assistant nutritionnel. Décrivez ce que vous recherchez — énergie, digestion, immunité, récupération — et je composerai un cocktail adapté à votre profil de santé.';
+
+/** Typewriter hook — reveals text character by character. */
+function useTypewriter(text: string, enabled: boolean, speed = 18) {
+  const [displayed, setDisplayed] = useState(enabled ? '' : text);
+  useEffect(() => {
+    if (!enabled) { setDisplayed(text); return; }
+    setDisplayed('');
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, enabled, speed]);
+  return displayed;
+}
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -91,14 +106,28 @@ function ProposalMessageBubble({
   message,
   onAnalyze,
   fruitsCatalog,
+  isNew,
 }: {
   message: Extract<ChatMessageEntity, { type: 'proposal' }>;
   onAnalyze: (proposal: CocktailProposal) => void;
   fruitsCatalog: Fruit[];
+  isNew?: boolean;
 }) {
   const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS));
   const [supplementIds, setSupplementIds] = useState(message.proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS));
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [cardVisible, setCardVisible] = useState(!isNew);
+
+  const typewrittenContent = useTypewriter(message.content, !!isNew, 6);
+
+  // Reveal the card once typing is done
+  useEffect(() => {
+    if (!isNew || cardVisible) return;
+    if (typewrittenContent.length >= message.content.length) {
+      const t = setTimeout(() => setCardVisible(true), 120);
+      return () => clearTimeout(t);
+    }
+  }, [typewrittenContent, message.content.length, isNew, cardVisible]);
 
   function toggleFruit(id: string) {
     setFruitIds((prev) => {
@@ -126,28 +155,32 @@ function ProposalMessageBubble({
   }
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-2 duration-400">
       <NutriFYSAuthorRow />
       <div className="rounded-2xl bg-card border border-border/60 text-foreground shadow-sm px-4 py-3 w-full">
         <p className="text-[15px] lg:text-base leading-relaxed font-medium mb-0">
           <HighlightedText
-            text={message.content}
+            text={typewrittenContent}
             proposal={message.proposal}
             fruitsCatalog={fruitsCatalog}
             onTermClick={handleTermClick}
           />
         </p>
-        <CocktailProposalCard
-          proposal={message.proposal}
-          fruitIds={fruitIds}
-          supplementIds={supplementIds}
-          onToggleFruit={toggleFruit}
-          onToggleSupplement={toggleSupplement}
-          onAnalyze={onAnalyze}
-          pulseId={pulseId}
-          onTermClick={handleTermClick}
-          fruitsCatalog={fruitsCatalog}
-        />
+        {cardVisible && (
+          <div className="animate-in fade-in slide-in-from-bottom-3 duration-700">
+            <CocktailProposalCard
+              proposal={message.proposal}
+              fruitIds={fruitIds}
+              supplementIds={supplementIds}
+              onToggleFruit={toggleFruit}
+              onToggleSupplement={toggleSupplement}
+              onAnalyze={onAnalyze}
+              pulseId={pulseId}
+              onTermClick={handleTermClick}
+              fruitsCatalog={fruitsCatalog}
+            />
+          </div>
+        )}
       </div>
       <span className="text-[10px] text-muted-foreground mt-1 ml-1">
         {formatTime(message.timestamp)}
@@ -160,10 +193,12 @@ function ChatBubble({
   message,
   onAnalyze,
   fruitsCatalog,
+  isNew,
 }: {
   message: ChatMessageEntity;
   onAnalyze: (proposal: CocktailProposal) => void;
   fruitsCatalog: Fruit[];
+  isNew?: boolean;
 }) {
   if (message.type === 'proposal') {
     return (
@@ -171,18 +206,20 @@ function ChatBubble({
         message={message as Extract<ChatMessageEntity, { type: 'proposal' }>}
         onAnalyze={onAnalyze}
         fruitsCatalog={fruitsCatalog}
+        isNew={isNew}
       />
     );
   }
 
   const isAssistant = message.role === 'assistant';
+  const typewrittenContent = useTypewriter(message.content, !!isNew && isAssistant, 6);
 
   if (isAssistant) {
     return (
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-2 duration-400">
         <NutriFYSAuthorRow />
         <div className="rounded-2xl bg-card border border-border/60 text-foreground shadow-sm px-4 py-3.5 text-[15px] lg:text-base leading-relaxed font-medium w-full">
-          <HighlightedText text={message.content} fruitsCatalog={fruitsCatalog} />
+          <HighlightedText text={typewrittenContent} fruitsCatalog={fruitsCatalog} />
         </div>
         <span className="text-[10px] text-muted-foreground mt-1 ml-1">
           {formatTime(message.timestamp)}
@@ -309,6 +346,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [latestAssistantId, setLatestAssistantId] = useState<string | null>(null);
   const [profile, setProfile] = useState<HealthProfile | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -345,6 +383,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   /** Start a fresh conversation (resets state, no Firestore session yet) */
   function startNewConversation() {
     setCurrentSessionId(null);
+    setLatestAssistantId(null);
     setMessages([createTextMessage('assistant', WELCOME_MESSAGE)]);
     setIsHistoryOpen(false);
   }
@@ -358,6 +397,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
       if (msgs.length > 0) {
         setMessages(msgs);
         setCurrentSessionId(sessionId);
+        setLatestAssistantId(null); // don't replay typewriter for history
       }
       setIsHistoryOpen(false);
     } catch (e) {
@@ -420,6 +460,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
         : createTextMessage('assistant', aiReply.text);
 
       setMessages((prev) => [...prev, replyMsg]);
+      setLatestAssistantId(replyMsg.id);
 
       if (user && sessionId) {
         saveChatMessageToSession(user.uid, sessionId, userMsg).catch(console.error);
@@ -449,9 +490,9 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
         <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100vh-200px)]">
           <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70vh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-24 lg:mb-0">
 
-            <div className="bg-emerald-900/40 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
+            <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center border border-accent/30">
+                <div className="size-10 rounded-full bg-white/15 flex items-center justify-center border border-white/20">
                   <Sparkles className="size-4 text-[#E0982E]" />
                 </div>
                 <div>
@@ -622,6 +663,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                   message={msg}
                   onAnalyze={onAnalyzeProposal}
                   fruitsCatalog={fruits}
+                  isNew={msg.id === latestAssistantId}
                 />
               ))}
 

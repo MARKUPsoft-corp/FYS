@@ -177,13 +177,14 @@ export function CocktailProposalCard({
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {fruits.map((fruit) => {
+          {fruits.map((fruit, i) => {
             const selected = fruitIds.includes(fruit.id);
             const disabled = !selected && atMaxFruits;
             return (
             <div
               key={fruit.id}
-              className={cn(pulseId === fruit.id && 'animate-pulse')}
+              className={cn(pulseId === fruit.id && 'animate-pulse', 'animate-in fade-in slide-in-from-bottom-1 duration-300')}
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <IngredientTile
                 item={fruit}
@@ -209,11 +210,11 @@ export function CocktailProposalCard({
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {supplements.map((sup) => {
+            {supplements.map((sup, i) => {
               const selected = supplementIds.includes(sup.id);
               const disabled = !selected && atMaxSupplements;
               return (
-              <div key={sup.id} className={cn(pulseId === sup.id && 'animate-pulse')}>
+              <div key={sup.id} className={cn(pulseId === sup.id && 'animate-pulse', 'animate-in fade-in slide-in-from-bottom-1 duration-300')} style={{ animationDelay: `${i * 60}ms` }}>
                 <IngredientTile
                   item={sup}
                   variant="supplement"
@@ -228,11 +229,12 @@ export function CocktailProposalCard({
         </div>
       )}
 
-      <div className="px-4 py-2 flex flex-wrap gap-1.5">
-        {proposal.benefits.map((b) => (
+      <div className="px-4 py-2 flex flex-wrap gap-1.5 animate-in fade-in duration-500" style={{ animationDelay: '200ms' }}>
+        {proposal.benefits.map((b, i) => (
           <span
             key={b}
-            className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-accent/30 text-accent-foreground border border-accent/40"
+            className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-accent/30 text-accent-foreground border border-accent/40 animate-in zoom-in-90 duration-300"
+            style={{ animationDelay: `${200 + i * 60}ms` }}
           >
             {b}
           </span>

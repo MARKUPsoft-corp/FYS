@@ -14,16 +14,36 @@ const RootIndex: PageComponent = () => {
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 animate-in fade-in zoom-in-95 duration-1000">
-      <div className="relative">
-        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse" />
-        <div className="relative size-20 rounded-[1.5rem] bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-xl shadow-primary/30 animate-bounce">
-          <span className="font-display font-extrabold text-white text-4xl tracking-tight">F</span>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 animate-in fade-in duration-700">
+      {/* Orbital FYS Logo */}
+      <style>{`
+        @keyframes orbit {
+          from { transform: rotate(0deg) translateX(44px) rotate(0deg); }
+          to   { transform: rotate(360deg) translateX(44px) rotate(-360deg); }
+        }
+        .fys-orbit-dot {
+          animation: orbit 2s linear infinite;
+        }
+        @keyframes fys-logo-pulse {
+          0%, 100% { transform: scale(1); }
+          50%       { transform: scale(1.04); }
+        }
+        .fys-logo-text { animation: fys-logo-pulse 2s ease-in-out infinite; }
+      `}</style>
+      <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
+        {/* Glow halo */}
+        <div className="absolute inset-0 bg-primary/15 blur-2xl rounded-full scale-125" />
+        {/* FYS wordmark */}
+        <div className="fys-logo-text relative z-10 flex items-end justify-center gap-0.5">
+          <span className="font-display font-extrabold text-primary text-5xl leading-none tracking-tight">FYS</span>
+          <span className="size-2.5 rounded-full bg-secondary mb-0.5 shrink-0 fys-orbit-dot absolute" />
         </div>
       </div>
-      <div className="flex items-center gap-1.5 opacity-80">
-        <div className="size-2 rounded-full bg-primary animate-ping" />
-        <span className="text-sm font-semibold text-muted-foreground tracking-widest uppercase">Chargement</span>
+      {/* Loading indicator */}
+      <div className="flex items-center gap-2 opacity-70">
+        <div className="size-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="size-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="size-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   );
