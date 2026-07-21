@@ -51,8 +51,14 @@ const WELCOME_MESSAGE =
   'Bonjour ! Je suis NutriFYS, votre assistant nutritionnel. Décrivez ce que vous recherchez — énergie, digestion, immunité, récupération — et je composerai un cocktail adapté à votre profil de santé.';
 
 /** Typewriter hook — reveals text character by character. */
-function useTypewriter(text: string, enabled: boolean, speed = 18) {
+function useTypewriter(text: string, enabled: boolean, speed = 18, onTick?: () => void) {
   const [displayed, setDisplayed] = useState(enabled ? '' : text);
+  const onTickRef = useRef(onTick);
+  
+  useEffect(() => {
+    onTickRef.current = onTick;
+  }, [onTick]);
+
   useEffect(() => {
     if (!enabled) { setDisplayed(text); return; }
     setDisplayed('');
@@ -60,6 +66,7 @@ function useTypewriter(text: string, enabled: boolean, speed = 18) {
     const id = setInterval(() => {
       i++;
       setDisplayed(text.slice(0, i));
+      onTickRef.current?.();
       if (i >= text.length) clearInterval(id);
     }, speed);
     return () => clearInterval(id);
@@ -118,7 +125,14 @@ function ProposalMessageBubble({
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [cardVisible, setCardVisible] = useState(!isNew);
 
-  const typewrittenContent = useTypewriter(message.content, !!isNew, 6);
+  const typewrittenContent = useTypewriter(message.content, !!isNew, 6, () => {
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+    } else {
+      const el = document.getElementById('chat-scroll-container');
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+    }
+  });
 
   // Reveal the card once typing is done
   useEffect(() => {
@@ -212,7 +226,14 @@ function ChatBubble({
   }
 
   const isAssistant = message.role === 'assistant';
-  const typewrittenContent = useTypewriter(message.content, !!isNew && isAssistant, 6);
+  const typewrittenContent = useTypewriter(message.content, !!isNew && isAssistant, 6, () => {
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+    } else {
+      const el = document.getElementById('chat-scroll-container');
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+    }
+  });
 
   if (isAssistant) {
     return (
@@ -657,7 +678,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
               </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 min-h-0 lg:overflow-y-auto lg:overscroll-contain px-2 lg:px-4 py-5 space-y-5">
+            <div id="chat-scroll-container" ref={scrollRef} className="flex-1 min-h-0 lg:overflow-y-auto lg:overscroll-contain px-2 lg:px-4 py-5 space-y-5">
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}
