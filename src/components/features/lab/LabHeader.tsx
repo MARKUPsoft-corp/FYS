@@ -31,7 +31,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   return (
     <div
       className={cn(
-        'relative flex flex-col justify-end pb-6 overflow-hidden',
+        'relative flex flex-col justify-end pb-6 pt-[env(safe-area-inset-top)] overflow-hidden',
         compact ? 'px-3 lg:px-5' : 'px-5 lg:px-16',
       )}
       style={{

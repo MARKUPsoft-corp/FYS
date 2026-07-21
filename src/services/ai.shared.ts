@@ -317,8 +317,11 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
   const knowledgeContext = buildKnowledgeContext([], profile);
 
   // Build a rich fruit catalog from real Firestore data
-  const fruitCatalog = fruits.length > 0
-    ? fruits.map((f) => {
+  const mainFruits = fruits.filter(f => !f.isSupplement);
+  const supplements = fruits.filter(f => f.isSupplement);
+
+  const fruitCatalog = mainFruits.length > 0
+    ? mainFruits.map((f) => {
       const gi = f.glycemicIndex?.badge ?? 'non spécifié';
       const benefits = f.benefits?.length ? f.benefits.join(', ') : 'non spécifié';
       const warnings = f.warnings?.length ? f.warnings.join(', ') : 'aucun';
@@ -328,7 +331,12 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
     }).join('\n')
     : '(Aucun fruit chargé — demande à l\'utilisateur de revenir plus tard)';
 
-  const fruitIds = fruits.map(f => f.id).join(', ');
+  const fruitIds = mainFruits.map(f => f.id).join(', ');
+
+  const supplementCatalog = supplements.length > 0
+    ? supplements.map((s) => `  • ${s.name} [id: ${s.id}] — Bénéfices: ${s.benefits?.join(', ') || 'non spécifié'}`).join('\n')
+    : '(Aucun supplément chargé)';
+  const supplementIds = supplements.map(s => s.id).join(', ');
 
   return `Tu es NutriFYS, un assistant nutritionniste expert spécialisé dans les cocktails de fruits santé de FYS entrainé par les experts du domaine. Tu as une profonde maîtrise de la biochimie nutritionnelle, des interactions entre nutriments, et de l\'impact des aliments sur le corps humain. Mais tu es aussi un excellent pédagogue — tu adores expliquer la nutrition simplement, comme si tu parlais à quelqu\'un qui ne connaît rien au domaine.
 
@@ -348,9 +356,17 @@ ${knowledgeContext}
 CATALOGUE DES FRUITS DISPONIBLES AUJOURD\'HUI (données temps réel FYS):
 ${fruitCatalog}
 
+CATALOGUE DES SUPPLÉMENTS DISPONIBLES:
+${supplementCatalog}
+
 FRUIT IDs VALIDES POUR LE CHAMP "proposal.fruitIds": [${fruitIds}]
-SUPPLÉMENTS DISPONIBLES: gingembre, menthe, curcuma, chia, miel
-(Utilise ces identifiants EXACTS dans le champ proposal.fruitIds et proposal.supplementIds)
+SUPPLEMENT IDs VALIDES POUR LE CHAMP "proposal.supplementIds": [${supplementIds}]
+
+RÈGLE D'OR GUSTATIVE (LE GOÛT EST PRIMORDIAL):
+- Ne propose JAMAIS un cocktail purement utilitaire sans base douce (ex: Gingembre + Épinard + Spiruline est imbuvable).
+- Un cocktail FYS doit TOUJOURS contenir une majorité (60-80%) de fruits de BASE juteux et doux (Pomme, Orange, Carotte, Pastèque, etc.).
+- Les suppléments et boosters (Gingembre, Curcuma, Menthe, Céleri...) renforcent l'efficacité santé mais ont un goût extrêmement fort ! Ils ne doivent jamais dominer le cocktail.
+- Assure l'équilibre : une base douce d'abord, un accent typé ensuite, et potentiellement un micro-booster pour terminer.
 
 DIRECTIVES DE CONSULTATION :
 1. NE TE PRÉSENTE PAS à chaque réponse. Seulement au tout début d\'une nouvelle conversation (historique vide).

@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import {
   getVerdictColor,
   getVerdictLabel,
-  resolveProposalItems,
   type CocktailProposal,
 } from '@/data/nutrifys-chat';
 import { getLabItemById } from '@/data/lab-items';
@@ -134,16 +133,7 @@ export function CocktailProposalCard({
 }: Props) {
   // Toujours afficher les fruits de la proposal ; la sélection se gère via selected=
   const fruits = resolveFruitDisplays(proposal.fruitIds, fruitsCatalog);
-  // Suppléments : catalogue lab statique (pas d'images Cloudinary pour l'instant)
-  const { supplements: labSupplements } = resolveProposalItems({
-    ...proposal,
-    fruitIds: [],
-  });
-  const supplements: DisplayItem[] = labSupplements.map((s) => ({
-    id: s.id,
-    name: s.name,
-    emoji: s.emoji,
-  }));
+  const supplements = resolveFruitDisplays(proposal.supplementIds, fruitsCatalog);
 
   const verdictColor = getVerdictColor(proposal.verdict);
   const activeProposal = buildProposalSelection(proposal, fruitIds, supplementIds);
