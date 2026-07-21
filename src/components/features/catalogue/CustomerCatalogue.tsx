@@ -62,8 +62,8 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
         sectionBefore="Nos"
         sectionHighlight="Créations"
         subtitle="Inspirés par la nature, validés par votre goût."
-        imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"
-        imagePosition="center top"
+        imageUrl="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        imagePosition="center 70%"
         actions={
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />

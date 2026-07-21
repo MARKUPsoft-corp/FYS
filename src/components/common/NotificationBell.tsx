@@ -131,10 +131,9 @@ export function NotificationBell() {
               <SheetClose asChild>
                 <button
                   type="button"
-                  className="text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 mt-0 px-2 py-1.5 rounded-md"
+                  className="flex items-center justify-center size-8 rounded-xl bg-muted/60 hover:bg-muted border border-border/40 text-foreground transition-colors mt-0"
                 >
-                  <X className="size-3" />
-                  Fermer
+                  <X className="size-4" />
                 </button>
               </SheetClose>
             </div>

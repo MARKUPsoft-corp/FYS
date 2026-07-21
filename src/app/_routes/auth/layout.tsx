@@ -13,19 +13,19 @@ const AuthLayout: LayoutComponent = () => {
   }, [user, loading]);
 
   return (
-    <div className="min-h-screen bg-[#1a1f1b] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Glow top left */}
-      <div 
-        className="absolute -top-[80px] -left-[80px] w-[320px] h-[320px] pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(63,109,78,.45) 0%, transparent 70%)' }}
-      />
-      {/* Glow bottom right */}
-      <div 
-        className="absolute -bottom-[60px] -right-[60px] w-[260px] h-[260px] pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(242,105,74,.15) 0%, transparent 70%)' }}
-      />
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Dark overlay to ensure text contrast and add background blur */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
       
-      <div className="relative z-10 w-full flex justify-center">
+      {/* Glassmorphism card wrapping the Auth contents */}
+      <div className="relative z-10 w-full max-w-md bg-black/30 backdrop-blur-lg border border-white/20 p-8 md:p-10 rounded-[2rem] shadow-2xl flex justify-center animate-in fade-in zoom-in-95 duration-500">
         <Outlet />
       </div>
     </div>

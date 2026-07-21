@@ -42,14 +42,14 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
         backgroundPosition: 'center',
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-[#28422F]/95 via-gray-900/85 to-gray-950/95" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-background/90 to-background dark:from-[#28422F]/95 dark:via-background/85 dark:to-background" />
 
       <div className={cn('relative z-10 mx-auto w-full', compact ? 'max-w-[1480px]' : 'max-w-6xl')}>
         <div className="flex items-center justify-between mt-5 mb-4 w-full">
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center text-white/80 hover:text-white transition-colors text-sm font-medium"
+            className="inline-flex items-center text-foreground bg-background/80 backdrop-blur-sm shadow-sm rounded-full px-3 py-1.5 hover:bg-background transition-colors text-sm font-semibold"
           >
             <ChevronLeft className="size-4 mr-1" /> Retour
           </button>
@@ -61,13 +61,13 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
 
         <div className="flex flex-col lg:flex-row items-center lg:justify-between gap-5 text-center lg:text-left mb-3">
           <div>
-            <h1 className="font-display font-extrabold text-[2rem] lg:text-5xl text-white flex items-center justify-center lg:justify-start gap-2 mb-1">
-              FYS Lab <Sparkles className="size-6 text-secondary" />
+            <h1 className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
+              FYS <span className="text-primary">Lab</span>
             </h1>
-            <p className="text-white/70 text-sm font-medium">Votre jus, validé par NutriFYS</p>
+            <p className="text-muted-foreground text-sm font-medium">Votre jus, validé par NutriFYS</p>
           </div>
 
-          <div className="flex bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/10 shadow-inner w-fit mx-auto lg:mx-0">
+          <div className="flex bg-muted/40 backdrop-blur-md rounded-2xl p-1 border border-border/20 shadow-inner w-fit mx-auto lg:mx-0">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
 
@@ -78,22 +78,22 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                     type="button"
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      'flex flex-col items-center justify-center px-4 py-1.5 rounded-xl transition-colors whitespace-nowrap',
-                      isActive ? 'bg-white shadow-sm' : 'text-white/70 hover:text-white',
+                      'flex flex-col items-center justify-center px-5 py-2 rounded-xl transition-colors whitespace-nowrap',
+                      isActive ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground',
                     )}
                   >
                     <span
                       className={cn(
                         'text-[7.5px] lg:text-[8px] uppercase font-bold tracking-widest leading-none mb-0.5 flex items-center gap-0.5',
-                        isActive ? 'text-[#E0982E]' : 'text-[#E0982E]',
+                        'text-secondary', // Ensure it uses the orange semantic color
                       )}
                     >
                       NutriFYS <Sparkles className="size-2.5" />
                     </span>
                     <span
                       className={cn(
-                        'text-[10px] lg:text-[11px] font-medium leading-none',
-                        isActive ? 'text-gray-950' : '',
+                        'text-xs lg:text-sm font-semibold leading-none',
+                        isActive ? 'text-card-foreground' : '',
                       )}
                     >
                       compose
@@ -108,10 +108,10 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    'px-5 py-2.5 text-[11px] lg:text-xs rounded-xl transition-colors whitespace-nowrap',
+                    'px-6 py-3 text-xs lg:text-sm rounded-xl transition-colors whitespace-nowrap',
                     isActive
-                      ? 'bg-white text-gray-950 font-bold shadow-sm'
-                      : 'font-medium text-white/70 hover:text-white',
+                      ? 'bg-card text-card-foreground font-bold shadow-sm'
+                      : 'font-semibold text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {tab.label}

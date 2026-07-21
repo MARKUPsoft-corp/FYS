@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PageComponent, useNavigate, Link } from 'rasengan';
+import { PageComponent, useNavigate } from 'rasengan';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +60,7 @@ const Login: PageComponent = () => {
   return (
     <div className="w-full max-w-sm flex flex-col">
       <div className="text-center mb-10">
-        <h1 className="font-display text-4xl font-bold text-white mb-2">Connexion</h1>
+        <h1 className="font-display text-4xl font-bold text-primary mb-2">Connexion</h1>
         <p className="text-white/70">Retrouve tes jus et ton profil santé.</p>
       </div>
 
@@ -130,12 +130,6 @@ const Login: PageComponent = () => {
             {loading && <Loader2 className="size-5 animate-spin mr-3" />}
             Se connecter
           </Button>
-          <p className="text-sm text-white/60 text-center">
-            Pas encore de compte ?{' '}
-            <Link to="/auth/register" className="text-white font-bold hover:underline">
-              Créer un compte
-            </Link>
-          </p>
         </div>
       </div>
     </div>
