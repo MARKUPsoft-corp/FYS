@@ -168,6 +168,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant ni après) :
   "score": <entier 0-100>,
   "suggestedName": "<nom créatif court en français pour ce cocktail, 2 à 4 mots max, sans guillemets>",
   "notes": "<2-3 phrases en français, spécifiques à ce mélange et ce profil>",
+  "tasteAdvice": "<1 phrase factuelle sur l'équilibre des saveurs — si le goût risque d'être trop fort/amer/piquant, dis-le clairement et suggère une correction (ex : 'Avec autant de gingembre, ce mix sera très piquant. Réduisez sa proportion à moins de 10% du total pour un résultat agréable.')>. Si l'équilibre est bon, mets null.",
   "profilNutritionnel": {
     "vitamineC":     { "pourcentage": <0-100>, "valeur": "<X mg>" },
     "vitamineA":     { "pourcentage": <0-100>, "valeur": "<X µg>" },
@@ -188,7 +189,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant ni après) :
 Règles de verdict :
 - "beneficial" : mélange bien adapté au profil et aux objectifs
 - "neutral" : acceptable, sans bénéfice ni risque notable
-- "caution" : bénéfice présent mais précaution notable
+- "caution" : bénéfice présent mais précaution notable (y compris mauvais équilibre gustatif)
 - "not_recommended" : conflit avec une condition, allergie ou contre-indication
 - score = bénéfice santé global (100 = excellent, 0 = contre-indiqué)
 - suggestedName : invente un nom original et appétissant (jamais "Mon cocktail", "Cocktail personnalisé" ou générique)
@@ -197,6 +198,12 @@ Règles de verdict :
 - interactionsFruits : 2-3 points max sur les synergies chimiques ou nutritionnelles entre fruits du mélange
 - conseil : pratique et personnalisé (ex. heure, fréquence, à jeun ou non, chaud/froid, association recommandée)
 - Intègre les règles NutriFYS ci-dessus dans ton analyse
+
+RÈGLE D'ÉQUILIBRE GUSTATIF — OBLIGATOIRE :
+Évalue le ratio entre fruits BASE (doux, juteux : pomme, orange, mangue, pastèque, carotte, ananas...) et BOOSTERS (goût fort : gingembre, céleri, curcuma, menthe, spiruline, piment...).
+- Si les BOOSTERS représentent plus de 25% du poids total → tasteAdvice doit ABSOLUMENT signaler que le goût sera écrasant et inconfortable.
+- Si aucun fruit de base doux n'est présent → tasteAdvice doit le signaler (mélange amer/végetale imbuvable).
+- Si l'équilibre est 70%+ de bases douces et ≤15% de boosters → tasteAdvice peut être null.
 
 LANGAGE — RÈGLE ABSOLUE:
 Le client qui lira cette analyse n'est pas médecin ni nutritionniste. Rédige TOUS les champs textes (notes, interactionsFruits, conseil) dans un langage simple et accessible, comme si tu expliquais à un ami.
