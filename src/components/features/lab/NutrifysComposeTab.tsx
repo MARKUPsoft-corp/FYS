@@ -489,7 +489,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
 
         {/* Desktop : sticky plein écran dès que le haut de la box atteint le viewport */}
         <div className="flex-1 min-w-0 w-full lg:sticky lg:sticky-top-safe lg:self-start lg:z-30 lg:h-[calc(100dvh-var(--sat)-var(--sab))]">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-full overflow-hidden relative mb-chat-bar lg:mb-0 min-h-[min(70dvh,calc(100dvh-var(--sat)-var(--sab)-11rem))] max-h-[calc(100dvh-var(--sat)-var(--sab)-11rem)] lg:min-h-0 lg:max-h-none">
+          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col relative mb-[120px] lg:mb-0 lg:h-full lg:overflow-hidden">
 
             <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky sticky-top-safe lg:static z-40">
               <div className="flex items-center gap-3">
@@ -657,7 +657,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
               </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 lg:px-4 py-5 space-y-5">
+            <div ref={scrollRef} className="flex-1 min-h-0 lg:overflow-y-auto lg:overscroll-contain px-2 lg:px-4 py-5 space-y-5">
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}
