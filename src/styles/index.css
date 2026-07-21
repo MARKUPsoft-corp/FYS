@@ -77,6 +77,19 @@ html {
   .max-h-screen-safe {
     max-height: calc(100dvh - var(--sat) - var(--sab));
   }
+  /* Sticky headers below iPhone notch */
+  .sticky-top-safe {
+    top: var(--sat);
+  }
+}
+
+/* Kage Demo — flat overlay, charte FYS */
+.kage-demo-overlay {
+  background: rgba(42, 36, 29, 0.52) !important;
+  backdrop-filter: blur(3px);
+}
+.kage-demo-tooltip {
+  z-index: 10000;
 }
 
 @theme inline {
@@ -217,5 +230,14 @@ html {
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+  }
+
+  /* iOS Safari: inputs < 16px trigger auto-zoom on focus */
+  @supports (-webkit-touch-callout: none) {
+    textarea,
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']),
+    select {
+      font-size: max(16px, 1rem);
+    }
   }
 }

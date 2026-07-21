@@ -53,7 +53,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
           >
             <ChevronLeft className="size-4 mr-1" /> Retour
           </button>
-          <div className="flex items-center gap-3">
+          <div id="tour-lab-notifications" className="flex items-center gap-3">
             <ButtonTheme />
             <NotificationBell />
           </div>
@@ -61,13 +61,13 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
 
         <div className="flex flex-col lg:flex-row items-center lg:justify-between gap-5 text-center lg:text-left mb-3">
           <div>
-            <h1 className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
+            <h1 id="tour-lab-title" className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
               FYS <span className="text-primary">Lab</span>
             </h1>
             <p className="text-muted-foreground text-sm font-medium">Votre jus, validé par NutriFYS</p>
           </div>
 
-          <div className="flex bg-muted/40 backdrop-blur-md rounded-2xl p-1 border border-border/20 shadow-inner w-fit mx-auto lg:mx-0">
+          <div id="tour-lab-tabs" className="flex bg-muted/40 backdrop-blur-md rounded-2xl p-1 border border-border/20 shadow-inner w-fit mx-auto lg:mx-0">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
 

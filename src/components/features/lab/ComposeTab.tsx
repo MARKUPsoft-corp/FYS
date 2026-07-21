@@ -402,7 +402,7 @@ export function ComposeTab({
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start">
 
       <div className="flex-1 min-w-0 w-full">
-        <div className="sticky top-0 z-30 -mx-1 px-1 pt-2 pb-3 mb-3 bg-background/95 backdrop-blur-md border-b border-border/40">
+        <div id="tour-lab-stepper" className="sticky sticky-top-safe z-30 -mx-1 px-1 pt-2 pb-3 mb-3 bg-background/95 backdrop-blur-md border-b border-border/40">
           <ComposeStepper
             step={composeStep}
             onStepChange={onStepChange}
@@ -471,7 +471,7 @@ export function ComposeTab({
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div id="tour-lab-fruits" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
                 {mainFruits.map((fruit) => {
                   const isSelected = selectedIngredients.has(fruit.id);
                   const isDisabled = !isSelected && atMaxFruits;
@@ -540,7 +540,7 @@ export function ComposeTab({
                   value={cocktailName}
                   onChange={(e) => onNameChange(e.target.value)}
                   placeholder="Nom du cocktail…"
-                  className="h-11 rounded-xl text-sm font-semibold"
+                  className="h-11 rounded-xl text-base font-semibold"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1.5 px-0.5">
                   Nom généré par NutriFYS — vous pouvez le modifier
@@ -560,7 +560,7 @@ export function ComposeTab({
       </div>
 
       {/* ── Desktop save panel ── */}
-      <div className="hidden lg:block w-[360px] shrink-0">
+      <div id="tour-lab-save-panel" className="hidden lg:block w-[360px] shrink-0">
         <SavePanel
           composeStep={composeStep}
           onStepChange={onStepChange}
@@ -755,7 +755,7 @@ export function SavePanel({
             onChange={(e) => onNameChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && canSave && !saving && onSave()}
             placeholder="Nom du cocktail (NutriFYS)…"
-            className="h-10 rounded-xl text-sm"
+            className="h-10 rounded-xl text-base"
           />
           <p className="text-[10px] text-muted-foreground -mt-1">
             Suggéré par l&apos;IA — librement modifiable

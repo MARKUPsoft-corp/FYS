@@ -284,7 +284,7 @@ function ChatComposer({
           placeholder="Décrivez votre besoin…"
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none bg-transparent text-[15px] lg:text-base font-medium text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[36px] max-h-[120px] py-1.5 px-1 leading-snug"
+          className="flex-1 resize-none bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[36px] max-h-[120px] py-1.5 px-1 leading-snug"
         />
         <Button
           type="button"
@@ -488,9 +488,9 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
       <div className="flex flex-col lg:flex-row gap-5 items-start">
 
         <div className="flex-1 min-w-0 w-full flex flex-col h-auto lg:h-[calc(100dvh-200px)]">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col h-auto min-h-[70dvh] lg:h-full lg:max-h-[760px] lg:overflow-hidden relative mb-chat-bar lg:mb-0">
+          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col min-h-[min(70dvh,calc(100dvh-var(--sat)-var(--sab)-11rem))] max-h-[calc(100dvh-var(--sat)-var(--sab)-11rem)] lg:h-full lg:max-h-[760px] overflow-hidden relative mb-chat-bar lg:mb-0">
 
-            <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky top-0 lg:static z-40">
+            <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky sticky-top-safe lg:static z-40">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-white/15 flex items-center justify-center border border-white/20">
                   <Sparkles className="size-4 text-[#E0982E]" />
@@ -589,7 +589,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                                     value={editTitle}
                                     onChange={(e) => setEditTitle(e.target.value)}
                                     autoFocus
-                                    className="w-full text-sm font-semibold bg-background border border-primary/40 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50"
+                                    className="w-full text-base font-semibold bg-background border border-primary/40 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') handleRenameSubmit(session.id);
                                       if (e.key === 'Escape') setEditingSessionId(null);
@@ -656,7 +656,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
               </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 flex flex-col lg:overflow-y-auto px-2 lg:px-4 py-5 space-y-5">
+            <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 lg:px-4 py-5 space-y-5">
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}

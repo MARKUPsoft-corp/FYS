@@ -21,6 +21,8 @@ import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { PageTour, useIsDesktop } from '@/components/features/tour/ClientTour';
+import { buildLabTourSteps } from '@/components/features/tour/pages/lab-tour';
 
 const FysLab: PageComponent = () => {
   const { user } = useAuthStore();
@@ -58,6 +60,8 @@ const FysLab: PageComponent = () => {
   const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const recommendKeyRef = useRef<string>('');
+  const isDesktop = useIsDesktop();
+  const labTourSteps = useMemo(() => buildLabTourSteps(isDesktop), [isDesktop]);
 
   const { data: fruits = [], isLoading: fruitsLoading } = useQuery({
     queryKey: ['fruits'],
@@ -415,6 +419,12 @@ const FysLab: PageComponent = () => {
   }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
+    <PageTour
+      pageId="lab"
+      steps={labTourSteps}
+      canAutoStart={activeTab === 'compose' && !fruitsLoading}
+      autoStartDelay={1000}
+    >
     <div className="min-h-dvh bg-background overflow-x-clip">
       <LabHeader
         activeTab={activeTab}
@@ -464,7 +474,7 @@ const FysLab: PageComponent = () => {
 
       {/* ── Mobile sticky bottom bar ─────────────────────────────────────────── */}
       {activeTab === 'compose' && (
-        <div className="fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 fixed-bottom-safe z-50 rounded-t-3xl lg:hidden">
+        <div id="tour-lab-mobile-bar" className="fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 fixed-bottom-safe z-50 rounded-t-3xl lg:hidden">
           <div className="max-w-lg mx-auto space-y-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {[...selectedIngredients.keys()].map((fruitId) => {
@@ -576,6 +586,7 @@ const FysLab: PageComponent = () => {
         />
       )}
     </div>
+    </PageTour>
   );
 };
 

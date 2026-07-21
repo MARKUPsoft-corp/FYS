@@ -63,12 +63,12 @@ export function Topbar() {
     >
       <div className="h-20 flex items-center justify-between px-3 md:px-6 lg:px-12">
         <div className="flex shrink-0">
-          <Link to="/board" className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
+          <Link to="/board" id="tour-logo" className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
             FYS<span className="text-secondary">.</span>
           </Link>
         </div>
 
-        <nav className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-10">
+        <nav id="tour-desktop-nav" className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-10">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/board' && location.pathname.startsWith(item.path));
             return (
@@ -133,6 +133,7 @@ export function Topbar() {
           {user?.role === UserRole.CUSTOMER && (
             <Link
               to="/board/orders"
+              id="tour-orders"
               className={cn(
                 'relative flex items-center justify-center size-10 rounded-xl transition-all',
                 location.pathname.startsWith('/board/orders')
@@ -152,7 +153,7 @@ export function Topbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Avatar className="size-11 shadow-sm border-2 border-transparent hover:border-primary/40 cursor-pointer transition-all select-none">
+              <Avatar id="tour-avatar" className="size-11 shadow-sm border-2 border-transparent hover:border-primary/40 cursor-pointer transition-all select-none">
                 <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
                   {initials}
                 </AvatarFallback>

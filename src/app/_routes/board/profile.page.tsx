@@ -1,15 +1,18 @@
 import { PageComponent } from 'rasengan';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
-  AlertCircle, Loader2,
+  AlertCircle, Loader2, Compass,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
+import { useClientTour, PageTour } from '@/components/features/tour/ClientTour';
+import { buildProfileTourSteps } from '@/components/features/tour/pages/profile-tour';
+import { UserRole } from '@/entities';
 
 // ── Predefined options ────────────────────────────────────────────────────────
 
@@ -389,6 +392,7 @@ function ProfileChip({ label, variant = 'default' }: { label: string; variant?: 
 const Profile: PageComponent = () => {
   const { user } = useAuthStore();
   const { profile, loading, fetch } = useProfileStore();
+  const { startTour, isActive } = useClientTour();
   const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
@@ -400,6 +404,8 @@ const Profile: PageComponent = () => {
     : '?';
 
   const complete = isProfileComplete(profile);
+  const isCustomer = user?.role === UserRole.CUSTOMER;
+  const profileTourSteps = useMemo(() => buildProfileTourSteps(), []);
 
   const conditions = (profile?.healthConditions ?? []).filter(
     (c) => !c.toLowerCase().includes('aucune'),
@@ -418,6 +424,7 @@ const Profile: PageComponent = () => {
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
 
   return (
+    <PageTour pageId="profile" steps={profileTourSteps} autoStartDelay={700}>
     <div className="min-h-dvh bg-background pb-4">
 
       {/* Hero banner */}
@@ -445,7 +452,7 @@ const Profile: PageComponent = () => {
       <div className="px-3 md:px-4 space-y-6 mt-6">
 
         {/* Identity card */}
-        <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-start justify-between gap-4">
+        <div id="tour-profile-identity" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="font-display font-bold text-xl text-foreground truncate">
               {user?.name ?? '—'}
@@ -465,9 +472,34 @@ const Profile: PageComponent = () => {
           </Button>
         </div>
 
+        {/* App tour (clients only) */}
+        {isCustomer && (
+        <div id="tour-profile-app-tour" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center gap-4">
+          <div className="size-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+            <Compass className="size-6 text-secondary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-foreground">Visite guidée</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
+              Redécouvrez les essentiels de FYS en quelques étapes.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isActive}
+            onClick={startTour}
+            className="rounded-full font-bold border-border/60 shrink-0"
+          >
+            {isActive ? 'En cours…' : 'Lancer'}
+          </Button>
+        </div>
+        )}
+
         {/* Completion bar */}
         {!loading && (
-          <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
+          <div id="tour-profile-health" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">Complétude du profil santé</p>
               <span className="text-sm font-bold text-primary">{completionPct}%</span>
@@ -603,6 +635,7 @@ const Profile: PageComponent = () => {
         />
       )}
     </div>
+    </PageTour>
   );
 };
 

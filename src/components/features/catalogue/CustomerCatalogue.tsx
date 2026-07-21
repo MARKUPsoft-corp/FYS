@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { useSearchParams } from 'rasengan';
 import { CocktailCard } from './CocktailCard';
@@ -6,6 +6,8 @@ import { CatalogueOrderSheet } from './CatalogueOrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import type { Cocktail } from '@/entities';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { PageTour } from '@/components/features/tour/ClientTour';
+import { buildCatalogueTourSteps } from '@/components/features/tour/pages/catalogue-tour';
 
 type Props = {
   cocktails: Cocktail[];
@@ -53,7 +55,10 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
       c.name.toLowerCase().includes(query.toLowerCase()),
   );
 
+  const catalogueTourSteps = useMemo(() => buildCatalogueTourSteps(), []);
+
   return (
+    <PageTour pageId="catalogue" steps={catalogueTourSteps} autoStartDelay={700}>
     <>
       <BoardPageShell
         eyebrow="Nos créations"
@@ -65,7 +70,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
         imageUrl="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=1200"
         imagePosition="center 70%"
         actions={
-          <div className="relative">
+          <div id="tour-catalogue-search" className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
             <input
               type="text"
@@ -94,7 +99,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
             {query ? 'Aucun résultat pour cette recherche.' : 'Aucun cocktail disponible pour le moment.'}
           </p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+          <div id="tour-catalogue-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
             {visible.map((cocktail) => (
               <CocktailCard
                 key={cocktail.id}
@@ -112,5 +117,6 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
         onOpenChange={closeSheet}
       />
     </>
+    </PageTour>
   );
 }

@@ -27,6 +27,8 @@ import {
 } from '@/components/features/orders/PeriodCalendar';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { PageTour } from '@/components/features/tour/ClientTour';
+import { buildOrdersTourSteps } from '@/components/features/tour/pages/orders-tour';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -1038,6 +1040,8 @@ const Orders: PageComponent = () => {
 
   const periodLabel = formatPeriodLabel(periodType, periodAnchor);
 
+  const ordersTourSteps = useMemo(() => buildOrdersTourSteps(), []);
+
   const heroImageUrl = isAdmin
     ? 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200'
     : 'https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -1052,6 +1056,7 @@ const Orders: PageComponent = () => {
   ) : undefined;
 
   return (
+    <PageTour pageId="orders" steps={ordersTourSteps} autoStartDelay={700}>
     <>
       <BoardPageShell
         eyebrow={isAdmin ? 'Gestion' : 'Suivi'}
@@ -1069,7 +1074,7 @@ const Orders: PageComponent = () => {
       >
         {/* Period + status filters (admin & client) */}
         <div className="space-y-6">
-        <div className="relative">
+        <div id="tour-orders-search" className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="search"
@@ -1079,7 +1084,7 @@ const Orders: PageComponent = () => {
             className="w-full h-12 pl-11 pr-4 rounded-2xl bg-card border border-border/60 text-foreground placeholder:text-muted-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
           />
         </div>
-        <div className="space-y-3">
+        <div id="tour-orders-filters" className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
               <CalendarDays className="size-3.5 text-muted-foreground" />
@@ -1195,7 +1200,7 @@ const Orders: PageComponent = () => {
 
         {/* Order list */}
         {!isLoading && visible.length > 0 && (
-          <div className="space-y-4">
+          <div id="tour-orders-list" className="space-y-4">
             {visible.map((order) => (
               <OrderCard
                 key={order.id}
@@ -1277,6 +1282,7 @@ const Orders: PageComponent = () => {
         />
       )}
     </>
+    </PageTour>
   );
 };
 

@@ -90,6 +90,7 @@ export function NotificationBell() {
       <Sheet open={isNotifOpen} onOpenChange={setIsNotifOpen}>
         <SheetTrigger asChild>
           <button
+            id="tour-notifications"
             type="button"
             className="relative flex items-center justify-center size-10 rounded-xl transition-all text-muted-foreground hover:text-foreground hover:bg-muted/60 focus:outline-none"
           >

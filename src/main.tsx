@@ -1,3 +1,4 @@
+import '@rasenganjs/kage-demo/css';
 import '@rasenganjs/image/css';
 import '@/styles/index.css';
 import { useEffect } from 'react';

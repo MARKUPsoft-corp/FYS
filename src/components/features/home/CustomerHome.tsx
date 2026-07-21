@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { ProfileCompletionCard } from '@/components/features/profile/ProfileCompletionCard';
 import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
@@ -18,6 +18,8 @@ import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import type { Fruit } from '@/entities';
 import { HeroSlider } from '@/components/features/home/HeroSlider';
+import { PageTour } from '@/components/features/tour/ClientTour';
+import { buildHomeTourSteps } from '@/components/features/tour/pages/home-tour';
 
 const CREATIONS = [
   {
@@ -98,6 +100,8 @@ export function CustomerHome({ name }: Props) {
     queryFn: getFruits,
   });
 
+  const homeTourSteps = useMemo(() => buildHomeTourSteps(), []);
+
   async function handleOnboardingComplete(data: {
     healthConditions: string[];
     allergies: string[];
@@ -109,10 +113,11 @@ export function CustomerHome({ name }: Props) {
   }
 
   return (
+    <PageTour pageId="home" steps={homeTourSteps} waitForTour="app" autoStartDelay={600}>
     <div className="min-h-dvh bg-background pb-4 overflow-x-clip relative">
 
       {/* 1. Massive Full Bleed Hero — SLIDER */}
-      <div className="lg:px-2">
+      <div id="tour-home-hero" className="lg:px-2">
         <HeroSlider />
       </div>
 
@@ -125,7 +130,7 @@ export function CustomerHome({ name }: Props) {
         )}
 
         {/* FYS Lab section */}
-        <section>
+        <section id="tour-home-lab">
           <div className="mb-8 block text-center">
             <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
               <span className="text-foreground">FYS </span><span className="text-primary">Lab</span>
@@ -173,7 +178,7 @@ export function CustomerHome({ name }: Props) {
         <hr className="border-border/50" />
 
         {/* 2. NOS CREATIONS */}
-        <section>
+        <section id="tour-home-creations">
           <div className="mb-10 block text-center">
             <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
               <span className="text-foreground">Nos </span><span className="text-primary">Créations</span>
@@ -328,5 +333,6 @@ export function CustomerHome({ name }: Props) {
         </DrawerContent>
       </Drawer>
     </div>
+    </PageTour>
   );
 }

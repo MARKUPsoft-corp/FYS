@@ -21,6 +21,8 @@ import { CocktailCard } from '@/components/features/catalogue/CocktailCard';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { PageTour } from '@/components/features/tour/ClientTour';
+import { buildCocktailsTourSteps } from '@/components/features/tour/pages/cocktails-tour';
 
 const Cocktails: PageComponent = () => {
   const { user } = useAuthStore();
@@ -110,6 +112,8 @@ const Cocktails: PageComponent = () => {
     return publicCocktails.filter((c) => !mineIds.has(c.id));
   }, [isAdmin, publicCocktails, myCocktails]);
 
+  const cocktailsTourSteps = useMemo(() => buildCocktailsTourSteps(), []);
+
   // ── Admin: all public cocktails ──
   if (isAdmin) {
     return (
@@ -182,6 +186,7 @@ const Cocktails: PageComponent = () => {
 
   // ── Client: mes créations + publics ──
   return (
+    <PageTour pageId="cocktails" steps={cocktailsTourSteps} autoStartDelay={700}>
     <>
       <BoardPageShell
         eyebrow="Mes mélanges"
@@ -198,6 +203,7 @@ const Cocktails: PageComponent = () => {
         actions={
           <div className="space-y-4">
             <Button
+              id="tour-cocktails-create"
               size="lg"
               onClick={() => navigate('/lab')}
               className="w-full rounded-[2rem] h-16 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
@@ -205,7 +211,7 @@ const Cocktails: PageComponent = () => {
               <Plus className="size-5" />
               Créer un nouveau cocktail
             </Button>
-            <div className="flex p-1 rounded-full bg-muted/50 border border-border/50 max-w-md mx-auto">
+            <div id="tour-cocktails-tabs" className="flex p-1 rounded-full bg-muted/50 border border-border/50 max-w-md mx-auto">
               {(
                 [
                   { id: 'mine' as const, label: 'Mes cocktails' },
@@ -234,6 +240,7 @@ const Cocktails: PageComponent = () => {
           </div>
         }
       >
+        <div id="tour-cocktails-grid">
         {isLoading && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -297,6 +304,7 @@ const Cocktails: PageComponent = () => {
             </p>
           </div>
         )}
+        </div>
       </BoardPageShell>
 
       {orderTarget && user && (
@@ -331,6 +339,7 @@ const Cocktails: PageComponent = () => {
         </DialogContent>
       </Dialog>
     </>
+    </PageTour>
   );
 };
 
