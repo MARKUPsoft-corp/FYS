@@ -99,14 +99,11 @@ export async function sendPushNotification(payload: {
   url?: string;
   targetUid?: string;
 }): Promise<void> {
-  const secret = import.meta.env.VITE_NOTIFY_SECRET;
-  if (!secret) return; // Silent return if not configured
-  
   try {
     await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret, ...payload }),
+      body: JSON.stringify(payload),
     });
   } catch (err) {
     console.error('[push] Failed to send automatic push:', err);
