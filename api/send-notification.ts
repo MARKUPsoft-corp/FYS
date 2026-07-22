@@ -34,6 +34,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { title, body, url, targetUid } = req.body as SendPayload;
 
   try {
+    // Validate that Firebase Admin credentials exist
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      return res.status(500).json({ error: 'Firebase Admin credentials missing', details: {
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+      }});
+    }
+
     const app = getFirebaseAdminApp();
     const db = getFirestore(app);
     const messaging = getMessaging(app);
@@ -87,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error('[push] FCM send error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: 'Internal server error', details: message });
   }
 }
