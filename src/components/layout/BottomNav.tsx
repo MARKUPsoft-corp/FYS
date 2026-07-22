@@ -12,35 +12,46 @@ export function BottomNav() {
   return (
     <nav
       id="tour-bottom-nav"
-      className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border z-30 lg:hidden pb-safe"
+      className={cn(
+        "fixed left-4 right-4 z-30 lg:hidden overflow-hidden",
+        "bottom-[env(safe-area-inset-bottom,16px)] mb-3",
+        "bg-white/10 dark:bg-black/10 backdrop-blur-[64px] saturate-[180%]",
+        "border border-white/40 border-b-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.15)] rounded-3xl"
+      )}
     >
-      <div className="flex h-[4.25rem] items-stretch">
+      <div className="flex p-2 items-center justify-evenly">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
+          const label = item.label === 'Tableau de bord' ? 'Tableau' : item.label;
           return (
             <Link
               key={item.key}
               to={item.path}
               className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 pt-1',
-                'text-[11px] font-medium transition-colors duration-150',
-                isActive ? 'text-primary' : 'text-muted-foreground',
+                'flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full max-w-[4.5rem]',
+                'transition-all duration-300 group',
+                isActive ? 'text-foreground' : 'text-foreground/60 hover:text-foreground',
               )}
             >
               <div
                 className={cn(
-                  'relative flex items-center justify-center size-9 rounded-xl',
-                  'transition-all duration-200',
-                  isActive && 'bg-primary/10',
+                  'relative flex items-center justify-center size-10 rounded-2xl',
+                  'transition-all duration-300',
+                  isActive ? 'bg-primary/20 text-primary shadow-sm' : 'group-hover:bg-foreground/5',
                 )}
               >
                 {isActive && (
-                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary" />
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-[3px] rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
                 )}
-                <Icon className="size-[18px]" />
+                <Icon className={cn('size-5', isActive && 'scale-110 transition-transform')} strokeWidth={isActive ? 2.5 : 2} />
               </div>
-              <span className="leading-none">{item.label}</span>
+              <span className={cn(
+                'text-[10px] sm:text-[11px] leading-tight text-center truncate w-full px-1',
+                isActive ? 'font-bold' : 'font-semibold'
+              )}>
+                {label}
+              </span>
             </Link>
           );
         })}

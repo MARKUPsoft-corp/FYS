@@ -67,7 +67,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
             <p className="text-muted-foreground text-sm font-medium">Votre jus, validé par NutriFYS</p>
           </div>
 
-          <div id="tour-lab-tabs" className="flex bg-muted/40 backdrop-blur-md rounded-2xl p-1 border border-border/20 shadow-inner w-fit mx-auto lg:mx-0">
+          <div id="tour-lab-tabs" className="flex bg-background/40 dark:bg-background/20 backdrop-blur-[40px] saturate-150 rounded-[2rem] p-1.5 border border-white/30 dark:border-white/10 shadow-[inner_0_1px_2px_rgba(255,255,255,0.4)] w-fit mx-auto lg:mx-0">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
 
@@ -78,8 +78,8 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                     type="button"
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      'flex flex-col items-center justify-center px-5 py-2 rounded-xl transition-colors whitespace-nowrap',
-                      isActive ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                      'flex flex-col items-center justify-center px-5 py-2 rounded-[1.5rem] transition-all duration-300 whitespace-nowrap',
+                      isActive ? 'bg-background/90 dark:bg-card/90 shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-white/40 dark:border-white/10 scale-100' : 'text-foreground/70 hover:text-foreground scale-95 opacity-80 hover:opacity-100 hover:scale-100',
                     )}
                   >
                     <span
@@ -108,13 +108,18 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    'px-6 py-3 text-xs lg:text-sm rounded-xl transition-colors whitespace-nowrap',
-                    isActive
-                      ? 'bg-card text-card-foreground font-bold shadow-sm'
-                      : 'font-semibold text-muted-foreground hover:text-foreground',
+                    'flex flex-col items-center justify-center px-5 py-2 rounded-[1.5rem] transition-all duration-300 min-w-28',
+                    isActive ? 'bg-background/90 dark:bg-card/90 shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-white/40 dark:border-white/10 scale-100' : 'text-foreground/70 hover:text-foreground scale-95 opacity-80 hover:opacity-100 hover:scale-100',
                   )}
                 >
-                  {tab.label}
+                  <span
+                    className={cn(
+                      'text-sm lg:text-base font-semibold leading-none',
+                      isActive ? 'text-foreground' : '',
+                    )}
+                  >
+                    {tab.label}
+                  </span>
                 </button>
               );
             })}
