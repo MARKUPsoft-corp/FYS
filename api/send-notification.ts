@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import { getFirestore, QueryDocumentSnapshot, type Query, type DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 
 // ── Firebase Admin init (lazy singleton) ─────────────────────────────────────
@@ -38,14 +38,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = getFirestore(app);
     const messaging = getMessaging(app);
 
-    let q = db.collection('fcm_tokens') as FirebaseFirestore.Query;
+    let q: Query = db.collection('fcm_tokens');
     if (targetUid) q = q.where('uid', '==', targetUid);
 
     const snapshot = await q.get();
     if (snapshot.empty) return res.status(200).json({ sent: 0, failed: 0 });
 
     const tokens: string[] = [];
-    const docRefs: FirebaseFirestore.DocumentReference[] = [];
+    const docRefs: DocumentReference[] = [];
 
     snapshot.docs.forEach((docSnap: QueryDocumentSnapshot) => {
       const token = docSnap.data().token;
