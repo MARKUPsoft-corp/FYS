@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { useLocation } from 'rasengan';
+import { PushNotificationPrompt } from '@/components/common/PushNotificationPrompt';
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -49,8 +50,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
           {children}
         </div>
       </main>
-
       <BottomNav />
+      <PushNotificationPrompt />
     </div>
   );
 }

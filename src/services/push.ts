@@ -19,7 +19,8 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
     const token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY });
     if (!token) throw new Error('No registration token available.');
 
-    await setDoc(doc(db, 'fcm_tokens', uid), {
+    // Enregistrer le token comme ID de document permet d'avoir plusieurs appareils pour le même utilisateur UID
+    await setDoc(doc(db, 'fcm_tokens', token), {
       uid,
       token,
       createdAt: new Date().toISOString(),
@@ -38,22 +39,31 @@ export async function unsubscribeFromPush(uid: string): Promise<void> {
 
   try {
     const messaging = getMessaging(app);
+    // Find exactly which token we are currently using
+    const currentToken = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY }).catch(() => null);
+    if (currentToken) {
+      await deleteDoc(doc(db, 'fcm_tokens', currentToken));
+    }
     await deleteToken(messaging);
-    const ref = doc(db, 'fcm_tokens', uid);
-    const snap = await getDoc(ref);
-    if (snap.exists()) await deleteDoc(ref);
   } catch (err) {
     console.error('[push] unsubscribe error:', err);
   }
 }
 
-/** Returns true if this browser is already subscribed for this user */
+/** Returns true if this exact browser is already subscribed */
 export async function isPushSubscribed(uid: string): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (Notification.permission !== 'granted') return false;
   
   try {
-    const snap = await getDoc(doc(db, 'fcm_tokens', uid));
-    return snap.exists();
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY });
+    if (!token) return false;
+    
+    // Check if this specific device's token is saved in DB
+    const snap = await getDoc(doc(db, 'fcm_tokens', token));
+    // Verify it belongs to the current user (in case they switched accounts)
+    return snap.exists() && snap.data()?.uid === uid;
   } catch {
     return false;
   }
