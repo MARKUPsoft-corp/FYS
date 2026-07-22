@@ -15,7 +15,7 @@ export function BottomNav() {
       className={cn(
         "fixed left-4 right-4 z-30 lg:hidden overflow-hidden",
         "bottom-[env(safe-area-inset-bottom,16px)] mb-3",
-        "bg-white/10 dark:bg-black/10 backdrop-blur-[64px] saturate-[180%]",
+        "bg-background/70 backdrop-blur-[48px] saturate-[180%]",
         "border border-white/40 border-b-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.15)] rounded-3xl"
       )}
     >
@@ -29,9 +29,9 @@ export function BottomNav() {
               key={item.key}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full max-w-[4.5rem]',
+                'flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full max-w-[5.5rem]',
                 'transition-all duration-300 group',
-                isActive ? 'text-foreground' : 'text-foreground/60 hover:text-foreground',
+                isActive ? 'text-foreground' : 'text-foreground/70 hover:text-foreground',
               )}
             >
               <div
@@ -47,8 +47,8 @@ export function BottomNav() {
                 <Icon className={cn('size-5', isActive && 'scale-110 transition-transform')} strokeWidth={isActive ? 2.5 : 2} />
               </div>
               <span className={cn(
-                'text-[10px] sm:text-[11px] leading-tight text-center truncate w-full px-1',
-                isActive ? 'font-bold' : 'font-semibold'
+                'text-[11px] sm:text-[12px] tracking-tight leading-tight text-center truncate w-full px-0.5',
+                isActive ? 'font-black' : 'font-bold'
               )}>
                 {label}
               </span>
