@@ -78,8 +78,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         notification: {
           icon: '/icons/icon-192.png',
-          vibrate: [300, 100, 400], // Vibreur: 300ms on, 100ms off, 400ms on
-          requireInteraction: true, // Force l'alerte prolongée ou l'affichage de la bannière pop-down (HUD)
         },
         fcmOptions: {
           link: url ?? '/',

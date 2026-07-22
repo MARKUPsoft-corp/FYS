@@ -99,8 +99,18 @@ export async function updateFruit(
 }
 
 export async function deleteFruit(id: string, imageUrl?: string): Promise<void> {
+  const snap = await getDoc(doc(db, COLLECTIONS.FRUITS, id));
+  let fruitName = 'Un fruit';
+  if (snap.exists()) fruitName = snap.data().name;
+
   if (isManagedImageUrl(imageUrl)) {
     await deleteFruitImage(imageUrl!);
   }
   await deleteDoc(doc(db, COLLECTIONS.FRUITS, id));
+
+  sendPushNotification({
+    title: 'Mise à jour FYS',
+    body: `Le fruit "${fruitName}" n'est plus disponible dans le catalogue.`,
+    url: '/board/catalogue',
+  });
 }

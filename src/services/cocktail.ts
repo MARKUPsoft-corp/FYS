@@ -16,6 +16,7 @@ import { COLLECTIONS, CocktailType } from '@/entities';
 import type { Cocktail, AIAnalysis } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage, isManagedImageUrl } from './storage';
 import { notifyAdmins } from '@/services/notifications';
+import { sendPushNotification } from './push';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -147,6 +148,12 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
         message: `La recette « ${cocktail.name} » a été partagée dans le catalogue.`,
         link: `/board/cocktails?cocktail=${id}`,
       }).catch(console.error);
+
+      sendPushNotification({
+        title: 'Nouvelle recette incroyable ! 🍹',
+        body: `Une nouvelle composition au catalogue : découvrez « ${cocktail.name} » !`,
+        url: `/board/cocktails?cocktail=${id}`,
+      });
     }
   }
 }
