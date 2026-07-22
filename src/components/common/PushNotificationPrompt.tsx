@@ -22,17 +22,16 @@ export function PushNotificationPrompt() {
     if (localStorage.getItem('fys_push_prompt_ignored')) return;
 
     const checkAndShow = () => {
-      // Show immediately if Admin OR if user's account is > 24 hours old (existing client)
-      let ageMs = 0;
-      if (user.createdAt) {
-        const creationTime = (user.createdAt as any).seconds 
-          ? (user.createdAt as any).seconds * 1000 
-          : new Date(user.createdAt as any).getTime();
-        if (!isNaN(creationTime)) ageMs = Date.now() - creationTime;
-      }
-      const isExistingUser = ageMs > 24 * 60 * 60 * 1000;
+      const tourIsCompleted = isPageTourCompleted(user.uid, 'app');
 
-      if (user.role === 'admin' || isExistingUser || isPageTourCompleted(user.uid, 'app')) {
+      // Si c'est un client et qu'il n'a pas fini (ou sauté) le tour, on bloque la modale.
+      // Elle se déclenchera UNIQUEMENT grâce à l'événement de fin du tour.
+      if (user.role !== 'admin' && !tourIsCompleted) {
+        return false;
+      }
+
+      // Dès que le tour est fini, ou si c'est l'admin (pas de tour), on peut afficher.
+      if (user.role === 'admin' || tourIsCompleted) {
         setOpen(true);
         return true;
       }
