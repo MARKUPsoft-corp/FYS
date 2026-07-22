@@ -16,7 +16,11 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
 
   try {
     const messaging = getMessaging(app);
-    const token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY });
+    const swRegistration = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, { 
+       vapidKey: VAPID_PUBLIC_KEY, 
+       serviceWorkerRegistration: swRegistration 
+    });
     if (!token) throw new Error('No registration token available.');
 
     // Enregistrer le token comme ID de document permet d'avoir plusieurs appareils pour le même utilisateur UID
@@ -40,7 +44,11 @@ export async function unsubscribeFromPush(uid: string): Promise<void> {
   try {
     const messaging = getMessaging(app);
     // Find exactly which token we are currently using
-    const currentToken = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY }).catch(() => null);
+    const swRegistration = await navigator.serviceWorker.ready;
+    const currentToken = await getToken(messaging, { 
+      vapidKey: VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: swRegistration
+    }).catch(() => null);
     if (currentToken) {
       await deleteDoc(doc(db, 'fcm_tokens', currentToken));
     }
@@ -57,7 +65,11 @@ export async function isPushSubscribed(uid: string): Promise<boolean> {
   
   try {
     const messaging = getMessaging(app);
-    const token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY });
+    const swRegistration = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, { 
+       vapidKey: VAPID_PUBLIC_KEY,
+       serviceWorkerRegistration: swRegistration
+    });
     if (!token) return false;
     
     // Check if this specific device's token is saved in DB

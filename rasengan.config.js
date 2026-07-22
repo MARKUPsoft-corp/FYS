@@ -28,6 +28,7 @@ export default defineConfig(async () => {
 
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000, // 5 MB limit
+            importScripts: ['/firebase-messaging-sw.js'], // Unifies FCM and Vite PWA
             // Precache all built assets
             globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
 
