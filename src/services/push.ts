@@ -18,7 +18,7 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
     const messaging = getMessaging(app);
     let swRegistration = await navigator.serviceWorker.getRegistration();
     if (!swRegistration) {
-      swRegistration = await navigator.serviceWorker.register('/sw.js');
+      swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
     const token = await getToken(messaging, { 
        vapidKey: VAPID_PUBLIC_KEY, 
@@ -48,7 +48,7 @@ export async function unsubscribeFromPush(uid: string): Promise<void> {
     const messaging = getMessaging(app);
     let swRegistration = await navigator.serviceWorker.getRegistration();
     if (!swRegistration) {
-      swRegistration = await navigator.serviceWorker.register('/sw.js');
+      swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
     const currentToken = await getToken(messaging, { 
       vapidKey: VAPID_PUBLIC_KEY,
@@ -72,7 +72,7 @@ export async function isPushSubscribed(uid: string): Promise<boolean> {
     const messaging = getMessaging(app);
     let swRegistration = await navigator.serviceWorker.getRegistration();
     if (!swRegistration) {
-      swRegistration = await navigator.serviceWorker.register('/sw.js');
+      swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
     const token = await getToken(messaging, { 
        vapidKey: VAPID_PUBLIC_KEY,
