@@ -100,11 +100,15 @@ export async function sendPushNotification(payload: {
   targetUid?: string;
 }): Promise<void> {
   try {
-    await fetch('/api/send-notification', {
+    const res = await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[push] API returned error:', res.status, errText);
+    }
   } catch (err) {
     console.error('[push] Failed to send automatic push:', err);
   }
