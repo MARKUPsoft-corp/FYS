@@ -13,6 +13,7 @@ import { COLLECTIONS } from '@/entities';
 import type { Fruit } from '@/entities';
 import { isUsableAsMainFruit, isUsableAsSupplement } from '@/entities';
 import { uploadFruitImage, deleteFruitImage, isManagedImageUrl } from './storage';
+import { sendPushNotification } from './push';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -66,6 +67,12 @@ export async function createFruit(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }));
+
+  sendPushNotification({
+    title: 'Nouveau fruit 🌱',
+    body: `${data.name} vient d'être ajouté au catalogue !`,
+    url: '/board/catalogue',
+  });
 
   return fruitRef.id;
 }

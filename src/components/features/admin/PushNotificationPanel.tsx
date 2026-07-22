@@ -137,10 +137,12 @@ export function PushOptInButton({ uid }: { uid: string }) {
   useEffect(() => {
     if (!('Notification' in window)) { setPermission('unsupported'); return; }
     setPermission(Notification.permission);
-    navigator.serviceWorker?.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => { if (sub) setSubscribed(true); });
-  }, []);
+    if (Notification.permission === 'granted') {
+      import('@/services/push').then((mod) => {
+        mod.isPushSubscribed(uid).then(setSubscribed);
+      });
+    }
+  }, [uid]);
 
   async function toggle() {
     setState('loading');

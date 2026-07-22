@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BellRing, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { subscribeToPush } from '@/services/push';
+import { isPageTourCompleted, TOUR_COMPLETED_EVENT } from '@/lib/client-tour-storage';
 
 export function PushNotificationPrompt() {
   const { user } = useAuthStore();
@@ -17,14 +18,36 @@ export function PushNotificationPrompt() {
     if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
 
     // Only show if the user hasn't made a choice yet and we haven't asked them recently
-    if (Notification.permission === 'default') {
-      const hasAskedBefore = localStorage.getItem('fys_push_prompt_ignored');
-      if (!hasAskedBefore) {
-        // Add a slight delay so it doesn't hit them immediately on first render
-        const timer = setTimeout(() => setOpen(true), 1500);
-        return () => clearTimeout(timer);
+    if (Notification.permission !== 'default') return;
+    if (localStorage.getItem('fys_push_prompt_ignored')) return;
+
+    const checkAndShow = () => {
+      // Show immediately if Admin OR if user's account is > 1 hour old (existing client)
+      const isExistingUser = user.createdAt && (Date.now() - (user.createdAt as any).seconds * 1000) > 60 * 60 * 1000;
+      
+      if (user.role === 'admin' || isExistingUser || isPageTourCompleted(user.uid, 'app')) {
+        setOpen(true);
+        return true;
       }
+      return false;
+    };
+
+    // If we can show it immediately, wait 1.5s then show
+    if (checkAndShow()) {
+      const timer = setTimeout(() => setOpen(true), 1500);
+      return () => clearTimeout(timer);
     }
+
+    // Otherwise, this is a new user who hasn't finished the onboarding tour. Wait for the event!
+    const handleTourCompleted = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.pageId === 'app') {
+        setTimeout(() => setOpen(true), 1000);
+      }
+    };
+    
+    window.addEventListener(TOUR_COMPLETED_EVENT, handleTourCompleted);
+    return () => window.removeEventListener(TOUR_COMPLETED_EVENT, handleTourCompleted);
   }, [user]);
 
   const handleSubscribe = async () => {
