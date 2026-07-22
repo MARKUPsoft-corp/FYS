@@ -31,11 +31,7 @@ interface SendPayload {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { secret, title, body, url, targetUid } = req.body as SendPayload;
-
-  if (!secret || secret !== process.env.NOTIFY_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const { title, body, url, targetUid } = req.body as SendPayload;
 
   try {
     const app = getFirebaseAdminApp();
