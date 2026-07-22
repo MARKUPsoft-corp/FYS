@@ -16,7 +16,10 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
 
   try {
     const messaging = getMessaging(app);
-    const swRegistration = await navigator.serviceWorker.ready;
+    let swRegistration = await navigator.serviceWorker.getRegistration();
+    if (!swRegistration) {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+    }
     const token = await getToken(messaging, { 
        vapidKey: VAPID_PUBLIC_KEY, 
        serviceWorkerRegistration: swRegistration 
@@ -43,8 +46,10 @@ export async function unsubscribeFromPush(uid: string): Promise<void> {
 
   try {
     const messaging = getMessaging(app);
-    // Find exactly which token we are currently using
-    const swRegistration = await navigator.serviceWorker.ready;
+    let swRegistration = await navigator.serviceWorker.getRegistration();
+    if (!swRegistration) {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+    }
     const currentToken = await getToken(messaging, { 
       vapidKey: VAPID_PUBLIC_KEY,
       serviceWorkerRegistration: swRegistration
@@ -65,7 +70,10 @@ export async function isPushSubscribed(uid: string): Promise<boolean> {
   
   try {
     const messaging = getMessaging(app);
-    const swRegistration = await navigator.serviceWorker.ready;
+    let swRegistration = await navigator.serviceWorker.getRegistration();
+    if (!swRegistration) {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+    }
     const token = await getToken(messaging, { 
        vapidKey: VAPID_PUBLIC_KEY,
        serviceWorkerRegistration: swRegistration

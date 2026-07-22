@@ -22,9 +22,16 @@ export function PushNotificationPrompt() {
     if (localStorage.getItem('fys_push_prompt_ignored')) return;
 
     const checkAndShow = () => {
-      // Show immediately if Admin OR if user's account is > 1 hour old (existing client)
-      const isExistingUser = user.createdAt && (Date.now() - (user.createdAt as any).seconds * 1000) > 60 * 60 * 1000;
-      
+      // Show immediately if Admin OR if user's account is > 24 hours old (existing client)
+      let ageMs = 0;
+      if (user.createdAt) {
+        const creationTime = (user.createdAt as any).seconds 
+          ? (user.createdAt as any).seconds * 1000 
+          : new Date(user.createdAt as any).getTime();
+        if (!isNaN(creationTime)) ageMs = Date.now() - creationTime;
+      }
+      const isExistingUser = ageMs > 24 * 60 * 60 * 1000;
+
       if (user.role === 'admin' || isExistingUser || isPageTourCompleted(user.uid, 'app')) {
         setOpen(true);
         return true;
