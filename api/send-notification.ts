@@ -74,10 +74,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       webpush: {
         headers: {
           Urgency: 'high',
-          TTL: '86400', // Keep alive for 24 hours if device is offline
+          TTL: '86400',
         },
         notification: {
           icon: '/icons/icon-192.png',
+          vibrate: [300, 100, 400], // Vibreur: 300ms on, 100ms off, 400ms on
+          requireInteraction: true, // Force l'alerte prolongée ou l'affichage de la bannière pop-down (HUD)
         },
         fcmOptions: {
           link: url ?? '/',
