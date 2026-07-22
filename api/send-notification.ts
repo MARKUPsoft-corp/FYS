@@ -71,6 +71,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title,
         body,
       },
+      webpush: {
+        notification: {
+          icon: '/icons/icon-192.png',
+        },
+        fcmOptions: {
+          link: url ?? '/',
+        },
+      },
       data: {
         click_action: url ?? '/',
       },

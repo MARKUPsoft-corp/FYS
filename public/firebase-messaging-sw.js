@@ -15,16 +15,20 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);
 
-  const title = payload.notification?.title ?? payload.data?.title ?? 'FYS';
-  const body  = payload.notification?.body  ?? payload.data?.body  ?? '';
-  const url   = payload.data?.click_action ?? '/';
+  // If the server didn't provide a 'notification' object (data-only payload), we manually show it.
+  // Otherwise, Firebase SDK will automatically show it!
+  if (!payload.notification) {
+    const title = payload.data?.title ?? 'FYS';
+    const body  = payload.data?.body  ?? '';
+    const url   = payload.data?.click_action ?? '/';
 
-  self.registration.showNotification(title, {
-    body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    data: { url },
-  });
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url },
+    });
+  }
 });
 
 self.addEventListener('notificationclick', (event) => {
