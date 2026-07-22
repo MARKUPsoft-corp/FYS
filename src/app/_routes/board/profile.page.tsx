@@ -13,6 +13,7 @@ import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useClientTour, PageTour } from '@/components/features/tour/ClientTour';
 import { buildProfileTourSteps } from '@/components/features/tour/pages/profile-tour';
 import { UserRole } from '@/entities';
+import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 
 // ── Predefined options ────────────────────────────────────────────────────────
 
@@ -495,6 +496,21 @@ const Profile: PageComponent = () => {
             {isActive ? 'En cours…' : 'Lancer'}
           </Button>
         </div>
+        )}
+
+        {/* Push Notifications Opt-In */}
+        {user?.uid && (
+          <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-display font-bold text-foreground">Notifications push</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
+                Recevez les mises à jour même quand l'application est fermée.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <PushOptInButton uid={user.uid} />
+            </div>
+          </div>
         )}
 
         {/* Completion bar */}

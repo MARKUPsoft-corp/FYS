@@ -14,6 +14,7 @@ import {
   type Order,
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
+import { sendPushNotification } from '@/services/push';
 
 const STATUS_NAMES = {
   [OrderStatus.PENDING]: 'mise en attente',
@@ -208,6 +209,13 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
       message: `Votre commande de ${order.cocktailNameSnapshot} est ${label}.`,
       link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
+
+    sendPushNotification({
+      targetUid: order.userId,
+      title: 'Suivi de commande FYS 🍹',
+      body: `Votre commande de ${order.cocktailNameSnapshot} est ${label}.`,
+      url: `/board/orders?order=${orderId}`,
+    });
   }
 }
 
@@ -234,5 +242,12 @@ export async function cancelOrder(orderId: string): Promise<void> {
       message: `Votre commande de ${order.cocktailNameSnapshot} a été annulée.`,
       link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
+
+    sendPushNotification({
+      targetUid: order.userId,
+      title: 'Commande annulée',
+      body: `Votre commande de ${order.cocktailNameSnapshot} a été annulée.`,
+      url: `/board/orders?order=${orderId}`,
+    });
   }
 }

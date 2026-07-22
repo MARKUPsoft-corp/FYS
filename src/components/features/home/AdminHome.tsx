@@ -10,6 +10,7 @@ import { getAdminStats } from '@/services/stats';
 import { OrderStatus } from '@/entities';
 import type { Order } from '@/entities';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
+import { AdminPushPanel } from '@/components/features/admin/PushNotificationPanel';
 
 type Props = { name: string };
 
@@ -334,6 +335,10 @@ export function AdminHome({ name }: Props) {
               </div>
             );
           })}
+          
+          <div className="pt-2">
+            <AdminPushPanel />
+          </div>
         </div>
 
       </div>
