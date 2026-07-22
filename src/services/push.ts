@@ -1,25 +1,11 @@
-import { db } from '@/lib/firebase';
+import { db, app } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { getMessaging, getToken, deleteToken } from 'firebase/messaging';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string;
 
-/** Convert base64 VAPID public key to Uint8Array for the Push API */
-function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const buffer = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) buffer[i] = rawData.charCodeAt(i);
-  return buffer.buffer;
-}
-
-/** Stable doc ID from subscription endpoint (safe for Firestore) */
-function subId(sub: PushSubscription): string {
-  return btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
-}
-
 /**
- * Requests permission and subscribes the user. Stores subscription in Firestore.
+ * Requests permission and subscribes the user via FCM. Stores token in Firestore.
  * Returns 'granted' | 'denied' | 'unsupported'
  */
 export async function subscribeToPush(uid: string): Promise<'granted' | 'denied' | 'unsupported'> {
@@ -29,15 +15,13 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
   if (permission !== 'granted') return 'denied';
 
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const sub = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY });
+    if (!token) throw new Error('No registration token available.');
 
-    await setDoc(doc(db, 'push_subscriptions', `${uid}_${subId(sub)}`), {
+    await setDoc(doc(db, 'fcm_tokens', uid), {
       uid,
-      subscription: JSON.parse(JSON.stringify(sub)),
+      token,
       createdAt: new Date().toISOString(),
     });
 
@@ -48,28 +32,31 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
   }
 }
 
-/** Unsubscribes and removes the subscription from Firestore */
+/** Unsubscribes and removes the FCM token from Firestore */
 export async function unsubscribeFromPush(uid: string): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
 
-  const registration = await navigator.serviceWorker.ready;
-  const sub = await registration.pushManager.getSubscription();
-  if (!sub) return;
-
-  await sub.unsubscribe();
-  const ref = doc(db, 'push_subscriptions', `${uid}_${subId(sub)}`);
-  const snap = await getDoc(ref);
-  if (snap.exists()) await deleteDoc(ref);
+  try {
+    const messaging = getMessaging(app);
+    await deleteToken(messaging);
+    const ref = doc(db, 'fcm_tokens', uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) await deleteDoc(ref);
+  } catch (err) {
+    console.error('[push] unsubscribe error:', err);
+  }
 }
 
 /** Returns true if this browser is already subscribed for this user */
 export async function isPushSubscribed(uid: string): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
-  const registration = await navigator.serviceWorker.ready;
-  const sub = await registration.pushManager.getSubscription();
-  if (!sub) return false;
-  const snap = await getDoc(doc(db, 'push_subscriptions', `${uid}_${subId(sub)}`));
-  return snap.exists();
+  
+  try {
+    const snap = await getDoc(doc(db, 'fcm_tokens', uid));
+    return snap.exists();
+  } catch {
+    return false;
+  }
 }
 
 /**

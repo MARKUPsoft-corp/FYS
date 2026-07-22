@@ -12,7 +12,7 @@ const firebaseConfig = {
   measurementId: import.meta.env.RASENGAN_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);

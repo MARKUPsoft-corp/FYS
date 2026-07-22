@@ -28,8 +28,6 @@ export default defineConfig(async () => {
 
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000, // 5 MB limit
-            // Inject our custom push event handler into the generated SW
-            importScripts: ['/sw-push.js'],
             // Precache all built assets
             globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
 
