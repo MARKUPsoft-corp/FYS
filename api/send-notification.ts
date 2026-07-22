@@ -72,6 +72,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body,
       },
       webpush: {
+        headers: {
+          Urgency: 'high',
+          TTL: '86400', // Keep alive for 24 hours if device is offline
+        },
         notification: {
           icon: '/icons/icon-192.png',
         },
