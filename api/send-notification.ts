@@ -48,7 +48,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const messaging = getMessaging(app);
 
     let q: Query = db.collection('fcm_tokens');
-    if (targetUid) q = q.where('uid', '==', targetUid);
+    if (targetUid) {
+      q = q.where('uid', '==', targetUid);
+    } else {
+      // If no targetUid specified, send only to admins
+      const usersSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+      const adminUids = usersSnapshot.docs.map(doc => doc.id);
+      
+      if (adminUids.length === 0) return res.status(200).json({ sent: 0, failed: 0 });
+      
+      // Firestore 'in' query supports max 30 items, but typically there are few admins
+      q = q.where('uid', 'in', adminUids);
+    }
 
     const snapshot = await q.get();
     if (snapshot.empty) return res.status(200).json({ sent: 0, failed: 0 });

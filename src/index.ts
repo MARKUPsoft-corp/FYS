@@ -1,8 +1,28 @@
 import { renderApp } from 'rasengan/client';
 import App from './main';
 import AppRouter from '@/app/app.router';
+import { auth } from '@/lib/firebase';
+import { subscribeToPush } from '@/services/push';
 
 renderApp(App, AppRouter, { reactStrictMode: true });
+
+// Auto-request notification permission when user is authenticated
+auth.onAuthStateChanged(async (user) => {
+  if (user && 'Notification' in window) {
+    // Only ask if permission hasn't been decided yet
+    if (Notification.permission === 'default') {
+      try {
+        await subscribeToPush(user.uid);
+        console.log('[FYS] ✅ Push notifications enabled');
+      } catch (err) {
+        console.log('[FYS] User declined push notifications or browser doesn\'t support them');
+      }
+    } else if (Notification.permission === 'granted') {
+      // User already granted permission, ensure token is registered
+      await subscribeToPush(user.uid);
+    }
+  }
+});
 
 // Register service worker — runs after the app shell is mounted
 if ('serviceWorker' in navigator) {

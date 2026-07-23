@@ -87,12 +87,21 @@ export async function createOrder(
     updatedAt: serverTimestamp(),
   });
 
+  // Notify admins in-app
   notifyAdmins({
     title: 'Nouvelle commande 🎉',
     message: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
+  // Send push notification to all admins
+  sendPushNotification({
+    title: 'Nouvelle commande FYS 🎉',
+    body: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
+    url: `/board/orders?order=${ref.id}`,
+  }).catch(console.error);
+
+  // Notify customer in-app
   createNotification({
     userId: user.uid,
     title: 'Commande enregistrée 🎉',
