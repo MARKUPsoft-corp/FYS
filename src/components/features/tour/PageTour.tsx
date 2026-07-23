@@ -41,11 +41,15 @@ function wrapStepsWithCompletion(
   steps: KageDemoStep[],
   onComplete: () => void,
 ): KageDemoStep[] {
-  return steps.map((s) => ({
+  return steps.map((s, index) => ({
     target: s.target,
     render: (props) => {
+      const isLastStep = index === steps.length - 1;
       const end = () => {
-        onComplete();
+        // Only mark as completed when the LAST step calls end()
+        if (isLastStep) {
+          onComplete();
+        }
         props.end();
       };
       return s.render({ ...props, end });
