@@ -110,6 +110,9 @@ export function PageTour({
   useEffect(() => {
     if (!isCustomer || !user?.uid || !canAutoStart) return;
     if (isPageTourCompleted(user.uid, pageId)) return;
+    
+    // Don't restart if tour is already active
+    if (isActive) return;
 
     if (waitForTour && !isPageTourCompleted(user.uid, waitForTour)) {
       const onPrereqDone = (e: Event) => {
@@ -122,7 +125,7 @@ export function PageTour({
     }
 
     return tryAutoStart();
-  }, [isCustomer, user?.uid, canAutoStart, pageId, waitForTour, tryAutoStart]);
+  }, [isCustomer, user?.uid, canAutoStart, pageId, waitForTour, tryAutoStart, isActive]);
 
   if (!isCustomer) {
     return <>{children}</>;
