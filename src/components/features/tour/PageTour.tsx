@@ -111,9 +111,6 @@ export function PageTour({
     if (!isCustomer || !user?.uid || !canAutoStart) return;
     if (isPageTourCompleted(user.uid, pageId)) return;
 
-    // Reset auto-start flag when mounting (allows re-triggering if user navigates away and back)
-    autoStartedRef.current = false;
-
     if (waitForTour && !isPageTourCompleted(user.uid, waitForTour)) {
       const onPrereqDone = (e: Event) => {
         const detail = (e as CustomEvent<{ pageId: TourPageId }>).detail;
@@ -121,10 +118,20 @@ export function PageTour({
         tryAutoStart();
       };
       window.addEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
-      return () => window.removeEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
+      return () => {
+        window.removeEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
+        // Reset flag on unmount (when leaving page) so it can restart next time
+        autoStartedRef.current = false;
+      };
     }
 
-    return tryAutoStart();
+    const cleanup = tryAutoStart();
+    
+    // Reset flag on unmount (when leaving page) so it can restart next time
+    return () => {
+      cleanup?.();
+      autoStartedRef.current = false;
+    };
   }, [isCustomer, user?.uid, canAutoStart, pageId, waitForTour, tryAutoStart]);
 
   if (!isCustomer) {
