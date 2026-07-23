@@ -118,20 +118,10 @@ export function PageTour({
         tryAutoStart();
       };
       window.addEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
-      return () => {
-        window.removeEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
-        // Reset flag on unmount (when leaving page) so it can restart next time
-        autoStartedRef.current = false;
-      };
+      return () => window.removeEventListener(TOUR_COMPLETED_EVENT, onPrereqDone);
     }
 
-    const cleanup = tryAutoStart();
-    
-    // Reset flag on unmount (when leaving page) so it can restart next time
-    return () => {
-      cleanup?.();
-      autoStartedRef.current = false;
-    };
+    return tryAutoStart();
   }, [isCustomer, user?.uid, canAutoStart, pageId, waitForTour, tryAutoStart]);
 
   if (!isCustomer) {
