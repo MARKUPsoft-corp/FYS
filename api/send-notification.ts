@@ -53,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       // If no targetUid specified, send only to admins
       const usersSnapshot = await db.collection('users').where('role', '==', 'admin').get();
-      const adminUids = usersSnapshot.docs.map(doc => doc.id);
+      const adminUids = usersSnapshot.docs.map((doc: any) => doc.id);
       
       if (adminUids.length === 0) return res.status(200).json({ sent: 0, failed: 0 });
       
