@@ -38,6 +38,9 @@ importers:
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@19.2.7)
+      '@svg-maps/cameroon':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@tailwindcss/vite':
         specifier: ^4.*
         version: 4.3.2(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.23.0))
@@ -2529,6 +2532,9 @@ packages:
 
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
+
+  '@svg-maps/cameroon@2.0.0':
+    resolution: {integrity: sha512-jMkLYRLayweRdck1Ou+hflFcf4g+lvfZ8+IKlqYA6hQIMc/cIPac3elJuywmsUX1jO7n645rh2PEmSEkTloUbw==}
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -7953,6 +7959,8 @@ snapshots:
     optional: true
 
   '@stablelib/base64@1.0.1': {}
+
+  '@svg-maps/cameroon@2.0.0': {}
 
   '@swc/helpers@0.5.23':
     dependencies:
