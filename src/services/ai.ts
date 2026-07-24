@@ -27,6 +27,14 @@ export async function chatCocktail(
   return chatWithGemini(history, profile, fruits);
 }
 
+export async function generateRegionInfo(regionName: string): Promise<string> {
+  if (provider === 'claude') {
+    return `La réalité agronomique de la région **${regionName}** est exceptionnelle grâce à son **climat spécifique** qui fait toute la force de son terroir. Nous sommes immensément fiers du savoir-faire et du dévouement de nos **agriculteurs locaux**. En intégrant directement leurs magnifiques récoltes dans nos jus santé, **FYS** s'engage à valoriser et faire rayonner leurs productions locales.`;
+  }
+  const { generateRegionInfoWithGemini } = await import('./ai.gemini');
+  return generateRegionInfoWithGemini(regionName);
+}
+
 export async function recommendSupplements(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,

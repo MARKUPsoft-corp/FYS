@@ -20,7 +20,18 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { NutrientsSection, type NutrientFields } from './NutrientsSection';
 import { FruitImageUpload } from './FruitImageUpload';
-import type { Fruit, Category, CocktailRole, DataStatus, GlycemicBadge, Bioactive } from '@/entities';
+import { 
+  CAMEROON_REGIONS,
+} from '@/entities';
+import type { 
+  Fruit, 
+  Category, 
+  CocktailRole, 
+  DataStatus, 
+  GlycemicBadge, 
+  Bioactive,
+  CameroonRegion,
+} from '@/entities';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -227,6 +238,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
   const [warnings, setWarnings] = useState<string[]>([]);
   const [avoidIf, setAvoidIf] = useState<string[]>([]);
   const [timing, setTiming] = useState('');
+  const [region, setRegion] = useState<CameroonRegion | ''>('');
 
   // Glycemic index
   const [giMin, setGiMin] = useState('');
@@ -272,6 +284,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       setWarnings(fruit.warnings);
       setAvoidIf(fruit.avoidIf ?? []);
       setTiming(fruit.timing ?? '');
+      setRegion(fruit.region ?? '');
       setGiMin(numStr(fruit.glycemicIndex?.min));
       setGiMax(numStr(fruit.glycemicIndex?.max));
       setGiBadge(fruit.glycemicIndex?.badge ?? '');
@@ -291,7 +304,9 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       setName(''); setScientificName(''); setPricePerGram('');
       setCategoryIds([]); setCocktailRole(''); setImageFile(null);
       setIsMainFruit(true); setIsSupplement(false);
-      setBenefits([]); setWarnings([]); setAvoidIf([]); setTiming('');
+      setBenefits([]); setWarnings([]); setAvoidIf([]);
+      setTiming('');
+      setRegion('');
       setGiMin(''); setGiMax(''); setGiBadge(''); setGiLoad(''); setGiNote('');
       setNutrients(EMPTY_NUTRIENTS);
       setBioactives([]);
@@ -329,6 +344,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       cocktailRole: (cocktailRole as CocktailRole) || undefined,
       avoidIf: avoidIf.length ? avoidIf : undefined,
       timing: timing.trim() || undefined,
+      region: (region as CameroonRegion) || undefined,
       glycemicIndex: giBadge ? {
         min: toNum(giMin), max: toNum(giMax),
         badge: giBadge as GlycemicBadge,
@@ -424,6 +440,19 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
                 <div className="space-y-1">
                   <Label htmlFor="f-price" className="text-xs text-muted-foreground">Price (XAF)</Label>
                   <Input id="f-price" type="number" step="any" min="0" value={price} onChange={(e) => setPricePerGram(e.target.value)} placeholder="0.00" className="h-9" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="f-region" className="text-xs text-muted-foreground">Region</Label>
+                  <Select value={region} onValueChange={(val) => setRegion(val as CameroonRegion)}>
+                    <SelectTrigger id="f-region" className="h-9">
+                      <SelectValue placeholder="Select a region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CAMEROON_REGIONS.map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

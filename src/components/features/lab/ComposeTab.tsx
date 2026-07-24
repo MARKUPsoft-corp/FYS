@@ -284,8 +284,8 @@ function ComposeStepper({
   ];
 
   return (
-    <div className="mb-0">
-      <div className="flex items-center gap-0">
+    <div className="mb-0 max-w-sm mx-auto w-full">
+      <div className="flex items-center justify-center gap-0">
         {steps.map((s, i) => {
           const active = step === s.n;
           const done = step > s.n;
@@ -397,12 +397,11 @@ export function ComposeTab({
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
   const canAnalyze = selectedIngredients.size > 0;
   const canGoStep2 = selectedIngredients.size > 0;
-
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
 
       <div className="flex-1 min-w-0 w-full">
-        <div id="tour-lab-stepper" className="sticky sticky-top-safe z-30 -mx-1 px-1 pt-2 pb-3 mb-3 bg-background/95 backdrop-blur-md border-b border-border/40">
+        <div id="tour-lab-stepper" className="sticky top-0 z-30 -mx-4 px-4 lg:-ml-16 lg:pl-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10">
           <ComposeStepper
             step={composeStep}
             onStepChange={onStepChange}
@@ -637,7 +636,7 @@ export function SavePanel({
 
   return (
     <>
-      <div className="bg-card rounded-3xl border border-border/60 shadow-sm overflow-hidden sticky top-24 mt-8">
+      <div className="bg-card rounded-3xl border border-border/60 shadow-sm overflow-hidden sticky top-24 mt-8 flex flex-col max-h-[calc(100vh-8rem)]">
 
         <div className="bg-primary/5 border-b border-border/40 px-6 py-4 flex items-center gap-3">
           <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center">

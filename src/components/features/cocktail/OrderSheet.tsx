@@ -22,6 +22,7 @@ import { NutritionalView } from '@/components/features/cocktail/NutritionalView'
 import { createCocktail } from '@/services/cocktail';
 import { BottleSizePicker } from '@/components/features/cocktail/BottleSizePicker';
 import { buildFruitVisuals, pickCocktailCoverUrl } from '@/components/features/cocktail/CocktailBanner';
+import { CameroonMap } from '@/components/features/cocktail/CameroonMap';
 
 type SheetTab = 'order' | 'nutrition';
 
@@ -244,14 +245,26 @@ export function OrderSheet({
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
 
-              <BottleSizePicker
-                selected={bottleSize}
-                onSelect={setBottleSize}
-                price500ml={price500}
-                price1L={price1L}
-              />
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Provenance des ingrédients
+                </p>
+                <CameroonMap ingredients={cocktail.ingredients} />
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Format
+                </p>
+                <BottleSizePicker
+                  selected={bottleSize}
+                  onSelect={setBottleSize}
+                  price500ml={price500}
+                  price1L={price1L}
+                />
+              </div>
 
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">

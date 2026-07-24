@@ -86,6 +86,23 @@ export interface FruitHealthProfile {
   nutritionistNote?: string;
 }
 
+// ── Cameroon Regions ─────────────────────────────────────────────────────────
+
+export const CAMEROON_REGIONS = [
+  'Adamaoua',
+  'Centre',
+  'Est',
+  'Extrême-Nord',
+  'Littoral',
+  'Nord',
+  'Nord-Ouest',
+  'Ouest',
+  'Sud',
+  'Sud-Ouest',
+] as const;
+
+export type CameroonRegion = typeof CAMEROON_REGIONS[number];
+
 // ── Fruit document — collection: "fruits/{id}" ────────────────────────────
 // Un même item peut servir de fruit principal ET/OU de supplément (Lab stepper).
 
@@ -96,6 +113,7 @@ export interface Fruit {
   price?: number;               // prix fixe d'ajout au cocktail (XAF)
   categoryIds: string[];         // many-to-many with Category
   imageUrl?: string;
+  region?: CameroonRegion;       // lieu de provenance
 
   /**
    * Disponible à l'étape 1 du Lab (sélection fruits).

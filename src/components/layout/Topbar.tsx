@@ -57,7 +57,9 @@ export function Topbar() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-20 pt-safe',
-        'bg-background/90 backdrop-blur-xl border-b border-border/40',
+        'bg-background/70 backdrop-blur-[48px] saturate-[180%]',
+        'border-b border-white/40 dark:border-white/10',
+        'shadow-[0_8px_32px_rgba(0,0,0,0.10)]',
         'transition-all duration-300 ease-in-out',
       )}
     >

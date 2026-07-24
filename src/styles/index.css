@@ -187,7 +187,7 @@ html {
   --popover: #242B25;
   --popover-foreground: #FAF3E8;
 
-  --primary: #5FA870;
+  --primary: #3F6D4E;
   --primary-foreground: #FFFFFF;
 
   --secondary: #F2694A;
@@ -204,7 +204,7 @@ html {
 
   --border: rgba(250, 243, 232, 0.12);
   --input: rgba(250, 243, 232, 0.15);
-  --ring: #5FA870;
+  --ring: #3F6D4E;
 
   --chart-1: #AECBB2;
   --chart-2: #F2694A;
@@ -219,7 +219,7 @@ html {
   --sidebar-accent: #3F6D4E;
   --sidebar-accent-foreground: #FAF3E8;
   --sidebar-border: rgba(250, 243, 232, 0.12);
-  --sidebar-ring: #5FA870;
+  --sidebar-ring: #3F6D4E;
 }
 
 @layer base {

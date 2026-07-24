@@ -2,8 +2,10 @@
 
 ## Status legend
 - ✅ Done
-- 🚧 In progress
+- 🚧 In progress / partial
 - 🔲 Planned
+
+> **Dernière mise à jour :** 24 juillet 2026 — synchronisé avec l'état réel du code.
 
 ---
 
@@ -120,11 +122,11 @@
 | Save cocktail as `type: 'custom'`, private by default | ✅ |
 | Desktop save panel (name input, price breakdown, save button) | ✅ |
 | Mobile bottom bar → Sheet with name input + save | ✅ |
-| "Mes Cocktails" page — list view wired to Firestore via React Query | ✅ |
+| \"Mes Cocktails\" page — list view wired to Firestore via React Query | ✅ |
 | Publish / unpublish toggle (`isPublic`) from card menu | ✅ |
 | Delete own cocktail with confirmation dialog | ✅ |
 | Admin redirected to catalogue from cocktails page | ✅ |
-| Browse public custom cocktails from other users | 🔲 |
+| Browse public custom cocktails from other users | ✅ |
 | Edit an existing custom cocktail in the lab | 🔲 |
 
 ---
@@ -134,14 +136,22 @@
 
 | Task | Status |
 |---|---|
-| Trigger analysis on cocktail finalization (not per-ingredient change) | 🔲 |
-| Send fruit nutrients + health profile to Claude API | 🔲 |
-| Parse response into `AIAnalysis` (verdict, score, notes) | 🔲 |
-| Persist `aiAnalysis` field on cocktail document | 🔲 |
-| Verdict badge UI (`beneficial` / `neutral` / `caution` / `not_recommended`) | 🔲 |
-| Score progress bar + explanatory notes | 🔲 |
-| Fallback analysis when no health profile (fruit-level only) | 🔲 |
-| Loading / streaming state during analysis | 🔲 |
+| Knowledge base nutritionnelle (`nutrifys-knowledge.ts`) — règles RAG | ✅ |
+| Service AI unifié (`ai.ts`) — dispatcher Claude / Gemini | ✅ |
+| Backend Claude (`ai.claude.ts`) + backend Gemini (`ai.gemini.ts`) | ✅ |
+| `buildKnowledgeContext` — sélection contextuelle des règles (RAG) | ✅ |
+| `analyzeCocktail` — déclenché à la finalisation du mix, pas à chaque ajout | ✅ |
+| Parsing de la réponse LLM en `AIAnalysis` (verdict, score, notes) | ✅ |
+| Persist `aiAnalysis` sur le document cocktail (save + order) | ✅ |
+| `VERDICT_CONFIG` — badge UI (`beneficial` / `neutral` / `caution` / `not_recommended`) | ✅ |
+| `NutritionalView` — score, bénéfices, précautions, alerte médicale | ✅ |
+| Loading / analyzing state pendant l'analyse | ✅ |
+| Fallback générique quand profil de santé absent | ✅ |
+| Suggestions de suppléments via IA (`recommendSupplements`) | ✅ |
+| Chat NutriFYS multi-sessions persisté Firestore (`chat.ts`) | ✅ |
+| `NutrifysComposeTab` — chatbot conversationnel dans le Lab | ✅ |
+| Streaming state pendant la conversation | 🔲 |
+| Nom du modèle filtré (jamais "Claude" affiché) — à vérifier exhaustivement | 🚧 |
 
 ---
 
@@ -150,14 +160,25 @@
 
 | Task | Status |
 |---|---|
-| Order a cocktail from catalogue or custom list | 🔲 |
-| Order confirmation dialog (price snapshot, NutriFYS summary) | 🔲 |
-| Snapshot `totalPrice`, `cocktailPriceSnapshot`, `deliveryFee` at order time | 🔲 |
-| "My orders" list with status (`pending` → `confirmed` → `delivered`) | 🔲 |
-| Admin — all orders list with status management | 🔲 |
-| Admin — order status update | 🔲 |
-| Cancel order | 🔲 |
-| Firestore service (`src/services/order.ts`) | 🔲 |
+| Firestore service (`src/services/order.ts`) | ✅ |
+| Order a cocktail from catalogue | ✅ |
+| Order a custom cocktail depuis "Mes Cocktails" | ✅ |
+| Order depuis le Lab (draft → persist + commande en un seul flux) | ✅ |
+| `OrderSheet` — choix taille bouteille, quantité, livraison, récap prix | ✅ |
+| `BottleSizePicker` — sélecteur de format (250ml / 500ml / 1L) | ✅ |
+| Snapshot `totalPrice`, `cocktailPriceSnapshot`, `deliveryFee` à la commande | ✅ |
+| Notifications in-app admin + customer à chaque commande | ✅ |
+| Push notifications FCM admin + customer à chaque commande | ✅ |
+| \"Mes commandes\" — liste temps réel via `onSnapshot` | ✅ |
+| Admin — toutes les commandes en temps réel (`subscribeToAllOrders`) | ✅ |
+| Admin — mise à jour statut commande (pending → confirmed → preparing → ready → delivered) | ✅ |
+| Annulation commande (customer + admin) | ✅ |
+| Notification in-app + push à chaque changement de statut | ✅ |
+| Export PDF facture vectorielle (`downloadVectorFacture`) | ✅ |
+| Export PDF nutrition vectorielle (`downloadVectorNutrition`) | ✅ |
+| `PeriodCalendar` — filtrage des commandes par période | ✅ |
+| `CocktailLabelExport` — étiquette imprimable par commande | ✅ |
+| `aiAnalysisSnapshot` embarqué dans le document Order | ✅ |
 
 ---
 
@@ -166,13 +187,16 @@
 
 | Task | Status |
 |---|---|
+| Skeleton loaders sur les vues catalogue et cocktails | ✅ |
+| Tour guidé interactif par page (`PageTour`, `@rasenganjs/kage-demo`) | ✅ |
+| Push notifications Web (FCM + service worker) | ✅ |
+| PWA — manifest, service worker (`vite-plugin-pwa`) | ✅ |
 | Firestore security rules (per business rules in CLAUDE.md) | 🔲 |
 | Firebase custom claims for admin role enforcement | 🔲 |
 | Toast notifications for mutations (create, update, delete) | 🔲 |
-| Skeleton loaders on all data views | 🔲 |
+| Skeleton loaders sur toutes les vues de données | 🚧 |
 | Pagination / infinite scroll on list views | 🔲 |
-| Real-time updates with Firestore `onSnapshot` where appropriate | 🔲 |
 | Search and filter across fruits and cocktails | 🔲 |
 | Error boundaries and global error handling | 🔲 |
-| Responsive QA (mobile, tablet, desktop) | 🔲 |
-| Deployment (Vercel or Netlify) | 🔲 |
+| Responsive QA (mobile, tablet, desktop) | 🚧 |
+| Déploiement (Vercel ou self-hosted `@rasenganjs/serve`) | 🔲 |

@@ -58,6 +58,15 @@ export async function chatWithGemini(
   return parseChatResponse(raw);
 }
 
+export async function generateRegionInfoWithGemini(regionName: string): Promise<string> {
+  const textModel = genai.getGenerativeModel({
+    model: 'gemini-3.1-flash-lite',
+  });
+  const prompt = `Génère un paragraphe engageant (3 à 4 phrases maximum, percutant et direct) sur la réalité agronomique de la région "${regionName}" au Cameroun. Parle de son **climat spécifique** qui fait la force de son terroir. Valorise énormément la région ainsi que les **agriculteurs locaux** (leur savoir-faire, leur dévouement). Conclus en expliquant comment **FYS** aide à valoriser leurs productions locales en intégrant directement leurs récoltes dans nos jus santé. Mets en gras (avec **) les mots clés les plus importants pour les faire ressortir. Le ton doit être passionnant, chaleureux et fier. Ne mets pas de titre ni de retour à la ligne inutile, donne juste le texte continu.`;
+  const result = await textModel.generateContent(prompt);
+  return result.response.text();
+}
+
 export async function recommendSupplementsWithGemini(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,

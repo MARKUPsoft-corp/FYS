@@ -428,7 +428,7 @@ const FysLab: PageComponent = () => {
           'mx-auto w-full',
           activeTab === 'nutrifys'
             ? 'max-w-[1480px] px-2 lg:px-5 pb-4 lg:pb-12'
-            : 'max-w-6xl px-4 lg:px-16 pb-lab-bar lg:pb-12',
+            : 'max-w-[1480px] px-4 lg:px-16 pb-lab-bar lg:pb-12',
         )}
       >
         {activeTab === 'compose' && (
