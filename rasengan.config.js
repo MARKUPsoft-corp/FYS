@@ -2,14 +2,16 @@ import { defineConfig } from 'rasengan';
 import { rasengan } from 'rasengan/plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { configure } from "@rasenganjs/vercel";
 
 export default defineConfig(async () => {
   return {
+    // SPA mode: static files served by Vercel CDN, no SSR serverless function
+    // Avoids Rasengan SSR runtime issues on Vercel
+    ssr: false,
     vite: {
       plugins: [
         tailwindcss(),
-        rasengan({ adapter: configure() }),
+        rasengan(),
         VitePWA({
           // SW registration is handled manually in src/index.ts
           // because Rasengan generates HTML via writeBundle (post-Vite hooks)
