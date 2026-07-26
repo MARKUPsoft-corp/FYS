@@ -78,7 +78,7 @@ export function OrderSheet({
     setCustomName(cocktail.name);
   }, [cocktail.name]);
 
-  const canOrder = YAOUNDE_DISTRICTS.includes(district) && phone.trim().length > 0;
+  const canOrder = district.trim().length > 0 && phone.trim().length > 0;
 
   const hasAnalysis = !!cocktail.aiAnalysis;
   const analysis = cocktail.aiAnalysis;
@@ -313,7 +313,13 @@ export function OrderSheet({
                       value={district}
                       onChange={setDistrict}
                     />
-                    <GeolocationButton onLocation={setCoordinates} className="mt-2" />
+                    <GeolocationButton 
+                      onLocation={(data) => {
+                        setCoordinates(data);
+                        if (data.address) setDistrict(data.address);
+                      }} 
+                      className="mt-2" 
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">

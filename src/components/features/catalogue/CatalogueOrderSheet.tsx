@@ -29,6 +29,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { NutritionalView, VERDICT_CONFIG } from '@/components/features/cocktail/NutritionalView';
 import { BottleSizePicker } from '@/components/features/cocktail/BottleSizePicker';
+import { CameroonMap } from '@/components/features/cocktail/CameroonMap';
 
 type Tab = 'order' | 'nutrition';
 
@@ -171,7 +172,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
     onOpenChange(v);
   }
 
-  const deliveryOk = YAOUNDE_DISTRICTS.includes(district) && phone.trim().length > 0;
+  const deliveryOk = district.trim().length > 0 && phone.trim().length > 0;
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -292,6 +293,13 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Provenance des ingrédients
+                </p>
+                <CameroonMap ingredients={cocktail.ingredients} />
+              </div>
+
               <BottleSizePicker
                 selected={bottleSize}
                 onSelect={setBottleSize}
@@ -344,7 +352,13 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                       value={district}
                       onChange={setDistrict}
                     />
-                    <GeolocationButton onLocation={setCoordinates} className="mt-2" />
+                    <GeolocationButton 
+                      onLocation={(data) => {
+                        setCoordinates(data);
+                        if (data.address) setDistrict(data.address);
+                      }} 
+                      className="mt-2" 
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">

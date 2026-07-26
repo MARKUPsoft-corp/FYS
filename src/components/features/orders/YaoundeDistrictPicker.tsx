@@ -110,7 +110,7 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
     setSearch('');
   }
 
-  const isValid = value && YAOUNDE_DISTRICTS.includes(value);
+  const isValid = !!value;
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -155,26 +155,37 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
             </div>
           </div>
 
-          {/* List */}
           <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-muted-foreground text-center">
-                Aucun quartier trouvé
-              </p>
-            ) : (
-              filtered.map((district) => (
-                <button
-                  key={district}
-                  type="button"
-                  onClick={() => handleSelect(district)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted/80 ${
-                    value === district ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'
-                  }`}
-                >
-                  {district}
-                  {value === district && <CheckCircle2 className="size-3.5 shrink-0" />}
-                </button>
-              ))
+            {filtered.map((district) => (
+              <button
+                key={district}
+                type="button"
+                onClick={() => handleSelect(district)}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted/80 ${
+                  value === district ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'
+                }`}
+              >
+                {district}
+                {value === district && <CheckCircle2 className="size-3.5 shrink-0" />}
+              </button>
+            ))}
+            
+            {/* Si aucune correspondance exacte ou recherche personnalisée */}
+            {search.trim().length > 0 && !YAOUNDE_DISTRICTS.some(d => d.toLowerCase() === search.toLowerCase()) && (
+              <button
+                type="button"
+                onClick={() => handleSelect(search.trim())}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left text-primary transition-colors hover:bg-primary/10"
+              >
+                <MapPin className="size-3.5" />
+                Utiliser "{search.trim()}"
+              </button>
+            )}
+
+            {filtered.length === 0 && search.trim().length === 0 && (
+               <p className="px-4 py-3 text-sm text-muted-foreground text-center">
+                 Commencez à écrire...
+               </p>
             )}
           </div>
 

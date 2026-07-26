@@ -3,7 +3,7 @@ import { MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { LocationPickerModal } from '@/components/features/orders/LocationPickerModal';
 
 interface GeolocationButtonProps {
-  onLocation: (coords: { lat: number; lng: number }) => void;
+  onLocation: (coords: { lat: number; lng: number, address?: string }) => void;
   className?: string;
 }
 
@@ -36,7 +36,6 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
 
     const errorCallback = (err: GeolocationPositionError, retryLowAccuracy: boolean) => {
       console.warn('Geolocation Error:', err);
-      // If high accuracy times out (code 3), retry without it
       if (err.code === err.TIMEOUT && retryLowAccuracy) {
         navigator.geolocation.getCurrentPosition(
           successCallback,
@@ -49,7 +48,6 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
       }
     };
 
-    // First try with high accuracy and a longer timeout
     navigator.geolocation.getCurrentPosition(
       successCallback,
       (err) => errorCallback(err, true),
@@ -88,8 +86,8 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
         open={modalOpen}
         onOpenChange={setModalOpen}
         initialLocation={initialCoords}
-        onConfirm={(coords) => {
-          onLocation(coords);
+        onConfirm={(data) => {
+          onLocation(data);
           setSuccess(true);
           setModalOpen(false);
         }}
