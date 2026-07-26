@@ -64,6 +64,17 @@ export async function createOrder(
     throw new Error('Le quartier de livraison est requis.');
   }
 
+  // Clean undefined values from deliveryDetails (Firestore doesn't allow undefined)
+  const cleanedDeliveryDetails = deliveryDetails ? {
+    district: deliveryDetails.district,
+    phone: deliveryDetails.phone,
+    instructions: deliveryDetails.instructions,
+    ...(deliveryDetails.coordinates?.lat != null && deliveryDetails.coordinates?.lng != null
+      ? { coordinates: { lat: deliveryDetails.coordinates.lat, lng: deliveryDetails.coordinates.lng } }
+      : {}
+    ),
+  } : undefined;
+
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
@@ -81,7 +92,7 @@ export async function createOrder(
     deliveryFee: pricing.deliveryFee,
     totalPrice: pricing.pricePerBottle * quantity + pricing.deliveryFee,
     status: OrderStatus.PENDING,
-    ...(deliveryDetails ? { deliveryDetails } : {}),
+    ...(cleanedDeliveryDetails ? { deliveryDetails: cleanedDeliveryDetails } : {}),
     ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
     ...(cover ? { cocktailImageSnapshot: cover } : {}),
     ...(fruitImgs?.length ? { ingredientImageSnapshots: fruitImgs } : {}),
