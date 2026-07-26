@@ -60,8 +60,8 @@ export async function createOrder(
 
   const fruitImgs = visuals?.ingredientImageSnapshots;
 
-  if (deliveryDetails && !YAOUNDE_DISTRICTS.includes(deliveryDetails.district)) {
-    throw new Error('La livraison est uniquement disponible à Yaoundé.');
+  if (deliveryDetails && !deliveryDetails.district.trim()) {
+    throw new Error('Le quartier de livraison est requis.');
   }
 
   const ref = doc(collection(db, COLLECTIONS.ORDERS));

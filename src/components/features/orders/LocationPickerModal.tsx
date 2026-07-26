@@ -107,7 +107,7 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
         </div>
 
         <div className="relative w-full h-[60vh] sm:h-[400px] mt-4 bg-muted/30">
-          <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+          <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.RASENGAN_GOOGLE_MAPS_API_KEY || ""}>
             <Map
               defaultZoom={17}
               defaultCenter={initialLocation || { lat: 3.8480, lng: 11.5021 }}
