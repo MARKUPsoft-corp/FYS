@@ -32,6 +32,7 @@ export interface Order {
     district: string;
     phone: string;
     instructions: string;
+    coordinates?: { lat: number; lng: number };
   };
   aiAnalysisSnapshot?: AIAnalysis;
   /** Image figée à la commande (catalogue ou fruit principal / collage source) */

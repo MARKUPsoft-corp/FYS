@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { YaoundeDistrictPicker, YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
+import { GeolocationButton } from '@/components/features/orders/GeolocationButton';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -52,6 +54,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   const [district, setDistrict] = useState('');
   const [phone, setPhone] = useState(user?.phone || '');
   const [instructions, setInstructions] = useState('');
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>();
 
   // Fruits cached from react-query — needed for AI analysis
   const { data: fruits = [] } = useQuery({
@@ -120,7 +123,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
       }
 
       const deliveryDetails = district.trim()
-        ? { district: district.trim(), phone: phone.trim(), instructions: instructions.trim() }
+        ? { district: district.trim(), phone: phone.trim(), instructions: instructions.trim(), ...(coordinates ? { coordinates } : {}) }
         : undefined;
 
       const cloned = await cloneCocktailFromCatalogue(
@@ -163,11 +166,12 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
       setDistrict('');
       setPhone(user?.phone || '');
       setInstructions('');
+      setCoordinates(undefined);
     }
     onOpenChange(v);
   }
 
-  const deliveryOk = district.trim().length > 0 && phone.trim().length > 0;
+  const deliveryOk = YAOUNDE_DISTRICTS.includes(district) && phone.trim().length > 0;
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -336,13 +340,11 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <MapPin className="size-3.5 text-primary" /> Quartier exact
                     </label>
-                    <input
-                      type="text"
-                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      placeholder="Ex: Bonamoussadi, Carrefour..."
+                    <YaoundeDistrictPicker
                       value={district}
-                      onChange={(e) => setDistrict(e.target.value)}
+                      onChange={setDistrict}
                     />
+                    <GeolocationButton onLocation={setCoordinates} className="mt-2" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">

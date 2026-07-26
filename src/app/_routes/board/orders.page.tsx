@@ -2,8 +2,9 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search,
+  CalendarDays, Search, Navigation,
 } from 'lucide-react';
+import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -797,6 +798,32 @@ function AdminOrderSheet({
                         <span className="text-[12px] text-muted-foreground leading-relaxed">
                           {order.deliveryDetails.instructions}
                         </span>
+                      </div>
+                    )}
+                    {order.deliveryDetails.coordinates && (
+                      <div className="mt-4 space-y-2">
+                        <div className="overflow-hidden rounded-xl border border-border/40 h-[180px]">
+                          <APIProvider apiKey={import.meta.env.RASENGAN_GOOGLE_MAPS_API_KEY || ""}>
+                            <Map
+                              mapId="ADMIN_MAP_ID"
+                              defaultZoom={16}
+                              defaultCenter={order.deliveryDetails.coordinates}
+                              disableDefaultUI={true}
+                              gestureHandling="greedy"
+                            >
+                              <AdvancedMarker position={order.deliveryDetails.coordinates} />
+                            </Map>
+                          </APIProvider>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${order.deliveryDetails.coordinates.lat},${order.deliveryDetails.coordinates.lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-2 w-full h-10 bg-primary text-primary-foreground font-semibold rounded-xl text-[13px] hover:bg-primary/90 transition-colors"
+                        >
+                          <Navigation className="size-4" />
+                          Ouvrir l'itinéraire (Google Maps)
+                        </a>
                       </div>
                     )}
                   </div>

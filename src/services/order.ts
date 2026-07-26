@@ -15,6 +15,7 @@ import {
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
+import { YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
 
 const STATUS_NAMES = {
   [OrderStatus.PENDING]: 'mise en attente',
@@ -49,7 +50,7 @@ export async function createOrder(
   cocktail: Cocktail,
   quantity: number,
   pricing: CreateOrderPricing,
-  deliveryDetails?: { district: string; phone: string; instructions: string },
+  deliveryDetails?: { district: string; phone: string; instructions: string; coordinates?: { lat: number; lng: number } },
   visuals?: CreateOrderVisuals,
 ): Promise<string> {
   const cover =
@@ -58,6 +59,10 @@ export async function createOrder(
     visuals?.ingredientImageSnapshots?.[0];
 
   const fruitImgs = visuals?.ingredientImageSnapshots;
+
+  if (deliveryDetails && !YAOUNDE_DISTRICTS.includes(deliveryDetails.district)) {
+    throw new Error('La livraison est uniquement disponible à Yaoundé.');
+  }
 
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {

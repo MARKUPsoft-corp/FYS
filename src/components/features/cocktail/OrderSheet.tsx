@@ -2,6 +2,8 @@ import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
   MapPin, Phone, MessageSquare,
 } from 'lucide-react';
+import { YaoundeDistrictPicker, YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
+import { GeolocationButton } from '@/components/features/orders/GeolocationButton';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,7 @@ export function OrderSheet({
   const [district, setDistrict] = useState('');
   const [phone, setPhone] = useState(user.phone || '');
   const [instructions, setInstructions] = useState('');
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>();
 
   const { data: pricing } = useQuery({
     queryKey: ['pricing-settings'],
@@ -75,7 +78,7 @@ export function OrderSheet({
     setCustomName(cocktail.name);
   }, [cocktail.name]);
 
-  const canOrder = district.trim().length > 0 && phone.trim().length > 0;
+  const canOrder = YAOUNDE_DISTRICTS.includes(district) && phone.trim().length > 0;
 
   const hasAnalysis = !!cocktail.aiAnalysis;
   const analysis = cocktail.aiAnalysis;
@@ -96,7 +99,7 @@ export function OrderSheet({
     if (!pricing) return;
     setOrdering(true);
     try {
-      const details = { district, phone, instructions };
+      const details = { district, phone, instructions, ...(coordinates ? { coordinates } : {}) };
       const pricingPayload = {
         bottleSize,
         bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
@@ -306,13 +309,11 @@ export function OrderSheet({
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <MapPin className="size-3.5 text-primary" /> Quartier exact
                     </label>
-                    <input
-                      type="text"
-                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      placeholder="Ex: Bonamoussadi, Carrefour..."
+                    <YaoundeDistrictPicker
                       value={district}
-                      onChange={(e) => setDistrict(e.target.value)}
+                      onChange={setDistrict}
                     />
+                    <GeolocationButton onLocation={setCoordinates} className="mt-2" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">

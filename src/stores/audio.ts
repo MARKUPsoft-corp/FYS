@@ -85,10 +85,6 @@ export const useAudioStore = createStore<AudioState>((set, get) => ({
     if (initialized) return;
     initialized = true;
 
-    if (get().enabled) {
-      get().play();
-    }
-
     const handleInteraction = () => {
       if (get().enabled && !get().playing) {
         get().play();

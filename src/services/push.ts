@@ -99,6 +99,11 @@ export async function sendPushNotification(payload: {
   url?: string;
   targetUid?: string;
 }): Promise<void> {
+  if (import.meta.env.DEV) {
+    console.log('[push] Skipped push notification in development mode:', payload);
+    return;
+  }
+
   try {
     const res = await fetch('/api/send-notification', {
       method: 'POST',
