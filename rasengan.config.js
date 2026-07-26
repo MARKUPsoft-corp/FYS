@@ -5,9 +5,6 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(async () => {
   return {
-    // SPA mode: static files served by Vercel CDN, no SSR serverless function
-    // Avoids Rasengan SSR runtime issues on Vercel
-    ssr: false,
     vite: {
       plugins: [
         tailwindcss(),

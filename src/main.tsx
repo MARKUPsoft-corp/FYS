@@ -7,6 +7,7 @@ import ThemeProvider, { useTheme } from '@rasenganjs/theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
+import { useAudioStore } from '@/stores/audio';
 
 const queryClient = new QueryClient();
 
@@ -27,12 +28,15 @@ function ThemeWatcher() {
 }
 
 export default function App({ Component, children }: AppProps) {
-  const init = useAuthStore((s) => s.init);
+  const initAuth = useAuthStore((s) => s.init);
+  const initAudio = useAudioStore((s) => s.init);
 
   useEffect(() => {
-    const unsubscribe = init();
+    const unsubscribe = initAuth();
+    initAudio();
     return unsubscribe;
   }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>

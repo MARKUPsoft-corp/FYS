@@ -3,13 +3,14 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
-  AlertCircle, Loader2, Compass,
+  AlertCircle, Loader2, Compass, Music, Volume2, VolumeX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
+import { useAudioStore } from '@/stores/audio';
 import { useClientTour, PageTour } from '@/components/features/tour/ClientTour';
 import { buildProfileTourSteps } from '@/components/features/tour/pages/profile-tour';
 import { UserRole } from '@/entities';
@@ -393,6 +394,7 @@ function ProfileChip({ label, variant = 'default' }: { label: string; variant?: 
 const Profile: PageComponent = () => {
   const { user } = useAuthStore();
   const { profile, loading, fetch } = useProfileStore();
+  const audio = useAudioStore();
   const { startTour, isActive } = useClientTour();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -512,6 +514,53 @@ const Profile: PageComponent = () => {
             </div>
           </div>
         )}
+
+        {/* Ambient Music Toggle */}
+        <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Music className="size-6 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display font-bold text-foreground">Musique d'ambiance</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
+                  Jazz, Saxophone & Violon pour une expérience premium.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={audio.toggleEnabled}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                audio.enabled ? 'bg-primary' : 'bg-input'
+              }`}
+            >
+              <span
+                className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                  audio.enabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          
+          {audio.enabled && (
+            <div className="pt-2 border-t border-border/50 flex items-center gap-3">
+              <VolumeX className="size-4 text-muted-foreground shrink-0" />
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={audio.volume}
+                onChange={(e) => audio.setVolume(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-secondary/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                style={{ WebkitAppearance: 'none' }}
+              />
+              <Volume2 className="size-4 text-muted-foreground shrink-0" />
+            </div>
+          )}
+        </div>
 
         {/* Completion bar */}
         {!loading && (
