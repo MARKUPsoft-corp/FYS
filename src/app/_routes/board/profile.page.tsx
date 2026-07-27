@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useAudioStore } from '@/stores/audio';
+import { useClientTour } from '@/components/features/tour/ClientTour';
 import { UserRole } from '@/entities';
 import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 

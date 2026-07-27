@@ -397,12 +397,12 @@ export function OrderSheet({
                         <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} />
                         <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
                         <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
-                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-500ml)" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
+                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-500ml-order)" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
                         <path d="M18 95 L16 138 Q16 148 40 150 Q64 148 64 138 L62 95 Q40 100 18 95 Z" fill={quantity500ml > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
                         <ellipse cx="40" cy="96" rx="22" ry="4" fill="#fff" opacity="0.25" />
                         <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
                         <defs>
-                          <linearGradient id="glassGrad-500ml" x1="0" y1="0" x2="1" y2="1">
+                          <linearGradient id="glassGrad-500ml-order" x1="0" y1="0" x2="1" y2="1">
                             <stop offset="0%" stopColor="#F7FAF7" />
                             <stop offset="100%" stopColor="#D5E6D9" />
                           </linearGradient>
@@ -439,6 +439,16 @@ export function OrderSheet({
                           <Plus className="size-3.5" />
                         </button>
                       </div>
+                      
+                      {/* Subtotal */}
+                      {quantity500ml > 0 && (
+                        <div className="pt-2 mt-2 border-t border-border/40">
+                          <p className="text-[11px] text-muted-foreground">Sous-total</p>
+                          <p className="text-[14px] font-bold text-primary tabular-nums">
+                            {(price500 * quantity500ml).toLocaleString()} XAF
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -463,12 +473,12 @@ export function OrderSheet({
                         <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity1L > 0 ? '#F2694A' : '#C4B5A8'} />
                         <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity1L > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
                         <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity1L > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
-                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-1L)" stroke={quantity1L > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
+                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-1L-order)" stroke={quantity1L > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
                         <path d="M17 78 L15 138 Q15 148 40 150 Q65 148 65 138 L63 78 Q40 84 17 78 Z" fill={quantity1L > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
                         <ellipse cx="40" cy="80" rx="22" ry="4" fill="#fff" opacity="0.25" />
                         <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
                         <defs>
-                          <linearGradient id="glassGrad-1L" x1="0" y1="0" x2="1" y2="1">
+                          <linearGradient id="glassGrad-1L-order" x1="0" y1="0" x2="1" y2="1">
                             <stop offset="0%" stopColor="#F7FAF7" />
                             <stop offset="100%" stopColor="#D5E6D9" />
                           </linearGradient>
@@ -505,6 +515,16 @@ export function OrderSheet({
                           <Plus className="size-3.5" />
                         </button>
                       </div>
+                      
+                      {/* Subtotal */}
+                      {quantity1L > 0 && (
+                        <div className="pt-2 mt-2 border-t border-border/40">
+                          <p className="text-[11px] text-muted-foreground">Sous-total</p>
+                          <p className="text-[14px] font-bold text-primary tabular-nums">
+                            {(price1L * quantity1L).toLocaleString()} XAF
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

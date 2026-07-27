@@ -429,7 +429,7 @@ const FysLab: PageComponent = () => {
   }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-clip">
+    <div className="min-h-dvh bg-background overflow-x-clip page-transition-wrapper">
       <LabHeader
         activeTab={activeTab}
         onTabChange={handleTabChange}
