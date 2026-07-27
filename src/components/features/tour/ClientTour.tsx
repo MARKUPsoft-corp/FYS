@@ -28,7 +28,7 @@ export function ClientTour({ children, canAutoStart = true }: ClientTourProps) {
   const steps = useMemo(() => buildAppTourSteps(isDesktop), [isDesktop]);
 
   return (
-    <PageTour pageId="app" steps={steps} canAutoStart={canAutoStart} autoStartDelay={1200}>
+    <PageTour pageId="app" steps={steps} canAutoStart={canAutoStart} autoStartDelay={1500}>
       {children}
     </PageTour>
   );

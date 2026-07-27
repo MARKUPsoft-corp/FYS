@@ -61,7 +61,7 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
   // Scroll to top when ordered state changes
   useEffect(() => {
     if (ordered && contentRef.current) {
-      contentRef.current.scrollTop = 0;
+      contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [ordered]);
 

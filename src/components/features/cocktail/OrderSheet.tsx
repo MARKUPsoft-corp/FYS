@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { YaoundeDistrictPicker, YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
 import { GeolocationButton } from '@/components/features/orders/GeolocationButton';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,7 @@ export function OrderSheet({
   const [quantity1L, setQuantity1L] = useState(0);
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [customName, setCustomName] = useState(cocktail.name);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -80,12 +81,8 @@ export function OrderSheet({
 
   // Scroller vers le haut quand la confirmation s'affiche
   useEffect(() => {
-    if (ordered) {
-      // Scroller le contenu du sheet vers le haut
-      const sheetContent = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
-      if (sheetContent) {
-        sheetContent.scrollTop = 0;
-      }
+    if (ordered && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [ordered]);
 
@@ -280,7 +277,7 @@ export function OrderSheet({
 
         {ordered ? (
           <>
-            <div className="flex-1 overflow-y-auto">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
               {/* Success Header - Split Layout */}
               <div className="px-6 pt-6 pb-6 border-b border-border/20">
                 <div className="flex items-start gap-6">

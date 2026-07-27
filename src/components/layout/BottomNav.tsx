@@ -9,6 +9,11 @@ export function BottomNav() {
 
   const items = user ? getMobileNavItems(user.role) : [];
 
+  // Masquer le BottomNav sur la page Lab (qui a sa propre barre fixe)
+  if (location.pathname === '/lab') {
+    return null;
+  }
+
   return (
     <nav
       id="tour-bottom-nav"

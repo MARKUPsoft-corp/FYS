@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Loader2,
   Send,
@@ -518,12 +519,13 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
 
 
   return (
-    <div className="relative z-20 mt-1 lg:mt-3">
-      <div className="flex flex-col lg:flex-row gap-5 lg:items-start lg:min-h-[calc(100dvh-var(--sat)-var(--sab))]">
+    <>
+      <div className="relative z-20 mt-1 lg:mt-3 pb-[120px] lg:pb-0">
+        <div className="flex flex-col lg:flex-row gap-5 lg:items-start lg:min-h-[calc(100dvh-var(--sat)-var(--sab))]">
 
         {/* Desktop : sticky plein écran dès que le haut de la box atteint le viewport */}
         <div className="flex-1 min-w-0 w-full lg:sticky lg:sticky-top-safe lg:self-start lg:z-30 lg:h-[calc(100dvh-var(--sat)-var(--sab))]">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col relative mb-[120px] lg:mb-0 lg:h-full lg:overflow-hidden">
+          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col relative lg:h-full lg:overflow-hidden">
 
             <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky sticky-top-safe lg:static z-40">
               <div className="flex items-center gap-3">
@@ -733,9 +735,11 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
           <InfoSidebar />
         </div>
       </div>
+    </div>
 
-      {/* Input bar - mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 fixed-bottom-safe z-50 shadow-t-xl">
+    {/* Input bar - mobile (OUTSIDE main container, using Portal) */}
+    {typeof window !== 'undefined' && createPortal(
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-3 fixed-bottom-safe z-50 shadow-t-xl">
         <form onSubmit={handleSubmit} className="max-w-lg mx-auto">
           <ChatComposer
             value={input}
@@ -745,7 +749,9 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
             isTyping={isTyping}
           />
         </form>
-      </div>
-    </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

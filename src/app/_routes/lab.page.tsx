@@ -429,56 +429,106 @@ const FysLab: PageComponent = () => {
   }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-clip page-transition-wrapper">
-      <LabHeader
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        compact={activeTab === 'nutrifys'}
-      />
+    <>
+      <div className="min-h-dvh bg-background overflow-x-clip page-transition-wrapper">
+        <LabHeader
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          compact={activeTab === 'nutrifys'}
+        />
 
-      <div
-        className={cn(
-          'mx-auto w-full',
-          activeTab === 'nutrifys'
-            ? 'max-w-[1480px] px-2 lg:px-5 pb-4 lg:pb-12'
-            : 'max-w-[1480px] px-4 lg:px-16 pb-lab-bar lg:pb-12',
-        )}
-      >
-        {activeTab === 'compose' && (
-          <ComposeTab
-            fruits={fruits}
-            supplements={supplements}
-            loading={fruitsLoading}
-            composeStep={composeStep}
-            onStepChange={handleStepChange}
-            selectedIngredients={selectedIngredients}
-            selectedSupplements={selectedSupplements}
-            onToggleFruit={toggleFruit}
-            onToggleSupplement={toggleSupplement}
-            onChangeQuantity={changeQuantity}
-            cocktailName={cocktailName}
-            onNameChange={setCocktailNameFromUser}
-            onSave={() => handleSave()}
-            saving={saving}
-            analysis={analysis}
-            onAnalyze={() => handleAnalyze()}
-            analyzing={analyzing}
-            onOrderRequest={openOrderSheet}
-            aiRecommendation={aiRecommendation}
-            loadingAI={loadingAI}
-          />
-        )}
+        <div
+          className={cn(
+            'mx-auto w-full',
+            activeTab === 'nutrifys'
+              ? 'max-w-[1480px] px-2 lg:px-5 pb-4 lg:pb-12'
+              : 'max-w-[1480px] px-4 lg:px-16 pb-lab-bar lg:pb-12',
+          )}
+        >
+          {activeTab === 'compose' && (
+            <ComposeTab
+              fruits={fruits}
+              supplements={supplements}
+              loading={fruitsLoading}
+              composeStep={composeStep}
+              onStepChange={handleStepChange}
+              selectedIngredients={selectedIngredients}
+              selectedSupplements={selectedSupplements}
+              onToggleFruit={toggleFruit}
+              onToggleSupplement={toggleSupplement}
+              onChangeQuantity={changeQuantity}
+              cocktailName={cocktailName}
+              onNameChange={setCocktailNameFromUser}
+              onSave={() => handleSave()}
+              saving={saving}
+              analysis={analysis}
+              onAnalyze={() => handleAnalyze()}
+              analyzing={analyzing}
+              onOrderRequest={openOrderSheet}
+              aiRecommendation={aiRecommendation}
+              loadingAI={loadingAI}
+            />
+          )}
 
-        {activeTab === 'nutrifys' && (
-          <NutrifysComposeTab
-            onAnalyzeProposal={handleAnalyzeFromProposal}
+          {activeTab === 'nutrifys' && (
+            <NutrifysComposeTab
+              onAnalyzeProposal={handleAnalyzeFromProposal}
+            />
+          )}
+        </div>
+
+        {/* Sheets */}
+        <Sheet open={showRenameSheet} onOpenChange={closeRenameSheet}>
+          <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
+            <SheetHeader>
+              <SheetTitle className="font-display text-xl text-center">Nommez votre création</SheetTitle>
+              <SheetDescription className="text-center text-xs">
+                Donnez un nom unique à votre cocktail avant de le sauvegarder.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4">
+              <Input
+                value={cocktailName}
+                onChange={(e) => setCocktailNameFromUser(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && cocktailName.trim() && !saving) {
+                    closeRenameSheet(false);
+                    handleSave();
+                  }
+                }}
+                placeholder="Nom suggéré par NutriFYS…"
+                className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
+                autoFocus
+              />
+              <Button
+                size="lg"
+                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95"
+                disabled={!cocktailName.trim() || saving}
+                onClick={() => {
+                  closeRenameSheet(false);
+                  handleSave();
+                }}
+              >
+                {saving ? <><Loader2 className="size-4 animate-spin" /> Enregistrement…</> : <><Save className="size-4" /> Enregistrer le cocktail</>}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {draftCocktail && user && (
+          <OrderSheet
+            cocktail={draftCocktail}
+            open={showOrderSheet}
+            onOpenChange={closeOrderSheet}
+            user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
+            onOrderSuccess={handleOrderSuccess}
           />
         )}
       </div>
 
-      {/* ── Mobile sticky bottom bar ─────────────────────────────────────────── */}
+      {/* ── Mobile sticky bottom bar (OUTSIDE main container) ─────────────────────────────────────────── */}
       {activeTab === 'compose' && (
-        <div id="tour-lab-mobile-bar" className="fixed bottom-0 left-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 fixed-bottom-safe z-50 rounded-t-3xl lg:hidden">
+        <div id="tour-lab-mobile-bar" className="fixed bottom-0 left-0 right-0 w-full bg-background/95 backdrop-blur-md border-t border-border/50 p-4 fixed-bottom-safe z-50 rounded-t-3xl lg:hidden">
           <div className="max-w-lg mx-auto space-y-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {[...selectedIngredients.keys()].map((fruitId) => {
@@ -542,54 +592,7 @@ const FysLab: PageComponent = () => {
           </div>
         </div>
       )}
-
-      <Sheet open={showRenameSheet} onOpenChange={closeRenameSheet}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
-          <SheetHeader>
-            <SheetTitle className="font-display text-xl text-center">Nommez votre création</SheetTitle>
-            <SheetDescription className="text-center text-xs">
-              Donnez un nom unique à votre cocktail avant de le sauvegarder.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="space-y-4">
-            <Input
-              value={cocktailName}
-              onChange={(e) => setCocktailNameFromUser(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && cocktailName.trim() && !saving) {
-                  closeRenameSheet(false);
-                  handleSave();
-                }
-              }}
-              placeholder="Nom suggéré par NutriFYS…"
-              className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
-              autoFocus
-            />
-            <Button
-              size="lg"
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95"
-              disabled={!cocktailName.trim() || saving}
-              onClick={() => {
-                closeRenameSheet(false);
-                handleSave();
-              }}
-            >
-              {saving ? <><Loader2 className="size-4 animate-spin" /> Enregistrement…</> : <><Save className="size-4" /> Enregistrer le cocktail</>}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {draftCocktail && user && (
-        <OrderSheet
-          cocktail={draftCocktail}
-          open={showOrderSheet}
-          onOpenChange={closeOrderSheet}
-          user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
-          onOrderSuccess={handleOrderSuccess}
-        />
-      )}
-    </div>
+    </>
   );
 };
 

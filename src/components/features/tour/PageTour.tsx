@@ -93,8 +93,30 @@ export function PageTour({
   const tour = useKageDemo(wrappedSteps);
 
   const startTour = useCallback(() => {
-    requestAnimationFrame(() => tour.start());
-  }, [tour]);
+    // Vérifier que tous les éléments cibles existent avant de démarrer
+    const allTargets = wrappedSteps.map(step => step.target);
+    const checkElements = () => {
+      return allTargets.every(target => {
+        const element = document.querySelector(target);
+        return element !== null;
+      });
+    };
+
+    // Attendre que tous les éléments soient présents (max 3 secondes)
+    let attempts = 0;
+    const maxAttempts = 30; // 30 * 100ms = 3 secondes max
+    
+    const tryStart = () => {
+      if (checkElements() || attempts >= maxAttempts) {
+        requestAnimationFrame(() => tour.start());
+      } else {
+        attempts++;
+        setTimeout(tryStart, 100);
+      }
+    };
+    
+    tryStart();
+  }, [tour, wrappedSteps]);
 
   const isActive = tour.currentIndex >= 0;
 
