@@ -36,7 +36,6 @@ export const HERO_SLIDES_DOC_ID = 'heroSlides';
 export interface HeroSlide {
   id: string;
   imageUrl: string;
-  breakoutImageUrl?: string;
   label: string;
   title: string;
   highlight: string;
@@ -55,7 +54,6 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'slide-1',
     imageUrl: 'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    breakoutImageUrl: 'https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     label: 'Notre signature',
     title: 'Créez votre',
     highlight: 'élixir',
@@ -67,7 +65,6 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'slide-2',
     imageUrl: 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    breakoutImageUrl: 'https://images.pexels.com/photos/42059/citrus-diet-food-fresh-42059.jpeg?auto=compress&cs=tinysrgb&w=600',
     label: 'Fruits frais du jour',
     title: 'Boost ton',
     highlight: 'énergie',
@@ -79,7 +76,6 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'slide-3',
     imageUrl: 'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    breakoutImageUrl: 'https://images.pexels.com/photos/1603901/pexels-photo-1603901.jpeg?auto=compress&cs=tinysrgb&w=600',
     label: 'NutriFYS actif',
     title: 'Prends soin de',
     highlight: 'toi',

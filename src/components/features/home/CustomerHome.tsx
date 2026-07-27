@@ -122,56 +122,162 @@ export function CustomerHome({ name }: Props) {
       </div>
 
       {/* Content wrapper for things below hero */}
-      <div className="px-3 md:px-4 space-y-12 mt-28 relative z-10">
+      <div className="px-3 md:px-4 space-y-12 mt-6 lg:mt-8 relative z-10">
 
         {/* Profile completion banner */}
         {!profileComplete && (
           <ProfileCompletionCard onStart={() => setShowOnboarding(true)} />
         )}
 
-        {/* FYS Lab section */}
-        <section id="tour-home-lab">
-          <div className="mb-8 block text-center">
+        {/* FYS Lab section - Clean Split Hero (Desktop) / Card Overlay (Mobile) */}
+        <section id="tour-home-lab" className="relative py-8 lg:py-20">
+          
+          {/* Section Title */}
+          <div className="mb-8 lg:mb-12 text-center">
             <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
               <span className="text-foreground">FYS </span><span className="text-primary">Lab</span>
             </h3>
-            <p className="text-muted-foreground mt-3 font-medium">Composez votre cocktail sur-mesure, analysé par l'IA en temps réel.</p>
+            <p className="text-muted-foreground mt-3 font-medium text-sm md:text-base">
+              Composez votre cocktail sur-mesure, analysé par l'IA en temps réel.
+            </p>
           </div>
 
-          <div 
-            className="relative w-full rounded-[3.5rem] overflow-hidden h-[450px] lg:h-[500px] flex items-end shadow-xl"
-            style={{ backgroundImage: "url('https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1200')", backgroundSize: 'cover', backgroundPosition: 'center' }}
-          >
-            {/* Cinematic Gradient overlay (Neutral dark gray fade from bottom to transparent) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-900/70 to-transparent" />
+          {/* MOBILE VERSION - Card with overlay */}
+          <div className="lg:hidden relative w-full rounded-[2.5rem] overflow-hidden min-h-[480px] flex flex-col justify-center items-center shadow-xl">
+            {/* Background image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: "url('https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1200')"
+              }}
+            />
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/50" />
             
-            <div className="relative z-10 w-full px-3 md:px-4 pb-12 md:pb-16 lg:px-16">
-              <div className="max-w-xl">
-                <div className="flex items-center gap-2 mb-4">
-                   <div className="size-8 rounded-full bg-secondary/20 flex items-center justify-center">
-                     <Beaker className="size-4 text-secondary drop-shadow-md" />
-                   </div>
-                   <p className="text-secondary font-bold uppercase tracking-widest text-xs drop-shadow-md">Le FYS Lab</p>
+            {/* Content overlay - centered */}
+            <div className="relative z-10 p-6 w-full space-y-5 text-center">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                <Beaker className="size-3.5 text-white" />
+                <span className="text-white font-bold uppercase tracking-widest text-[10px]">Le FYS Lab</span>
+              </div>
+
+              {/* Title */}
+              <h2 className="font-display font-extrabold text-3xl text-white leading-[1.15]">
+                Créez votre propre <span className="bg-gradient-to-r from-primary via-[#90B566] to-secondary bg-clip-text text-transparent">cocktail</span>
+              </h2>
+
+              {/* Description */}
+              <p className="text-white/90 text-sm leading-relaxed max-w-md mx-auto">
+                Sélectionnez vos fruits et laissez <strong className="text-white font-bold">NutriFYS</strong> analyser la compatibilité en temps réel.
+              </p>
+
+              {/* Quick stats - 3 inline pills */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-xs font-bold">18 Fruits</span>
                 </div>
-                <h3 className="font-display font-extrabold text-4xl lg:text-5xl text-white leading-[1.15] mb-5">
-                  Créez votre propre <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#AECBB2] to-secondary italic drop-shadow-md">cocktail.</span>
-                </h3>
-                <p className="text-white/80 text-[17px] mb-8 font-medium leading-relaxed">
-                  Devenez l'artisan de votre boisson. Sélectionnez vos fruits et laissez notre IA <strong className="text-white font-bold">NutriFYS</strong> vérifier la compatibilité de la recette en temps réel.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <Link to="/lab" className="w-full sm:w-auto">
-                    <Button
-                      size="lg"
-                      className="w-full rounded-full bg-primary text-white font-bold hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all px-10 h-14 shadow-[0_8px_30px_rgba(63,109,78,0.3)] text-base gap-3"
-                    >
-                      <Sparkles className="size-5" />
-                      Tester le FYS Lab
-                    </Button>
-                  </Link>
+                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-xs font-bold">Analyse IA</span>
+                </div>
+                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-xs font-bold">2 min chrono</span>
                 </div>
               </div>
+
+              {/* CTA */}
+              <div className="max-w-sm mx-auto">
+                <Link to="/lab" className="block">
+                  <Button
+                    size="lg"
+                    className="w-full rounded-[1.25rem] bg-primary text-white font-bold hover:bg-primary/90 active:scale-95 transition-all h-14 text-base shadow-lg"
+                  >
+                    <Sparkles className="size-5" />
+                    Tester le FYS Lab
+                  </Button>
+                </Link>
+              </div>
             </div>
+          </div>
+
+          {/* DESKTOP VERSION - Two columns split */}
+          <div className="hidden lg:grid lg:grid-cols-2 gap-20 items-center lg:min-h-[70vh]">
+            
+            {/* Left Column - Content */}
+            <div className="space-y-8">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/10">
+                <Beaker className="size-4 text-primary" />
+                <span className="text-primary font-bold uppercase tracking-widest text-[11px]">Le FYS Lab</span>
+              </div>
+
+              {/* Title */}
+              <h2 className="font-display font-extrabold text-5xl xl:text-7xl text-foreground leading-[1.1]">
+                Créez votre{' '}
+                <span className="bg-gradient-to-r from-primary via-[#90B566] to-secondary bg-clip-text text-transparent">cocktail</span>
+              </h2>
+
+              {/* Description */}
+              <p className="text-muted-foreground text-lg xl:text-xl leading-relaxed max-w-xl">
+                Devenez l'artisan de votre boisson. Sélectionnez vos fruits et laissez notre IA <strong className="text-foreground font-bold">NutriFYS</strong> analyser la compatibilité en temps réel.
+              </p>
+
+              {/* Stats */}
+              <div className="flex flex-wrap items-center gap-6 pt-2">
+                <div className="flex items-center gap-2">
+                  <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-lg">18</span>
+                  </div>
+                  <span className="text-sm font-semibold text-muted-foreground">Fruits disponibles</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="size-10 rounded-full bg-secondary/10 flex items-center justify-center">
+                    <Sparkles className="size-5 text-secondary" />
+                  </div>
+                  <span className="text-sm font-semibold text-muted-foreground">Analyse IA instantanée</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-lg">2</span>
+                  </div>
+                  <span className="text-sm font-semibold text-muted-foreground">Minutes chrono</span>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="pt-4">
+                <Link to="/lab">
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-primary text-white font-bold hover:bg-primary/90 active:scale-95 transition-all px-12 h-16 text-lg shadow-[0_8px_30px_rgba(63,109,78,0.25)]"
+                  >
+                    <Sparkles className="size-6" />
+                    Tester le FYS Lab
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column - Image */}
+            <div className="relative">
+              <div 
+                className="aspect-square w-full max-w-[500px] mx-auto rounded-[3rem] bg-cover bg-center shadow-2xl border-4 border-background ring-1 ring-border/20 transition-transform hover:scale-[1.02] duration-500"
+                style={{ 
+                  backgroundImage: "url('https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=1200')"
+                }}
+              />
+              {/* Decorative elements */}
+              <div className="absolute -z-10 top-8 right-8 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -z-10 -bottom-8 -left-8 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Scroll indicator - desktop only */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden xl:flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
+            <span className="text-xs font-semibold uppercase tracking-widest">Découvrez plus</span>
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
           </div>
         </section>
 

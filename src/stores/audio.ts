@@ -95,6 +95,23 @@ export const useAudioStore = createStore<AudioState>((set, get) => ({
       document.addEventListener('click', handleInteraction);
       document.addEventListener('pointerdown', handleInteraction);
       document.addEventListener('keydown', handleInteraction);
+      
+      // ── Pause/Resume musique quand l'utilisateur change d'onglet ──
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          // L'utilisateur a quitté l'onglet → pause
+          if (get().playing && audioInstance) {
+            audioInstance.pause();
+          }
+        } else {
+          // L'utilisateur est revenu → reprendre si activé
+          if (get().enabled && audioInstance && audioInstance.paused) {
+            audioInstance.play().catch((e) => {
+              console.warn('[FYS Audio] Resume play failed:', e);
+            });
+          }
+        }
+      });
     }
   }
 }));

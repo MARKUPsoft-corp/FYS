@@ -122,15 +122,6 @@ export function HeroSlider() {
         </div>
       </div>
 
-      {slide.breakoutImageUrl && (
-        <div className="absolute bottom-0 right-4 w-44 h-64 z-20 pointer-events-none drop-shadow-2xl opacity-95 md:w-56 md:h-80 md:right-8 lg:w-64 lg:h-96 lg:right-12">
-          <div
-            key={`breakout-${slide.id}`}
-            className="w-full h-full bg-cover bg-center rounded-[2rem] border-4 border-white/40 shadow-2xl rotate-[-8deg] transition-all duration-700 translate-y-12 md:translate-y-16 lg:translate-y-20"
-            style={{ backgroundImage: `url('${slide.breakoutImageUrl}')` }}
-          />
-        </div>
-      )}
     </section>
   );
 }

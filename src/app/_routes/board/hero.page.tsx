@@ -14,7 +14,6 @@ function newSlide(order: number): HeroSlide {
   return {
     id: `slide-${Date.now()}-${order}`,
     imageUrl: 'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    breakoutImageUrl: '',
     label: 'Nouveau slide',
     title: 'Titre',
     highlight: 'accent',
@@ -54,12 +53,12 @@ const HeroAdmin: PageComponent = () => {
     setSlides((prev) => [...prev, newSlide(prev.length)]);
   }
 
-  async function handleImageUpload(slideId: string, file: File, field: 'imageUrl' | 'breakoutImageUrl') {
-    setUploadingId(`${slideId}-${field}`);
+  async function handleImageUpload(slideId: string, file: File) {
+    setUploadingId(slideId);
     setError(null);
     try {
       const url = await uploadHeroImage(slideId, file);
-      updateSlide(slideId, { [field]: url });
+      updateSlide(slideId, { imageUrl: url });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Échec upload');
     } finally {
@@ -163,10 +162,10 @@ const HeroAdmin: PageComponent = () => {
                     style={{ backgroundImage: `url('${slide.imageUrl}')` }}
                   />
                   <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    Image principale
+                    Image de fond
                   </Label>
                   <label className="flex items-center justify-center gap-2 h-11 rounded-xl border border-dashed border-border/60 cursor-pointer hover:bg-muted/40 text-sm font-semibold">
-                    {uploadingId === `${slide.id}-imageUrl` ? (
+                    {uploadingId === slide.id ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
                       <ImagePlus className="size-4" />
@@ -178,38 +177,7 @@ const HeroAdmin: PageComponent = () => {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) handleImageUpload(slide.id, f, 'imageUrl');
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-
-                  <div
-                    className="aspect-[3/4] max-w-[140px] rounded-2xl bg-cover bg-center border border-border/40"
-                    style={{
-                      backgroundImage: slide.breakoutImageUrl
-                        ? `url('${slide.breakoutImageUrl}')`
-                        : undefined,
-                      backgroundColor: 'hsl(var(--muted))',
-                    }}
-                  />
-                  <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    Image breakout (optionnelle)
-                  </Label>
-                  <label className="flex items-center justify-center gap-2 h-11 rounded-xl border border-dashed border-border/60 cursor-pointer hover:bg-muted/40 text-sm font-semibold">
-                    {uploadingId === `${slide.id}-breakoutImageUrl` ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <ImagePlus className="size-4" />
-                    )}
-                    Image secondaire
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleImageUpload(slide.id, f, 'breakoutImageUrl');
+                        if (f) handleImageUpload(slide.id, f);
                         e.target.value = '';
                       }}
                     />

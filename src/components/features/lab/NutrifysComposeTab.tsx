@@ -26,6 +26,7 @@ import { Timestamp } from 'firebase/firestore';
 import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
 import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { cn } from '@/lib/utils';
+import { labSounds } from '@/services/lab-sounds';
 
 
 
@@ -145,8 +146,14 @@ function ProposalMessageBubble({
 
   function toggleFruit(id: string) {
     setFruitIds((prev) => {
-      if (prev.includes(id)) return prev.filter((f) => f !== id);
+      if (prev.includes(id)) {
+        // 🎵 Play deselect sound
+        labSounds.fruitDeselect();
+        return prev.filter((f) => f !== id);
+      }
       if (prev.length >= MAX_LAB_MAIN_FRUITS) return prev;
+      // 🎵 Play select sound
+      labSounds.fruitSelect();
       return [...prev, id];
     });
     setPulseId(id);
@@ -155,8 +162,14 @@ function ProposalMessageBubble({
 
   function toggleSupplement(id: string) {
     setSupplementIds((prev) => {
-      if (prev.includes(id)) return prev.filter((s) => s !== id);
+      if (prev.includes(id)) {
+        // 🎵 Play deselect sound
+        labSounds.fruitDeselect();
+        return prev.filter((s) => s !== id);
+      }
       if (prev.length >= MAX_LAB_SUPPLEMENTS) return prev;
+      // 🎵 Play select sound
+      labSounds.fruitSelect();
       return [...prev, id];
     });
     setPulseId(id);

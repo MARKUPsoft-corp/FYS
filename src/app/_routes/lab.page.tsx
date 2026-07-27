@@ -23,6 +23,7 @@ import { useProfileStore } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 import { PageTour, useIsDesktop } from '@/components/features/tour/ClientTour';
 import { buildLabTourSteps } from '@/components/features/tour/pages/lab-tour';
+import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
   const { user } = useAuthStore();
@@ -148,8 +149,12 @@ const FysLab: PageComponent = () => {
       const next = new Map(prev);
       if (next.has(id)) {
         next.delete(id);
+        // 🎵 Play deselect sound
+        labSounds.fruitDeselect();
       } else if (next.size < MAX_LAB_MAIN_FRUITS) {
         next.set(id, 100);
+        // 🎵 Play fruit selection sound
+        labSounds.fruitSelect();
       }
       return next;
     });
@@ -172,8 +177,12 @@ const FysLab: PageComponent = () => {
       const next = new Map(prev);
       if (next.has(id)) {
         next.delete(id);
+        // 🎵 Play deselect sound
+        labSounds.fruitDeselect();
       } else if (next.size < MAX_LAB_SUPPLEMENTS) {
         next.set(id, 20);
+        // 🎵 Play fruit selection sound
+        labSounds.fruitSelect();
       }
       return next;
     });
@@ -296,6 +305,11 @@ const FysLab: PageComponent = () => {
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);
     if (combined.size === 0) return;
+    
+    // 🎵 Play analysis start sound + ambient loop
+    labSounds.analysisStart();
+    labSounds.analysisAmbient();
+    
     setAnalyzing(true);
     try {
       const ingredients = [...combined.entries()].map(([fruitId, grams]) => ({
@@ -307,6 +321,13 @@ const FysLab: PageComponent = () => {
       if (!nameTouchedRef.current && result.suggestedName?.trim()) {
         setCocktailName(result.suggestedName.trim());
       }
+      
+      // 🎵 Play completion sound
+      labSounds.analysisComplete();
+    } catch (err) {
+      // Stop ambient on error
+      labSounds.stopAmbient();
+      throw err;
     } finally {
       setAnalyzing(false);
     }
