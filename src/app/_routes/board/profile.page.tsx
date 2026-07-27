@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
-  AlertCircle, Loader2, Compass, Music, Volume2, VolumeX,
+  AlertCircle, Loader2, Music, Volume2, VolumeX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -470,30 +470,7 @@ const Profile: PageComponent = () => {
           </Button>
         </div>
 
-        {/* App tour (clients only) */}
-        {isCustomer && (
-        <div  className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
-            <Compass className="size-6 text-secondary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-bold text-foreground">Visite guidée</p>
-            <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
-              Redécouvrez les essentiels de FYS en quelques étapes.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isActive}
-            onClick={startTour}
-            className="rounded-full font-bold border-border/60 shrink-0"
-          >
-            {isActive ? 'En cours…' : 'Lancer'}
-          </Button>
-        </div>
-        )}
+
 
         {/* Push Notifications Opt-In */}
         {user?.uid && (
