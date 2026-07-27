@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogOut, Settings, User, ShoppingBag, Wallet, Image } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LogOut, Settings, User, Wallet, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
@@ -17,27 +16,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserRole } from '@/entities/user';
-import { subscribeToNotifications } from '@/services/notifications';
 
 export function Topbar() {
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const [unreadOrderNotifs, setUnreadOrderNotifs] = useState(0);
-
-  useEffect(() => {
-    if (!user || user.role !== UserRole.CUSTOMER) {
-      setUnreadOrderNotifs(0);
-      return;
-    }
-
-    return subscribeToNotifications(user.uid, (data) => {
-      const count = data.filter(
-        (n) => !n.isRead && n.link?.includes('/board/orders'),
-      ).length;
-      setUnreadOrderNotifs(count);
-    });
-  }, [user]);
 
   const navItems = user ? getNavItemsForRole(user.role) : [];
 
@@ -130,27 +113,6 @@ export function Topbar() {
                 <Wallet className="size-5" />
               </Link>
             </>
-          )}
-
-          {user?.role === UserRole.CUSTOMER && (
-            <Link
-              to="/board/orders"
-              id="tour-orders"
-              className={cn(
-                'relative flex items-center justify-center size-10 rounded-xl transition-all',
-                location.pathname.startsWith('/board/orders')
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
-              )}
-              aria-label="Mes commandes"
-            >
-              <ShoppingBag className="size-5" />
-              {unreadOrderNotifs > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-background tabular-nums">
-                  {unreadOrderNotifs > 99 ? '99+' : unreadOrderNotifs}
-                </span>
-              )}
-            </Link>
           )}
 
           <DropdownMenu>

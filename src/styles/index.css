@@ -241,3 +241,35 @@ html {
     }
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   Page transitions (mobile navigation) - Slide & Fade (iOS-like)
+   ────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Transition slide directionnelle (style iOS/apps natives) */
+  .page-transition-wrapper {
+    animation: page-slide-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes page-slide-fade {
+    0% {
+      opacity: 0;
+      transform: translateX(100%) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  /* Optimisation performance mobile */
+  .page-transition-wrapper {
+    will-change: opacity, transform;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-backface-visibility: hidden;
+    transform-origin: center center;
+    /* Force GPU layer pour fluidité */
+    transform: translateZ(0);
+  }
+}

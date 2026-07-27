@@ -51,21 +51,12 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: true,
   },
   {
-    key: 'my-cocktails',
-    label: 'Mes cocktails',
-    path: '/board/cocktails',
-    icon: FlaskConical,
-    roles: [UserRole.CUSTOMER],
-    showInMobileTab: true,
-  },
-  {
     key: 'my-orders',
     label: 'Commandes',
     path: '/board/orders',
     icon: ShoppingBag,
     roles: [UserRole.CUSTOMER],
-    showInMobileTab: false,
-    showInDesktopNav: false, // visible via the topbar icon only
+    showInMobileTab: true,
   },
 
   {

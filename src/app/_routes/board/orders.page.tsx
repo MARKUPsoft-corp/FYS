@@ -28,8 +28,6 @@ import {
 } from '@/components/features/orders/PeriodCalendar';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
-import { PageTour } from '@/components/features/tour/ClientTour';
-import { buildOrdersTourSteps } from '@/components/features/tour/pages/orders-tour';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -1154,8 +1152,6 @@ const Orders: PageComponent = () => {
 
   const periodLabel = formatPeriodLabel(periodType, periodAnchor);
 
-  const ordersTourSteps = useMemo(() => buildOrdersTourSteps(), []);
-
   const heroImageUrl = isAdmin
     ? 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200'
     : 'https://images.pexels.com/photos/4553031/pexels-photo-4553031.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -1170,7 +1166,6 @@ const Orders: PageComponent = () => {
   ) : undefined;
 
   return (
-    <PageTour pageId="orders" steps={ordersTourSteps} autoStartDelay={700}>
     <>
       <BoardPageShell
         eyebrow={isAdmin ? 'Gestion' : 'Suivi'}
@@ -1396,7 +1391,6 @@ const Orders: PageComponent = () => {
         />
       )}
     </>
-    </PageTour>
   );
 };
 

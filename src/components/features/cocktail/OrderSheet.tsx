@@ -78,6 +78,17 @@ export function OrderSheet({
     setCustomName(cocktail.name);
   }, [cocktail.name]);
 
+  // Scroller vers le haut quand la confirmation s'affiche
+  useEffect(() => {
+    if (ordered) {
+      // Scroller le contenu du sheet vers le haut
+      const sheetContent = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
+      if (sheetContent) {
+        sheetContent.scrollTop = 0;
+      }
+    }
+  }, [ordered]);
+
   const canOrder = district.trim().length > 0 && phone.trim().length > 0;
 
   const hasAnalysis = !!cocktail.aiAnalysis;

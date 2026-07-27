@@ -11,8 +11,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useAudioStore } from '@/stores/audio';
-import { useClientTour, PageTour } from '@/components/features/tour/ClientTour';
-import { buildProfileTourSteps } from '@/components/features/tour/pages/profile-tour';
 import { UserRole } from '@/entities';
 import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 
@@ -408,7 +406,6 @@ const Profile: PageComponent = () => {
 
   const complete = isProfileComplete(profile);
   const isCustomer = user?.role === UserRole.CUSTOMER;
-  const profileTourSteps = useMemo(() => buildProfileTourSteps(), []);
 
   const conditions = (profile?.healthConditions ?? []).filter(
     (c) => !c.toLowerCase().includes('aucune'),
@@ -427,7 +424,6 @@ const Profile: PageComponent = () => {
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
 
   return (
-    <PageTour pageId="profile" steps={profileTourSteps} autoStartDelay={700}>
     <div className="min-h-dvh bg-background pb-4">
 
       {/* Hero banner */}
@@ -700,7 +696,6 @@ const Profile: PageComponent = () => {
         />
       )}
     </div>
-    </PageTour>
   );
 };
 

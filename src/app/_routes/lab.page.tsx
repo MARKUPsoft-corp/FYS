@@ -21,8 +21,7 @@ import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
-import { PageTour, useIsDesktop } from '@/components/features/tour/ClientTour';
-import { buildLabTourSteps } from '@/components/features/tour/pages/lab-tour';
+import { useIsDesktop } from '@/components/features/tour/ClientTour';
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
@@ -62,7 +61,6 @@ const FysLab: PageComponent = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const recommendKeyRef = useRef<string>('');
   const isDesktop = useIsDesktop();
-  const labTourSteps = useMemo(() => buildLabTourSteps(isDesktop), [isDesktop]);
 
   const { data: fruits = [], isLoading: fruitsLoading } = useQuery({
     queryKey: ['fruits'],
@@ -431,12 +429,6 @@ const FysLab: PageComponent = () => {
   }, [selectedIngredients.size, stepParam, setSearchParams]);
 
   return (
-    <PageTour
-      pageId="lab"
-      steps={labTourSteps}
-      canAutoStart={activeTab === 'compose' && !fruitsLoading}
-      autoStartDelay={1000}
-    >
     <div className="min-h-dvh bg-background overflow-x-clip">
       <LabHeader
         activeTab={activeTab}
@@ -598,7 +590,6 @@ const FysLab: PageComponent = () => {
         />
       )}
     </div>
-    </PageTour>
   );
 };
 

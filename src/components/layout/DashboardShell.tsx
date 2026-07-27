@@ -45,7 +45,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           'transition-all duration-300 ease-in-out',
         )}
       >
-        <div className="w-full max-w-[1800px] mx-auto px-1 md:px-2 lg:px-4">
+        <div key={location.pathname} className="w-full max-w-[1800px] mx-auto px-1 md:px-2 lg:px-4 page-transition-wrapper">
           {children}
         </div>
       </main>

@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import type { KageDemoStep } from '@rasenganjs/kage-demo';
 import { TourStepCard, type TourStepCallbacks } from './TourStepCard';
 
-const TOTAL = 6;
+const TOTAL = 5;
 
 function step(
   n: number,
@@ -28,8 +28,8 @@ export function buildMobileTourSteps(): KageDemoStep[] {
         step(1, props, {
           title: 'Bienvenue sur FYS',
           description:
-            'Votre espace pour composer des cocktails de fruits sur mesure, avec l’analyse NutriFYS adaptée à votre profil.',
-          nextLabel: 'Découvrir',
+            'Votre espace pour composer des cocktails de fruits sur mesure, avec l\'analyse NutriFYS adaptee a votre profil.',
+          nextLabel: 'Decouvrir',
         }),
     },
     {
@@ -38,7 +38,7 @@ export function buildMobileTourSteps(): KageDemoStep[] {
         step(2, props, {
           title: 'Naviguez en un geste',
           description: 'La barre du bas vous mène partout.',
-          hint: 'Accueil · FYS Lab pour composer · Catalogue · Mes cocktails',
+          hint: 'Accueil · FYS Lab pour composer · Catalogue · Commandes',
         }),
     },
     {
@@ -51,18 +51,9 @@ export function buildMobileTourSteps(): KageDemoStep[] {
         }),
     },
     {
-      target: '#tour-orders',
-      render: (props) =>
-        step(4, props, {
-          title: 'Suivez vos commandes',
-          description:
-            'Consultez l’état de vos commandes et la progression de la préparation, sans recharger la page.',
-        }),
-    },
-    {
       target: '#tour-avatar',
       render: (props) =>
-        step(5, props, {
+        step(4, props, {
           title: 'Votre profil santé',
           description:
             'Complétez vos conditions, allergies et objectifs pour des recommandations NutriFYS vraiment personnalisées.',
@@ -71,7 +62,7 @@ export function buildMobileTourSteps(): KageDemoStep[] {
     {
       target: '#tour-logo',
       render: (props) =>
-        step(6, props, {
+        step(5, props, {
           title: 'Vous êtes prêt·e',
           description:
             'Commencez par le FYS Lab pour créer votre premier cocktail, ou explorez le catalogue.',
@@ -89,8 +80,8 @@ export function buildDesktopTourSteps(): KageDemoStep[] {
         step(1, props, {
           title: 'Bienvenue sur FYS',
           description:
-            'Votre espace pour composer des cocktails de fruits sur mesure, avec l’analyse NutriFYS adaptée à votre profil.',
-          nextLabel: 'Découvrir',
+            'Votre espace pour composer des cocktails de fruits sur mesure, avec l\'analyse NutriFYS adaptee a votre profil.',
+          nextLabel: 'Decouvrir',
         }),
     },
     {
@@ -98,7 +89,7 @@ export function buildDesktopTourSteps(): KageDemoStep[] {
       render: (props) =>
         step(2, props, {
           title: 'Tout est dans le menu',
-          description: 'Accédez à l’accueil, au Lab, au catalogue et à vos créations depuis la barre centrale.',
+          description: 'Accedez a l\'accueil, au Lab, au catalogue depuis la barre centrale.',
         }),
     },
     {
@@ -111,18 +102,9 @@ export function buildDesktopTourSteps(): KageDemoStep[] {
         }),
     },
     {
-      target: '#tour-orders',
-      render: (props) =>
-        step(4, props, {
-          title: 'Suivez vos commandes',
-          description:
-            'Consultez l’état de vos commandes et la progression de la préparation, sans recharger la page.',
-        }),
-    },
-    {
       target: '#tour-avatar',
       render: (props) =>
-        step(5, props, {
+        step(4, props, {
           title: 'Votre profil santé',
           description:
             'Complétez vos conditions, allergies et objectifs pour des recommandations NutriFYS vraiment personnalisées.',
@@ -131,7 +113,7 @@ export function buildDesktopTourSteps(): KageDemoStep[] {
     {
       target: '#tour-logo',
       render: (props) =>
-        step(6, props, {
+        step(5, props, {
           title: 'Vous êtes prêt·e',
           description:
             'Commencez par le FYS Lab pour créer votre premier cocktail, ou explorez le catalogue.',
