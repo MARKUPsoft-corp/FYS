@@ -18,8 +18,6 @@ import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import type { Fruit } from '@/entities';
 import { HeroSlider } from '@/components/features/home/HeroSlider';
-import { PageTour } from '@/components/features/tour/ClientTour';
-import { buildHomeTourSteps } from '@/components/features/tour/pages/home-tour';
 
 const CREATIONS = [
   {
@@ -100,8 +98,6 @@ export function CustomerHome({ name }: Props) {
     queryFn: getFruits,
   });
 
-  const homeTourSteps = useMemo(() => buildHomeTourSteps(), []);
-
   async function handleOnboardingComplete(data: {
     healthConditions: string[];
     allergies: string[];
@@ -113,11 +109,10 @@ export function CustomerHome({ name }: Props) {
   }
 
   return (
-    <PageTour pageId="home" steps={homeTourSteps} waitForTour="app" autoStartDelay={600}>
     <div className="min-h-dvh bg-background pb-4 overflow-x-clip relative">
 
       {/* 1. Massive Full Bleed Hero — SLIDER */}
-      <div id="tour-home-hero" className="lg:px-2">
+      <div  className="lg:px-2">
         <HeroSlider />
       </div>
 
@@ -130,7 +125,7 @@ export function CustomerHome({ name }: Props) {
         )}
 
         {/* FYS Lab section - Clean Split Hero (Desktop) / Card Overlay (Mobile) */}
-        <section id="tour-home-lab" className="relative py-8 lg:py-20">
+        <section  className="relative py-8 lg:py-20">
           
           {/* Section Title */}
           <div className="mb-8 lg:mb-12 text-center">
@@ -284,7 +279,7 @@ export function CustomerHome({ name }: Props) {
         <hr className="border-border/50" />
 
         {/* 2. NOS CREATIONS */}
-        <section id="tour-home-creations">
+        <section >
           <div className="mb-10 block text-center">
             <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
               <span className="text-foreground">Nos </span><span className="text-primary">Créations</span>
@@ -439,6 +434,5 @@ export function CustomerHome({ name }: Props) {
         </DrawerContent>
       </Drawer>
     </div>
-    </PageTour>
   );
 }

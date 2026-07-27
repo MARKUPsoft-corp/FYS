@@ -241,7 +241,7 @@ const Catalogue: PageComponent = () => {
         actions={
           <div className="space-y-4">
             {/* Barre de recherche */}
-            <div id="tour-catalogue-search" className="relative">
+            <div  className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
               <input
                 type="text"
@@ -265,7 +265,7 @@ const Catalogue: PageComponent = () => {
             )}
 
             {/* Tabs */}
-            <div id="tour-catalogue-tabs" className="flex p-1.5 rounded-full bg-background/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] max-w-md mx-auto">
+            <div  className="flex p-1.5 rounded-full bg-background/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] max-w-md mx-auto">
               {(['official', 'public', 'mine'] as CatalogueTab[]).map((t) => (
                 <button
                   key={t}
@@ -290,7 +290,7 @@ const Catalogue: PageComponent = () => {
           </div>
         }
       >
-        <div id="tour-catalogue-grid">
+        <div >
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
             {Array.from({ length: 8 }).map((_, i) => (

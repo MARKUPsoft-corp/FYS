@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { BellRing, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { subscribeToPush } from '@/services/push';
-import { isPageTourCompleted, TOUR_COMPLETED_EVENT } from '@/lib/client-tour-storage';
 
 export function PushNotificationPrompt() {
   const { user } = useAuthStore();
@@ -22,38 +21,14 @@ export function PushNotificationPrompt() {
     if (localStorage.getItem('fys_push_prompt_ignored')) return;
 
     const checkAndShow = () => {
-      const tourIsCompleted = isPageTourCompleted(user.uid, 'app');
-
-      // Si c'est un client et qu'il n'a pas fini (ou sauté) le tour, on bloque la modale.
-      // Elle se déclenchera UNIQUEMENT grâce à l'événement de fin du tour.
-      if (user.role !== 'admin' && !tourIsCompleted) {
-        return false;
-      }
-
-      // Dès que le tour est fini, ou si c'est l'admin (pas de tour), on peut afficher.
-      if (user.role === 'admin' || tourIsCompleted) {
-        setOpen(true);
-        return true;
-      }
-      return false;
+      // Toujours afficher après un délai
+      setOpen(true);
+      return true;
     };
 
-    // If we can show it immediately, wait 1.5s then show
-    if (checkAndShow()) {
-      const timer = setTimeout(() => setOpen(true), 1500);
-      return () => clearTimeout(timer);
-    }
-
-    // Otherwise, this is a new user who hasn't finished the onboarding tour. Wait for the event!
-    const handleTourCompleted = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.pageId === 'app') {
-        setTimeout(() => setOpen(true), 1000);
-      }
-    };
-    
-    window.addEventListener(TOUR_COMPLETED_EVENT, handleTourCompleted);
-    return () => window.removeEventListener(TOUR_COMPLETED_EVENT, handleTourCompleted);
+    // Délai de 1.5s puis affichage
+    const timer = setTimeout(checkAndShow, 1500);
+    return () => clearTimeout(timer);
   }, [user]);
 
   const handleSubscribe = async () => {

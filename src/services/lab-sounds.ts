@@ -47,9 +47,9 @@ export function playFruitSelectSound() {
     plonkFilter.connect(plonkGain);
     plonkGain.connect(ctx.destination);
     
-    // Envelope très douce
+    // Envelope avec volume augmenté
     plonkGain.gain.setValueAtTime(0, now);
-    plonkGain.gain.linearRampToValueAtTime(0.05, now + 0.01); // Volume réduit
+    plonkGain.gain.linearRampToValueAtTime(0.18, now + 0.01); // Volume augmenté (x3.6)
     plonkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     
     plonk.start(now);
@@ -69,7 +69,7 @@ export function playFruitSelectSound() {
       bubbleGain.connect(ctx.destination);
       
       bubbleGain.gain.setValueAtTime(0, now + offset);
-      bubbleGain.gain.linearRampToValueAtTime(0.02, now + offset + 0.01); // Très subtil
+      bubbleGain.gain.linearRampToValueAtTime(0.08, now + offset + 0.01); // Volume augmenté (x4)
       bubbleGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.08);
       
       bubble.start(now + offset);
@@ -112,7 +112,7 @@ export function playFruitDeselectSound() {
     splashGain.connect(ctx.destination);
     
     splashGain.gain.setValueAtTime(0, now);
-    splashGain.gain.linearRampToValueAtTime(0.03, now + 0.01);
+    splashGain.gain.linearRampToValueAtTime(0.12, now + 0.01); // Volume augmenté (x4)
     splashGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
     
     splash.start(now);
@@ -170,7 +170,7 @@ export function playAnalysisStartSound() {
     pourGain.connect(ctx.destination);
     
     pourGain.gain.setValueAtTime(0, now);
-    pourGain.gain.linearRampToValueAtTime(0.04, now + 0.1); // Volume très réduit
+    pourGain.gain.linearRampToValueAtTime(0.16, now + 0.1); // Volume augmenté (x4)
     pourGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
     
     pour.start(now);
@@ -230,9 +230,9 @@ export function playAnalysisAmbient() {
     flowFilter.connect(flowGain);
     flowGain.connect(ctx.destination);
     
-    // Volume constant mais subtil
+    // Volume constant mais audible
     flowGain.gain.setValueAtTime(0, startTime);
-    flowGain.gain.linearRampToValueAtTime(0.04, startTime + 0.5);
+    flowGain.gain.linearRampToValueAtTime(0.14, startTime + 0.5); // Volume augmenté (x3.5)
     
     flow.start(startTime);
     ambientSources.push(flow);
@@ -277,7 +277,7 @@ export function playAnalysisAmbient() {
       splashGain.connect(ctx.destination);
       
       splashGain.gain.setValueAtTime(0, ctx.currentTime);
-      splashGain.gain.linearRampToValueAtTime(0.018, ctx.currentTime + 0.1);
+      splashGain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.1); // Volume augmenté (x4)
       splashGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       
       splash.start(ctx.currentTime);
@@ -405,7 +405,7 @@ export function playAnalysisCompleteSound() {
     settleGain.connect(ctx.destination);
     
     settleGain.gain.setValueAtTime(0, now);
-    settleGain.gain.linearRampToValueAtTime(0.04, now + 0.1); // Doux
+    settleGain.gain.linearRampToValueAtTime(0.14, now + 0.1); // Volume augmenté (x3.5)
     settleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
     
     settle.start(now);
@@ -423,7 +423,7 @@ export function playAnalysisCompleteSound() {
     finalBubbleGain.connect(ctx.destination);
     
     finalBubbleGain.gain.setValueAtTime(0, now + 0.2);
-    finalBubbleGain.gain.linearRampToValueAtTime(0.02, now + 0.3);
+    finalBubbleGain.gain.linearRampToValueAtTime(0.08, now + 0.3); // Volume augmenté (x4)
     finalBubbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
     
     finalBubble.start(now + 0.2);

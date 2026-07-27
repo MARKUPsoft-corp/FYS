@@ -53,7 +53,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
           >
             <ChevronLeft className="size-4 mr-1" /> Retour
           </button>
-          <div id="tour-lab-notifications" className="flex items-center gap-3">
+          <div  className="flex items-center gap-3">
             <ButtonTheme />
             <NotificationBell />
           </div>
@@ -61,13 +61,13 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
 
         <div className="flex flex-col lg:flex-row items-center lg:justify-between gap-5 text-center lg:text-left mb-3">
           <div>
-            <h1 id="tour-lab-title" className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
+            <h1  className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
               FYS <span className="text-primary">Lab</span>
             </h1>
             <p className="text-muted-foreground text-sm font-medium">Votre jus, validé par NutriFYS</p>
           </div>
 
-          <div id="tour-lab-tabs" className="flex bg-background/40 dark:bg-background/20 backdrop-blur-[40px] saturate-150 rounded-[2rem] p-1.5 border border-white/30 dark:border-white/10 shadow-[inner_0_1px_2px_rgba(255,255,255,0.4)] w-fit mx-auto lg:mx-0">
+          <div  className="flex bg-background/40 dark:bg-background/20 backdrop-blur-[40px] saturate-150 rounded-[2rem] p-1.5 border border-white/30 dark:border-white/10 shadow-[inner_0_1px_2px_rgba(255,255,255,0.4)] w-fit mx-auto lg:mx-0">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
 

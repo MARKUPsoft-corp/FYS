@@ -16,7 +16,7 @@ export function BottomNav() {
 
   return (
     <nav
-      id="tour-bottom-nav"
+      
       className={cn(
         "fixed left-4 right-4 z-30 lg:hidden overflow-hidden",
         "bottom-[env(safe-area-inset-bottom,16px)] mb-3",

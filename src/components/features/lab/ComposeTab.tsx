@@ -401,7 +401,7 @@ export function ComposeTab({
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
 
       <div className="flex-1 min-w-0 w-full">
-        <div id="tour-lab-stepper" className="sticky top-0 z-30 -mx-4 px-4 lg:-ml-16 lg:pl-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10">
+        <div  className="sticky top-0 z-30 -mx-4 px-4 lg:-ml-16 lg:pl-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10">
           <ComposeStepper
             step={composeStep}
             onStepChange={onStepChange}
@@ -470,7 +470,7 @@ export function ComposeTab({
                 ))}
               </div>
             ) : (
-              <div id="tour-lab-fruits" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div  className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
                 {mainFruits.map((fruit) => {
                   const isSelected = selectedIngredients.has(fruit.id);
                   const isDisabled = !isSelected && atMaxFruits;
@@ -559,7 +559,7 @@ export function ComposeTab({
       </div>
 
       {/* ── Desktop save panel ── */}
-      <div id="tour-lab-save-panel" className="hidden lg:block w-[360px] shrink-0">
+      <div  className="hidden lg:block w-[360px] shrink-0">
         <SavePanel
           composeStep={composeStep}
           onStepChange={onStepChange}

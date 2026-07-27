@@ -5,7 +5,6 @@ import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { UserRole } from '@/entities/user';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
-import { ClientTour } from '@/components/features/tour/ClientTour';
 
 const AppLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
@@ -87,9 +86,7 @@ const AppLayout: LayoutComponent = () => {
 
   return (
     <DashboardShell>
-      <ClientTour canAutoStart={!showOnboarding && !profileLoading}>
-        <Outlet />
-      </ClientTour>
+      <Outlet />
       <OnboardingModal
         open={showOnboarding}
         onSkip={() => setModalDismissed(true)}

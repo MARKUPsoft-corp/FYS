@@ -1183,7 +1183,7 @@ const Orders: PageComponent = () => {
       >
         {/* Period + status filters (admin & client) */}
         <div className="space-y-6">
-        <div id="tour-orders-search" className="relative">
+        <div  className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="search"
@@ -1193,7 +1193,7 @@ const Orders: PageComponent = () => {
             className="w-full h-12 pl-11 pr-4 rounded-2xl bg-card border border-border/60 text-foreground placeholder:text-muted-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
           />
         </div>
-        <div id="tour-orders-filters" className="space-y-3">
+        <div  className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
               <CalendarDays className="size-3.5 text-muted-foreground" />
@@ -1309,7 +1309,7 @@ const Orders: PageComponent = () => {
 
         {/* Order list */}
         {!isLoading && visible.length > 0 && (
-          <div id="tour-orders-list" className="space-y-4">
+          <div  className="space-y-4">
             {visible.map((order) => (
               <OrderCard
                 key={order.id}

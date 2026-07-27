@@ -11,7 +11,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useAudioStore } from '@/stores/audio';
-import { useClientTour } from '@/components/features/tour/ClientTour';
 import { UserRole } from '@/entities';
 import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 
@@ -394,7 +393,6 @@ const Profile: PageComponent = () => {
   const { user } = useAuthStore();
   const { profile, loading, fetch } = useProfileStore();
   const audio = useAudioStore();
-  const { startTour, isActive } = useClientTour();
   const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
@@ -452,7 +450,7 @@ const Profile: PageComponent = () => {
       <div className="px-3 md:px-4 space-y-6 mt-6">
 
         {/* Identity card */}
-        <div id="tour-profile-identity" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-start justify-between gap-4">
+        <div  className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="font-display font-bold text-xl text-foreground truncate">
               {user?.name ?? '—'}
@@ -474,7 +472,7 @@ const Profile: PageComponent = () => {
 
         {/* App tour (clients only) */}
         {isCustomer && (
-        <div id="tour-profile-app-tour" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center gap-4">
+        <div  className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center gap-4">
           <div className="size-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
             <Compass className="size-6 text-secondary" />
           </div>
@@ -561,7 +559,7 @@ const Profile: PageComponent = () => {
 
         {/* Completion bar */}
         {!loading && (
-          <div id="tour-profile-health" className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
+          <div  className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">Complétude du profil santé</p>
               <span className="text-sm font-bold text-primary">{completionPct}%</span>
