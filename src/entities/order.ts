@@ -11,6 +11,16 @@ export enum OrderStatus {
   CANCELLED = 'cancelled',
 }
 
+/** Ligne de commande pour un format de bouteille spécifique */
+export interface OrderLine {
+  bottleSize: BottleSize;
+  bottleSizeLabel: string;
+  quantity: number;
+  bottleBasePriceSnapshot: number;
+  pricePerBottle: number;
+  lineTotal: number;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -19,12 +29,17 @@ export interface Order {
   userPhoneSnapshot?: string;
   cocktailId: string;
   cocktailNameSnapshot: string;
-  quantity: number;
-  /** Contenant choisi — optionnel pour les commandes legacy */
+  
+  /** Lignes de commande (500ml + 1L possibles dans la même commande) */
+  orderLines: OrderLine[];
+  
+  /** Legacy fields for backward compatibility — optionnel pour les anciennes commandes */
+  quantity?: number;
   bottleSize?: BottleSize;
   bottleSizeLabel?: string;
   bottleBasePriceSnapshot?: number;
-  cocktailPriceSnapshot: number;
+  cocktailPriceSnapshot?: number;
+  
   deliveryFee: number;
   totalPrice: number;
   status: OrderStatus;

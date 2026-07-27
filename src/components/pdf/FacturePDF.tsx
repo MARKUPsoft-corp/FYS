@@ -73,7 +73,9 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
     ? createdDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
     : '—';
 
-  const subtotal = order.cocktailPriceSnapshot * order.quantity;
+  const subtotal = order.orderLines?.length
+    ? order.orderLines.reduce((sum, line) => sum + line.lineTotal, 0)
+    : (order.cocktailPriceSnapshot || 0) * (order.quantity || 0);
 
   return (
     <Document title={`Facture — ${order.id}`} author="NutriFYS">
@@ -140,14 +142,32 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
             <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>P.U.</Text>
             <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>Total</Text>
           </View>
-          {/* Product row */}
-          <View style={[s.row, { marginBottom: 2 }]}>
-            <Text style={[s.value, { flex: 2 }]}>{order.cocktailNameSnapshot}</Text>
-
-            <Text style={[s.value, { width: 30, textAlign: 'center' }]}>{order.quantity}</Text>
-            <Text style={[s.value, { width: 70, textAlign: 'right' }]}>{order.cocktailPriceSnapshot.toLocaleString()} XAF</Text>
-            <Text style={[s.value, { width: 80, textAlign: 'right' }]}>{subtotal.toLocaleString()} XAF</Text>
-          </View>
+          
+          {/* Product rows — with orderLines support */}
+          {order.orderLines?.length ? (
+            order.orderLines.map((line, i) => (
+              <View key={i} style={[s.row, { marginBottom: 2 }]}>
+                <Text style={[s.value, { flex: 2 }]}>
+                  {order.cocktailNameSnapshot} · {line.bottleSizeLabel}
+                </Text>
+                <Text style={[s.value, { width: 30, textAlign: 'center' }]}>{line.quantity}</Text>
+                <Text style={[s.value, { width: 70, textAlign: 'right' }]}>{line.pricePerBottle.toLocaleString()} XAF</Text>
+                <Text style={[s.value, { width: 80, textAlign: 'right' }]}>{line.lineTotal.toLocaleString()} XAF</Text>
+              </View>
+            ))
+          ) : (
+            // Legacy: commandes sans orderLines
+            <View style={[s.row, { marginBottom: 2 }]}>
+              <Text style={[s.value, { flex: 2 }]}>
+                {order.cocktailNameSnapshot}
+                {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+              </Text>
+              <Text style={[s.value, { width: 30, textAlign: 'center' }]}>{order.quantity}</Text>
+              <Text style={[s.value, { width: 70, textAlign: 'right' }]}>{order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF</Text>
+              <Text style={[s.value, { width: 80, textAlign: 'right' }]}>{subtotal.toLocaleString()} XAF</Text>
+            </View>
+          )}
+          
           {/* Fruits details */}
           {ingredientsStr && (
             <View style={s.row}>

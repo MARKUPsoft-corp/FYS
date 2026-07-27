@@ -132,16 +132,20 @@ export function CatalogueOrderSheet({ cocktail, open, onOpenChange }: Props) {
         user.uid,
         analysis ?? undefined,
       );
+      
+      // Créer une ligne de commande pour le format sélectionné
+      const orderLines = [{
+        bottleSize,
+        quantity,
+        bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
+        pricePerBottle: perBottle,
+      }];
+      
       await createOrder(
         user,
         { ...cloned, totalPrice: perBottle },
-        quantity,
-        {
-          bottleSize,
-          bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
-          pricePerBottle: perBottle,
-          deliveryFee,
-        },
+        orderLines,
+        deliveryFee,
         deliveryDetails,
         {
           cocktailImageSnapshot:

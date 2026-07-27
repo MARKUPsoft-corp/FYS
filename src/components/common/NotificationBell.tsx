@@ -182,7 +182,7 @@ export function NotificationBell() {
       </Sheet>
 
       {showToast && (
-        <div className="fixed top-[calc(var(--sat)+5rem)] right-4 z-50 animate-in slide-in-from-right-4 fade-in duration-300">
+        <div className="fixed top-[calc(var(--sat)+5rem)] right-4 z-[9999] animate-in slide-in-from-right-4 fade-in duration-300">
           <div className="bg-card border border-border/60 shadow-xl rounded-2xl p-4 w-72 md:w-80 flex items-start gap-3 relative">
             <button
               type="button"

@@ -44,8 +44,8 @@ export function OrderSheet({
   onOrderSuccess?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<SheetTab>('order');
-  const [quantity, setQuantity] = useState(1);
-  const [bottleSize, setBottleSize] = useState<BottleSize>('500ml');
+  const [quantity500ml, setQuantity500ml] = useState(0);
+  const [quantity1L, setQuantity1L] = useState(0);
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
 
@@ -90,37 +90,62 @@ export function OrderSheet({
     ? pricePerBottle(pricing, '1L', cocktail.ingredients)
     : Math.round(cocktail.totalPrice * 1.6);
 
-  const perBottle = bottleSize === '500ml' ? price500 : price1L;
   const deliveryFee = pricing?.deliveryFee ?? 500;
-  const subtotal = perBottle * quantity;
+  const subtotal = (price500 * quantity500ml) + (price1L * quantity1L);
   const total = subtotal + deliveryFee;
+  const totalBottles = quantity500ml + quantity1L;
 
   async function handleOrder() {
     if (!pricing) return;
     setOrdering(true);
+    console.log('[OrderSheet] Starting order...');
     try {
       const details = { district, phone, instructions, ...(coordinates ? { coordinates } : {}) };
-      const pricingPayload = {
-        bottleSize,
-        bottleBasePrice: getBottleBasePrice(pricing, bottleSize),
-        pricePerBottle: perBottle,
-        deliveryFee,
-      };
+      
+      // Créer des lignes de commande pour chaque format avec quantité > 0
+      const orderLines: Array<{
+        bottleSize: BottleSize;
+        quantity: number;
+        bottleBasePrice: number;
+        pricePerBottle: number;
+      }> = [];
+      
+      if (quantity500ml > 0) {
+        orderLines.push({
+          bottleSize: '500ml',
+          quantity: quantity500ml,
+          bottleBasePrice: pricing.bottle500mlBase,
+          pricePerBottle: price500,
+        });
+      }
+      
+      if (quantity1L > 0) {
+        orderLines.push({
+          bottleSize: '1L',
+          quantity: quantity1L,
+          bottleBasePrice: pricing.bottle1LBase,
+          pricePerBottle: price1L,
+        });
+      }
 
       if (cocktail.id === 'draft') {
+        console.log('[OrderSheet] Creating draft cocktail...');
         const cocktailId = await createCocktail({
           ...cocktail,
           name: customName,
           createdBy: user.uid,
-          basePrice: pricingPayload.bottleBasePrice,
-          totalPrice: perBottle,
+          basePrice: pricing.bottle500mlBase,
+          totalPrice: price500, // Prix de référence
           ...(coverUrl ? { imageUrl: coverUrl } : {}),
         });
+        console.log('[OrderSheet] Draft cocktail created:', cocktailId);
+        
+        // Créer une seule commande avec toutes les lignes
         await createOrder(
           user,
-          { ...cocktail, name: customName, id: cocktailId, totalPrice: perBottle, imageUrl: coverUrl },
-          quantity,
-          pricingPayload,
+          { ...cocktail, name: customName, id: cocktailId, totalPrice: price500, imageUrl: coverUrl },
+          orderLines,
+          deliveryFee,
           details,
           {
             cocktailImageSnapshot: coverUrl,
@@ -128,11 +153,12 @@ export function OrderSheet({
           },
         );
       } else {
+        console.log('[OrderSheet] Creating order for existing cocktail:', cocktail.id);
         await createOrder(
           user,
-          { ...cocktail, name: customName, totalPrice: perBottle, imageUrl: coverUrl ?? cocktail.imageUrl },
-          quantity,
-          pricingPayload,
+          { ...cocktail, name: customName, totalPrice: price500, imageUrl: coverUrl ?? cocktail.imageUrl },
+          orderLines,
+          deliveryFee,
           details,
           {
             cocktailImageSnapshot: coverUrl ?? cocktail.imageUrl,
@@ -140,8 +166,12 @@ export function OrderSheet({
           },
         );
       }
+      console.log('[OrderSheet] Order created successfully, setting ordered=true');
       setOrdered(true);
-      onOrderSuccess?.();
+      // NE PAS appeler onOrderSuccess ici - on l'appellera seulement quand l'utilisateur fermera le sheet
+    } catch (error) {
+      console.error('[OrderSheet] Error creating order:', error);
+      alert('Erreur lors de la création de la commande. Vérifiez la console.');
     } finally {
       setOrdering(false);
     }
@@ -149,10 +179,20 @@ export function OrderSheet({
 
   function handleClose(v: boolean) {
     if (!v) {
-      setQuantity(1);
-      setBottleSize('500ml');
+      // Reset tous les états quand on ferme le sheet
+      setQuantity500ml(0);
+      setQuantity1L(0);
       setOrdered(false);
       setActiveTab('order');
+      setDistrict('');
+      setPhone(user.phone || '');
+      setInstructions('');
+      setCoordinates(undefined);
+      
+      // Si on vient de passer commande, informer le parent pour réinitialiser le lab
+      if (ordered) {
+        onOrderSuccess?.();
+      }
     }
     onOpenChange(v);
   }
@@ -228,20 +268,90 @@ export function OrderSheet({
         <div className="border-b border-border/40 mx-0 mt-4 shrink-0" />
 
         {ordered ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 text-center">
-            <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <ShoppingBag className="size-9 text-primary" />
+          <>
+            <div className="flex-1 overflow-y-auto">
+              {/* Success Header - Split Layout */}
+              <div className="px-6 pt-6 pb-6 border-b border-border/20">
+                <div className="flex items-start gap-6">
+                  {/* Left: Bravo */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
+                      <ShoppingBag className="size-10 text-primary" />
+                    </div>
+                    <h3 className="font-display font-bold text-3xl text-primary">Bravo !</h3>
+                  </div>
+                  
+                  {/* Right: Order Details */}
+                  <div className="flex-1 space-y-4 pt-2">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Votre commande a été enregistrée avec succès.
+                    </p>
+                    
+                    {/* Order Summary Card */}
+                    <div className="bg-muted/30 rounded-xl p-4 space-y-2">
+                      <p className="text-sm font-bold text-foreground">{customName}</p>
+                      <div className="space-y-1">
+                        {quantity500ml > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {quantity500ml} bouteille{quantity500ml > 1 ? 's' : ''} · {BOTTLE_LABELS['500ml']}
+                          </p>
+                        )}
+                        {quantity1L > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {quantity1L} bouteille{quantity1L > 1 ? 's' : ''} · {BOTTLE_LABELS['1L']}
+                          </p>
+                        )}
+                      </div>
+                      <div className="pt-2">
+                        <div className="inline-flex px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                          <p className="text-lg font-bold text-primary tabular-nums">{total.toLocaleString()} XAF</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cameroon Map Section */}
+              <div className="px-6 py-6 space-y-5 pb-24">
+                <div className="space-y-3">
+                  <h4 className="font-display font-bold text-xl text-foreground">
+                    Découvrez l'origine de vos fruits
+                  </h4>
+                </div>
+                
+                <CameroonMap ingredients={cocktail.ingredients} />
+
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Chaque ingrédient de votre cocktail provient du{' '}
+                    <strong className="text-foreground font-semibold">terroir camerounais</strong>. 
+                    Une fierté nationale dans chaque gorgée, cultivée par nos producteurs locaux 
+                    avec passion et savoir-faire.
+                  </p>
+
+                  <div className="flex justify-center pt-2">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20">
+                      <span className="text-lg">🇨🇲</span>
+                      <span className="text-xs font-bold text-primary">100% fruits du Cameroun</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="font-display font-bold text-2xl text-foreground">Commande passée !</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
-              Votre commande de <strong>{quantity} bouteille{quantity > 1 ? 's' : ''}</strong>{' '}
-              <strong>{BOTTLE_LABELS[bottleSize]}</strong> de <strong>{customName}</strong> a été enregistrée.
-            </p>
-            <p className="text-primary font-bold text-lg">{total.toLocaleString()} XAF</p>
-            <Button variant="outline" className="rounded-2xl px-8 mt-2" onClick={() => handleClose(false)}>
-              Fermer
-            </Button>
-          </div>
+            
+            {/* Fixed Close Button at Bottom */}
+            <div className="shrink-0 border-t border-border/40 px-6 py-4 bg-background">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="w-full rounded-2xl h-14 font-bold text-base border-2 hover:bg-muted" 
+                onClick={() => handleClose(false)}
+              >
+                Fermer
+              </Button>
+            </div>
+          </>
         ) : activeTab === 'nutrition' && analysis ? (
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <NutritionalView analysis={analysis} />
@@ -252,51 +362,140 @@ export function OrderSheet({
 
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Provenance des ingrédients
+                  Choisissez votre contenant
                 </p>
-                <CameroonMap ingredients={cocktail.ingredients} />
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Card 500ml */}
+                  <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
+                    quantity500ml > 0 
+                      ? 'border-primary bg-primary/5 shadow-[0_8px_24px_rgba(63,109,78,0.18)]' 
+                      : 'border-border/60 bg-card'
+                  }`}>
+                    {quantity500ml > 0 && (
+                      <span className="absolute top-2 right-2 size-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold">
+                        ✓
+                      </span>
+                    )}
+                    
+                    {/* Bottle SVG */}
+                    <div className="relative flex items-end justify-center h-[130px] sm:h-[150px] transform scale-[0.88]">
+                      {quantity500ml > 0 && (
+                        <div className="absolute bottom-2 inset-x-4 h-8 rounded-full bg-primary/20 blur-xl" />
+                      )}
+                      <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
+                        <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} />
+                        <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
+                        <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
+                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-500ml)" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
+                        <path d="M18 95 L16 138 Q16 148 40 150 Q64 148 64 138 L62 95 Q40 100 18 95 Z" fill={quantity500ml > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
+                        <ellipse cx="40" cy="96" rx="22" ry="4" fill="#fff" opacity="0.25" />
+                        <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
+                        <defs>
+                          <linearGradient id="glassGrad-500ml" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#F7FAF7" />
+                            <stop offset="100%" stopColor="#D5E6D9" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
 
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Format
-                </p>
-                <BottleSizePicker
-                  selected={bottleSize}
-                  onSelect={setBottleSize}
-                  price500ml={price500}
-                  price1L={price1L}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Nombre de bouteilles
-                </p>
-                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-5 py-4">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                    className="size-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 active:scale-90 transition-all"
-                  >
-                    <Minus className="size-4" />
-                  </button>
-                  <div className="text-center">
-                    <span className="font-display font-bold text-3xl text-foreground tabular-nums">
-                      {quantity}
-                    </span>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      × {BOTTLE_LABELS[bottleSize].toLowerCase()}
-                    </p>
+                    <div className="mt-2 text-center space-y-0.5">
+                      <p className={`text-sm font-bold ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                        Demi-litre
+                      </p>
+                      <p className="text-[11px] text-muted-foreground font-medium">50 cl</p>
+                      <p className={`text-[15px] font-bold tabular-nums pt-1 ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                        {price500.toLocaleString()} <span className="text-[11px] font-semibold">XAF</span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">/ bouteille</p>
+                      
+                      {/* Counter */}
+                      <div className="flex items-center justify-center gap-2 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity500ml(q => Math.max(0, q - 1))}
+                          disabled={quantity500ml === 0}
+                          className="size-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
+                        >
+                          <Minus className="size-3.5" />
+                        </button>
+                        <span className="font-bold text-lg tabular-nums min-w-[2ch] text-center">{quantity500ml}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity500ml(q => q + 1)}
+                          className="size-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                        >
+                          <Plus className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="size-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center active:scale-90 transition-all"
-                  >
-                    <Plus className="size-4" />
-                  </button>
+
+                  {/* Card 1L */}
+                  <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
+                    quantity1L > 0 
+                      ? 'border-primary bg-primary/5 shadow-[0_8px_24px_rgba(63,109,78,0.18)]' 
+                      : 'border-border/60 bg-card'
+                  }`}>
+                    {quantity1L > 0 && (
+                      <span className="absolute top-2 right-2 size-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold">
+                        ✓
+                      </span>
+                    )}
+                    
+                    {/* Bottle SVG */}
+                    <div className="relative flex items-end justify-center h-[130px] sm:h-[150px]">
+                      {quantity1L > 0 && (
+                        <div className="absolute bottom-2 inset-x-4 h-8 rounded-full bg-primary/20 blur-xl" />
+                      )}
+                      <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
+                        <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity1L > 0 ? '#F2694A' : '#C4B5A8'} />
+                        <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity1L > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
+                        <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity1L > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
+                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-1L)" stroke={quantity1L > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
+                        <path d="M17 78 L15 138 Q15 148 40 150 Q65 148 65 138 L63 78 Q40 84 17 78 Z" fill={quantity1L > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
+                        <ellipse cx="40" cy="80" rx="22" ry="4" fill="#fff" opacity="0.25" />
+                        <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
+                        <defs>
+                          <linearGradient id="glassGrad-1L" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#F7FAF7" />
+                            <stop offset="100%" stopColor="#D5E6D9" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+
+                    <div className="mt-2 text-center space-y-0.5">
+                      <p className={`text-sm font-bold ${quantity1L > 0 ? 'text-primary' : 'text-foreground'}`}>
+                        Un litre
+                      </p>
+                      <p className="text-[11px] text-muted-foreground font-medium">1 L</p>
+                      <p className={`text-[15px] font-bold tabular-nums pt-1 ${quantity1L > 0 ? 'text-primary' : 'text-foreground'}`}>
+                        {price1L.toLocaleString()} <span className="text-[11px] font-semibold">XAF</span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">/ bouteille</p>
+                      
+                      {/* Counter */}
+                      <div className="flex items-center justify-center gap-2 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity1L(q => Math.max(0, q - 1))}
+                          disabled={quantity1L === 0}
+                          className="size-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
+                        >
+                          <Minus className="size-3.5" />
+                        </button>
+                        <span className="font-bold text-lg tabular-nums min-w-[2ch] text-center">{quantity1L}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity1L(q => q + 1)}
+                          className="size-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                        >
+                          <Plus className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -348,28 +547,49 @@ export function OrderSheet({
               </div>
 
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-[13px] text-muted-foreground">
-                    {quantity} × {BOTTLE_LABELS[bottleSize]} · {perBottle.toLocaleString()} XAF
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {subtotal.toLocaleString()} XAF
-                  </span>
-                </div>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                    <Truck className="size-3.5" /> Livraison
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {deliveryFee.toLocaleString()} XAF
-                  </span>
-                </div>
-                <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
-                  <span className="text-[15px] font-bold text-foreground">Total</span>
-                  <span className="text-[18px] font-bold text-primary tabular-nums">
-                    {total.toLocaleString()} XAF
-                  </span>
-                </div>
+                {quantity500ml > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {quantity500ml} × Demi-litre · {price500.toLocaleString()} XAF
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {(price500 * quantity500ml).toLocaleString()} XAF
+                    </span>
+                  </div>
+                )}
+                {quantity1L > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {quantity1L} × Un litre · {price1L.toLocaleString()} XAF
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {(price1L * quantity1L).toLocaleString()} XAF
+                    </span>
+                  </div>
+                )}
+                {totalBottles > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+                      <Truck className="size-3.5" /> Livraison
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {deliveryFee.toLocaleString()} XAF
+                    </span>
+                  </div>
+                )}
+                {totalBottles > 0 && (
+                  <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
+                    <span className="text-[15px] font-bold text-foreground">Total</span>
+                    <span className="text-[18px] font-bold text-primary tabular-nums">
+                      {total.toLocaleString()} XAF
+                    </span>
+                  </div>
+                )}
+                {totalBottles === 0 && (
+                  <div className="px-4 py-4 text-center text-sm text-muted-foreground">
+                    Sélectionnez au moins une bouteille
+                  </div>
+                )}
               </div>
             </div>
 
@@ -377,13 +597,15 @@ export function OrderSheet({
               <Button
                 size="lg"
                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] disabled:opacity-50 active:scale-95 transition-all"
-                disabled={ordering || !canOrder || !pricing}
+                disabled={ordering || !canOrder || !pricing || totalBottles === 0}
                 onClick={handleOrder}
               >
                 {ordering ? (
                   <><Loader2 className="size-5 animate-spin" /> Commande en cours…</>
                 ) : !canOrder ? (
                   <>Remplissez l&apos;adresse de livraison</>
+                ) : totalBottles === 0 ? (
+                  <>Sélectionnez au moins une bouteille</>
                 ) : (
                   <><ShoppingBag className="size-5" /> Commander · {total.toLocaleString()} XAF</>
                 )}

@@ -33,11 +33,11 @@ type UserInfo = {
   phone?: string;
 };
 
-export type CreateOrderPricing = {
+export type CreateOrderLine = {
   bottleSize: BottleSize;
+  quantity: number;
   bottleBasePrice: number;
   pricePerBottle: number;
-  deliveryFee: number;
 };
 
 export type CreateOrderVisuals = {
@@ -48,11 +48,15 @@ export type CreateOrderVisuals = {
 export async function createOrder(
   user: UserInfo,
   cocktail: Cocktail,
-  quantity: number,
-  pricing: CreateOrderPricing,
+  orderLines: CreateOrderLine[],
+  deliveryFee: number,
   deliveryDetails?: { district: string; phone: string; instructions: string; coordinates?: { lat: number; lng: number } },
   visuals?: CreateOrderVisuals,
 ): Promise<string> {
+  if (orderLines.length === 0) {
+    throw new Error('Au moins une ligne de commande est requise.');
+  }
+
   const cover =
     visuals?.cocktailImageSnapshot ??
     cocktail.imageUrl ??
@@ -75,6 +79,21 @@ export async function createOrder(
     ),
   } : undefined;
 
+  // Calculate totals
+  const subtotal = orderLines.reduce((sum, line) => sum + (line.pricePerBottle * line.quantity), 0);
+  const totalPrice = subtotal + deliveryFee;
+  const totalQuantity = orderLines.reduce((sum, line) => sum + line.quantity, 0);
+
+  // Build order lines with labels
+  const orderLinesWithLabels = orderLines.map(line => ({
+    bottleSize: line.bottleSize,
+    bottleSizeLabel: BOTTLE_LABELS[line.bottleSize],
+    quantity: line.quantity,
+    bottleBasePriceSnapshot: line.bottleBasePrice,
+    pricePerBottle: line.pricePerBottle,
+    lineTotal: line.pricePerBottle * line.quantity,
+  }));
+
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
@@ -84,36 +103,38 @@ export async function createOrder(
     ...(user.phone ? { userPhoneSnapshot: user.phone } : {}),
     cocktailId: cocktail.id,
     cocktailNameSnapshot: cocktail.name,
-    quantity,
-    bottleSize: pricing.bottleSize,
-    bottleSizeLabel: BOTTLE_LABELS[pricing.bottleSize],
-    bottleBasePriceSnapshot: pricing.bottleBasePrice,
-    cocktailPriceSnapshot: pricing.pricePerBottle,
-    deliveryFee: pricing.deliveryFee,
-    totalPrice: pricing.pricePerBottle * quantity + pricing.deliveryFee,
+    orderLines: orderLinesWithLabels,
+    deliveryFee,
+    totalPrice,
     status: OrderStatus.PENDING,
     ...(cleanedDeliveryDetails ? { deliveryDetails: cleanedDeliveryDetails } : {}),
     ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
     ...(cover ? { cocktailImageSnapshot: cover } : {}),
     ...(fruitImgs?.length ? { ingredientImageSnapshots: fruitImgs } : {}),
   };
+  
   await setDoc(ref, {
     ...order,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
+  // Build notification message
+  const quantityText = orderLines.map(line => 
+    `${line.quantity}× ${BOTTLE_LABELS[line.bottleSize]}`
+  ).join(' + ');
+
   // Notify admins in-app
   notifyAdmins({
     title: 'Nouvelle commande 🎉',
-    message: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
+    message: `${user.name} a commandé ${cocktail.name} (${quantityText}).`,
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
   // Send push notification to all admins
   sendPushNotification({
     title: 'Nouvelle commande FYS 🎉',
-    body: `${user.name} a commandé ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}).`,
+    body: `${user.name} a commandé ${cocktail.name} (${quantityText}).`,
     url: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
@@ -121,7 +142,7 @@ export async function createOrder(
   createNotification({
     userId: user.uid,
     title: 'Commande enregistrée 🎉',
-    message: `Votre commande de ${quantity}× ${cocktail.name} (${BOTTLE_LABELS[pricing.bottleSize]}) a bien été reçue.`,
+    message: `Votre commande de ${cocktail.name} (${quantityText}) a bien été reçue.`,
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 

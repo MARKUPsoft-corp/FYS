@@ -111,37 +111,6 @@ export function SupplementsTab({
 
   return (
     <div className="space-y-6">
-      <div className="relative z-20 bg-[#28422F] rounded-2xl p-4 border border-primary/20 shadow-lg flex items-start gap-4 min-h-[100px]">
-        <div className="size-10 rounded-full bg-primary/30 flex items-center justify-center shrink-0 border border-accent/30">
-          <Sparkles className="size-4 text-[#E0982E]" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest block mb-1">
-            NutriFYS
-          </span>
-          {loadingAI ? (
-            <div className="animate-pulse flex flex-col gap-2 mt-2 w-full">
-              <div className="h-3 bg-white/20 rounded w-full" />
-              <div className="h-3 bg-white/20 rounded w-4/5" />
-            </div>
-          ) : (
-            <p className="text-white/90 text-[12px] md:text-[13px] font-medium leading-relaxed">
-              Basé sur{' '}
-              <span className="text-white font-semibold">{fruitNames || 'votre sélection'}</span>
-              {aiRecommendation?.profileLabel && (
-                <>
-                  {' '}
-                  <span className="text-[#E0982E] font-bold">
-                    (profil {aiRecommendation.profileLabel})
-                  </span>
-                </>
-              )}
-              , voici les suppléments que je vous propose (max. {MAX_LAB_SUPPLEMENTS}). Vous pouvez les retirer ou en ajouter d&apos;autres.
-            </p>
-          )}
-        </div>
-      </div>
-
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Votre base fruitée

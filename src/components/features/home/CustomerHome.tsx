@@ -163,25 +163,25 @@ export function CustomerHome({ name }: Props) {
               </div>
 
               {/* Title */}
-              <h2 className="font-display font-extrabold text-3xl text-white leading-[1.15]">
+              <h2 className="font-display font-extrabold text-4xl sm:text-5xl text-white leading-[1.15]">
                 Créez votre propre <span className="bg-gradient-to-r from-primary via-[#90B566] to-secondary bg-clip-text text-transparent">cocktail</span>
               </h2>
 
               {/* Description */}
-              <p className="text-white/90 text-sm leading-relaxed max-w-md mx-auto">
+              <p className="text-white/90 text-base sm:text-lg leading-relaxed max-w-md mx-auto">
                 Sélectionnez vos fruits et laissez <strong className="text-white font-bold">NutriFYS</strong> analyser la compatibilité en temps réel.
               </p>
 
               {/* Quick stats - 3 inline pills */}
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
-                  <span className="text-white text-xs font-bold">18 Fruits</span>
+                <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-sm font-bold">18+ Fruits</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
-                  <span className="text-white text-xs font-bold">Analyse IA</span>
+                <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-sm font-bold">Analyse IA</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
-                  <span className="text-white text-xs font-bold">2 min chrono</span>
+                <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                  <span className="text-white text-sm font-bold">2 min chrono</span>
                 </div>
               </div>
 
@@ -190,9 +190,9 @@ export function CustomerHome({ name }: Props) {
                 <Link to="/lab" className="block">
                   <Button
                     size="lg"
-                    className="w-full rounded-[1.25rem] bg-primary text-white font-bold hover:bg-primary/90 active:scale-95 transition-all h-14 text-base shadow-lg"
+                    className="w-full rounded-[1.25rem] bg-primary text-white font-bold hover:bg-primary/90 active:scale-95 transition-all h-16 text-lg shadow-lg"
                   >
-                    <Sparkles className="size-5" />
+                    <Sparkles className="size-6" />
                     Tester le FYS Lab
                   </Button>
                 </Link>

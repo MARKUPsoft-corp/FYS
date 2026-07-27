@@ -391,7 +391,7 @@ const FysLab: PageComponent = () => {
     }
   }
 
-  /** Après commande : OrderSheet a déjà persisté le cocktail (draft) — pas de second createCocktail. */
+  /** Après commande : réinitialiser le lab quand le sheet se ferme */
   function handleOrderSuccess() {
     queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
     setSelectedIngredients(new Map());

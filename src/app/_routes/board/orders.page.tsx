@@ -162,9 +162,31 @@ function OrderCard({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
-        {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-        {' · '}{order.cocktailPriceSnapshot.toLocaleString()} XAF / u
+        {order.orderLines?.length ? (
+          order.orderLines.map((line, i) => (
+            <span key={i}>
+              {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+              {i < order.orderLines.length - 1 ? ' + ' : ''}
+            </span>
+          ))
+        ) : (
+          // Legacy: pour les anciennes commandes sans orderLines
+          <>
+            {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+            {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+          </>
+        )}
+        {' · '}
+        {order.orderLines?.length ? (
+          order.orderLines.map((line, i) => (
+            <span key={i}>
+              {line.pricePerBottle.toLocaleString()} XAF
+              {i < order.orderLines.length - 1 ? ' + ' : ''}
+            </span>
+          ))
+        ) : (
+          `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
+        )}
       </p>
 
       <div className="flex items-center justify-between pt-1 border-t border-border/40">
@@ -520,21 +542,48 @@ function ClientOrderSheet({
                 <span className="text-[13px] text-muted-foreground">Cocktail</span>
                 <span className="text-[13px] font-semibold text-foreground">{order.cocktailNameSnapshot}</span>
               </div>
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">Quantité</span>
-                <span className="text-[13px] font-semibold text-foreground">
-                  {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
-                  {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-                </span>
-              </div>
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">
-                  {order.quantity} × {order.cocktailPriceSnapshot.toLocaleString()} XAF
-                </span>
-                <span className="text-[13px] font-semibold text-foreground">
-                  {(order.cocktailPriceSnapshot * order.quantity).toLocaleString()} XAF
-                </span>
-              </div>
+              {order.orderLines?.length ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <div className="text-right space-y-1">
+                      {order.orderLines.map((line, i) => (
+                        <p key={i} className="text-[13px] font-semibold text-foreground">
+                          {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  {order.orderLines.map((line, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">
+                        {line.quantity} × {line.pricePerBottle.toLocaleString()} XAF ({line.bottleSizeLabel})
+                      </span>
+                      <span className="text-[13px] font-semibold text-foreground">
+                        {line.lineTotal.toLocaleString()} XAF
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+                      {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {order.quantity} × {order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {((order.cocktailPriceSnapshot || 0) * (order.quantity || 0)).toLocaleString()} XAF
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
                   <Truck className="size-3.5" /> Livraison
@@ -754,7 +803,18 @@ function AdminOrderSheet({
                 </div>
                 <div className="min-w-0">
                   <p className="text-[13px] font-bold text-foreground">{order.userNameSnapshot}</p>
-                  <p className="text-[11px] text-muted-foreground">{order.quantity} bouteille{order.quantity > 1 ? 's' : ''} commandée{order.quantity > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {order.orderLines?.length ? (
+                      order.orderLines.map((line, i) => (
+                        <span key={i}>
+                          {line.quantity} {line.bottleSizeLabel}
+                          {i < order.orderLines.length - 1 ? ' + ' : ''}
+                        </span>
+                      ))
+                    ) : (
+                      `${order.quantity} bouteille${order.quantity! > 1 ? 's' : ''}`
+                    )} commandée{((order.orderLines?.reduce((sum, l) => sum + l.quantity, 0) || order.quantity || 0) > 1) ? 's' : ''}
+                  </p>
                 </div>
               </div>
               <a
@@ -878,21 +938,48 @@ function AdminOrderSheet({
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Détail</p>
             <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">Quantité</span>
-                <span className="text-[13px] font-semibold text-foreground">
-                  {order.quantity} bouteille{order.quantity > 1 ? 's' : ''}
-                  {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-                </span>
-              </div>
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">
-                  {order.quantity} × {order.cocktailPriceSnapshot.toLocaleString()} XAF
-                </span>
-                <span className="text-[13px] font-semibold text-foreground">
-                  {(order.cocktailPriceSnapshot * order.quantity).toLocaleString()} XAF
-                </span>
-              </div>
+              {order.orderLines?.length ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <div className="text-right space-y-1">
+                      {order.orderLines.map((line, i) => (
+                        <p key={i} className="text-[13px] font-semibold text-foreground">
+                          {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  {order.orderLines.map((line, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">
+                        {line.quantity} × {line.pricePerBottle.toLocaleString()} XAF ({line.bottleSizeLabel})
+                      </span>
+                      <span className="text-[13px] font-semibold text-foreground">
+                        {line.lineTotal.toLocaleString()} XAF
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+                      {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {order.quantity} × {order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {((order.cocktailPriceSnapshot || 0) * (order.quantity || 0)).toLocaleString()} XAF
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground">Livraison</span>
                 <span className="text-[13px] font-semibold text-foreground">
