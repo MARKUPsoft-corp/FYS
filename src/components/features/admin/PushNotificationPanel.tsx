@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bell, BellOff, Send, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils';
 const API_URL = '/api/send-notification';
 
 export function AdminPushPanel() {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('FYS — Nouvelle info 🌿');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('/');
@@ -50,47 +52,47 @@ export function AdminPushPanel() {
           <Bell className="size-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-display font-bold text-base text-foreground">Envoyer une notification</h3>
-          <p className="text-[11px] text-muted-foreground">Push système — reçu même si l'app est fermée</p>
+          <h3 className="font-display font-bold text-base text-foreground">{t('pushNotifications.sendTitle')}</h3>
+          <p className="text-[11px] text-muted-foreground">{t('pushNotifications.sendSubtitle')}</p>
         </div>
       </div>
 
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Titre</Label>
+          <Label className="text-xs font-semibold">{t('pushNotifications.titleLabel')}</Label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Titre de la notification"
+            placeholder={t('pushNotifications.titlePlaceholder')}
             className="h-9 text-sm"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Message *</Label>
+          <Label className="text-xs font-semibold">{t('pushNotifications.messageLabel')}</Label>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Votre cocktail est prêt à être récupéré !"
+            placeholder={t('pushNotifications.messagePlaceholder')}
             rows={3}
             className="w-full resize-none text-sm bg-muted/40 border border-border/60 rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">URL destination</Label>
+            <Label className="text-xs font-semibold">{t('pushNotifications.urlLabel')}</Label>
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="/"
+              placeholder={t('pushNotifications.urlPlaceholder')}
               className="h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">UID ciblé (opt.)</Label>
+            <Label className="text-xs font-semibold">{t('pushNotifications.uidLabel')}</Label>
             <Input
               value={targetUid}
               onChange={(e) => setTargetUid(e.target.value)}
-              placeholder="Vide = tous les abonnés"
+              placeholder={t('pushNotifications.uidPlaceholder')}
               className="h-9 text-sm"
             />
           </div>
@@ -103,23 +105,23 @@ export function AdminPushPanel() {
         className="w-full h-10 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl shadow-[0_4px_14px_rgba(63,109,78,0.25)]"
       >
         {status === 'sending' ? (
-          <><Loader2 className="size-4 animate-spin" /> Envoi en cours…</>
+          <><Loader2 className="size-4 animate-spin" /> {t('pushNotifications.sending')}</>
         ) : (
-          <><Send className="size-4" /> {targetUid ? 'Envoyer à cet utilisateur' : 'Envoyer à tous'}</>
+          <><Send className="size-4" /> {targetUid ? t('pushNotifications.sendToUser') : t('pushNotifications.sendToAll')}</>
         )}
       </Button>
 
       {status === 'ok' && result && (
         <div className="flex items-center gap-2 p-3 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
           <CheckCircle className="size-4 shrink-0" />
-          {result.sent} notification{result.sent !== 1 ? 's' : ''} envoyée{result.sent !== 1 ? 's' : ''}
-          {result.failed > 0 && ` · ${result.failed} échouée${result.failed > 1 ? 's' : ''}`}
+          {result.sent} {t('pushNotifications.sent', { count: result.sent })}
+          {result.failed > 0 && ` · ${result.failed} ${t('pushNotifications.failed', { count: result.failed })}`}
         </div>
       )}
       {status === 'error' && (
         <div className="flex items-center gap-2 p-3 rounded-xl text-sm font-medium bg-destructive/10 text-destructive border border-destructive/20">
           <AlertTriangle className="size-4 shrink-0" />
-          Échec de l'envoi. Vérifiez VITE_NOTIFY_SECRET et que l'API Vercel est déployée.
+          {t('pushNotifications.errorTitle')}
         </div>
       )}
     </div>
@@ -130,6 +132,7 @@ export function AdminPushPanel() {
  * Small button for user profile pages to opt in/out of push notifications.
  */
 export function PushOptInButton({ uid }: { uid: string }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<'idle' | 'loading'>('idle');
   const [subscribed, setSubscribed] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
@@ -181,10 +184,10 @@ export function PushOptInButton({ uid }: { uid: string }) {
         <Bell className="size-3.5" />
       )}
       {permission === 'denied'
-        ? 'Notifications bloquées (à activer manuellement)'
+        ? t('pushNotifications.blocked')
         : subscribed
-        ? 'Désactiver les notifications'
-        : 'Activer les notifications push'}
+        ? t('pushNotifications.disable')
+        : t('pushNotifications.enable')}
     </Button>
   );
 }

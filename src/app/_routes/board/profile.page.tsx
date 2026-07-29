@@ -1,4 +1,6 @@
 import { PageComponent } from 'rasengan';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
@@ -16,46 +18,14 @@ import { PushOptInButton } from '@/components/features/admin/PushNotificationPan
 
 // ── Predefined options ────────────────────────────────────────────────────────
 
-const HEALTH_CONDITIONS = [
-  'Aucune condition particulière',
-  'Diabète',
-  'Insuffisance rénale',
-  'Grossesse',
-  'RGO / Gastrite',
-  'Rhumatologie / Goutte',
-  'Anticoagulants (Warfarine)',
-  'Insomnie',
-  'Hypotension',
-  'Antiacides',
-  'Diurétiques (Furosémide)',
-  'Metformine',
-  'Contraceptifs oraux',
-];
+const HEALTH_CONDITIONS = i18n.t('profile.healthConditionOptions', { returnObjects: true }) as string[];
 
-const ALLERGIES = [
-  'Aucune allergie connue',
-  'Ananas',
-  'Mangue',
-  'Kiwi',
-  'Fraise',
-  'Agrumes (citron, orange)',
-  'Noix de coco',
-  'Papaye',
-  'Gingembre',
-  'Banane',
-  'Latex (banane, avocat, kiwi)',
-];
+const ALLERGIES = i18n.t('profile.allergyOptions', { returnObjects: true }) as string[];
 
-const GOALS = [
-  { label: 'Immunité',         icon: Shield  },
-  { label: 'Énergie',          icon: Zap     },
-  { label: 'Peau',             icon: Sparkles },
-  { label: 'Santé cardiaque',  icon: Heart   },
-  { label: 'Antioxydants',     icon: Wind    },
-  { label: 'Digestion',        icon: Leaf    },
-  { label: 'Hydratation',      icon: Droplets },
-  { label: 'Sommeil',          icon: Moon    },
-];
+const GOALS = (i18n.t('profile.goalOptions', { returnObjects: true }) as string[]).map((label, i) => ({
+  label,
+  icon: [Shield, Zap, Sparkles, Heart, Wind, Leaf, Droplets, Moon][i]!,
+}));
 
 // ── Multi-select chip group ───────────────────────────────────────────────────
 
@@ -108,6 +78,7 @@ function TagInput({
   onChange: (v: string[]) => void;
   placeholder: string;
 }) {
+  const { t } = useTranslation();
   const [input, setInput] = useState('');
 
   function add() {
@@ -134,7 +105,7 @@ function TagInput({
           disabled={!input.trim()}
           className="rounded-xl gap-1 shrink-0"
         >
-          <Plus className="size-3.5" /> Ajouter
+          <Plus className="size-3.5" /> {t('common.create')}
         </Button>
       </div>
       {values.length > 0 && (
@@ -167,6 +138,7 @@ function EditProfileSheet({
   onOpenChange: (v: boolean) => void;
   uid: string;
 }) {
+  const { t } = useTranslation();
   const { profile, save } = useProfileStore();
   const [saving, setSaving] = useState(false);
 
@@ -236,8 +208,8 @@ function EditProfileSheet({
         ...customAllergies,
       ];
       await save(uid, {
-        healthConditions: allConditions.length ? allConditions : ['Aucune condition particulière'],
-        allergies: allAllergies.length ? allAllergies : ['Aucune allergie connue'],
+        healthConditions: allConditions.length ? allConditions : [HEALTH_CONDITIONS[0]],
+        allergies: allAllergies.length ? allAllergies : [ALLERGIES[0]],
         goals,
       });
       onOpenChange(false);
@@ -260,10 +232,10 @@ function EditProfileSheet({
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/40 shrink-0">
           <SheetTitle className="font-display text-xl font-bold">
-            Modifier le profil santé
+            {t('profile.healthEditTitle')}
           </SheetTitle>
           <p className="text-[13px] text-muted-foreground">
-            Ces informations permettent à NutriFYS de personnaliser vos recommandations.
+            {t('profile.healthEditDesc')}
           </p>
         </SheetHeader>
 
@@ -273,10 +245,10 @@ function EditProfileSheet({
           <div className="space-y-3">
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                Conditions de santé
+                {t('profile.healthConditions')}
               </p>
               <p className="text-[12px] text-muted-foreground">
-                Sélectionnez tout ce qui vous concerne.
+                {t('profile.healthConditionsSelect')}
               </p>
             </div>
             <ChipGroup
@@ -288,7 +260,7 @@ function EditProfileSheet({
             <TagInput
               values={customConditions}
               onChange={setCustomConditions}
-              placeholder="Autre condition…"
+              placeholder={t('profile.otherCondition')}
             />
           </div>
 
@@ -296,10 +268,10 @@ function EditProfileSheet({
           <div className="space-y-3">
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                Allergies alimentaires
+                {t('profile.allergies')}
               </p>
               <p className="text-[12px] text-muted-foreground">
-                Indiquez vos allergies aux fruits ou ingrédients.
+                {t('profile.allergiesDesc')}
               </p>
             </div>
             <ChipGroup
@@ -311,7 +283,7 @@ function EditProfileSheet({
             <TagInput
               values={customAllergies}
               onChange={setCustomAllergies}
-              placeholder="Autre allergie…"
+              placeholder={t('profile.otherAllergy')}
             />
           </div>
 
@@ -319,10 +291,10 @@ function EditProfileSheet({
           <div className="space-y-3">
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                Objectifs santé
+                {t('profile.goals')}
               </p>
               <p className="text-[12px] text-muted-foreground">
-                Ce que vous souhaitez améliorer en priorité.
+                {t('profile.goalsDesc')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -358,13 +330,13 @@ function EditProfileSheet({
             onClick={handleSave}
           >
             {saving ? (
-              <><Loader2 className="size-4 animate-spin" /> Sauvegarde…</>
+              <><Loader2 className="size-4 animate-spin" /> {t('lab.saving')}</>
             ) : (
-              <><Check className="size-4" /> Sauvegarder le profil</>
+              <><Check className="size-4" /> {t('common.save')}</>
             )}
           </Button>
           <p className="text-center text-[11px] text-muted-foreground">
-            Vos données restent privées et ne sont jamais partagées.
+            {t('profile.privacyNote')}
           </p>
         </div>
       </SheetContent>
@@ -390,6 +362,7 @@ function ProfileChip({ label, variant = 'default' }: { label: string; variant?: 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const Profile: PageComponent = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { profile, loading, fetch } = useProfileStore();
   const audio = useAudioStore();
@@ -406,18 +379,20 @@ const Profile: PageComponent = () => {
   const complete = isProfileComplete(profile);
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
+  const NONE_CONDITION = HEALTH_CONDITIONS[0]?.toLowerCase();
+  const NONE_ALLERGY = ALLERGIES[0]?.toLowerCase();
   const conditions = (profile?.healthConditions ?? []).filter(
-    (c) => !c.toLowerCase().includes('aucune'),
+    (c) => c.toLowerCase() !== NONE_CONDITION,
   );
   const allergies = (profile?.allergies ?? []).filter(
-    (a) => !a.toLowerCase().includes('aucune'),
+    (a) => a.toLowerCase() !== NONE_ALLERGY,
   );
   const goals = profile?.goals ?? [];
 
   const completionSections = [
-    { label: 'Conditions', done: profile?.healthConditions && profile.healthConditions.length > 0 },
-    { label: 'Allergies', done: profile?.allergies && profile.allergies.length > 0 },
-    { label: 'Objectifs', done: goals.length > 0 },
+    { label: t('profile.conditions'), done: profile?.healthConditions && profile.healthConditions.length > 0 },
+    { label: t('profile.allergies'), done: profile?.allergies && profile.allergies.length > 0 },
+    { label: t('profile.goals'), done: goals.length > 0 },
   ];
   const completionCount = completionSections.filter((s) => s.done).length;
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
@@ -442,7 +417,7 @@ const Profile: PageComponent = () => {
         <div className="relative z-10 ml-28">
           <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">NutriFYS</p>
           <h1 className="font-display font-extrabold text-3xl text-white">
-            Mon <span className="text-secondary italic">Profil</span>
+            {t('profile.heroTitle')} <span className="text-secondary italic">{t('profile.heroTitleHighlight')}</span>
           </h1>
         </div>
       </div>
@@ -457,7 +432,7 @@ const Profile: PageComponent = () => {
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5 truncate">{user?.email}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Membre FYS · {complete ? 'Profil complété' : 'Profil en cours de configuration'}
+              {complete ? t('profile.statusComplete') : t('profile.statusIncomplete')}
             </p>
           </div>
           <Button
@@ -466,7 +441,7 @@ const Profile: PageComponent = () => {
             className="rounded-full bg-primary text-white font-bold hover:bg-primary/90 px-4 gap-1.5 shrink-0"
           >
             <Pencil className="size-3.5" />
-            Modifier
+            {t('common.edit')}
           </Button>
         </div>
 
@@ -476,9 +451,9 @@ const Profile: PageComponent = () => {
         {user?.uid && (
           <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="font-display font-bold text-foreground">Notifications push</p>
+              <p className="font-display font-bold text-foreground">{t('profile.pushNotifications')}</p>
               <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
-                Recevez les mises à jour même quand l'application est fermée.
+                {t('profile.notifications')}
               </p>
             </div>
             <div className="shrink-0">
@@ -495,9 +470,9 @@ const Profile: PageComponent = () => {
                 <Music className="size-6 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="font-display font-bold text-foreground">Musique d'ambiance</p>
+                <p className="font-display font-bold text-foreground">{t('profile.ambientMusic')}</p>
                 <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
-                  Jazz, Saxophone & Violon pour une expérience premium.
+                  {t('profile.soundPreferences')}
                 </p>
               </div>
             </div>
@@ -538,7 +513,7 @@ const Profile: PageComponent = () => {
         {!loading && (
           <div  className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-foreground">Complétude du profil santé</p>
+              <p className="text-sm font-bold text-foreground">{t('profile.completeness')}</p>
               <span className="text-sm font-bold text-primary">{completionPct}%</span>
             </div>
             <div className="h-2 bg-border/50 rounded-full overflow-hidden">
@@ -558,7 +533,7 @@ const Profile: PageComponent = () => {
             {!complete && (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5 font-medium">
                 <AlertCircle className="size-3.5 shrink-0" />
-                Un profil complet améliore la précision des analyses NutriFYS
+                {t('profile.completenessDesc')}
               </p>
             )}
           </div>
@@ -582,7 +557,7 @@ const Profile: PageComponent = () => {
                 <div className="size-8 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
                   <HeartPulse className="size-4 text-red-500" />
                 </div>
-                <p className="font-bold text-sm text-foreground">Conditions de santé</p>
+                <p className="font-bold text-sm text-foreground">{t('profile.healthConditions')}</p>
               </div>
               {conditions.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -590,7 +565,7 @@ const Profile: PageComponent = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {profile ? 'Aucune condition renseignée' : 'Non renseigné'}
+                  {profile ? t('profile.noConditions') : t('users.notSet')}
                 </p>
               )}
             </div>
@@ -601,7 +576,7 @@ const Profile: PageComponent = () => {
                 <div className="size-8 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center">
                   <Shield className="size-4 text-amber-500" />
                 </div>
-                <p className="font-bold text-sm text-foreground">Allergies alimentaires</p>
+                <p className="font-bold text-sm text-foreground">{t('profile.allergies')}</p>
               </div>
               {allergies.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -609,7 +584,7 @@ const Profile: PageComponent = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {profile ? 'Aucune allergie renseignée' : 'Non renseigné'}
+                  {profile ? t('profile.noAllergies') : t('users.notSet')}
                 </p>
               )}
             </div>
@@ -620,7 +595,7 @@ const Profile: PageComponent = () => {
                 <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Zap className="size-4 text-primary" />
                 </div>
-                <p className="font-bold text-sm text-foreground">Objectifs santé</p>
+                <p className="font-bold text-sm text-foreground">{t('profile.goals')}</p>
               </div>
               {goals.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -628,7 +603,7 @@ const Profile: PageComponent = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {profile ? 'Aucun objectif renseigné' : 'Non renseigné'}
+                  {profile ? t('profile.noGoals') : t('users.notSet')}
                 </p>
               )}
             </div>
@@ -647,14 +622,13 @@ const Profile: PageComponent = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-primary/60" />
                 <div className="relative z-10">
                   <p className="text-white/80 text-xs font-bold uppercase tracking-widest mb-2">
-                    Personnalisation
+                    {t('profile.personalization')}
                   </p>
                   <h3 className="font-display font-extrabold text-2xl text-white leading-tight mb-4">
-                    Complète ton profil pour des<br />
-                    <span className="text-secondary italic">recommandations précises</span>
+                    {t('profile.completeProfile')}
                   </h3>
                   <Button className="rounded-full bg-white text-primary font-bold hover:bg-white/90 active:scale-95 transition-all px-8 h-12 shadow-xl">
-                    Configurer maintenant
+                    {t('profile.configure')}
                   </Button>
                 </div>
               </div>
@@ -676,8 +650,8 @@ const Profile: PageComponent = () => {
 };
 
 Profile.metadata = {
-  title: 'FYS — Profil santé',
-  description: 'Profil santé FYS.',
+  title: i18n.t('profile.pageTitle'),
+  description: i18n.t('profile.pageDesc'),
 };
 
 export default Profile;

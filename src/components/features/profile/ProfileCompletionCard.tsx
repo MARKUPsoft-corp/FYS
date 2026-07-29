@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -6,6 +7,7 @@ type Props = {
 };
 
 export function ProfileCompletionCard({ onStart }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary/10 via-secondary/10 to-accent border border-primary/20 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
       {/* Decorative blob */}
@@ -18,10 +20,10 @@ export function ProfileCompletionCard({ onStart }: Props) {
 
       <div className="relative flex-1 min-w-0">
         <p className="font-bold text-foreground text-base leading-snug">
-          Complète ton profil santé
+          {t('profile.completionCard')}
         </p>
         <p className="text-muted-foreground text-sm mt-0.5 leading-relaxed">
-          2 minutes suffisent. NutriFYS personnalisera chaque recommandation selon ton profil.
+          {t('profile.completionDesc')}
         </p>
       </div>
 
@@ -30,7 +32,7 @@ export function ProfileCompletionCard({ onStart }: Props) {
         size="sm"
         className="relative rounded-full font-bold shrink-0 gap-1.5"
       >
-        Commencer
+        {t('profile.configure')}
       </Button>
     </div>
   );

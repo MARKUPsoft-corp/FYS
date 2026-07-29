@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Pencil, Trash2, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning'> = {
 };
 
 export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
+  const { t } = useTranslation();
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
   if (fruits.length === 0) {
@@ -101,11 +103,11 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
               <td className="px-4 py-3 hidden md:table-cell">
                 <div className="flex flex-wrap gap-1">
                   {fruit.isMainFruit !== false && (
-                    <Badge variant="secondary" className="text-[10px]">Fruit</Badge>
+                    <Badge variant="secondary" className="text-[10px]">{t('lab.fruits')}</Badge>
                   )}
                   {fruit.isSupplement && (
                     <Badge className="text-[10px] bg-secondary/15 text-secondary border-secondary/30" variant="outline">
-                      Supplément
+                      {t('fruits.supplement')}
                     </Badge>
                   )}
                 </div>

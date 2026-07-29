@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MapPin, ChevronDown, Search, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // ── Liste des quartiers de Yaoundé ─────────────────────────────────────────
 export const YAOUNDE_DISTRICTS = [
@@ -76,6 +77,7 @@ interface YaoundeDistrictPickerProps {
 }
 
 export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistrictPickerProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,7 +129,7 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
         } focus:outline-none`}
       >
         <span className={value ? 'text-foreground font-medium' : 'text-muted-foreground'}>
-          {value || 'Sélectionner un quartier…'}
+          {value || t('districts.placeholder')}
         </span>
         <div className="flex items-center gap-1.5 shrink-0">
           {isValid && <CheckCircle2 className="size-3.5 text-primary" />}
@@ -149,7 +151,7 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un quartier…"
+                placeholder={t('districts.searchPlaceholder')}
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>
@@ -178,13 +180,13 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left text-primary transition-colors hover:bg-primary/10"
               >
                 <MapPin className="size-3.5" />
-                Utiliser "{search.trim()}"
+                {t('districts.useCustom', { name: search.trim() })}
               </button>
             )}
 
             {filtered.length === 0 && search.trim().length === 0 && (
                <p className="px-4 py-3 text-sm text-muted-foreground text-center">
-                 Commencez à écrire...
+                  {t('districts.searchPlaceholder')}
                </p>
             )}
           </div>
@@ -193,7 +195,7 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
           <div className="px-4 py-2.5 border-t border-border/40 bg-muted/30">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <MapPin className="size-3 shrink-0" />
-              Livraison disponible uniquement à <strong>Yaoundé</strong>
+              {t('districts.yourDelivery')}
             </p>
           </div>
         </div>

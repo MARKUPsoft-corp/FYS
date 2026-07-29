@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { useSearchParams } from 'rasengan';
 import { CocktailCard } from './CocktailCard';
-import { CatalogueOrderSheet } from './CatalogueOrderSheet';
+import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import type { Cocktail } from '@/entities';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
@@ -106,7 +106,7 @@ export function CustomerCatalogue({ cocktails, loading }: Props) {
         )}
       </BoardPageShell>
 
-      <CatalogueOrderSheet
+      <OrderSheet
         cocktail={selected}
         open={!!selected}
         onOpenChange={closeSheet}

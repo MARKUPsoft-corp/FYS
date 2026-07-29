@@ -14,6 +14,7 @@ import type { Fruit } from '@/entities';
 import { isUsableAsMainFruit, isUsableAsSupplement } from '@/entities';
 import { uploadFruitImage, deleteFruitImage, isManagedImageUrl } from './storage';
 import { sendPushNotification } from './push';
+import i18n from '@/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -69,8 +70,8 @@ export async function createFruit(
   }));
 
   sendPushNotification({
-    title: 'Nouveau fruit 🌱',
-    body: `${data.name} vient d'être ajouté au catalogue !`,
+    title: i18n.t('notifications.newFruit'),
+    body: i18n.t('notifications.fruitAddedBody', { name: data.name }),
     url: '/board/catalogue',
   });
 
@@ -100,7 +101,7 @@ export async function updateFruit(
 
 export async function deleteFruit(id: string, imageUrl?: string): Promise<void> {
   const snap = await getDoc(doc(db, COLLECTIONS.FRUITS, id));
-  let fruitName = 'Un fruit';
+  let fruitName = i18n.t('fruit.fallbackName');
   if (snap.exists()) fruitName = snap.data().name;
 
   if (isManagedImageUrl(imageUrl)) {
@@ -109,8 +110,8 @@ export async function deleteFruit(id: string, imageUrl?: string): Promise<void> 
   await deleteDoc(doc(db, COLLECTIONS.FRUITS, id));
 
   sendPushNotification({
-    title: 'Mise à jour FYS',
-    body: `Le fruit "${fruitName}" n'est plus disponible dans le catalogue.`,
+    title: i18n.t('notifications.fruitUpdate'),
+    body: i18n.t('notifications.fruitRemovedBody', { name: fruitName }),
     url: '/board/catalogue',
   });
 }

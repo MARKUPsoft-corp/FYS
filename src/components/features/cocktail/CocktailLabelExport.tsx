@@ -1,4 +1,5 @@
 import { useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CocktailBanner, type FruitVisual } from '@/components/features/cocktail/CocktailBanner';
@@ -27,6 +28,7 @@ export function CocktailLabelExport({
   filename,
   className,
 }: Props) {
+  const { t } = useTranslation();
   const exportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -41,7 +43,7 @@ export function CocktailLabelExport({
         filename ?? `Etiquette_${safe}.png`,
       );
     } catch (err) {
-      console.error('Échec export étiquette PNG:', err);
+      console.error('Failed to export label PNG:', err);
     } finally {
       setDownloading(false);
     }
@@ -68,8 +70,8 @@ export function CocktailLabelExport({
         size="icon"
         disabled={downloading}
         onClick={handleDownload}
-        title="Télécharger l'étiquette (PNG)"
-        aria-label="Télécharger l'étiquette (PNG)"
+        title={t('cocktail.exportLabel')}
+        aria-label={t('cocktail.exportLabel')}
         className="absolute bottom-3 right-3 z-20 size-8 rounded-full bg-black/45 hover:bg-black/60 text-white border-0 backdrop-blur-sm"
       >
         {downloading ? (

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CocktailTable } from './CocktailTable';
@@ -14,14 +15,15 @@ type Props = {
 };
 
 export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleActive, onAdd }: Props) {
+  const { t } = useTranslation();
   return (
     <BoardPageShell
-      eyebrow="Carte"
-      titleBefore="Le"
-      titleHighlight="Catalogue"
-      sectionBefore="Créations"
-      sectionHighlight="publiques"
-      subtitle="Définissez les cocktails visibles par les clients."
+      eyebrow={t('catalogue.adminEyebrow')}
+      titleBefore={t('catalogue.title_before')}
+      titleHighlight={t('catalogue.title')}
+      sectionBefore={t('catalogue.section_before_public')}
+      sectionHighlight={t('catalogue.section_highlight_public')}
+      subtitle={t('catalogue.adminSubtitle')}
       imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"
       imagePosition="center top"
       actions={
@@ -31,7 +33,7 @@ export function AdminCatalogue({ cocktails, loading, onEdit, onDelete, onToggleA
           className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
         >
           <Plus className="size-5" />
-          Ajouter un cocktail
+          {t('catalogue.addCocktail')}
         </Button>
       }
     >

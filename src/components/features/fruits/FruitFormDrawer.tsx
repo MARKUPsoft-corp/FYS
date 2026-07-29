@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -223,6 +224,7 @@ type Props = {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Props) {
+  const { t } = useTranslation();
   // Basic info
   const [name, setName] = useState('');
   const [scientificName, setScientificName] = useState('');
@@ -497,9 +499,9 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Usage dans le FYS Lab</Label>
+              <Label className="text-xs text-muted-foreground">{t('lab.title')}</Label>
               <p className="text-[11px] text-muted-foreground">
-                Un même item peut être fruit principal (étape 1) et/ou supplément (étape 2).
+                {t('fruits.infoText')}
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -522,7 +524,7 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
                       : 'border-border text-muted-foreground hover:border-secondary'
                   }`}
                 >
-                  Supplément
+                  {t('fruits.supplement')}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { AIVerdict } from '@/entities';
 import type { Fruit, HealthProfile, AIAnalysis, NutrientInfo, BeneficeCible } from '@/entities';
+import i18n from '@/i18n';
 import {
   TIMING_RULES,
   COCKTAIL_BALANCE,
@@ -20,7 +21,9 @@ import {
 function buildKnowledgeContext(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  lang?: string,
 ): string {
+  const isEn = lang === 'en';
   const sections: string[] = [];
 
   const fruitNames = ingredients.map((i) => i.fruit.name.toLowerCase());
@@ -31,15 +34,15 @@ function buildKnowledgeContext(
 
   // ── Always: cocktail balance fundamentals ────────────────────────────────
   sections.push(
-    `PRINCIPES D'UN BON COCKTAIL:
+    `${isEn ? 'GOOD COCKTAIL PRINCIPLES' : 'PRINCIPES D\'UN BON COCKTAIL'}:
 ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
-  Exemple équilibré : ${COCKTAIL_BALANCE.example}
-  Base idéale : ${BEST_BASE.formula} — ${BEST_BASE.rationale}`,
+  ${isEn ? 'Balanced example' : 'Exemple équilibré'} : ${COCKTAIL_BALANCE.example}
+  ${isEn ? 'Ideal base' : 'Base idéale'} : ${BEST_BASE.formula} — ${BEST_BASE.rationale}`,
   );
 
   // ── Always: core fruit interaction rules ─────────────────────────────────
   sections.push(
-    `INTERACTIONS FRUITS:\n` +
+    `${isEn ? 'FRUIT INTERACTIONS' : 'INTERACTIONS FRUITS'}:\n` +
     FRUIT_INTERACTIONS.map((r) => `  • ${'rule' in r ? r.rule : ''}`).join('\n'),
   );
 
@@ -50,11 +53,11 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
   );
   if (hasPamplemousse) {
     sections.push(
-      `⛔ ALERTE CRITIQUE — ${pamplemoussAlert.title}:\n  ${pamplemoussAlert.detail}`,
+      `⛔ ${isEn ? 'CRITICAL ALERT' : 'ALERTE CRITIQUE'} — ${pamplemoussAlert.title}:\n  ${pamplemoussAlert.detail}`,
     );
   } else {
     sections.push(
-      `ALERTE ENZYME CYP: Si le mélange contient du pamplemousse, signaler impérativement : ${pamplemoussAlert.detail}`,
+      `${isEn ? 'CYP ENZYME ALERT' : 'ALERTE ENZYME CYP'}: ${isEn ? 'If the mix contains grapefruit, you must report' : 'Si le mélange contient du pamplemousse, signaler impérativement'} : ${pamplemoussAlert.detail}`,
     );
   }
 
@@ -69,7 +72,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
     fruitNames.some((fn) => fn.includes(vf)),
   );
   if (hasVitAFruit) {
-    sections.push(`TIMING VITAMINE A: ${TIMING_RULES.vitaminAInsomnia}`);
+    sections.push(`${isEn ? 'VITAMIN A TIMING' : 'TIMING VITAMINE A'}: ${TIMING_RULES.vitaminAInsomnia}`);
   }
 
   // ── Per-condition risk profiles ──────────────────────────────────────────
@@ -82,7 +85,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
       if (hit) matched.push(`  • ${profile.rule}`);
     }
     if (matched.length > 0) {
-      sections.push(`RÈGLES SPÉCIFIQUES AU PROFIL:\n${matched.join('\n')}`);
+      sections.push(`${isEn ? 'PROFILE-SPECIFIC RULES' : 'RÈGLES SPÉCIFIQUES AU PROFIL'}:\n${matched.join('\n')}`);
     }
 
     // Diabetes timing (separate because it's timing-specific)
@@ -90,7 +93,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
       (c) => c.includes('diabèt') || c.includes('diabete') || c.includes('diabetes'),
     );
     if (isDiabetic) {
-      sections.push(`TIMING DIABÈTE: ${TIMING_RULES.diabetesEvening}`);
+      sections.push(`${isEn ? 'DIABETES TIMING' : 'TIMING DIABÈTE'}: ${TIMING_RULES.diabetesEvening}`);
     }
   }
 
@@ -103,7 +106,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
       }
     }
     if (goalMatches.length > 0) {
-      sections.push(`RÈGLES PAR OBJECTIF:\n${goalMatches.join('\n')}`);
+      sections.push(`${isEn ? 'GOAL RULES' : 'RÈGLES PAR OBJECTIF'}:\n${goalMatches.join('\n')}`);
     }
   }
 
@@ -117,7 +120,7 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
     conditions.some((c) => medicationKeywords.some((kw) => c.includes(kw))) ||
     conditions.length > 0; // show if any condition is declared — stays cautious
   if (hasMedicationContext) {
-    sections.push(`RÈGLE MÉDICAMENTS: ${MEDICATION_RULE}`);
+    sections.push(`${isEn ? 'MEDICATION RULE' : 'RÈGLE MÉDICAMENTS'}: ${MEDICATION_RULE}`);
   }
 
   return sections.join('\n\n');
@@ -128,13 +131,22 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
 export function buildAnalysisPrompt(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  lang?: string,
 ): string {
+  const isEn = (lang ?? (i18n.language?.startsWith('en') ? 'en' : 'fr')) === 'en';
+
+  const noneLabel = isEn ? 'not specified' : 'non spécifié';
+  const noneWarn = isEn ? 'none' : 'aucun';
+  const noneCondition = isEn ? 'no particular condition' : 'aucune condition particulière';
+  const noneAllergy = isEn ? 'no known allergies' : 'aucune allergie connue';
+  const notProvided = isEn ? 'not provided' : 'non renseigné';
+
   const fruitLines = ingredients
     .map(({ fruit, grams }) => {
-      const benefits = fruit.benefits.length ? fruit.benefits.join(', ') : 'non spécifié';
-      const warnings = fruit.warnings.length ? fruit.warnings.join(', ') : 'aucun';
-      const gi = fruit.glycemicIndex?.badge ?? 'non spécifié';
-      return `• ${fruit.name} (${grams}g) — bénéfices: ${benefits} | précautions: ${warnings} | IG: ${gi}`;
+      const benefits = fruit.benefits.length ? fruit.benefits.join(', ') : noneLabel;
+      const warnings = fruit.warnings.length ? fruit.warnings.join(', ') : noneWarn;
+      const gi = fruit.glycemicIndex?.badge ?? noneLabel;
+      return `• ${fruit.name} (${grams}g) — ${isEn ? 'benefits' : 'bénéfices'}: ${benefits} | ${isEn ? 'warnings' : 'précautions'}: ${warnings} | GI: ${gi}`;
     })
     .join('\n');
 
@@ -144,13 +156,80 @@ export function buildAnalysisPrompt(
   const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
 
   const profileSection = profile
-    ? `Profil de santé :
-- Conditions : ${hasNoneCondition ? 'aucune condition particulière' : profile.healthConditions.join(', ') || 'non renseigné'}
-- Allergies : ${hasNoneAllergy ? 'aucune allergie connue' : profile.allergies.join(', ') || 'non renseigné'}
-- Objectifs : ${(profile.goals ?? []).join(', ') || 'non spécifié'}`
-    : 'Aucun profil de santé renseigné. Analyse basée uniquement sur les propriétés des fruits.';
+    ? `${isEn ? 'Health Profile' : 'Profil de santé'}:
+- ${isEn ? 'Conditions' : 'Conditions'} : ${hasNoneCondition ? noneCondition : profile.healthConditions.join(', ') || notProvided}
+- ${isEn ? 'Allergies' : 'Allergies'} : ${hasNoneAllergy ? noneAllergy : profile.allergies.join(', ') || notProvided}
+- ${isEn ? 'Goals' : 'Objectifs'} : ${(profile.goals ?? []).join(', ') || noneLabel}`
+    : (isEn ? 'No health profile provided. Analysis based solely on fruit properties.' : 'Aucun profil de santé renseigné. Analyse basée uniquement sur les propriétés des fruits.');
 
-  const knowledgeContext = buildKnowledgeContext(ingredients, profile);
+  const knowledgeContext = buildKnowledgeContext(ingredients, profile, isEn ? 'en' : 'fr');
+
+  if (isEn) {
+    return `You are NutriFYS, the nutritional assistant of FYS (healthy fruit cocktails). Analyze this mix.
+
+INGREDIENTS:
+${fruitLines}
+
+${profileSection}
+
+FYS NUTRITIONIST KNOWLEDGE BASE:
+${knowledgeContext}
+
+Respond ONLY with a valid JSON object (no text before or after):
+{
+  "verdict": "beneficial" | "neutral" | "caution" | "not_recommended",
+  "score": <integer 0-100>,
+  "suggestedName": "<short creative English name for this cocktail, 2 to 4 words max, no quotes>",
+  "notes": "<2-3 sentences in English, specific to this mix and profile>",
+  "tasteAdvice": "<1 factual sentence about flavor balance — if the taste risks being too strong/bitter/spicy, say it clearly and suggest a fix (e.g. 'With that much ginger, this mix will be very spicy. Reduce its proportion to under 10% of the total for a pleasant result.')>. If the balance is good, set to null.",
+  "nutritionalProfile": {
+    "vitaminC":     { "percentage": <0-100>, "value": "<X mg>" },
+    "vitaminA":     { "percentage": <0-100>, "value": "<X µg>" },
+    "fiber":        { "percentage": <0-100>, "value": "<X g>" },
+    "potassium":    { "percentage": <0-100>, "value": "<X mg>" },
+    "naturalSugars":{ "percentage": <0-100>, "value": "<X g>" },
+    "antioxidants": { "percentage": <0-100>, "value": "<X mg>" }
+  },
+  "targetedBenefits": [
+    { "name": "immunity" | "energy" | "digestion" | "hydration" | "anti-inflammatory" | "skin" | "sleep", "level": "low" | "moderate" | "high" }
+  ],
+  "fruitInteractions": [
+    "<short phrase describing a synergy or effect produced by the combination of two or more fruits>"
+  ],
+  "advice": "<1-2 sentences on the ideal consumption time, temperature, frequency or preparation to maximize benefits>"
+}
+
+Verdict rules :
+- "beneficial" : mix well suited to the profile and goals
+- "neutral" : acceptable, without notable benefit or risk
+- "caution" : benefit present but notable precaution (including poor taste balance)
+- "not_recommended" : conflict with a condition, allergy or contraindication
+- score = overall health benefit (100 = excellent, 0 = contraindicated)
+- suggestedName : invent an original and appetizing name (never "My cocktail", "Custom cocktail" or generic)
+- nutritionalProfile : estimate values from the provided fruits and quantities (standard adult RDA)
+- targetedBenefits : list only the 2-4 main benefits actually brought by this mix
+- fruitInteractions : 2-3 max points on chemical or nutritional synergies between fruits in the mix
+- advice : practical and personalized (e.g. time, frequency, on empty stomach or not, hot/cold, recommended pairing)
+- Integrate the NutriFYS rules above into your analysis
+
+TASTE BALANCE RULE — MANDATORY :
+Evaluate the ratio between BASE fruits (sweet, juicy: apple, orange, mango, watermelon, carrot, pineapple...) and BOOSTERS (strong taste: ginger, celery, turmeric, mint, spirulina, chili...).
+- If BOOSTERS represent more than 25% of total weight → tasteAdvice MUST signal that the taste will be overwhelming and unpleasant.
+- If no sweet base fruit is present → tasteAdvice must signal it (bitter/vegetal undrinkable mix).
+- If the balance is 70%+ sweet bases and ≤15% boosters → tasteAdvice can be null.
+
+LANGUAGE — ABSOLUTE RULE:
+The client reading this analysis is not a doctor or nutritionist. Write ALL text fields (notes, fruitInteractions, advice) in simple, accessible language, as if explaining to a friend.
+- Never use scientific or medical jargon without immediate explanation
+- Prefer concrete images and everyday words
+- If a technical term is unavoidable, add a short explanation in parentheses
+Examples of expected rewording :
+  ❌ "inhibits CYP3A4 enzyme" → ✅ "can make certain medications stronger than expected"
+  ❌ "anti-inflammatory properties of polyphenols" → ✅ "helps the body recover better and reduce minor inflammation"
+  ❌ "high glycemic load" → ✅ "raises blood sugar levels quite quickly"
+  ❌ "synergy between carotenoids and fatty acids" → ✅ "these fruits go well together: one helps the other work better in the body"
+  ❌ "high antioxidant potential" → ✅ "protects the body's cells against premature aging"`;
+  }
 
   return `Tu es NutriFYS, l'Assistant nutritionnelle de FYS (cocktails de fruits santé). Analyse ce mélange.
 
@@ -223,24 +302,29 @@ Exemples de reformulations attendues :
 function parseNutrient(raw: unknown): NutrientInfo | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const n = raw as Record<string, unknown>;
-  const pct = Number(n.pourcentage);
+  const pct = Number(n.pourcentage ?? n.percentage);
   if (isNaN(pct)) return undefined;
   return {
     pourcentage: Math.min(100, Math.max(0, pct)),
-    valeur: String(n.valeur ?? ''),
+    valeur: String(n.valeur ?? n.value ?? ''),
   };
 }
 
-const VALID_NIVEAUX = new Set(['faible', 'modéré', 'élevé']);
+const VALID_NIVEAUX = new Set(['faible', 'modéré', 'élevé', 'low', 'moderate', 'high']);
 
 function parseBenefices(raw: unknown): BeneficeCible[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((item) => item && typeof item === 'object' && typeof item.nom === 'string')
-    .map((item) => ({
-      nom: String(item.nom),
-      niveau: VALID_NIVEAUX.has(item.niveau) ? (item.niveau as BeneficeCible['niveau']) : 'modéré',
-    }))
+    .filter((item) => item && typeof item === 'object' && (typeof item.nom === 'string' || typeof item.name === 'string'))
+    .map((item) => {
+      const niveau = item.niveau ?? item.level ?? 'modéré';
+      // Normalize English level values to French
+      const normalized = niveau === 'low' ? 'faible' : niveau === 'high' ? 'élevé' : niveau === 'moderate' ? 'modéré' : niveau;
+      return {
+        nom: String(item.nom ?? item.name ?? ''),
+        niveau: VALID_NIVEAUX.has(normalized) ? (normalized as BeneficeCible['niveau']) : 'modéré',
+      };
+    })
     .slice(0, 5);
 }
 
@@ -257,12 +341,14 @@ export function parseAnalysisResponse(raw: string): AIAnalysis {
     ? (parsed.verdict as AIVerdict)
     : AIVerdict.NEUTRAL;
 
-  const pn = parsed.profilNutritionnel ?? {};
+  const pn = parsed.profilNutritionnel ?? parsed.nutritionalProfile ?? {};
 
-  const rawInteractions = parsed.interactionsFruits;
+  const rawInteractions = parsed.interactionsFruits ?? parsed.fruitInteractions;
   const interactionsFruits: string[] = Array.isArray(rawInteractions)
     ? rawInteractions.filter((s: unknown) => typeof s === 'string').slice(0, 3)
     : [];
+
+  const beneficesRaw = parsed.beneficesCibles ?? parsed.targetedBenefits;
 
   return {
     verdict,
@@ -272,16 +358,16 @@ export function parseAnalysisResponse(raw: string): AIAnalysis {
       ? { suggestedName: parsed.suggestedName.trim().slice(0, 48) }
       : {}),
     profilNutritionnel: {
-      vitamineC: parseNutrient(pn.vitamineC),
-      vitamineA: parseNutrient(pn.vitamineA),
-      fibres: parseNutrient(pn.fibres),
+      vitamineC: parseNutrient(pn.vitamineC ?? pn.vitaminC),
+      vitamineA: parseNutrient(pn.vitamineA ?? pn.vitaminA),
+      fibres: parseNutrient(pn.fibres ?? pn.fiber),
       potassium: parseNutrient(pn.potassium),
-      sucresNaturels: parseNutrient(pn.sucresNaturels),
-      antioxydants: parseNutrient(pn.antioxydants),
+      sucresNaturels: parseNutrient(pn.sucresNaturels ?? pn.naturalSugars),
+      antioxydants: parseNutrient(pn.antioxydants ?? pn.antioxidants),
     },
-    beneficesCibles: parseBenefices(parsed.beneficesCibles),
+    beneficesCibles: parseBenefices(beneficesRaw),
     interactionsFruits,
-    conseil: String(parsed.conseil || ''),
+    conseil: String(parsed.conseil ?? parsed.advice ?? ''),
     analyzedAt: Timestamp.now(),
   };
 }
@@ -307,43 +393,119 @@ export type ChatAIResponse = {
   };
 };
 
-export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fruit[] = []): string {
+export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fruit[] = [], lang?: string): string {
+  const isEn = (lang ?? (i18n.language?.startsWith('en') ? 'en' : 'fr')) === 'en';
+
   const hasNoneCondition = profile?.healthConditions.some((c) =>
     c.toLowerCase().includes('aucune'),
   );
   const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
 
+  const noneLabel = isEn ? 'not specified' : 'non spécifié';
+  const noneCondition = isEn ? 'no particular condition reported' : 'aucune condition particulière signalée';
+  const noneAllergyLabel = isEn ? 'no known allergies' : 'aucune allergie connue';
+  const notProvided = isEn ? 'not provided' : 'non renseigné';
+
   const profileSection = profile
-    ? `PROFIL UTILISATEUR:
-- Conditions de santé : ${hasNoneCondition ? 'aucune condition particulière signalée' : profile.healthConditions.join(', ') || 'non renseigné'}
-- Allergies connues : ${hasNoneAllergy ? 'aucune allergie connue' : profile.allergies.join(', ') || 'non renseigné'}
-- Objectifs de santé : ${(profile.goals ?? []).join(', ') || 'non spécifié'}`
-    : 'PROFIL UTILISATEUR: Aucun profil santé renseigné. Adopte une approche générale et pose des questions pour mieux comprendre ses besoins.';
+    ? `${isEn ? 'USER PROFILE' : 'PROFIL UTILISATEUR'}:
+- ${isEn ? 'Health conditions' : 'Conditions de santé'} : ${hasNoneCondition ? noneCondition : profile.healthConditions.join(', ') || notProvided}
+- ${isEn ? 'Known allergies' : 'Allergies connues'} : ${hasNoneAllergy ? noneAllergyLabel : profile.allergies.join(', ') || notProvided}
+- ${isEn ? 'Health goals' : 'Objectifs de santé'} : ${(profile.goals ?? []).join(', ') || noneLabel}`
+    : (isEn ? 'USER PROFILE: No health profile provided. Take a general approach and ask questions to better understand their needs.' : 'PROFIL UTILISATEUR: Aucun profil santé renseigné. Adopte une approche générale et pose des questions pour mieux comprendre ses besoins.');
 
   // Build a generic knowledge context
-  const knowledgeContext = buildKnowledgeContext([], profile);
+  const knowledgeContext = buildKnowledgeContext([], profile, isEn ? 'en' : 'fr');
 
   // Build a rich fruit catalog from real Firestore data
   const mainFruits = fruits.filter(f => !f.isSupplement);
   const supplements = fruits.filter(f => f.isSupplement);
 
+  const noneSpecified = isEn ? 'not specified' : 'non spécifié';
+  const noneWarn = isEn ? 'none' : 'aucun';
+
   const fruitCatalog = mainFruits.length > 0
     ? mainFruits.map((f) => {
-      const gi = f.glycemicIndex?.badge ?? 'non spécifié';
-      const benefits = f.benefits?.length ? f.benefits.join(', ') : 'non spécifié';
-      const warnings = f.warnings?.length ? f.warnings.join(', ') : 'aucun';
-      const calories = (f as any).calories ?? 'non spécifié';
+      const gi = f.glycemicIndex?.badge ?? noneSpecified;
+      const benefits = f.benefits?.length ? f.benefits.join(', ') : noneSpecified;
+      const warnings = f.warnings?.length ? f.warnings.join(', ') : noneWarn;
+      const calories = (f as any).calories ?? noneSpecified;
       const vitamins = (f as any).vitamins ?? '';
-      return `  • ${f.name} [id: ${f.id}] — Calories: ${calories} kcal/100g | Index glycémique: ${gi} | Bénéfices: ${benefits} | Vitamines/Mineraux: ${vitamins || 'non spécifié'} | Précautions: ${warnings}`;
+      return `  • ${f.name} [id: ${f.id}] — ${isEn ? 'Calories' : 'Calories'}: ${calories} kcal/100g | ${isEn ? 'Glycemic index' : 'Index glycémique'}: ${gi} | ${isEn ? 'Benefits' : 'Bénéfices'}: ${benefits} | ${isEn ? 'Vitamins/Minerals' : 'Vitamines/Mineraux'}: ${vitamins || noneSpecified} | ${isEn ? 'Warnings' : 'Précautions'}: ${warnings}`;
     }).join('\n')
-    : '(Aucun fruit chargé — demande à l\'utilisateur de revenir plus tard)';
+    : (isEn ? '(No fruits loaded — ask the user to come back later)' : '(Aucun fruit chargé — demande à l\'utilisateur de revenir plus tard)');
 
   const fruitIds = mainFruits.map(f => f.id).join(', ');
 
   const supplementCatalog = supplements.length > 0
-    ? supplements.map((s) => `  • ${s.name} [id: ${s.id}] — Bénéfices: ${s.benefits?.join(', ') || 'non spécifié'}`).join('\n')
-    : '(Aucun supplément chargé)';
+    ? supplements.map((s) => `  • ${s.name} [id: ${s.id}] — ${isEn ? 'Benefits' : 'Bénéfices'}: ${s.benefits?.join(', ') || noneSpecified}`).join('\n')
+    : (isEn ? '(No supplements loaded)' : '(Aucun supplément chargé)');
   const supplementIds = supplements.map(s => s.id).join(', ');
+
+  if (isEn) {
+    return `You are NutriFYS, an expert nutritionist assistant specialized in FYS healthy fruit cocktails, trained by field experts. You have a deep mastery of nutritional biochemistry, nutrient interactions, and the impact of food on the human body. But you are also an excellent educator — you love explaining nutrition simply, as if talking to someone who knows nothing about the field.
+
+Your style :
+- Warm, human, caring — like a neighborhood doctor who takes time to explain.
+- You use real medical and nutritional terms (vitamin C, antioxidants, folic acid, soluble fiber, glycemic index, potassium, non-heme iron, etc.) but you ALWAYS explain them with simple, concrete everyday images.
+  Example: "Vitamin C — it's like your body's security guard. It helps your white blood cells, which are your immune system's soldiers, fight germs better."
+- You are pedagogical: you explain the WHY of each fruit, how the nutrient acts in the body, how fast, in which organ, and what concrete effect the user will feel.
+- You ALWAYS adapt your analysis to the user's health profile. If they are diabetic, you mention blood sugar elevation and explain it simply. If they have specific goals, you address them directly.
+- You converse naturally, like a real consultation. You ask questions, you listen.
+
+${profileSection}
+
+NUTRITIONAL KNOWLEDGE BASE:
+${knowledgeContext}
+
+TODAY'S AVAILABLE FRUITS CATALOG (real-time FYS data):
+${fruitCatalog}
+
+AVAILABLE SUPPLEMENTS CATALOG:
+${supplementCatalog}
+
+VALID FRUIT IDs FOR "proposal.fruitIds": [${fruitIds}]
+VALID SUPPLEMENT IDs FOR "proposal.supplementIds": [${supplementIds}]
+
+GOLDEN TASTE RULE (TASTE IS PARAMOUNT):
+- NEVER propose a purely utilitarian cocktail without a sweet base (e.g. Ginger + Spinach + Spirulina is undrinkable).
+- A FYS cocktail must ALWAYS contain a majority (60-80%) of juicy sweet BASE fruits (Apple, Orange, Carrot, Watermelon, etc.).
+- Supplements and boosters (Ginger, Turmeric, Mint, Celery...) enhance health effectiveness but have an extremely strong taste! They must never dominate the cocktail.
+- Ensure balance: a sweet base first, then a distinct accent, and potentially a micro-booster to finish.
+
+CONSULTATION GUIDELINES :
+1. DO NOT INTRODUCE YOURSELF in every response. Only at the very beginning of a new conversation (empty history).
+
+2. DR. NUTRITIONIST BEHAVIOR :
+   - Be curious about the user. From the start, ask several questions to understand their lifestyle, symptoms, desires.
+   - When they ask a question, focus on their question FIRST and answer it completely, pedagogically, and engagingly. Mention their health profile when relevant.
+   - When you mention a nutrient or scientific term, explain it immediately with a metaphor or everyday image.
+   - Before suggesting fruits, mentally evaluate EACH fruit in the catalog above, and reserve only the 2-4 best suited to the profile and goal. Briefly detail why you choose them (e.g. "orange is interesting here because it contains 50-70mg of vitamin C per 100g, which will strengthen — like a shield — your immune system over the next 24 hours...").
+   - For supplements, suggest them VERBALLY by explaining their physical ACTION in the body, then ASK for the user's opinion before including them in a cocktail.
+
+3. ABSOLUTE RULE ON THE "proposal" FIELD :
+   - NEVER fill "proposal" on a question, a verbal suggestion or an explanation.
+   - NEVER fill "proposal" without explicit user validation ("yes", "ok", "go ahead", "do it", "compose the cocktail", or equivalent).
+   - ONLY WHEN THE USER EXPLICITLY ACCEPTS DO YOU FILL "proposal".
+   - WHEN YOU FILL "proposal" : ALWAYS add a clear sentence at the end of your "text" field to thank the customer on behalf of the FYS team, and reassure them that as soon as they validate their order, their cocktail will be carefully prepared and delivered shortly, within the allotted time.
+
+4. ALWAYS ASK FOR AGREEMENT : After your verbal suggestion, systematically ask (e.g.: "Would you like me to compose this cocktail for you?").
+
+You must generate your response ONLY as valid JSON:
+{
+  "text": "<Your pedagogical text response (3-5 sentences, warm and expert). If it's a proposal, include FYS thanks and delivery promise.>",
+  "proposal": {
+    "name": "<Creative cocktail name>",
+    "profileLabel": "<Goal: Energy, Immunity, Digestion, etc.>",
+    "fruitIds": ["<exact fruit id from the list>", ...],
+    "supplementIds": ["<exact supplement id>", ...],
+    "benefits": ["<Benefit 1>", "<Benefit 2>"],
+    "explanation": "<Pedagogical explanation of why this mix is ideal for this profile>",
+    "score": <0-100>,
+    "verdict": "beneficial" | "neutral" | "caution" | "not_recommended"
+  }
+}
+CRITICAL REMINDER: "proposal" is STRICTLY OPTIONAL. Only when the user has explicitly validated. Provide only this valid JSON, no other text before or after.`;
+  }
 
   return `Tu es NutriFYS, un assistant nutritionniste expert spécialisé dans les cocktails de fruits santé de FYS entrainé par les experts du domaine. Tu as une profonde maîtrise de la biochimie nutritionnelle, des interactions entre nutriments, et de l\'impact des aliments sur le corps humain. Mais tu es aussi un excellent pédagogue — tu adores expliquer la nutrition simplement, comme si tu parlais à quelqu\'un qui ne connaît rien au domaine.
 
@@ -416,15 +578,17 @@ export function parseChatResponse(raw: string): ChatAIResponse {
     .replace(/^```json?\s*/i, '')
     .replace(/\s*```$/i, '');
 
+  const isEn = i18n.language?.startsWith('en') ?? false;
+
   try {
     const parsed = JSON.parse(jsonText);
     return {
-      text: parsed.text || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?",
+      text: parsed.text || (isEn ? "Sorry, I didn't understand. Could you rephrase?" : "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?"),
       proposal: parsed.proposal,
     };
   } catch (e) {
     return {
-      text: "Je rencontre une difficulté avec ma connexion. Veuillez réessayer.",
+      text: isEn ? "I'm having connection issues. Please try again." : "Je rencontre une difficulté avec ma connexion. Veuillez réessayer.",
     };
   }
 }
@@ -442,30 +606,64 @@ export function buildSupplementPrompt(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
   availableSupplements: Fruit[] = [],
+  lang?: string,
 ): string {
+  const isEn = (lang ?? (i18n.language?.startsWith('en') ? 'en' : 'fr')) === 'en';
+
   const fruitLines = ingredients.map(({ fruit, grams }) => `• ${fruit.name} (${grams}g)`).join('\n');
 
   const hasNoneCondition = profile?.healthConditions.some((c) => c.toLowerCase().includes('aucune'));
   const hasNoneAllergy = profile?.allergies.some((a) => a.toLowerCase().includes('aucune'));
 
-  const profileSection = profile
-    ? `Profil de santé :
-- Conditions : ${hasNoneCondition ? 'aucune condition' : profile.healthConditions.join(', ') || 'non renseigné'}
-- Allergies : ${hasNoneAllergy ? 'aucune allergie' : profile.allergies.join(', ') || 'non renseigné'}
-- Objectifs : ${(profile.goals ?? []).join(', ') || 'non spécifié'}`
-    : 'Aucun profil de santé renseigné.';
+  const noneLabel = isEn ? 'not specified' : 'non spécifié';
+  const noneWarn = isEn ? 'none' : 'aucun';
+  const notProvided = isEn ? 'not provided' : 'non renseigné';
 
-  const knowledgeContext = buildKnowledgeContext(ingredients, profile);
+  const profileSection = profile
+    ? `${isEn ? 'Health Profile' : 'Profil de santé'}:
+- ${isEn ? 'Conditions' : 'Conditions'} : ${hasNoneCondition ? (isEn ? 'no condition' : 'aucune condition') : profile.healthConditions.join(', ') || notProvided}
+- ${isEn ? 'Allergies' : 'Allergies'} : ${hasNoneAllergy ? (isEn ? 'no allergies' : 'aucune allergie') : profile.allergies.join(', ') || notProvided}
+- ${isEn ? 'Goals' : 'Objectifs'} : ${(profile.goals ?? []).join(', ') || noneLabel}`
+    : (isEn ? 'No health profile provided.' : 'Aucun profil de santé renseigné.');
+
+  const knowledgeContext = buildKnowledgeContext(ingredients, profile, isEn ? 'en' : 'fr');
 
   const supplementCatalog = availableSupplements.length > 0
     ? availableSupplements.map((s) => {
-        const benefits = s.benefits?.length ? s.benefits.join(', ') : 'non spécifié';
-        const warnings = s.warnings?.length ? s.warnings.join(', ') : 'aucun';
-        return `  • ${s.name} [id: ${s.id}] — Bénéfices: ${benefits} | Précautions: ${warnings}`;
+        const benefits = s.benefits?.length ? s.benefits.join(', ') : noneLabel;
+        const warnings = s.warnings?.length ? s.warnings.join(', ') : noneWarn;
+        return `  • ${s.name} [id: ${s.id}] — ${isEn ? 'Benefits' : 'Bénéfices'}: ${benefits} | ${isEn ? 'Warnings' : 'Précautions'}: ${warnings}`;
       }).join('\n')
-    : '  (aucun supplément en base — recommande une liste vide)';
+    : (isEn ? '  (no supplements in database — recommend an empty list)' : '  (aucun supplément en base — recommande une liste vide)');
 
   const validIds = availableSupplements.map((s) => s.id).join(', ');
+
+  if (isEn) {
+    return `You are NutriFYS. The user has composed this fruit mix :
+${fruitLines}
+
+${profileSection}
+
+KNOWLEDGE BASE :
+${knowledgeContext}
+
+AVAILABLE SUPPLEMENTS LIST (real-time FYS catalog) :
+${supplementCatalog}
+
+MISSION:
+Select 1 to 3 best supplements from the list above that would perfectly complement this mix, taking into account the HEALTH PROFILE.
+Choose one "highlighted" supplement and explain why in simple language.
+Do NOT invent any id — use only the provided ids.
+
+Respond ONLY with this strict JSON :
+{
+  "profileLabel": "<Ex: Energy, Immunity, Detox...>",
+  "recommendedIds": ["id1", "id2"],
+  "highlightedSupplementId": "id1",
+  "why": "<Short targeted explanation, 1-2 sentences>"
+}
+Valid IDs: [${validIds}]`;
+  }
 
   return `Tu es NutriFYS. L'utilisateur a composé ce mélange de fruits :
 ${fruitLines}
@@ -495,16 +693,17 @@ IDs valides: [${validIds}]`;
 
 export function parseSupplementResponse(raw: string): AIRecommendation {
   const jsonText = raw.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+  const isEn = i18n.language?.startsWith('en') ?? false;
   try {
     const parsed = JSON.parse(jsonText);
     return {
-      profileLabel: parsed.profileLabel || 'Vitalité',
+      profileLabel: parsed.profileLabel || (isEn ? 'Vitality' : 'Vitalité'),
       recommendedIds: Array.isArray(parsed.recommendedIds) ? parsed.recommendedIds : [],
       highlightedSupplementId: parsed.highlightedSupplementId || '',
       why: parsed.why || '',
     };
   } catch (e) {
-    return { profileLabel: 'Vitalité', recommendedIds: [], highlightedSupplementId: '', why: 'Erreur réseau.' };
+    return { profileLabel: isEn ? 'Vitality' : 'Vitalité', recommendedIds: [], highlightedSupplementId: '', why: isEn ? 'Network error.' : 'Erreur réseau.' };
   }
 }
 

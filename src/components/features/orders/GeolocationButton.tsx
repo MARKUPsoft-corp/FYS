@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { LocationPickerModal } from '@/components/features/orders/LocationPickerModal';
 
@@ -8,6 +9,7 @@ interface GeolocationButtonProps {
 }
 
 export function GeolocationButton({ onLocation, className = '' }: GeolocationButtonProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
 
   function handleGeolocate() {
     if (!navigator.geolocation) {
-      setError('Géolocalisation non supportée par votre navigateur.');
+      setError(t('geolocation.notSupported'));
       return;
     }
 
@@ -43,7 +45,7 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
           { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
         );
       } else {
-        setError('Impossible d\'obtenir votre position.');
+        setError(t('geolocation.unavailable'));
         setLoading(false);
       }
     };
@@ -68,17 +70,17 @@ export function GeolocationButton({ onLocation, className = '' }: GeolocationBut
         }`}
       >
         {loading ? (
-          <><Loader2 className="size-4 animate-spin" /> Localisation en cours…</>
+          <><Loader2 className="size-4 animate-spin" /> {t('geolocation.locating')}</>
         ) : success ? (
-          <><CheckCircle2 className="size-4" /> Position enregistrée</>
+          <><CheckCircle2 className="size-4" /> {t('geolocation.success')}</>
         ) : (
-          <><MapPin className="size-4" /> Utiliser ma position GPS (Précis)</>
+          <><MapPin className="size-4" /> {t('geolocation.useGPS')}</>
         )}
       </button>
       {error && <p className="text-[11px] text-destructive text-center">{error}</p>}
       {!success && !error && (
         <p className="text-[11px] text-muted-foreground text-center">
-          Optionnel : Permet au livreur de trouver votre adresse exacte.
+          {t('geolocation.infoText')}
         </p>
       )}
 

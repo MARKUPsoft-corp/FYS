@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, FlaskConical, Sparkles, Save, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
@@ -19,8 +20,17 @@ import { isUsableAsMainFruit, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@
 
 // ── Verdict config ────────────────────────────────────────────────────────────
 
+function getVerdictLabel(verdict: AIVerdict, t: (key: string) => string): string {
+  const labels: Record<AIVerdict, string> = {
+    beneficial: t('nutrition.verdictBeneficial'),
+    neutral: t('nutrition.verdictNeutral'),
+    caution: t('nutrition.verdictCaution'),
+    not_recommended: t('nutrition.verdictNotRecommended'),
+  };
+  return labels[verdict];
+}
+
 const VERDICT_CONFIG: Record<AIVerdict, {
-  label: string;
   emoji: string;
   bg: string;
   border: string;
@@ -29,7 +39,6 @@ const VERDICT_CONFIG: Record<AIVerdict, {
   chip: string;
 }> = {
   beneficial: {
-    label: 'Bénéfique',
     emoji: '✦',
     bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     border: 'border-emerald-200 dark:border-emerald-700',
@@ -38,7 +47,6 @@ const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-400',
   },
   neutral: {
-    label: 'Neutre',
     emoji: '◈',
     bg: 'bg-slate-50 dark:bg-slate-900/30',
     border: 'border-slate-200 dark:border-slate-700',
@@ -47,7 +55,6 @@ const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
   },
   caution: {
-    label: 'Avec réserve',
     emoji: '⚠',
     bg: 'bg-amber-50 dark:bg-amber-950/30',
     border: 'border-amber-200 dark:border-amber-700',
@@ -56,7 +63,6 @@ const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-400',
   },
   not_recommended: {
-    label: 'Déconseillé',
     emoji: '✕',
     bg: 'bg-red-50 dark:bg-red-950/30',
     border: 'border-red-200 dark:border-red-700',
@@ -66,27 +72,40 @@ const VERDICT_CONFIG: Record<AIVerdict, {
   },
 };
 
+function getNutrientLabel(id: string, t: (key: string) => string): string {
+  const labels: Record<string, string> = {
+    vitamineC: t('nutrition.nutrientVitamineC'),
+    vitamineA: t('nutrition.nutrientVitamineA'),
+    fibres: t('nutrition.nutrientFibres'),
+    potassium: t('nutrition.nutrientPotassium'),
+    sucresNaturels: t('nutrition.nutrientSucresNaturels'),
+    antioxydants: t('nutrition.nutrientAntioxydants'),
+  };
+  return labels[id] ?? id;
+}
+
 // ── Nutrient bar ──────────────────────────────────────────────────────────────
 
-const NUTRIENT_META: Record<string, { label: string; bar: string }> = {
-  vitamineC: { label: 'Vitamine C', bar: 'bg-orange-400' },
-  vitamineA: { label: 'Vitamine A', bar: 'bg-yellow-400' },
-  fibres: { label: 'Fibres', bar: 'bg-emerald-500' },
-  potassium: { label: 'Potassium', bar: 'bg-sky-400' },
-  sucresNaturels: { label: 'Sucres nat.', bar: 'bg-rose-400' },
-  antioxydants: { label: 'Antioxydants', bar: 'bg-violet-500' },
+const NUTRIENT_META: Record<string, { bar: string }> = {
+  vitamineC: { bar: 'bg-orange-400' },
+  vitamineA: { bar: 'bg-yellow-400' },
+  fibres: { bar: 'bg-emerald-500' },
+  potassium: { bar: 'bg-sky-400' },
+  sucresNaturels: { bar: 'bg-rose-400' },
+  antioxydants: { bar: 'bg-violet-500' },
 };
 
 function NutrientRow({ id, info }: { id: string; info: NutrientInfo }) {
-  const meta = NUTRIENT_META[id] ?? { label: id, bar: 'bg-primary' };
+  const { t } = useTranslation();
+  const meta = NUTRIENT_META[id] ?? { bar: 'bg-primary' };
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold text-foreground/70">{meta.label}</span>
+        <span className="text-[12px] font-semibold text-foreground/70">{getNutrientLabel(id, t)}</span>
         <div className="flex items-center gap-2">
           <span className="text-[12px] font-bold text-foreground">{info.valeur}</span>
           <span className="text-[11px] font-bold tabular-nums text-muted-foreground">
-            {info.pourcentage}%<span className="text-[10px] font-normal"> AJR</span>
+            {info.pourcentage}%<span className="text-[10px] font-normal">{t('nutrition.ajr')}</span>
           </span>
         </div>
       </div>
@@ -149,6 +168,7 @@ function NutritionalSheetContent({
   selectedFruits: Fruit[];
   onOrderRequest: () => void;
 }) {
+  const { t } = useTranslation();
   const cfg = VERDICT_CONFIG[analysis.verdict];
 
   const nutrients = (
@@ -164,11 +184,11 @@ function NutritionalSheetContent({
       <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/40 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <SheetTitle className="font-display text-lg font-bold text-foreground">
-            Fiche NutriFYS
+            {t('nutrition.sheetTitle')}
           </SheetTitle>
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold ${cfg.chip}`}>
             <span>{cfg.emoji}</span>
-            {cfg.label} · {analysis.score}/100
+            {getVerdictLabel(analysis.verdict, t)} · {analysis.score}/100
           </span>
         </div>
         {selectedFruits.length > 0 && (
@@ -198,7 +218,7 @@ function NutritionalSheetContent({
         {nutrients.length > 0 && (
           <div className="space-y-4">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Profil nutritionnel · AJR adulte
+              {t('nutrition.profileSubtitle')}
             </p>
             <div className="space-y-3">
               {nutrients.map(([id, info]) => (
@@ -212,7 +232,7 @@ function NutritionalSheetContent({
         {analysis.beneficesCibles.length > 0 && (
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Bénéfices ciblés
+              {t('nutrition.targetedBenefits')}
             </p>
             <div className="flex flex-wrap gap-2">
               {analysis.beneficesCibles.map((b) => (
@@ -227,7 +247,7 @@ function NutritionalSheetContent({
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Link2 className="size-3" />
-              Interactions entre fruits
+              {t('nutrition.fruitInteractionsShort')}
             </p>
             <ul className="space-y-2">
               {analysis.interactionsFruits.map((item, i) => (
@@ -258,7 +278,7 @@ function NutritionalSheetContent({
           className="w-full h-12 rounded-xl gap-2 text-sm font-bold bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
           onClick={onOrderRequest}
         >
-          <ShoppingBag className="size-4" /> Commander
+          <ShoppingBag className="size-4" /> {t('lab.order')}
         </Button>
       </div>
     </div>
@@ -278,9 +298,10 @@ function ComposeStepper({
   onStepChange: (s: ComposeStep) => void;
   canGoStep2: boolean;
 }) {
+  const { t } = useTranslation();
   const steps = [
-    { n: 1 as const, label: 'Fruits', hint: 'Base fruitée' },
-    { n: 2 as const, label: 'Suppléments', hint: 'Assaisonnement' },
+    { n: 1 as const, label: t('lab.fruits'), hint: t('lab.fruityBase') },
+    { n: 2 as const, label: t('lab.supplements'), hint: t('lab.seasoning') },
   ];
 
   return (
@@ -317,7 +338,7 @@ function ComposeStepper({
                     'block text-[11px] font-bold uppercase tracking-widest',
                     active ? 'text-primary' : 'text-muted-foreground',
                   )}>
-                    Étape {s.n}
+                    {t('lab.stepLabel', { step: s.n })}
                   </span>
                   <span className={cn(
                     'block text-sm font-semibold truncate',
@@ -390,6 +411,7 @@ export function ComposeTab({
   aiRecommendation,
   loadingAI,
 }: Props) {
+  const { t } = useTranslation();
   const mainFruits = fruits.filter(isUsableAsMainFruit);
   const selectedFruits = mainFruits.filter((f) => selectedIngredients.has(f.id));
   const selectedSupplementItems = supplements.filter((f) => selectedSupplements.has(f.id));
@@ -415,10 +437,10 @@ export function ComposeTab({
               </div>
               <div>
                 <span className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest block mb-0.5">
-                  NutriFYS · Étape 1
+                  {t('lab.step1Title')}
                 </span>
                 <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-                  Choisissez jusqu&apos;à {MAX_LAB_MAIN_FRUITS} fruits de base. Ensuite, jusqu&apos;à {MAX_LAB_SUPPLEMENTS} suppléments adaptés à votre mélange.
+                  {t('lab.step1Description', { fruits: MAX_LAB_MAIN_FRUITS, supplements: MAX_LAB_SUPPLEMENTS })}
                 </p>
               </div>
             </div>
@@ -429,10 +451,10 @@ export function ComposeTab({
               </div>
               <div>
                 <span className="text-primary text-[10px] font-bold uppercase tracking-widest block mb-0.5">
-                  NutriFYS · Étape 2
+                  {t('lab.step2Title')}
                 </span>
                 <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-                  Affinez avec jusqu&apos;à {MAX_LAB_SUPPLEMENTS} suppléments. NutriFYS propose ceux qui collent le mieux à votre mélange.
+                  {t('lab.step2Description', { supplements: MAX_LAB_SUPPLEMENTS })}
                 </p>
               </div>
             </div>
@@ -444,7 +466,7 @@ export function ComposeTab({
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Fruits disponibles · Pleine saison
+                  {t('lab.fruitsAvailable')}
                 </h3>
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-50" />
@@ -459,7 +481,7 @@ export function ComposeTab({
 
             {atMaxFruits && (
               <p className="text-[11px] text-secondary font-semibold mb-3 -mt-1">
-                Limite atteinte — retirez un fruit pour en ajouter un autre.
+                {t('lab.maxFruitsReachedDesc')}
               </p>
             )}
 
@@ -519,7 +541,7 @@ export function ComposeTab({
                 disabled={!canGoStep2}
                 onClick={() => onStepChange(2)}
               >
-                Suivant · Suppléments
+                {t('lab.nextSupplements')}
                 <ChevronRight className="size-4" />
               </Button>
             </div>
@@ -537,17 +559,17 @@ export function ComposeTab({
                 onClick={() => onStepChange(1)}
               >
                 <ChevronLeft className="size-4" />
-                Modifier les fruits
+                {t('lab.editFruits')}
               </Button>
               <div className="lg:hidden">
                 <Input
                   value={cocktailName}
                   onChange={(e) => onNameChange(e.target.value)}
-                  placeholder="Nom du cocktail…"
+                  placeholder={t('lab.namePlaceholder')}
                   className="h-11 rounded-xl text-base font-semibold"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1.5 px-0.5">
-                  Nom généré par NutriFYS — vous pouvez le modifier
+                  {t('lab.nameGenerated')}
                 </p>
               </div>
             </div>
@@ -630,6 +652,7 @@ export function SavePanel({
   canGoStep2,
   onOrderRequest,
 }: SavePanelProps) {
+  const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -648,12 +671,12 @@ export function SavePanel({
             <FlaskConical className="size-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-display font-bold text-base text-foreground">Ma recette</h2>
+            <h2 className="font-display font-bold text-base text-foreground">{t('lab.myRecipe')}</h2>
             <p className="text-xs text-muted-foreground">
               {selectedMainCount === 0
-                ? 'Aucun fruit sélectionné'
-                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} fruit${selectedMainCount > 1 ? 's' : ''}${selectedSupplementCount > 0
-                  ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} supplément${selectedSupplementCount > 1 ? 's' : ''}`
+                ? t('lab.noFruitSelected')
+                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} ${t('lab.fruitCount', { count: selectedMainCount })}${selectedSupplementCount > 0
+                  ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} ${t('lab.supplementCount', { count: selectedSupplementCount })}`
                   : ''
                 }`}
             </p>
@@ -665,13 +688,13 @@ export function SavePanel({
             <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
               <Plus className="size-6 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground font-medium">
-                Sélectionnez des fruits dans la grille
+                {t('lab.selectFruits')}
               </p>
             </div>
           ) : (
             <>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">
-                Composition
+                {t('catalogue.composition')}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedFruits.map((f) => (
@@ -704,14 +727,14 @@ export function SavePanel({
               disabled={!canGoStep2}
               onClick={() => onStepChange(2)}
             >
-              Suivant · Suppléments
+              {t('lab.nextSupplements')}
               <ChevronRight className="size-4" />
             </Button>
           ) : !analysis ? (
             <>
               {canAnalyze && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  Lancez l&apos;analyse pour obtenir la fiche nutritionnelle
+                  {t('lab.launchAnalysis')}
                 </p>
               )}
               <Button
@@ -720,9 +743,9 @@ export function SavePanel({
                 onClick={onAnalyze}
               >
                 {analyzing ? (
-                  <><Loader2 className="size-4 animate-spin" /> Analyse en cours…</>
+                  <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzing')}</>
                 ) : (
-                  <><Sparkles className="size-4" /> Analyser avec NutriFYS</>
+                  <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
                 )}
               </Button>
             </>
@@ -731,7 +754,7 @@ export function SavePanel({
               <div className={`rounded-xl border px-4 py-3 flex items-center justify-between ${cfg!.bg} ${cfg!.border}`}>
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${cfg!.text}`}>{cfg!.emoji}</span>
-                  <span className={`text-sm font-bold ${cfg!.text}`}>{cfg!.label}</span>
+                  <span className={`text-sm font-bold ${cfg!.text}`}>{getVerdictLabel(analysis!.verdict, t)}</span>
                 </div>
                 <span className={`text-base font-bold tabular-nums ${cfg!.text}`}>
                   {analysis.score}
@@ -745,7 +768,7 @@ export function SavePanel({
                 onClick={() => setSheetOpen(true)}
               >
                 <ClipboardList className="size-4" />
-                Voir la fiche nutritionnelle
+                {t('lab.viewNutritionSheet')}
               </Button>
             </>
           )}
@@ -758,11 +781,11 @@ export function SavePanel({
             value={cocktailName}
             onChange={(e) => onNameChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && canSave && !saving && onSave()}
-            placeholder="Nom du cocktail (NutriFYS)…"
+            placeholder={t('lab.nameInputPlaceholder')}
             className="h-10 rounded-xl text-base"
           />
           <p className="text-[10px] text-muted-foreground -mt-1">
-            Suggéré par l&apos;IA — librement modifiable
+            {t('lab.suggestedByAI')}
           </p>
           <Button
             size="lg"
@@ -771,17 +794,17 @@ export function SavePanel({
             onClick={onSave}
           >
             {saving ? (
-              'Sauvegarde…'
+              t('lab.saving')
             ) : (
               <>
                 <Save className="size-4" />
-                {analysis ? 'Sauvegarder avec analyse' : 'Sauvegarder la recette'}
+                {analysis ? t('lab.saveWithAnalysis') : t('lab.saveRecipe')}
               </>
             )}
           </Button>
           {!analysis && composeStep === 2 && selectedMainCount > 0 && (
             <p className="text-center text-[11px] text-muted-foreground">
-              Analysez d&apos;abord pour enrichir la fiche nutritionnelle
+              {t('lab.analyzeFirst')}
             </p>
           )}
         </div>

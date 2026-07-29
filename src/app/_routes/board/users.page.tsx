@@ -1,4 +1,6 @@
 import { PageComponent } from 'rasengan';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { Users as UsersIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,12 +11,13 @@ import { UserDetailSheet, UserMonitoringCard } from '@/components/features/users
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 
 const FILTER_OPTIONS = [
-  { value: 'recent' as const, label: 'Récents' },
-  { value: 'online' as const, label: 'En ligne' },
-  { value: 'alpha' as const, label: 'A → Z' },
+  { value: 'recent' as const, label: i18n.t('users.recent') },
+  { value: 'online' as const, label: i18n.t('users.filterOnline') },
+  { value: 'alpha' as const, label: i18n.t('users.filterAlpha') },
 ];
 
 const Users: PageComponent = () => {
+  const { t } = useTranslation();
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: getUsers,
@@ -48,23 +51,23 @@ const Users: PageComponent = () => {
   return (
     <>
       <BoardPageShell
-        eyebrow="Communauté"
-        titleBefore="Les"
-        titleHighlight="Utilisateurs"
-        sectionBefore="Suivi"
-        sectionHighlight="clients"
-        subtitle="Cliquez sur un utilisateur pour voir son profil, ses commandes et son suivi santé."
+        eyebrow={t('users.eyebrow')}
+        titleBefore={t('users.titleBefore')}
+        titleHighlight={t('users.titleHighlight')}
+        sectionBefore={t('users.sectionBefore')}
+        sectionHighlight={t('users.sectionHighlight')}
+        subtitle={t('users.subtitle')}
         imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1200"
         heroExtra={
           !isLoading && users.length > 0 ? (
             <div className="flex items-center gap-2 shrink-0 mb-0.5">
               <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 py-2 text-center">
                 <p className="font-display font-extrabold text-lg text-white tabular-nums">{adminCount}</p>
-                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">Admins</p>
+                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">{t('users.sectionAdmins')}</p>
               </div>
               <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 py-2 text-center">
                 <p className="font-display font-extrabold text-lg text-white tabular-nums">{customerCount}</p>
-                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">Clients</p>
+                <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">{t('users.sectionClients')}</p>
               </div>
             </div>
           ) : undefined
@@ -74,7 +77,7 @@ const Users: PageComponent = () => {
           {/* Toolbar tri discret */}
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-              {visibleUsers.length} utilisateur{visibleUsers.length !== 1 ? 's' : ''}
+              {t('users.count', { count: visibleUsers.length })}
             </p>
             <div className="inline-flex items-center rounded-full border border-border/50 bg-background p-0.5">
               {FILTER_OPTIONS.map(({ value, label }) => (
@@ -112,9 +115,9 @@ const Users: PageComponent = () => {
               <div className="size-16 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 flex items-center justify-center">
                 <UsersIcon className="size-6 text-violet-400" />
               </div>
-              <p className="text-lg font-bold text-foreground mt-2">Aucun utilisateur</p>
+              <p className="text-lg font-bold text-foreground mt-2">{t('users.emptyTitle')}</p>
               <p className="text-sm text-muted-foreground font-medium max-w-[280px]">
-                {filterType === 'online' ? "Personne n'est en ligne actuellement." : 'Les utilisateurs inscrits apparaîtront ici.'}
+                {filterType === 'online' ? t('users.noOnline') : t('users.noUsers')}
               </p>
             </div>
           ) : (
@@ -141,8 +144,8 @@ const Users: PageComponent = () => {
 };
 
 Users.metadata = {
-  title: 'FYS — Utilisateurs',
-  description: 'Gestion et monitoring des utilisateurs FYS.',
+  title: i18n.t('users.pageTitle'),
+  description: i18n.t('users.pageDescription'),
 };
 
 export default Users;

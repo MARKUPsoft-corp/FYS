@@ -1,4 +1,5 @@
 import { PageComponent } from 'rasengan';
+import i18n from '@/i18n';
 import { useAuthStore } from '@/stores/auth';
 import { UserRole } from '@/entities';
 import { AdminHome } from '@/components/features/home/AdminHome';
@@ -15,8 +16,8 @@ const Home: PageComponent = () => {
 };
 
 Home.metadata = {
-  title: 'FYS — Accueil',
-  description: 'Tableau de bord FYS.',
+  title: i18n.t('home.admin.pageTitle'),
+  description: i18n.t('home.admin.pageDescription'),
 };
 
 export default Home;

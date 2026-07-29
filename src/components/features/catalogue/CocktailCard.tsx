@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Flame, Globe, Lock, MoreVertical, Trash2, ArrowRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ type Props = {
 };
 
 export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, onDelete }: Props) {
+  const { t } = useTranslation();
   const summary = ingredientSummary(cocktail);
   const useCollage = shouldUseFruitCollage(cocktail);
 
@@ -89,11 +91,11 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
           <div className="absolute top-3 left-3 z-10">
             {cocktail.isPublic ? (
               <Badge variant="success" className="gap-1 text-[10px] shadow-md backdrop-blur-sm">
-                <Globe className="size-3" /> Public
+                <Globe className="size-3" /> {t('catalogue.public')}
               </Badge>
             ) : (
               <Badge className="gap-1 text-[10px] bg-black/50 text-white border-0 shadow-md backdrop-blur-sm hover:bg-black/50">
-                <Lock className="size-3" /> Privé
+                <Lock className="size-3" /> {t('catalogue.private')}
               </Badge>
             )}
           </div>
@@ -116,9 +118,9 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
                 {onTogglePublish && (
                   <DropdownMenuItem onClick={() => onTogglePublish(cocktail)}>
                     {cocktail.isPublic ? (
-                      <><Lock className="size-4 mr-2" /> Rendre privé</>
+                      <><Lock className="size-4 mr-2" /> {t('catalogue.makePrivate')}</>
                     ) : (
-                      <><Globe className="size-4 mr-2" /> Publier</>
+                      <><Globe className="size-4 mr-2" /> {t('catalogue.makePublic')}</>
                     )}
                   </DropdownMenuItem>
                 )}
@@ -127,7 +129,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
                     className="text-destructive focus:text-destructive"
                     onClick={() => onDelete(cocktail)}
                   >
-                    <Trash2 className="size-4 mr-2" /> Supprimer
+                    <Trash2 className="size-4 mr-2" /> {t('common.delete')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -139,7 +141,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
         {cocktail.ingredients.length > 0 && (
           <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/40 backdrop-blur-sm text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
             <Flame className="size-3 text-secondary" />
-            {cocktail.ingredients.length} fruit{cocktail.ingredients.length > 1 ? 's' : ''}
+            {t('catalogue.ingredientCount', { count: cocktail.ingredients.length })}
           </div>
         )}
       </div>
@@ -163,7 +165,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
             <p className="text-base font-bold text-primary leading-none">
               {cocktail.totalPrice > 0 ? `${cocktail.totalPrice.toLocaleString()} XAF` : '—'}
             </p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">+ 500 livraison</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5">+ 500 {t('catalogue.delivery')}</p>
           </div>
           {onView && (
             <Button
@@ -171,7 +173,7 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
               className="rounded-full h-9 px-4 font-bold bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all gap-1.5 shrink-0 text-xs"
               onClick={(e) => { e.stopPropagation(); onView(cocktail); }}
             >
-              Voir <ArrowRight className="size-3" />
+              {t('catalogue.view')} <ArrowRight className="size-3" />
             </Button>
           )}
         </div>

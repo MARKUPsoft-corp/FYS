@@ -16,15 +16,9 @@ import {
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
 import { YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
+import i18n from '@/i18n';
 
-const STATUS_NAMES = {
-  [OrderStatus.PENDING]: 'mise en attente',
-  [OrderStatus.CONFIRMED]: 'confirmée',
-  [OrderStatus.PREPARING]: 'mise en préparation',
-  [OrderStatus.READY]: 'prête pour livraison',
-  [OrderStatus.DELIVERED]: 'livrée',
-  [OrderStatus.CANCELLED]: 'annulée',
-};
+const statusLabel = (status: OrderStatus): string => i18n.t(`orders.${status === OrderStatus.CANCELLED ? 'canceled' : status}`);
 
 type UserInfo = {
   uid: string;
@@ -124,25 +118,30 @@ export async function createOrder(
     `${line.quantity}× ${BOTTLE_LABELS[line.bottleSize]}`
   ).join(' + ');
 
+  const orderTitle = i18n.t('notifications.newOrder');
+  const receivedTitle = i18n.t('notifications.orderReceived');
+  const orderBody = i18n.t('notifications.adminNewOrderBody', { userName: user.name, cocktailName: cocktail.name, quantityText });
+  const customerBody = i18n.t('notifications.customerNewOrderBody', { cocktailName: cocktail.name, quantityText });
+
   // Notify admins in-app
   notifyAdmins({
-    title: 'Nouvelle commande 🎉',
-    message: `${user.name} a commandé ${cocktail.name} (${quantityText}).`,
+    title: orderTitle,
+    message: orderBody,
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
   // Send push notification to all admins
   sendPushNotification({
-    title: 'Nouvelle commande FYS 🎉',
-    body: `${user.name} a commandé ${cocktail.name} (${quantityText}).`,
+    title: orderTitle,
+    body: orderBody,
     url: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
   // Notify customer in-app
   createNotification({
     userId: user.uid,
-    title: 'Commande enregistrée 🎉',
-    message: `Votre commande de ${cocktail.name} (${quantityText}) a bien été reçue.`,
+    title: receivedTitle,
+    message: customerBody,
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
@@ -248,18 +247,22 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
 
   if (snap.exists()) {
     const order = snap.data() as Order;
-    const label = STATUS_NAMES[status] || status;
+    const label = statusLabel(status);
+    const updateBody = i18n.t('notifications.customerOrderUpdateBody', { cocktailName: order.cocktailNameSnapshot, statusLabel: label });
+    const updateTitle = i18n.t('notifications.orderUpdate');
+    const pushTitle = i18n.t('notifications.orderUpdatePushTitle');
+
     createNotification({
       userId: order.userId,
-      title: 'Mise à jour commande',
-      message: `Votre commande de ${order.cocktailNameSnapshot} est ${label}.`,
+      title: updateTitle,
+      message: updateBody,
       link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
 
     sendPushNotification({
       targetUid: order.userId,
-      title: 'Suivi de commande FYS 🍹',
-      body: `Votre commande de ${order.cocktailNameSnapshot} est ${label}.`,
+      title: pushTitle,
+      body: updateBody,
       url: `/board/orders?order=${orderId}`,
     });
   }
@@ -276,23 +279,27 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
   if (snap.exists()) {
     const order = snap.data() as Order;
+    const canceledTitle = i18n.t('notifications.orderCanceled');
+    const adminCancelBody = i18n.t('notifications.adminCancelOrderBody', { userName: order.userNameSnapshot, cocktailName: order.cocktailNameSnapshot });
+    const customerCancelBody = i18n.t('notifications.customerCancelOrderBody', { cocktailName: order.cocktailNameSnapshot });
+
     notifyAdmins({
-      title: 'Commande annulée ❌',
-      message: `${order.userNameSnapshot} a annulé sa commande de ${order.cocktailNameSnapshot}.`,
+      title: canceledTitle,
+      message: adminCancelBody,
       link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
 
     createNotification({
       userId: order.userId,
-      title: 'Commande annulée',
-      message: `Votre commande de ${order.cocktailNameSnapshot} a été annulée.`,
+      title: canceledTitle,
+      message: customerCancelBody,
       link: `/board/orders?order=${orderId}`,
     }).catch(console.error);
 
     sendPushNotification({
       targetUid: order.userId,
-      title: 'Commande annulée',
-      body: `Votre commande de ${order.cocktailNameSnapshot} a été annulée.`,
+      title: canceledTitle,
+      body: customerCancelBody,
       url: `/board/orders?order=${orderId}`,
     });
   }

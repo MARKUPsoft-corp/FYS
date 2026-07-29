@@ -1,16 +1,17 @@
 import { Timestamp } from 'firebase/firestore';
+import i18n from '@/i18n';
 
 /** Contenant proposé à la commande */
 export type BottleSize = '500ml' | '1L';
 
 export const BOTTLE_LABELS: Record<BottleSize, string> = {
-  '500ml': 'Demi-litre',
-  '1L': 'Un litre',
+  '500ml': i18n.t('settings.halfLiter'),
+  '1L': i18n.t('settings.oneLiter'),
 };
 
 export const BOTTLE_VOLUME_LABELS: Record<BottleSize, string> = {
-  '500ml': '50 cl',
-  '1L': '1 L',
+  '500ml': i18n.t('settings.volume50cl'),
+  '1L': i18n.t('settings.volume1L'),
 };
 
 /** Document Firestore: settings/pricing */
@@ -43,6 +44,11 @@ export interface HeroSlide {
   cta: string;
   ctaLink: string;
   order: number;
+  labelEn?: string;
+  titleEn?: string;
+  highlightEn?: string;
+  titleEndEn?: string;
+  ctaEn?: string;
 }
 
 export interface HeroSlidesSettings {
@@ -61,6 +67,11 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     cta: 'Composer un jus',
     ctaLink: '/lab',
     order: 0,
+    labelEn: 'Our Signature',
+    titleEn: 'Create your',
+    highlightEn: 'elixir',
+    titleEndEn: 'of life.',
+    ctaEn: 'Mix a juice',
   },
   {
     id: 'slide-2',
@@ -72,6 +83,11 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     cta: 'Voir le catalogue',
     ctaLink: '/board/catalogue',
     order: 1,
+    labelEn: 'Fresh Fruits',
+    titleEn: 'Boost your',
+    highlightEn: 'energy',
+    titleEndEn: 'right now.',
+    ctaEn: 'Browse catalogue',
   },
   {
     id: 'slide-3',
@@ -83,6 +99,11 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     cta: 'Mon profil santé',
     ctaLink: '/board/profile',
     order: 2,
+    labelEn: 'NutriFYS Active',
+    titleEn: 'Take care of',
+    highlightEn: 'yourself',
+    titleEndEn: 'every day.',
+    ctaEn: 'My health profile',
   },
 ];
 

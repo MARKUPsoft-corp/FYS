@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Fruit, HealthProfile, AIAnalysis } from '@/entities';
+import i18n from '@/i18n';
 import { 
   buildAnalysisPrompt, 
   parseAnalysisResponse, 
@@ -28,7 +29,8 @@ export async function analyzeWithGemini(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
 ): Promise<AIAnalysis> {
-  const prompt = buildAnalysisPrompt(ingredients, profile);
+  const lang = i18n.language?.startsWith('en') ? 'en' : 'fr';
+  const prompt = buildAnalysisPrompt(ingredients, profile, lang);
   const result = await model.generateContent(prompt);
   const raw = result.response.text();
   return parseAnalysisResponse(raw);
@@ -39,9 +41,10 @@ export async function chatWithGemini(
   profile: HealthProfile | null,
   fruits: Fruit[] = [],
 ): Promise<ChatAIResponse> {
+  const lang = i18n.language?.startsWith('en') ? 'en' : 'fr';
   const chatModel = genai.getGenerativeModel({
     model: 'gemini-3.1-flash-lite',
-    systemInstruction: buildChatSystemPrompt(profile, fruits),
+    systemInstruction: buildChatSystemPrompt(profile, fruits, lang),
     generationConfig: {
       responseMimeType: 'application/json',
       maxOutputTokens: 1000,
@@ -58,11 +61,14 @@ export async function chatWithGemini(
   return parseChatResponse(raw);
 }
 
-export async function generateRegionInfoWithGemini(regionName: string): Promise<string> {
+export async function generateRegionInfoWithGemini(regionName: string, lang?: string): Promise<string> {
+  const isEn = (lang ?? (i18n.language?.startsWith('en') ? 'en' : 'fr')) === 'en';
   const textModel = genai.getGenerativeModel({
     model: 'gemini-3.1-flash-lite',
   });
-  const prompt = `Génère un paragraphe engageant (3 à 4 phrases maximum, percutant et direct) sur la réalité agronomique de la région "${regionName}" au Cameroun. Parle de son **climat spécifique** qui fait la force de son terroir. Valorise énormément la région ainsi que les **agriculteurs locaux** (leur savoir-faire, leur dévouement). Conclus en expliquant comment **FYS** aide à valoriser leurs productions locales en intégrant directement leurs récoltes dans nos jus santé. Mets en gras (avec **) les mots clés les plus importants pour les faire ressortir. Le ton doit être passionnant, chaleureux et fier. Ne mets pas de titre ni de retour à la ligne inutile, donne juste le texte continu.`;
+  const prompt = isEn
+    ? `Generate an engaging paragraph (3-4 sentences, punchy and direct) about the agronomic reality of the "${regionName}" region in Cameroon. Talk about its **specific climate** that makes its terroir strong. Greatly value the region and the **local farmers** (their know-how, their dedication). Conclude by explaining how **FYS** helps to promote their local production by directly integrating their harvests into our healthy juices. Bold (with **) the most important keywords. The tone must be passionate, warm, and proud. Don't add a title or unnecessary line breaks, just give the continuous text.`
+    : `Génère un paragraphe engageant (3 à 4 phrases maximum, percutant et direct) sur la réalité agronomique de la région "${regionName}" au Cameroun. Parle de son **climat spécifique** qui fait la force de son terroir. Valorise énormément la région ainsi que les **agriculteurs locaux** (leur savoir-faire, leur dévouement). Conclus en expliquant comment **FYS** aide à valoriser leurs productions locales en intégrant directement leurs récoltes dans nos jus santé. Mets en gras (avec **) les mots clés les plus importants pour les faire ressortir. Le ton doit être passionnant, chaleureux et fier. Ne mets pas de titre ni de retour à la ligne inutile, donne juste le texte continu.`;
   const result = await textModel.generateContent(prompt);
   return result.response.text();
 }
@@ -72,7 +78,8 @@ export async function recommendSupplementsWithGemini(
   profile: HealthProfile | null,
   availableSupplements: Fruit[] = [],
 ): Promise<AIRecommendation> {
-  const prompt = buildSupplementPrompt(ingredients, profile, availableSupplements);
+  const lang = i18n.language?.startsWith('en') ? 'en' : 'fr';
+  const prompt = buildSupplementPrompt(ingredients, profile, availableSupplements, lang);
   const result = await model.generateContent(prompt);
   const raw = result.response.text();
   const parsed = parseSupplementResponse(raw);

@@ -1,4 +1,5 @@
 import type { Fruit, HealthProfile, AIAnalysis } from '@/entities';
+import i18n from '@/i18n';
 import { analyzeWithClaude } from './ai.claude';
 import { analyzeWithGemini, chatWithGemini } from './ai.gemini';
 import type { ChatHistoryMessage, ChatAIResponse } from './ai.shared';
@@ -28,7 +29,11 @@ export async function chatCocktail(
 }
 
 export async function generateRegionInfo(regionName: string): Promise<string> {
+  const isEn = i18n.language?.startsWith('en') ?? false;
   if (provider === 'claude') {
+    if (isEn) {
+      return `The agronomic reality of the **${regionName}** region is exceptional thanks to its **specific climate** that makes its terroir so strong. We are immensely proud of the know-how and dedication of our **local farmers**. By directly integrating their magnificent harvests into our healthy juices, **FYS** is committed to promoting and showcasing their local production.`;
+    }
     return `La réalité agronomique de la région **${regionName}** est exceptionnelle grâce à son **climat spécifique** qui fait toute la force de son terroir. Nous sommes immensément fiers du savoir-faire et du dévouement de nos **agriculteurs locaux**. En intégrant directement leurs magnifiques récoltes dans nos jus santé, **FYS** s'engage à valoriser et faire rayonner leurs productions locales.`;
   }
   const { generateRegionInfoWithGemini } = await import('./ai.gemini');

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FlaskConical, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HighlightedText, buildProposalSelection, type HighlightTerm } from '@/components/features/lab/HighlightedText';
@@ -131,6 +132,7 @@ export function CocktailProposalCard({
   onTermClick,
   fruitsCatalog = [],
 }: Props) {
+  const { t } = useTranslation();
   // Toujours afficher les fruits de la proposal ; la sélection se gère via selected=
   const fruits = resolveFruitDisplays(proposal.fruitIds, fruitsCatalog);
   const supplements = resolveFruitDisplays(proposal.supplementIds, fruitsCatalog);
@@ -164,13 +166,13 @@ export function CocktailProposalCard({
       </div>
 
       <p className="px-4 pt-3 text-[11px] text-muted-foreground font-medium">
-        Touchez un fruit ou un supplément pour l&apos;ajouter ou le retirer (max. {MAX_LAB_MAIN_FRUITS} fruits · {MAX_LAB_SUPPLEMENTS} suppléments).
+        {t('lab.touchInstruction', { fruits: MAX_LAB_MAIN_FRUITS, supplements: MAX_LAB_SUPPLEMENTS })}
       </p>
 
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-center justify-between gap-2 mb-2">
           <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-            Fruits proposés
+            {t('lab.proposedFruits')}
           </p>
           <span className={`text-[10px] font-bold tabular-nums ${atMaxFruits ? 'text-secondary' : 'text-muted-foreground'}`}>
             {fruitIds.length}/{MAX_LAB_MAIN_FRUITS}
@@ -203,7 +205,7 @@ export function CocktailProposalCard({
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between gap-2 mb-2">
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-              Suppléments
+              {t('lab.supplements')}
             </p>
             <span className={`text-[10px] font-bold tabular-nums ${atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'}`}>
               {supplementIds.length}/{MAX_LAB_SUPPLEMENTS}

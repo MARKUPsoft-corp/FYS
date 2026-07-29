@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUserOrders } from '@/hooks/useOrders';
+import { useTranslation } from 'react-i18next';
 import {
   Mail, Phone, ShieldCheck, User, Clock, HeartPulse,
   ShoppingBag, FlaskConical, Globe, Lock, Loader2,
@@ -16,13 +17,13 @@ import { isProfileComplete } from '@/stores/profile';
 
 type Tab = 'overview' | 'health' | 'orders' | 'cocktails';
 
-const ORDER_STATUS: Record<OrderStatus, { label: string; className: string }> = {
-  [OrderStatus.PENDING]: { label: 'En attente', className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400' },
-  [OrderStatus.CONFIRMED]: { label: 'Confirmée', className: 'bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-400' },
-  [OrderStatus.PREPARING]: { label: 'En préparation', className: 'bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-400' },
-  [OrderStatus.READY]: { label: 'Prête', className: 'bg-primary/15 text-primary' },
-  [OrderStatus.DELIVERED]: { label: 'Livrée', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400' },
-  [OrderStatus.CANCELLED]: { label: 'Annulée', className: 'bg-muted text-muted-foreground' },
+const ORDER_STATUS: Record<OrderStatus, { labelKey: string; className: string }> = {
+  [OrderStatus.PENDING]: { labelKey: 'orders.pending', className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400' },
+  [OrderStatus.CONFIRMED]: { labelKey: 'orders.confirmed', className: 'bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-400' },
+  [OrderStatus.PREPARING]: { labelKey: 'orders.preparing', className: 'bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-400' },
+  [OrderStatus.READY]: { labelKey: 'orders.ready', className: 'bg-primary/15 text-primary' },
+  [OrderStatus.DELIVERED]: { labelKey: 'orders.delivered', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  [OrderStatus.CANCELLED]: { labelKey: 'orders.canceled', className: 'bg-muted text-muted-foreground' },
 };
 
 function formatTs(ts: { toDate?: () => Date; seconds?: number } | null | undefined): string {
@@ -94,6 +95,7 @@ function ProfileTags({ items, emptyLabel }: { items: string[]; emptyLabel: strin
 }
 
 function OrderRow({ order }: { order: Order }) {
+  const { t } = useTranslation();
   const cfg = ORDER_STATUS[order.status];
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-4 space-y-2">
@@ -106,12 +108,12 @@ function OrderRow({ order }: { order: Order }) {
           </p>
         </div>
         <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${cfg.className}`}>
-          {cfg.label}
+          {t(cfg.labelKey)}
         </span>
       </div>
       <div className="flex items-center justify-between text-[12px]">
         <span className="text-muted-foreground">
-          {order.quantity}× {order.bottleSizeLabel ?? '50 cl'}
+          {order.quantity}× {order.bottleSizeLabel ?? t('settings.volume50cl')}
         </span>
         <span className="font-bold text-foreground tabular-nums">
           {order.totalPrice.toLocaleString()} XAF
@@ -127,6 +129,7 @@ function OrderRow({ order }: { order: Order }) {
 }
 
 function CocktailRow({ cocktail }: { cocktail: Cocktail }) {
+  const { t } = useTranslation();
   const verdict = cocktail.aiAnalysis?.verdict;
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-4">
@@ -139,17 +142,17 @@ function CocktailRow({ cocktail }: { cocktail: Cocktail }) {
         </div>
         {cocktail.isPublic ? (
           <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] font-bold">
-            <Globe className="size-3" /> Public
+            <Globe className="size-3" /> {t('catalogue.public')}
           </span>
         ) : (
           <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
-            <Lock className="size-3" /> Privé
+            <Lock className="size-3" /> {t('cocktail.private')}
           </span>
         )}
       </div>
       <div className="flex items-center justify-between mt-2 text-[12px]">
         <span className="text-muted-foreground">
-          {cocktail.ingredients.length} ingrédient{cocktail.ingredients.length > 1 ? 's' : ''}
+          {t('catalogue.ingredientCount', { count: cocktail.ingredients.length })}
           {verdict ? ` · NutriFYS ${verdict}` : ''}
         </span>
         <span className="font-bold text-primary tabular-nums">
@@ -167,6 +170,7 @@ type Props = {
 };
 
 export function UserDetailSheet({ user, open, onOpenChange }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('overview');
 
   const { data: healthProfile, isLoading: healthLoading } = useQuery({
@@ -197,11 +201,11 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
   const activeOrders = orders.filter((o) => o.status !== OrderStatus.CANCELLED && o.status !== OrderStatus.DELIVERED);
   const publicCocktails = cocktails.filter((c) => c.isPublic).length;
 
-  const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: 'overview', label: 'Aperçu' },
-    { id: 'health', label: 'Santé' },
-    { id: 'orders', label: 'Commandes', count: orders.length },
-    { id: 'cocktails', label: 'Cocktails', count: cocktails.length },
+  const tabs: { id: Tab; labelKey: string; count?: number }[] = [
+    { id: 'overview', labelKey: 'users.overview' },
+    { id: 'health', labelKey: 'users.health' },
+    { id: 'orders', labelKey: 'nav.orders', count: orders.length },
+    { id: 'cocktails', labelKey: 'nav.cocktails', count: cocktails.length },
   ];
 
   return (
@@ -228,38 +232,38 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {isAdmin ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                    <ShieldCheck className="size-2.5" /> Admin
+                    <ShieldCheck className="size-2.5" /> {t('users.sectionAdmins')}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-[10px] font-bold">
-                    <User className="size-2.5" /> Client
+                    <User className="size-2.5" /> {t('users.sectionClients')}
                   </span>
                 )}
                 {online ? (
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">En ligne</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{t('users.filterOnline')}</span>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground">Hors ligne</span>
+                  <span className="text-[10px] text-muted-foreground">{t('users.offline')}</span>
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex gap-1 bg-muted rounded-xl p-1 mt-4 overflow-x-auto">
-            {tabs.map((t) => (
+            {tabs.map((tabItem) => (
               <button
-                key={t.id}
+                key={tabItem.id}
                 type="button"
-                onClick={() => setTab(t.id)}
+                onClick={() => setTab(tabItem.id)}
                 className={`flex-1 min-w-0 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap ${
-                  tab === t.id
+                  tab === tabItem.id
                     ? 'bg-background shadow-sm text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {t.label}
-                {t.count !== undefined && t.count > 0 && (
+                {t(tabItem.labelKey)}
+                {tabItem.count !== undefined && tabItem.count > 0 && (
                   <span className="text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
-                    {t.count}
+                    {tabItem.count}
                   </span>
                 )}
               </button>
@@ -271,7 +275,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
           {tab === 'overview' && (
             <>
               <div>
-                <SectionLabel>Coordonnées</SectionLabel>
+                <SectionLabel>{t('users.coordinates')}</SectionLabel>
                 <div className="rounded-2xl border border-border/50 bg-card divide-y divide-border/40 overflow-hidden">
                   <a href={`mailto:${user.email}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors">
                     <Mail className="size-4 text-muted-foreground shrink-0" />
@@ -285,37 +289,37 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3.5 text-muted-foreground">
                       <Phone className="size-4 shrink-0" />
-                      <span className="text-[13px] italic">Téléphone non renseigné</span>
+                      <span className="text-[13px] italic">{t('users.noPhone')}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <SectionLabel>Activité</SectionLabel>
+                <SectionLabel>{t('users.activity')}</SectionLabel>
                 <div className="grid grid-cols-2 gap-3">
-                  <StatCard label="Commandes" value={orders.length} sub={`${activeOrders.length} en cours`} />
-                  <StatCard label="CA livré" value={`${totalSpent.toLocaleString()} XAF`} sub={`${deliveredOrders.length} livrée(s)`} />
-                  <StatCard label="Cocktails" value={cocktails.length} sub={`${publicCocktails} public(s)`} />
+                  <StatCard label={t('nav.orders')} value={orders.length} sub={`${activeOrders.length} ${t('orders.pending')}`} />
+                  <StatCard label={t('users.caDelivered')} value={`${totalSpent.toLocaleString()} XAF`} sub={`${deliveredOrders.length} ${t('orders.delivered')}`} />
+                  <StatCard label={t('nav.cocktails')} value={cocktails.length} sub={`${publicCocktails} ${t('catalogue.public')}`} />
                   <StatCard
-                    label="Profil santé"
-                    value={profileComplete ? 'Complet' : healthProfile ? 'Partiel' : 'Absent'}
-                    sub={healthProfile ? `MAJ ${formatTs(healthProfile.updatedAt)}` : 'Non renseigné'}
+                    label={t('users.healthProfile')}
+                    value={profileComplete ? t('profile.statusComplete') : healthProfile ? t('profile.statusIncomplete') : t('users.notSet')}
+                    sub={healthProfile ? `${t('users.updatedAt')} ${formatTs(healthProfile.updatedAt)}` : t('users.notSet')}
                   />
                 </div>
               </div>
 
               <div>
-                <SectionLabel>Historique compte</SectionLabel>
+                <SectionLabel>{t('users.since')}</SectionLabel>
                 <div className="rounded-2xl border border-border/50 bg-card p-4 space-y-3">
                   <div className="flex items-center gap-3 text-[13px]">
                     <Calendar className="size-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Inscription</span>
+                    <span className="text-muted-foreground">{t('users.since')}</span>
                     <span className="ml-auto font-semibold text-foreground">{formatTs(user.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[13px]">
                     <Activity className="size-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Dernière activité</span>
+                    <span className="text-muted-foreground">{t('users.lastActivity')}</span>
                     <span className="ml-auto font-semibold text-foreground">{formatDateTime(user.lastActiveAt)}</span>
                   </div>
                 </div>
@@ -323,7 +327,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
 
               {orders[0] && (
                 <div>
-                  <SectionLabel>Dernière commande</SectionLabel>
+                  <SectionLabel>{t('users.lastOrder')}</SectionLabel>
                   <OrderRow order={orders[0]} />
                 </div>
               )}
@@ -339,7 +343,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
               ) : !healthProfile ? (
                 <EmptyBlock
                   icon={HeartPulse}
-                  message="Ce client n'a pas encore renseigné son profil de santé."
+                  message={t('users.noHealthProfile')}
                 />
               ) : (
                 <div className="space-y-5">
@@ -347,37 +351,37 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 flex gap-3">
                       <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
                       <p className="text-[12px] text-amber-800 dark:text-amber-300 font-medium">
-                        Profil incomplet — les recommandations NutriFYS restent génériques.
+                        {t('users.incompleteWarning')}
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <SectionLabel>Conditions de santé</SectionLabel>
+                    <SectionLabel>{t('profile.healthConditions')}</SectionLabel>
                     <ProfileTags
                       items={healthProfile.healthConditions}
-                      emptyLabel="Aucune condition renseignée"
+                      emptyLabel={t('profile.noConditions')}
                     />
                   </div>
 
                   <div>
-                    <SectionLabel>Allergies</SectionLabel>
+                    <SectionLabel>{t('profile.allergies')}</SectionLabel>
                     <ProfileTags
                       items={healthProfile.allergies}
-                      emptyLabel="Aucune allergie renseignée"
+                      emptyLabel={t('profile.noAllergies')}
                     />
                   </div>
 
                   <div>
-                    <SectionLabel>Objectifs</SectionLabel>
+                    <SectionLabel>{t('profile.goals')}</SectionLabel>
                     <ProfileTags
                       items={healthProfile.goals ?? []}
-                      emptyLabel="Aucun objectif renseigné"
+                      emptyLabel={t('profile.noGoals')}
                     />
                   </div>
 
                   <p className="text-[11px] text-muted-foreground text-center">
-                    Dernière mise à jour : {formatDateTime(healthProfile.updatedAt)}
+                    {t('users.updatedAt')} : {formatDateTime(healthProfile.updatedAt)}
                   </p>
                 </div>
               )}
@@ -391,13 +395,13 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
                   <Loader2 className="size-6 animate-spin text-primary" />
                 </div>
               ) : orders.length === 0 ? (
-                <EmptyBlock icon={ShoppingBag} message="Aucune commande pour cet utilisateur." />
+                <EmptyBlock icon={ShoppingBag} message={t('orders.emptyAll')} />
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3">
                     <span className="text-[12px] font-semibold text-foreground flex items-center gap-2">
                       <Wallet className="size-4 text-primary" />
-                      Total livré
+                      {t('users.totalDelivered')}
                     </span>
                     <span className="font-bold text-primary tabular-nums">
                       {totalSpent.toLocaleString()} XAF
@@ -418,7 +422,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
                   <Loader2 className="size-6 animate-spin text-primary" />
                 </div>
               ) : cocktails.length === 0 ? (
-                <EmptyBlock icon={FlaskConical} message="Aucun cocktail personnalisé créé." />
+                <EmptyBlock icon={FlaskConical} message={t('users.noCustomCocktails')} />
               ) : (
                 <div className="space-y-3">
                   {cocktails.map((c) => (
@@ -432,7 +436,7 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
 
         <div className="shrink-0 border-t border-border/40 px-6 py-4">
           <Button variant="outline" className="w-full rounded-2xl" onClick={() => onOpenChange(false)}>
-            Fermer
+            {t('common.close')}
           </Button>
         </div>
       </SheetContent>
@@ -447,6 +451,7 @@ export function UserMonitoringCard({
   user: UserType;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   const initials = user.name
     .split(' ')
     .slice(0, 2)
@@ -477,7 +482,7 @@ export function UserMonitoringCard({
           {initials}
         </div>
         {online && (
-          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 border-2 border-background ring-1 ring-emerald-500 shadow-sm" title="En ligne" />
+          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 border-2 border-background ring-1 ring-emerald-500 shadow-sm" title={t('users.filterOnline')} />
         )}
       </div>
 
@@ -486,11 +491,11 @@ export function UserMonitoringCard({
           <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
           {isAdmin ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-              <ShieldCheck className="size-2.5" /> Admin
+              <ShieldCheck className="size-2.5" /> {t('users.sectionAdmins')}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-[10px] font-bold">
-              <User className="size-2.5" /> Client
+              <User className="size-2.5" /> {t('users.sectionClients')}
             </span>
           )}
         </div>
@@ -502,7 +507,7 @@ export function UserMonitoringCard({
 
       <div className="shrink-0 flex items-center gap-3">
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-muted-foreground">Inscrit le</p>
+          <p className="text-xs text-muted-foreground">{t('users.since')}</p>
           <p className="text-xs font-medium text-foreground">{joinedStr}</p>
         </div>
         <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />

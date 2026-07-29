@@ -1,4 +1,5 @@
 import { PageComponent, useNavigate } from 'rasengan';
+import i18n from '@/i18n';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 
@@ -52,7 +53,7 @@ const RootIndex: PageComponent = () => {
 RootIndex.path = '/';
 RootIndex.metadata = {
   title: 'FYS',
-  description: 'FYS — Pour votre santé.',
+  description: i18n.t('page.indexDesc'),
 };
 
 export default RootIndex;

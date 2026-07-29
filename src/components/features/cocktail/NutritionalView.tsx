@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   Shield, Zap, Leaf, Droplets, Heart, Sparkles, Moon, Wind,
   Lightbulb, Link2,
@@ -7,7 +8,6 @@ import type { AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
 // ── Display constants ─────────────────────────────────────────────────────────
 
 export const VERDICT_CONFIG: Record<AIVerdict, {
-  label: string;
   emoji: string;
   bg: string;
   border: string;
@@ -16,7 +16,7 @@ export const VERDICT_CONFIG: Record<AIVerdict, {
   chip: string;
 }> = {
   beneficial: {
-    label: 'Bénéfique', emoji: '✦',
+    emoji: '✦',
     bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     border: 'border-emerald-200 dark:border-emerald-700',
     text: 'text-emerald-700 dark:text-emerald-400',
@@ -24,7 +24,7 @@ export const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-400',
   },
   neutral: {
-    label: 'Neutre', emoji: '◈',
+    emoji: '◈',
     bg: 'bg-slate-50 dark:bg-slate-900/30',
     border: 'border-slate-200 dark:border-slate-700',
     text: 'text-slate-600 dark:text-slate-400',
@@ -32,7 +32,7 @@ export const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
   },
   caution: {
-    label: 'Avec réserve', emoji: '⚠',
+    emoji: '⚠',
     bg: 'bg-amber-50 dark:bg-amber-950/30',
     border: 'border-amber-200 dark:border-amber-700',
     text: 'text-amber-700 dark:text-amber-400',
@@ -40,7 +40,7 @@ export const VERDICT_CONFIG: Record<AIVerdict, {
     chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-400',
   },
   not_recommended: {
-    label: 'Déconseillé', emoji: '✕',
+    emoji: '✕',
     bg: 'bg-red-50 dark:bg-red-950/30',
     border: 'border-red-200 dark:border-red-700',
     text: 'text-red-700 dark:text-red-400',
@@ -49,14 +49,36 @@ export const VERDICT_CONFIG: Record<AIVerdict, {
   },
 };
 
-export const NUTRIENT_META: Record<string, { label: string; bar: string }> = {
-  vitamineC:      { label: 'Vitamine C',   bar: 'bg-orange-400'  },
-  vitamineA:      { label: 'Vitamine A',   bar: 'bg-yellow-400'  },
-  fibres:         { label: 'Fibres',       bar: 'bg-emerald-500' },
-  potassium:      { label: 'Potassium',    bar: 'bg-sky-400'     },
-  sucresNaturels: { label: 'Sucres nat.',  bar: 'bg-rose-400'    },
-  antioxydants:   { label: 'Antioxydants', bar: 'bg-violet-500'  },
+export function getVerdictLabel(verdict: AIVerdict, t: (key: string) => string): string {
+  const labels: Record<AIVerdict, string> = {
+    beneficial: t('nutrition.verdictBeneficial'),
+    neutral: t('nutrition.verdictNeutral'),
+    caution: t('nutrition.verdictCaution'),
+    not_recommended: t('nutrition.verdictNotRecommended'),
+  };
+  return labels[verdict];
+}
+
+export const NUTRIENT_META: Record<string, { bar: string }> = {
+  vitamineC:      { bar: 'bg-orange-400'  },
+  vitamineA:      { bar: 'bg-yellow-400'  },
+  fibres:         { bar: 'bg-emerald-500' },
+  potassium:      { bar: 'bg-sky-400'     },
+  sucresNaturels: { bar: 'bg-rose-400'    },
+  antioxydants:   { bar: 'bg-violet-500'  },
 };
+
+export function getNutrientLabel(key: string, t: (key: string) => string): string {
+  const labels: Record<string, string> = {
+    vitamineC:      t('nutrition.nutrientVitamineC'),
+    vitamineA:      t('nutrition.nutrientVitamineA'),
+    fibres:         t('nutrition.nutrientFibres'),
+    potassium:      t('nutrition.nutrientPotassium'),
+    sucresNaturels: t('nutrition.nutrientSucresNaturels'),
+    antioxydants:   t('nutrition.nutrientAntioxydants'),
+  };
+  return labels[key] ?? key;
+}
 
 export const BENEFIT_ICONS: Record<string, React.ElementType> = {
   'immunité':            Shield,
@@ -78,7 +100,9 @@ const BENEFIT_LEVEL_STYLE: Record<string, { chip: string; dots: number }> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
+  const { t } = useTranslation();
   const cfg = VERDICT_CONFIG[analysis.verdict];
+  const verdictLabel = getVerdictLabel(analysis.verdict, t);
 
   const nutrients = (
     Object.entries(analysis.profilNutritionnel) as [string, NutrientInfo | undefined][]
@@ -92,7 +116,7 @@ export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
       {/* Verdict + score + notes */}
       <div className={`rounded-2xl border p-4 space-y-3 ${cfg.bg} ${cfg.border}`}>
         <div className="flex items-center justify-between">
-          <span className={`text-sm font-bold ${cfg.text}`}>{cfg.emoji} {cfg.label}</span>
+          <span className={`text-sm font-bold ${cfg.text}`}>{cfg.emoji} {verdictLabel}</span>
           <span className={`text-base font-bold tabular-nums ${cfg.text}`}>
             {analysis.score}<span className="text-xs font-normal opacity-60">/100</span>
           </span>
@@ -112,7 +136,7 @@ export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
       {nutrients.length > 0 && (
         <div className="space-y-3">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            Profil nutritionnel · AJR adulte
+            {t('nutrition.profileSubtitle')}
           </p>
           <div className="space-y-3">
             {nutrients.map(([id, info]) => {
@@ -120,11 +144,11 @@ export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
               return (
                 <div key={id} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-semibold text-foreground/70">{meta.label}</span>
+                    <span className="text-[12px] font-semibold text-foreground/70">{getNutrientLabel(id, t)}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-bold text-foreground">{info.valeur}</span>
                       <span className="text-[11px] font-bold tabular-nums text-muted-foreground">
-                        {info.pourcentage}%<span className="text-[10px] font-normal"> AJR</span>
+                        {info.pourcentage}%<span className="text-[10px] font-normal">{t('nutrition.ajr')}</span>
                       </span>
                     </div>
                   </div>
@@ -145,7 +169,7 @@ export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
       {analysis.beneficesCibles.length > 0 && (
         <div className="space-y-3">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            Bénéfices ciblés
+            {t('nutrition.targetedBenefits')}
           </p>
           <div className="flex flex-wrap gap-2">
             {analysis.beneficesCibles.map((b) => {
@@ -178,7 +202,7 @@ export function NutritionalView({ analysis }: { analysis: AIAnalysis }) {
         <div className="space-y-3">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <Link2 className="size-3" />
-            Interactions entre fruits
+            {t('nutrition.fruitInteractionsShort')}
           </p>
           <ul className="space-y-2">
             {analysis.interactionsFruits.map((item, i) => (

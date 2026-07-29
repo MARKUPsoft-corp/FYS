@@ -2,46 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, X, Check, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-// ── Step data ─────────────────────────────────────────────────────────────────
-
-const STEPS = [
-  {
-    key: 'conditions',
-    emoji: '🩺',
-    title: 'Conditions de santé',
-    subtitle: 'Sélectionne tout ce qui te correspond pour que NutriFYS adapte ses recommandations.',
-    none: 'Aucune condition particulière',
-    chips: [
-      'Diabète de type 2', 'Hypertension', 'Maladie cardiovasculaire',
-      'Grossesse', 'Insuffisance rénale', 'Problèmes thyroïdiens',
-      'Anémie', 'Côlon irritable', 'Obésité',
-    ],
-  },
-  {
-    key: 'allergies',
-    emoji: '🌿',
-    title: 'Allergies & intolérances',
-    subtitle: 'Tes cocktails seront filtrés pour éviter les ingrédients à risque.',
-    none: 'Aucune allergie connue',
-    chips: [
-      'Kiwi', 'Fraise', 'Ananas', 'Arachides',
-      'Noix de coco', 'Agrumes', 'Gluten', 'Soja', 'Lactose',
-    ],
-  },
-  {
-    key: 'goals',
-    emoji: '🎯',
-    title: 'Tes objectifs santé',
-    subtitle: 'On personnalise tes mélanges selon ce que tu veux atteindre.',
-    none: 'Aucun objectif spécifique',
-    chips: [
-      'Perdre du poids', 'Booster mon énergie', 'Mieux digérer',
-      'Renforcer l\'immunité', 'Santé cardiaque', 'Récupération sportive',
-      'Belle peau', 'Meilleur sommeil', 'Réduire le stress', 'Grossesse saine',
-    ],
-  },
-] as const;
+import { useTranslation } from 'react-i18next';
 
 // ── Chip selector ─────────────────────────────────────────────────────────────
 
@@ -53,6 +14,7 @@ function ChipSelector({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const [custom, setCustom] = useState('');
 
   function toggle(value: string) {
@@ -119,7 +81,7 @@ function ChipSelector({
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustom())}
-          placeholder="Autre… (appuie sur Entrée)"
+          placeholder={t('onboarding.customPlaceholder')}
           className="h-9 text-sm rounded-full border-dashed"
         />
         <Button type="button" variant="outline" size="icon" className="size-9 rounded-full shrink-0" onClick={addCustom}>
@@ -172,6 +134,7 @@ type Props = {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function OnboardingModal({ open, onSkip, onComplete }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [animating, setAnimating] = useState(false);
@@ -183,6 +146,44 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
 
   const values = [conditions, allergies, goals];
   const setters = [setConditions, setAllergies, setGoals];
+
+  const STEPS = [
+    {
+      key: 'conditions',
+      emoji: '🩺',
+      title: t('onboarding.conditionsTitle'),
+      subtitle: t('onboarding.conditionsSubtitle'),
+      none: t('onboarding.conditionsNone'),
+      chips: [
+        'Diabète de type 2', 'Hypertension', 'Maladie cardiovasculaire',
+        'Grossesse', 'Insuffisance rénale', 'Problèmes thyroïdiens',
+        'Anémie', 'Côlon irritable', 'Obésité',
+      ],
+    },
+    {
+      key: 'allergies',
+      emoji: '🌿',
+      title: t('onboarding.allergiesTitle'),
+      subtitle: t('onboarding.allergiesSubtitle'),
+      none: t('profile.noAllergies'),
+      chips: [
+        'Kiwi', 'Fraise', 'Ananas', 'Arachides',
+        'Noix de coco', 'Agrumes', 'Gluten', 'Soja', 'Lactose',
+      ],
+    },
+    {
+      key: 'goals',
+      emoji: '🎯',
+      title: t('onboarding.goalsTitle'),
+      subtitle: t('onboarding.goalsSubtitle'),
+      none: t('onboarding.goalsNone'),
+      chips: [
+        'Perdre du poids', 'Booster mon énergie', 'Mieux digérer',
+        'Renforcer l\'immunité', 'Santé cardiaque', 'Récupération sportive',
+        'Belle peau', 'Meilleur sommeil', 'Réduire le stress', 'Grossesse saine',
+      ],
+    },
+  ];
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
@@ -217,7 +218,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
         onClick={onSkip}
         className="absolute top-[calc(var(--sat)+1.25rem)] right-[calc(var(--sar)+1.25rem)] flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        Passer <X className="size-4" />
+        {t('onboarding.skip')} <X className="size-4" />
       </button>
 
       <div className="w-full max-w-lg space-y-8">
@@ -267,7 +268,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
               onClick={() => navigate(step - 1, 'back')}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
-              ← Retour
+              ← {t('common.back')}
             </button>
           ) : (
             <div />
@@ -280,10 +281,10 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
             className="rounded-full px-8 font-bold gap-2 transition-all"
           >
             {saving
-              ? 'Enregistrement…'
+              ? t('lab.saving')
               : isLast
-              ? '🎉 Terminer'
-              : 'Continuer'}
+              ? `🎉 ${t('profile.onboarding.complete')}`
+              : t('profile.onboarding.next')}
             {!isLast && !saving && <ChevronRight className="size-4" />}
           </Button>
         </div>

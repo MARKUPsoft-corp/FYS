@@ -15,7 +15,7 @@ let audioInstance: HTMLAudioElement | null = null;
 let initialized = false;
 
 const loadInitialPreferences = () => {
-  const defaults = { enabled: true, volume: 0.1 };
+  const defaults = { enabled: true, volume: 0.25 };
   if (typeof window === 'undefined') return defaults;
   try {
     const saved = localStorage.getItem('fys-audio-preference');

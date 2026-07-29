@@ -2,6 +2,8 @@ import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import type { AIAnalysis } from '@/entities/cocktail';
 import { AIVerdict } from '@/entities/cocktail';
 
+type TFunction = (key: string) => string;
+
 const PRIMARY   = '#16A34A';
 const MUTED     = '#6B7280';
 const BORDER    = '#E5E7EB';
@@ -9,26 +11,48 @@ const BGCARD    = '#F9FAFB';
 const TEXT      = '#111827';
 const WHITE     = '#FFFFFF';
 
-const VERDICT_CFG: Record<AIVerdict, { label: string; bg: string; text: string }> = {
-  [AIVerdict.BENEFICIAL]:      { label: 'Bénéfique',       bg: '#DCFCE7', text: '#15803D' },
-  [AIVerdict.NEUTRAL]:         { label: 'Neutre',          bg: '#F3F4F6', text: '#374151' },
-  [AIVerdict.CAUTION]:         { label: 'Avec réserve',    bg: '#FEF9C3', text: '#854D0E' },
-  [AIVerdict.NOT_RECOMMENDED]: { label: 'Déconseillé',     bg: '#FEE2E2', text: '#991B1B' },
+function getVerdictLabel(verdict: AIVerdict, t: TFunction): string {
+  const labels: Record<AIVerdict, string> = {
+    [AIVerdict.BENEFICIAL]:      t('nutrition.verdictBeneficial'),
+    [AIVerdict.NEUTRAL]:         t('nutrition.verdictNeutral'),
+    [AIVerdict.CAUTION]:         t('nutrition.verdictCaution'),
+    [AIVerdict.NOT_RECOMMENDED]: t('nutrition.verdictNotRecommended'),
+  };
+  return labels[verdict];
+}
+
+function getNutrientLabel(key: string, t: TFunction): string {
+  const labels: Record<string, string> = {
+    vitamineC:      t('nutrition.nutrientVitamineC'),
+    vitamineA:      t('nutrition.nutrientVitamineA'),
+    fibres:         t('nutrition.nutrientFibres'),
+    potassium:      t('nutrition.nutrientPotassium'),
+    sucresNaturels: t('nutrition.nutrientSucresNaturels'),
+    antioxydants:   t('nutrition.nutrientAntioxydants'),
+  };
+  return labels[key] ?? key;
+}
+
+function getNiveauLabel(niveau: string, t: TFunction): string {
+  const labels: Record<string, string> = {
+    faible:  t('nutrition.levelLow'),
+    modéré:  t('nutrition.levelModerate'),
+    élevé:   t('nutrition.levelHigh'),
+  };
+  return labels[niveau] ?? niveau;
+}
+
+const VERDICT_CFG: Record<AIVerdict, { bg: string; text: string }> = {
+  [AIVerdict.BENEFICIAL]:      { bg: '#DCFCE7', text: '#15803D' },
+  [AIVerdict.NEUTRAL]:         { bg: '#F3F4F6', text: '#374151' },
+  [AIVerdict.CAUTION]:         { bg: '#FEF9C3', text: '#854D0E' },
+  [AIVerdict.NOT_RECOMMENDED]: { bg: '#FEE2E2', text: '#991B1B' },
 };
 
 const NIVEAU_COLOR: Record<string, string> = {
   faible: '#FCA5A5',
   modéré: '#FDE68A',
   élevé:  '#6EE7B7',
-};
-
-const NUTRIENT_LABELS: Record<string, string> = {
-  vitamineC:    'Vitamine C',
-  vitamineA:    'Vitamine A',
-  fibres:       'Fibres',
-  potassium:    'Potassium',
-  sucresNaturels: 'Sucres Naturels',
-  antioxydants: 'Antioxydants',
 };
 
 const s = StyleSheet.create({
@@ -82,26 +106,28 @@ interface Props {
   cocktailName?: string;
   userName?: string;
   ingredients?: string[];
+  t: TFunction;
 }
 
-export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: Props) {
+export function NutritionPDF({ analysis, cocktailName, userName, ingredients, t }: Props) {
   const verdictCfg = VERDICT_CFG[analysis.verdict];
+  const verdictLabel = getVerdictLabel(analysis.verdict, t);
   const nutrients = Object.entries(analysis.profilNutritionnel)
     .filter(([, v]) => v) as [string, { pourcentage: number; valeur: string }][];
 
   return (
-    <Document title={`Fiche NutriFYS — ${cocktailName ?? 'Cocktail'}`} author="NutriFYS">
+    <Document title={`${t('nutrition.sheetTitle')} — ${cocktailName ?? t('nutrition.defaultCocktail')}`} author="NutriFYS">
       <Page size="A4" style={s.page}>
 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View>
             <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
-            <Text style={s.tagline}>NutriFYS — Votre Partenaire Santé</Text>
+            <Text style={s.tagline}>{t('pdf.tagline')}</Text>
           </View>
           <View>
-            <Text style={s.metaTitle}>FICHE NUTRITIONNELLE</Text>
-            <Text style={s.metaSub}>{cocktailName ?? 'Analyse IA'}</Text>
+            <Text style={s.metaTitle}>{t('nutrition.nutritionSheet')}</Text>
+            <Text style={s.metaSub}>{cocktailName ?? t('nutrition.aiAnalysis')}</Text>
             {userName && <Text style={[s.metaSub, { marginTop: 4, fontFamily: 'Helvetica-Bold', color: TEXT }]}>{userName}</Text>}
             {ingredients && ingredients.length > 0 && <Text style={s.metaSub}>{ingredients.join(' · ')}</Text>}
           </View>
@@ -113,15 +139,15 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
         <View style={s.scoreHero}>
           <Text style={s.scoreBig}>{analysis.score}</Text>
           <View>
-            <Text style={s.scoreLabel}>Score de Santé / 100</Text>
+            <Text style={s.scoreLabel}>{t('nutrition.scoreHealth')}</Text>
             <View style={[s.badge, { backgroundColor: verdictCfg.bg, marginTop: 6 }]}>
-              <Text style={[s.badgeText, { color: verdictCfg.text }]}>{verdictCfg.label}</Text>
+              <Text style={[s.badgeText, { color: verdictCfg.text }]}>{verdictLabel}</Text>
             </View>
           </View>
         </View>
 
         {/* ── Notes IA ───────────────────────────────────────────────── */}
-        <Text style={s.sectionTitle}>Analyse de votre thérapeute IA</Text>
+        <Text style={s.sectionTitle}>{t('nutrition.analysisTitle')}</Text>
         <View style={s.card}>
           <Text style={s.noteText}>{analysis.notes}</Text>
         </View>
@@ -129,17 +155,17 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
         {/* ── Profil Nutritionnel ────────────────────────────────────── */}
         {nutrients.length > 0 && (
           <>
-            <Text style={s.sectionTitle}>Profil Nutritionnel</Text>
+            <Text style={s.sectionTitle}>{t('nutrition.profileLabel')}</Text>
             <View style={s.card}>
               {nutrients.map(([key, info]) => (
                 <View key={key} style={s.nutriRow}>
-                  <Text style={s.nutriLabel}>{NUTRIENT_LABELS[key] ?? key}</Text>
+                  <Text style={s.nutriLabel}>{getNutrientLabel(key, t)}</Text>
                   <View style={s.nutriRight}>
                     <Text style={s.nutriVal}>{info.valeur}</Text>
                     <View style={s.barBg}>
                       <View style={[s.barFill, { width: `${Math.min(info.pourcentage, 100)}%` }]} />
                     </View>
-                    <Text style={s.nutriPct}>{info.pourcentage}% AJR</Text>
+                    <Text style={s.nutriPct}>{info.pourcentage}{t('nutrition.ajrAdult')}</Text>
                   </View>
                 </View>
               ))}
@@ -150,11 +176,11 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
         {/* ── Bénéfices Ciblés ───────────────────────────────────────── */}
         {analysis.beneficesCibles.length > 0 && (
           <>
-            <Text style={s.sectionTitle}>Bénéfices ciblés</Text>
+            <Text style={s.sectionTitle}>{t('nutrition.targetedBenefits')}</Text>
             <View style={s.benefitsRow}>
               {analysis.beneficesCibles.map((b, i) => (
                 <View key={i} style={[s.chip, { backgroundColor: NIVEAU_COLOR[b.niveau] ?? BGCARD }]}>
-                  <Text style={[s.chipText, { color: TEXT }]}>⚡ {b.nom} ({b.niveau})</Text>
+                  <Text style={[s.chipText, { color: TEXT }]}>⚡ {b.nom} ({getNiveauLabel(b.niveau, t)})</Text>
                 </View>
               ))}
             </View>
@@ -164,7 +190,7 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
         {/* ── Interactions ───────────────────────────────────────────── */}
         {analysis.interactionsFruits.length > 0 && (
           <>
-            <Text style={s.sectionTitle}>Interactions entre les fruits</Text>
+            <Text style={s.sectionTitle}>{t('nutrition.fruitInteractions')}</Text>
             <View style={s.card}>
               {analysis.interactionsFruits.map((interaction, i) => (
                 <View key={i} style={s.bullet}>
@@ -179,7 +205,7 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
         {/* ── Conseil ────────────────────────────────────────────────── */}
         {analysis.conseil && (
           <>
-            <Text style={s.sectionTitle}>Conseil de consommation</Text>
+            <Text style={s.sectionTitle}>{t('nutrition.consumptionAdvice')}</Text>
             <View style={s.conseilCard}>
               <Text style={s.conseilText}>{analysis.conseil}</Text>
             </View>
@@ -188,8 +214,8 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients }: 
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <View style={s.footer}>
-          <Text style={s.footerText}>NutriFYS — Fiche générée par Intelligence Artificielle 🤖</Text>
-          <Text style={s.footerText}>Consultez un professionnel de santé pour toute question.</Text>
+          <Text style={s.footerText}>{t('pdf.aiGenerated')}</Text>
+          <Text style={s.footerText}>{t('pdf.disclaimer')}</Text>
         </View>
       </Page>
     </Document>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Bell, CheckCheck, Trash2, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'rasengan';
@@ -43,6 +44,7 @@ const playNotificationSound = () => {
 };
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -113,7 +115,7 @@ export function NotificationBell() {
                   className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 mt-0"
                 >
                   <CheckCheck className="size-3" />
-                  Tout lu
+                  {t('notifications.markRead')}
                 </button>
               )}
               {notifications.length > 0 && (
@@ -123,7 +125,7 @@ export function NotificationBell() {
                   className="text-[11px] font-semibold text-destructive hover:underline flex items-center gap-1 mt-0 bg-destructive/10 px-2 py-1.5 rounded-md transition-colors hover:bg-destructive/20"
                 >
                   <Trash2 className="size-3" />
-                  Vider
+                  {t('notifications.clearAll')}
                 </button>
               )}
               
@@ -143,7 +145,7 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="text-center py-10 flex flex-col items-center gap-3">
                 <Bell className="size-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Aucune notification.</p>
+                <p className="text-sm text-muted-foreground">{t('common.noResults')}</p>
               </div>
             ) : (
               notifications.map((n) => (
@@ -170,7 +172,7 @@ export function NotificationBell() {
                       deleteNotification(n.id);
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 size-8 rounded-full flex items-center justify-center text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all"
-                    title="Supprimer la notification"
+                    title={t('common.delete')}
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -208,7 +210,7 @@ export function NotificationBell() {
                   }}
                   className="mt-2 text-[11px] font-bold text-primary hover:underline"
                 >
-                  Voir les détails &rarr;
+                  {t('common.details')} &rarr;
                 </button>
               )}
             </div>

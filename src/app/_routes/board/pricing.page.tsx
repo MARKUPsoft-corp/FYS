@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { Loader2, Save, Wine } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ import { getPricingSettings, updatePricingSettings } from '@/services/settings';
 import { BOTTLE_VOLUME_LABELS } from '@/entities';
 
 const Pricing: PageComponent = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: pricing, isLoading } = useQuery({
     queryKey: ['pricing-settings'],
@@ -49,12 +52,12 @@ const Pricing: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Tarification"
-      titleBefore="Les"
-      titleHighlight="Tarifs"
-      sectionBefore="Contenants &"
-      sectionHighlight="livraison"
-      subtitle="Définissez le prix de base des bouteilles. Le client voit uniquement le prix final."
+      eyebrow={t('pricing.eyebrow')}
+      titleBefore={t('pricing.titleBefore')}
+      titleHighlight={t('pricing.title')}
+      sectionBefore={t('pricing.sectionBefore')}
+      sectionHighlight={t('pricing.sectionHighlight')}
+      subtitle={t('pricing.pageSubtitle')}
       imageUrl="https://images.pexels.com/photos/1283219/pexels-photo-1283219.jpeg?auto=compress&cs=tinysrgb&w=1200"
     >
       {isLoading ? (
@@ -71,9 +74,9 @@ const Pricing: PageComponent = () => {
               <Wine className="size-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-lg text-foreground">Prix des contenants</h3>
+              <h3 className="font-display font-bold text-lg text-foreground">{t('pricing.containerTitle')}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Ces montants s&apos;ajoutent au mix fruits (calculé en interne) pour afficher le prix / bouteille au client.
+                {t('pricing.containerDescription')}
               </p>
             </div>
           </div>
@@ -98,7 +101,7 @@ const Pricing: PageComponent = () => {
                   XAF
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">Demi-litre — affiché dans le Lab & commande</p>
+              <p className="text-[11px] text-muted-foreground">{t('pricing.halfLiter')}</p>
             </div>
 
             <div className="space-y-2">
@@ -120,13 +123,13 @@ const Pricing: PageComponent = () => {
                   XAF
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">Un litre — option premium</p>
+              <p className="text-[11px] text-muted-foreground">{t('pricing.oneLiter')}</p>
             </div>
           </div>
 
           <div className="space-y-2 pt-2">
             <Label htmlFor="delivery-fee" className="text-sm font-semibold">
-              Frais de livraison
+              {t('pricing.deliveryFee')}
             </Label>
             <div className="relative max-w-xs">
               <Input
@@ -148,13 +151,13 @@ const Pricing: PageComponent = () => {
           <div className="flex items-center gap-3 pt-2">
             <Button type="submit" size="lg" className="rounded-full gap-2" disabled={saving}>
               {saving ? (
-                <><Loader2 className="size-4 animate-spin" /> Enregistrement…</>
+                <><Loader2 className="size-4 animate-spin" /> {t('pricing.saving')}</>
               ) : (
-                <><Save className="size-4" /> Enregistrer</>
+                <><Save className="size-4" /> {t('common.save')}</>
               )}
             </Button>
             {saved && (
-              <span className="text-sm font-semibold text-primary">Tarifs mis à jour ✓</span>
+              <span className="text-sm font-semibold text-primary">{t('pricing.updated')}</span>
             )}
           </div>
         </form>
@@ -164,8 +167,8 @@ const Pricing: PageComponent = () => {
 };
 
 Pricing.metadata = {
-  title: 'FYS — Tarification',
-  description: 'Prix des contenants et livraison.',
+  title: i18n.t('pricing.pageTitle'),
+  description: i18n.t('pricing.pageDescription'),
 };
 
 export default Pricing;

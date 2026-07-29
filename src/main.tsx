@@ -1,6 +1,7 @@
 import '@rasenganjs/kage-demo/css';
 import '@rasenganjs/image/css';
 import '@/styles/index.css';
+import '@/i18n';
 import { useEffect } from 'react';
 import { type AppProps } from 'rasengan';
 import ThemeProvider, { useTheme } from '@rasenganjs/theme';

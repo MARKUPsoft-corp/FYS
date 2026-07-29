@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, CheckCircle2, Loader2 } from 'lucide-react';
@@ -51,6 +52,7 @@ function MyLocationControl({ onLocationUpdate }: { onLocationUpdate: (coords: {l
 }
 
 export function LocationPickerModal({ open, onOpenChange, initialLocation, onConfirm }: LocationPickerModalProps) {
+  const { t } = useTranslation();
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
@@ -99,9 +101,9 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
       <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-background border-border/40 rounded-[2rem]">
         <div className="p-4 sm:p-6 pb-0">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold font-display">Confirmez votre position</DialogTitle>
+            <DialogTitle className="text-xl font-bold font-display">{t('locationPicker.confirmTitle')}</DialogTitle>
             <DialogDescription className="text-muted-foreground mt-1.5">
-              Déplacez la carte pour pointer exactement sur votre lieu de livraison.
+              {t('locationPicker.instruction')}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -128,7 +130,7 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none drop-shadow-xl">
             <div className="relative flex flex-col items-center">
               <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold mb-1 shadow-lg whitespace-nowrap animate-in fade-in slide-in-from-bottom-2">
-                Livrer ici
+                {t('locationPicker.deliverHere')}
               </div>
               <MapPin className="size-8 text-primary drop-shadow-md" fill="currentColor" />
             </div>
@@ -142,7 +144,7 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
             disabled={!center || confirming}
           >
             {confirming ? <Loader2 className="size-5 animate-spin mr-2" /> : <CheckCircle2 className="size-5 mr-2" />}
-            Valider cette position exacte
+            {t('locationPicker.confirmButton')}
           </Button>
         </div>
       </DialogContent>

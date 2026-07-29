@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Lightbulb, Sparkles } from 'lucide-react';
 import type { Fruit } from '@/entities';
 import { MAX_LAB_SUPPLEMENTS } from '@/entities';
@@ -90,6 +91,7 @@ export function SupplementsTab({
   aiRecommendation,
   loadingAI,
 }: Props) {
+  const { t } = useTranslation();
   const recommendedIds = new Set(aiRecommendation?.recommendedIds ?? []);
   const recommended = supplements.filter((s) => recommendedIds.has(s.id));
   const others = supplements.filter((s) => !recommendedIds.has(s.id));
@@ -116,7 +118,7 @@ export function SupplementsTab({
     <div className="space-y-6">
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-          Votre base fruitée
+          {t('lab.selectedFruits')}
         </h3>
         <div className="flex flex-wrap gap-2">
           {selectedFruits.map((fruit) => (
@@ -142,7 +144,7 @@ export function SupplementsTab({
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <Sparkles className="size-3 text-[#E0982E]" />
-            Propositions NutriFYS
+            {t('lab.suggestions')}
           </h3>
           <span className={`text-[11px] font-bold tabular-nums ${
             atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'
@@ -153,7 +155,7 @@ export function SupplementsTab({
 
         {atMaxSupplements && (
           <p className="text-[11px] text-secondary font-semibold mb-3">
-            Limite atteinte — retirez un supplément pour en ajouter un autre.
+            {t('lab.maxSupplementsReachedDesc')}
           </p>
         )}
 
@@ -165,7 +167,7 @@ export function SupplementsTab({
           </div>
         ) : recommended.length === 0 ? (
           <p className="text-sm text-muted-foreground font-medium py-4 px-3 rounded-xl bg-muted/30 border border-border/40">
-            Aucune suggestion pour l&apos;instant — choisissez librement dans la liste ci-dessous.
+            {t('lab.noSuggestions')}
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -183,7 +185,7 @@ export function SupplementsTab({
           </div>
           <div>
             <p className="text-sm font-bold text-foreground mb-1">
-              Pourquoi le {highlighted.name.toLowerCase()} ?
+              {t('lab.whySupplement', { name: highlighted.name.toLowerCase() })}
             </p>
             <p className="text-[12px] text-muted-foreground font-medium leading-relaxed">
               {aiRecommendation.why}
@@ -194,15 +196,15 @@ export function SupplementsTab({
 
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-          Tous les suppléments
+          {t('lab.allSupplements')}
         </h3>
         {supplements.length === 0 ? (
           <p className="text-sm text-muted-foreground font-medium py-6 text-center rounded-xl border border-dashed border-border">
-            Aucun supplément en base. L&apos;admin peut en ajouter depuis Fruits &amp; suppléments.
+            {t('lab.noSupplements')}
           </p>
         ) : others.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
-            Tous les suppléments disponibles sont déjà proposés ci-dessus.
+            {t('lab.allAvailableSupplements')}
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">

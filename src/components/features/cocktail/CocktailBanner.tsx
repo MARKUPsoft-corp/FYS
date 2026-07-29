@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CocktailType, type Cocktail } from '@/entities';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ export function CocktailBanner({
   heightClass = 'h-52',
   badge,
 }: Props) {
+  const { t } = useTranslation();
   const slots = fruits.length > 0
     ? fruits
     : imageUrl
@@ -90,7 +92,7 @@ export function CocktailBanner({
           <div className="absolute inset-0 z-10 flex flex-col justify-end p-4 sm:p-5">
             <div className="max-w-[58%]">
               <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.22em] text-[#E0982E] mb-1.5">
-                FYS · Création
+                {t('cocktail.watermark')}
               </p>
               <h3
                 className="font-display text-xl sm:text-2xl font-bold leading-tight line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]"

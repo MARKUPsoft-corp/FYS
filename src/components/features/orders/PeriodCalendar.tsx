@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 export type PeriodType = 'all' | 'day' | 'week' | 'month' | 'year';
 
-const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const MONTHS = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-];
+const MONTHS = i18n.t('calendar.months', { returnObjects: true }) as string[];
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -53,7 +51,7 @@ export function getPeriodBounds(type: PeriodType, anchor: Date): { start: Date; 
 }
 
 export function formatPeriodLabel(type: PeriodType, anchor: Date): string {
-  if (type === 'all') return 'Toutes les périodes';
+  if (type === 'all') return i18n.t('calendar.allPeriods');
   if (type === 'day') {
     return anchor.toLocaleDateString('fr-FR', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -95,6 +93,7 @@ type Props = {
 };
 
 export function PeriodCalendar({ periodType, value, onChange, onClose }: Props) {
+  const { t } = useTranslation();
   const [view, setView] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
   const today = startOfDay(new Date());
 
@@ -153,7 +152,7 @@ export function PeriodCalendar({ periodType, value, onChange, onClose }: Props) 
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-1">
-          {WEEKDAYS.map((d) => (
+          {(t('calendar.weekdays', { returnObjects: true }) as string[]).map((d: string) => (
             <div key={d} className="text-center text-[10px] font-bold text-muted-foreground py-1">
               {d}
             </div>
@@ -196,7 +195,7 @@ export function PeriodCalendar({ periodType, value, onChange, onClose }: Props) 
 
         {periodType === 'week' && (
           <p className="text-[10px] text-muted-foreground text-center mt-3 font-medium">
-            Cliquez un jour pour sélectionner sa semaine
+            {t('calendar.clickToSelect')}
           </p>
         )}
       </div>

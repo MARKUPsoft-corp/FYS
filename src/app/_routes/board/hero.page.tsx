@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { PageComponent } from 'rasengan';
 import { Loader2, Plus, Save, Trash2, ImagePlus, GripVertical } from 'lucide-react';
@@ -20,11 +21,17 @@ function newSlide(order: number): HeroSlide {
     titleEnd: 'ici.',
     cta: 'Découvrir',
     ctaLink: '/lab',
+    labelEn: 'New slide',
+    titleEn: 'Title',
+    highlightEn: 'highlight',
+    titleEndEn: 'here.',
+    ctaEn: 'Discover',
     order,
   };
 }
 
 const HeroAdmin: PageComponent = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['hero-slides'],
@@ -60,7 +67,7 @@ const HeroAdmin: PageComponent = () => {
       const url = await uploadHeroImage(slideId, file);
       updateSlide(slideId, { imageUrl: url });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Échec upload');
+      setError(e instanceof Error ? e.message : t('hero.uploadFailed'));
     } finally {
       setUploadingId(null);
     }
@@ -68,7 +75,7 @@ const HeroAdmin: PageComponent = () => {
 
   async function handleSave() {
     if (slides.length === 0) {
-      setError('Ajoutez au moins un slide.');
+      setError(t('hero.addSlide'));
       return;
     }
     setSaving(true);
@@ -80,7 +87,7 @@ const HeroAdmin: PageComponent = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Échec de la sauvegarde');
+      setError(e instanceof Error ? e.message : t('hero.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -88,12 +95,12 @@ const HeroAdmin: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Accueil client"
-      titleBefore="Hero"
-      titleHighlight="slides"
-      sectionBefore="Images &"
-      sectionHighlight="textes"
-      subtitle="Modifiez les slides de la page d'accueil client. Balayage gauche/droite côté client."
+      eyebrow={t('hero.eyebrow')}
+      titleBefore={t('hero.titleBefore')}
+      titleHighlight={t('hero.titleHighlight')}
+      sectionBefore={t('hero.sectionBefore')}
+      sectionHighlight={t('hero.sectionHighlight')}
+      subtitle={t('hero.subtitle')}
       imageUrl="https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=1200"
       actions={
         <div className="flex flex-col sm:flex-row gap-3">
@@ -104,7 +111,7 @@ const HeroAdmin: PageComponent = () => {
             onClick={addSlide}
             className="rounded-[2rem] h-14 font-bold gap-2 flex-1"
           >
-            <Plus className="size-5" /> Ajouter un slide
+            <Plus className="size-5" /> {t('hero.addSlideBtn')}
           </Button>
           <Button
             type="button"
@@ -114,7 +121,7 @@ const HeroAdmin: PageComponent = () => {
             className="rounded-[2rem] h-14 bg-primary text-white font-bold gap-2 flex-1 shadow-[0_8px_30px_rgba(63,109,78,0.25)]"
           >
             {saving ? <Loader2 className="size-5 animate-spin" /> : <Save className="size-5" />}
-            {saved ? 'Enregistré ✓' : 'Enregistrer'}
+            {saved ? t('hero.saved') : t('hero.save')}
           </Button>
         </div>
       }
@@ -185,6 +192,9 @@ const HeroAdmin: PageComponent = () => {
                 </div>
 
                 <div className="space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-2">
+                    Français
+                  </p>
                   {(
                     [
                       ['label', 'Eyebrow'],
@@ -201,6 +211,30 @@ const HeroAdmin: PageComponent = () => {
                       </Label>
                       <Input
                         value={slide[key]}
+                        onChange={(e) => updateSlide(slide.id, { [key]: e.target.value })}
+                        className="h-10 rounded-xl"
+                      />
+                    </div>
+                  ))}
+
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-2 pt-4">
+                    English
+                  </p>
+                  {(
+                    [
+                      ['labelEn', 'Eyebrow'],
+                      ['titleEn', 'Title (before)'],
+                      ['highlightEn', 'Highlight word'],
+                      ['titleEndEn', 'Title (after)'],
+                      ['ctaEn', 'Button text'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <div key={key} className="space-y-1.5">
+                      <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {label}
+                      </Label>
+                      <Input
+                        value={slide[key as keyof HeroSlide] as string || ''}
                         onChange={(e) => updateSlide(slide.id, { [key]: e.target.value })}
                         className="h-10 rounded-xl"
                       />

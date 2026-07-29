@@ -109,6 +109,8 @@ export type CameroonRegion = typeof CAMEROON_REGIONS[number];
 export interface Fruit {
   id: string;
   name: string;
+  /** English name (optional — falls back to name when absent) */
+  nameEn?: string;
   scientificName?: string;
   price?: number;               // prix fixe d'ajout au cocktail (XAF)
   categoryIds: string[];         // many-to-many with Category

@@ -12,6 +12,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { CocktailProposalCard } from '@/components/features/lab/CocktailProposalCard';
@@ -29,28 +30,9 @@ import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { cn } from '@/lib/utils';
 import { labSounds } from '@/services/lab-sounds';
 
-
-
-const EXAMPLE_PROMPTS = [
-  'Un cocktail riche en vitamine C',
-  'Quel mix pour un sportif ?',
-  'Fruits adaptés si je suis diabétique ?',
-  'Composition légère avant le coucher',
-];
-
-const HOW_IT_WORKS = [
-  'Décrivez votre objectif ou votre ressenti du moment.',
-  'NutriFYS compose une recette visuelle adaptée à votre profil.',
-  'Vous recevez un verdict clair avec explications et précautions.',
-  "Appliquez la recette ou lancez l'analyse complète.",
-];
-
 type Props = {
   onAnalyzeProposal: (proposal: CocktailProposal) => void;
 };
-
-const WELCOME_MESSAGE =
-  'Bonjour ! Je suis NutriFYS, votre assistant nutritionnel. Décrivez ce que vous recherchez — énergie, digestion, immunité, récupération — et je composerai un cocktail adapté à votre profil de santé.';
 
 /** Typewriter hook — reveals text character by character. */
 function useTypewriter(text: string, enabled: boolean, speed = 18, onTick?: () => void) {
@@ -292,6 +274,7 @@ function ChatComposer({
   isTyping?: boolean;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -316,7 +299,7 @@ function ChatComposer({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Décrivez votre besoin…"
+          placeholder={t('nutrifys.placeholder')}
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[36px] max-h-[120px] py-1.5 px-1 leading-snug"
@@ -332,41 +315,42 @@ function ChatComposer({
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground mt-1.5 px-1 hidden lg:block">
-        Entrée pour envoyer · Maj+Entrée pour un retour à la ligne
+        {t('nutrifys.enterToSend')}
       </p>
     </div>
   );
 }
 
 function InfoSidebar() {
+  const { t } = useTranslation();
   return (
     <aside className="flex flex-col gap-4">
       <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5">
         <h3 className="font-display font-bold text-base text-foreground mb-4 flex items-center gap-2">
           <MessageSquare className="size-4 text-primary" />
-          Comment ça marche
+          {t('nutrifys.howItWorks')}
         </h3>
         <ol className="space-y-3">
-          {HOW_IT_WORKS.map((step, i) => (
-            <li key={step} className="flex gap-3 text-sm">
+          {['nutrifys.howItWorksSteps.0', 'nutrifys.howItWorksSteps.1', 'nutrifys.howItWorksSteps.2', 'nutrifys.howItWorksSteps.3'].map((key, i) => (
+            <li key={key} className="flex gap-3 text-sm">
               <span className="size-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
                 {i + 1}
               </span>
-              <span className="text-muted-foreground font-medium leading-relaxed pt-0.5">{step}</span>
+              <span className="text-muted-foreground font-medium leading-relaxed pt-0.5">{t(key)}</span>
             </li>
           ))}
         </ol>
       </div>
 
       <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5">
-        <h3 className="font-display font-bold text-base text-foreground mb-3">Essayez de demander</h3>
+        <h3 className="font-display font-bold text-base text-foreground mb-3">{t('nutrifys.tryAsking')}</h3>
         <ul className="space-y-2">
-          {EXAMPLE_PROMPTS.map((prompt) => (
+          {['nutrifys.examples.0', 'nutrifys.examples.1', 'nutrifys.examples.2', 'nutrifys.examples.3'].map((key) => (
             <li
-              key={prompt}
+              key={key}
               className="text-sm text-muted-foreground font-medium px-3 py-2 rounded-xl bg-muted/40 border border-border/30"
             >
-              « {prompt} »
+              « {t(key)} »
             </li>
           ))}
         </ul>
@@ -376,8 +360,10 @@ function InfoSidebar() {
 }
 
 export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
+  const { t } = useTranslation();
+  const welcomeMessage = t('nutrifys.welcome');
   const [messages, setMessages] = useState<ChatMessageEntity[]>([
-    createTextMessage('assistant', WELCOME_MESSAGE),
+    createTextMessage('assistant', welcomeMessage),
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -419,7 +405,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   function startNewConversation() {
     setCurrentSessionId(null);
     setLatestAssistantId(null);
-    setMessages([createTextMessage('assistant', WELCOME_MESSAGE)]);
+    setMessages([createTextMessage('assistant', t('nutrifys.welcome'))]);
     setIsHistoryOpen(false);
   }
 
@@ -485,7 +471,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
 
     try {
       const historyForAI = [...messages, userMsg]
-        .filter((m) => !(m.role === 'assistant' && m.content === WELCOME_MESSAGE))
+        .filter((m) => !(m.role === 'assistant' && m.content === t('nutrifys.welcome')))
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
       const aiReply = await chatCocktail(historyForAI, profile, fruits);
@@ -504,7 +490,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
     } catch {
       setMessages((prev) => [
         ...prev,
-        createTextMessage('assistant', 'Je rencontre un problème de connexion. Réessayez dans un instant.'),
+        createTextMessage('assistant', t('nutrifys.error')),
       ]);
     } finally {
       setIsTyping(false);
@@ -534,7 +520,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                 </div>
                 <div>
                   <p className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest">NutriFYS</p>
-                  <p className="text-white text-sm font-semibold">Assistant conversationnel</p>
+                  <p className="text-white text-sm font-semibold">NutriFYS</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -545,7 +531,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                   className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
                 >
                   <Plus className="size-3.5" />
-                  <span className="hidden lg:inline">Nouvelle</span>
+                  <span className="hidden lg:inline">{t('nutrifys.newConversation')}</span>
                 </Button>
 
                 <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
@@ -556,7 +542,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                       className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
                     >
                       <History className="size-4" />
-                      <span className="hidden lg:inline">Historique</span>
+                      <span className="hidden lg:inline">{t('nutrifys.history')}</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-[420px] p-0 flex flex-col bg-card border-l border-border/40">
@@ -565,7 +551,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                         <div className="text-left">
                           <SheetTitle className="font-display flex items-center gap-2">
                             <History className="size-4 text-primary" />
-                            Mes conversations
+                            {t('nutrifys.conversations')}
                           </SheetTitle>
                           <SheetDescription className="text-[11px] mt-1">
                             Cliquez sur une conversation pour la rouvrir.
@@ -579,7 +565,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                               onClick={handleDeleteAllSessions}
                               className="text-[11px] font-semibold text-destructive hover:underline flex items-center gap-1 bg-destructive/10 px-2 py-1.5 rounded-md transition-colors hover:bg-destructive/20"
                             >
-                              <Trash2 className="size-3" /> Vider
+                              <Trash2 className="size-3" /> {t('nutrifys.clearAll')}
                             </button>
                           )}
                           
@@ -591,7 +577,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                               className="text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 px-2 py-1.5 rounded-md"
                             >
                               <X className="size-3" />
-                              Fermer
+                              {t('nutrifys.close')}
                             </button>
                           </SheetClose>
                         </div>
@@ -602,7 +588,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                       {sessions.length === 0 ? (
                         <div className="text-center py-12 text-sm text-muted-foreground flex flex-col items-center gap-3">
                           <History className="size-8 opacity-20" />
-                          Aucune conversation enregistrée.
+                          {t('nutrifys.noConversations')}
                         </div>
                       ) : (
                         sessions.map((session) => (

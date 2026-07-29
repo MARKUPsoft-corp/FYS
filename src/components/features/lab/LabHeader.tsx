@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'rasengan';
 import { ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,12 +13,13 @@ type Props = {
   compact?: boolean;
 };
 
-const TABS: { id: LabTab; label: string; nutrifys?: boolean }[] = [
-  { id: 'compose', label: 'Je compose' },
-  { id: 'nutrifys', label: 'compose', nutrifys: true },
+const TABS: { id: LabTab; labelKey: string; nutrifys?: boolean }[] = [
+  { id: 'compose', labelKey: 'lab.compose' },
+  { id: 'nutrifys', labelKey: 'lab.compose', nutrifys: true },
 ];
 
 export function LabHeader({ activeTab, onTabChange, compact }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   function handleBack() {
@@ -51,7 +53,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
             onClick={handleBack}
             className="inline-flex items-center text-foreground bg-background/80 backdrop-blur-sm shadow-sm rounded-full px-3 py-1.5 hover:bg-background transition-colors text-sm font-semibold"
           >
-            <ChevronLeft className="size-4 mr-1" /> Retour
+            <ChevronLeft className="size-4 mr-1" /> {t('common.back')}
           </button>
           <div  className="flex items-center gap-3">
             <ButtonTheme />
@@ -64,7 +66,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
             <h1  className="font-display font-extrabold text-[2rem] lg:text-5xl text-foreground flex items-center justify-center lg:justify-start gap-1.5 mb-1">
               FYS <span className="text-primary">Lab</span>
             </h1>
-            <p className="text-muted-foreground text-sm font-medium">Votre jus, validé par NutriFYS</p>
+            <p className="text-muted-foreground text-sm font-medium">{t('lab.tagline')}</p>
           </div>
 
           <div  className="flex bg-background/40 dark:bg-background/20 backdrop-blur-[40px] saturate-150 rounded-[2rem] p-1.5 border border-white/30 dark:border-white/10 shadow-[inner_0_1px_2px_rgba(255,255,255,0.4)] w-fit mx-auto lg:mx-0">
@@ -118,7 +120,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                       isActive ? 'text-foreground' : '',
                     )}
                   >
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </span>
                 </button>
               );

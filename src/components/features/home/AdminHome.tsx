@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
@@ -47,7 +48,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 function RecentOrderRow({ order }: { order: Order }) {
   const date = order.createdAt?.toDate?.();
   const dateStr = date
-    ? date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+    ? date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : '—';
 
   return (
@@ -79,46 +80,8 @@ function RecentOrderRow({ order }: { order: Order }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const quickActions = [
-  {
-    label: 'Fruits',
-    description: 'Gérez votre catalogue de fruits et leurs nutriments.',
-    icon: Apple,
-    iconBg: 'bg-orange-50 dark:bg-orange-950/30',
-    iconColor: 'text-orange-500',
-    path: '/board/fruits',
-    cta: 'Gérer les fruits',
-  },
-  {
-    label: 'Hero slides',
-    description: 'Images et textes de la page d’accueil client.',
-    icon: Image,
-    iconBg: 'bg-sky-50 dark:bg-sky-950/30',
-    iconColor: 'text-sky-600',
-    path: '/board/hero',
-    cta: 'Modifier les slides',
-  },
-  {
-    label: 'Tarifs',
-    description: 'Prix de base des contenants 50 cl / 1 L et livraison.',
-    icon: Wallet,
-    iconBg: 'bg-amber-50 dark:bg-amber-950/30',
-    iconColor: 'text-amber-600',
-    path: '/board/pricing',
-    cta: 'Configurer les tarifs',
-  },
-  {
-    label: 'Catégories',
-    description: 'Organisez vos fruits par catégories (citrus, tropical…).',
-    icon: Tag,
-    iconBg: 'bg-primary/5',
-    iconColor: 'text-primary',
-    path: '/board/categories',
-    cta: 'Gérer les catégories',
-  },
-];
-
 export function AdminHome({ name }: Props) {
+  const { t } = useTranslation();
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: getAdminStats,
@@ -160,14 +123,53 @@ export function AdminHome({ name }: Props) {
     },
   ];
 
+  const quickActions = [
+    {
+      label: t('nav.fruits'),
+      description: t('fruits.subtitle'),
+      icon: Apple,
+      iconBg: 'bg-orange-50 dark:bg-orange-950/30',
+      iconColor: 'text-orange-500',
+      path: '/board/fruits',
+      cta: t('fruits.addFruit'),
+    },
+    {
+      label: 'Hero slides',
+      description: 'Images et textes de la page d\'accueil client.',
+      icon: Image,
+      iconBg: 'bg-sky-50 dark:bg-sky-950/30',
+      iconColor: 'text-sky-600',
+      path: '/board/hero',
+      cta: 'Modifier les slides',
+    },
+    {
+      label: t('pricing.title'),
+      description: t('pricing.pageSubtitle'),
+      icon: Wallet,
+      iconBg: 'bg-amber-50 dark:bg-amber-950/30',
+      iconColor: 'text-amber-600',
+      path: '/board/pricing',
+      cta: t('pricing.title'),
+    },
+    {
+      label: t('nav.categories'),
+      description: 'Organisez vos fruits par catégories (citrus, tropical…).',
+      icon: Tag,
+      iconBg: 'bg-primary/5',
+      iconColor: 'text-primary',
+      path: '/board/categories',
+      cta: t('categories.addCategory'),
+    },
+  ];
+
   return (
     <BoardPageShell
-      eyebrow="Tableau de bord"
+      eyebrow={t('home.admin.title')}
       titleBefore="Bonjour,"
       titleHighlight={name}
       sectionBefore="Centre de"
-      sectionHighlight="contrôle"
-      subtitle="Vue d'ensemble de l'activité FYS."
+      sectionHighlight={t('home.admin.sectionHighlight')}
+      subtitle={t('home.admin.sectionSubtitle')}
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
     >
       <div className="space-y-10 max-w-7xl mx-auto w-full overflow-x-hidden">
@@ -218,14 +220,14 @@ export function AdminHome({ name }: Props) {
               </p>
             )}
             <p className="text-sm text-emerald-600 font-medium mt-3 bg-emerald-50 inline-flex px-3 py-1 rounded-full border border-emerald-100">
-               Commandes livrées uniquement
+               {t('home.admin.recentFilter')}
             </p>
           </div>
         </div>
 
         {/* ORDERS BY STATUS */}
         <div className="lg:col-span-2 bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden">
-           <h3 className="font-display font-bold text-xl text-foreground mb-6">Répartition des Commandes</h3>
+           <h3 className="font-display font-bold text-xl text-foreground mb-6">{t('home.admin.chartTitle')}</h3>
            <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -264,9 +266,9 @@ export function AdminHome({ name }: Props) {
               </div>
             )}
             {!isLoading && stats?.ordersCount === 0 && (
-              <p className="text-sm font-medium text-muted-foreground text-center py-4 bg-muted/50 rounded-2xl">
-                 Aucune donnée de commande.
-              </p>
+               <p className="text-sm font-medium text-muted-foreground text-center py-4 bg-muted/50 rounded-2xl">
+                  {t('home.admin.emptyState')}
+               </p>
             )}
            </div>
         </div>
@@ -279,8 +281,8 @@ export function AdminHome({ name }: Props) {
         <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-5 md:p-8 min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
              <div className="min-w-0">
-               <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">Activité Récente</h3>
-               <p className="text-muted-foreground font-medium mt-1 text-sm">Vos 5 dernières commandes reçues.</p>
+               <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.recentActivity')}</h3>
+               <p className="text-muted-foreground font-medium mt-1 text-sm">{t('home.admin.recentActivitySub')}</p>
              </div>
              <Button asChild size="sm" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors shrink-0 self-start sm:self-auto">
                 <Link to="/board/orders" className="inline-flex items-center gap-1.5">
@@ -315,7 +317,7 @@ export function AdminHome({ name }: Props) {
 
         {/* QUICK ACTIONS */}
         <div className="space-y-4 min-w-0">
-           <h3 className="font-display font-bold text-xl text-foreground mb-2">Actions Rapides</h3>
+           <h3 className="font-display font-bold text-xl text-foreground mb-2">{t('home.admin.quickActions')}</h3>
            {quickActions.map((a) => {
             const Icon = a.icon;
             return (

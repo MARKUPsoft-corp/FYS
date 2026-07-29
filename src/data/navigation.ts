@@ -17,6 +17,7 @@ import { UserRole } from '@/entities';
 export type NavItem = {
   key: string;
   label: string;
+  labelKey: string;
   path: string;
   icon: LucideIcon;
   roles: UserRole[];
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'customer-home',
     label: 'Accueil',
+    labelKey: 'nav.home',
     path: '/board',
     icon: Home,
     roles: [UserRole.CUSTOMER],
@@ -37,6 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'fys-lab',
     label: 'FYS Lab',
+    labelKey: 'nav.fys-lab',
     path: '/lab',
     icon: FlaskConical,
     roles: [UserRole.CUSTOMER],
@@ -45,6 +48,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'catalogue',
     label: 'Catalogue',
+    labelKey: 'nav.catalogue',
     path: '/board/catalogue',
     icon: GlassWater,
     roles: [UserRole.CUSTOMER],
@@ -53,6 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'my-orders',
     label: 'Commandes',
+    labelKey: 'nav.orders',
     path: '/board/orders',
     icon: ShoppingBag,
     roles: [UserRole.CUSTOMER],
@@ -62,6 +67,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'profile',
     label: 'Profil santé',
+    labelKey: 'nav.profile',
     path: '/board/profile',
     icon: HeartPulse,
     roles: [UserRole.CUSTOMER],
@@ -72,6 +78,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-home',
     label: 'Tableau de bord',
+    labelKey: 'nav.dashboard',
     path: '/board',
     icon: LayoutDashboard,
     roles: [UserRole.ADMIN],
@@ -80,6 +87,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'fruits',
     label: 'Fruits',
+    labelKey: 'nav.fruits',
     path: '/board/fruits',
     icon: Apple,
     roles: [UserRole.ADMIN],
@@ -88,6 +96,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'categories',
     label: 'Catégories',
+    labelKey: 'nav.categories',
     path: '/board/categories',
     icon: Tag,
     roles: [UserRole.ADMIN],
@@ -96,6 +105,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-catalogue',
     label: 'Catalogue',
+    labelKey: 'nav.catalogue',
     path: '/board/catalogue',
     icon: GlassWater,
     roles: [UserRole.ADMIN],
@@ -104,6 +114,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-cocktails',
     label: 'Cocktails',
+    labelKey: 'nav.cocktails',
     path: '/board/cocktails',
     icon: FlaskConical,
     roles: [UserRole.ADMIN],
@@ -112,6 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'admin-orders',
     label: 'Commandes',
+    labelKey: 'nav.orders',
     path: '/board/orders',
     icon: ShoppingBag,
     roles: [UserRole.ADMIN],
@@ -120,15 +132,17 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'pricing',
     label: 'Tarifs',
+    labelKey: 'nav.pricing',
     path: '/board/pricing',
     icon: Wallet,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
-    showInDesktopNav: false, // icône topbar uniquement
+    showInDesktopNav: false,
   },
   {
     key: 'hero-slides',
     label: 'Hero',
+    labelKey: 'nav.hero',
     path: '/board/hero',
     icon: Image,
     roles: [UserRole.ADMIN],
@@ -138,6 +152,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'users',
     label: 'Utilisateurs',
+    labelKey: 'nav.users',
     path: '/board/users',
     icon: Users,
     roles: [UserRole.ADMIN],

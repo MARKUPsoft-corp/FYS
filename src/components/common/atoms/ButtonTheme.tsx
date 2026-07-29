@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import {
 } from '@/components/ui/tooltip';
 
 export function ButtonTheme() {
+  const { t } = useTranslation();
   const { actualTheme, setTheme } = useTheme();
 
   const toggle = () => {
@@ -21,7 +23,7 @@ export function ButtonTheme() {
           variant="ghost"
           size="icon"
           onClick={toggle}
-          aria-label="Changer le thème"
+          aria-label={t('theme.switch')}
         >
           {actualTheme === 'dark' ? (
             <Sun className="size-4" />
@@ -31,7 +33,7 @@ export function ButtonTheme() {
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {actualTheme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+        {actualTheme === 'dark' ? t('theme.light') : t('theme.dark')}
       </TooltipContent>
     </Tooltip>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { BellRing, X } from 'lucide-react';
@@ -6,6 +7,7 @@ import { useAuthStore } from '@/stores/auth';
 import { subscribeToPush } from '@/services/push';
 
 export function PushNotificationPrompt() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,18 +63,18 @@ export function PushNotificationPrompt() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 mb-4">
             <BellRing className="h-6 w-6 text-primary" />
           </div>
-          <DialogTitle className="text-center text-xl">Activer les notifications</DialogTitle>
+          <DialogTitle className="text-center text-xl">{t('notifications.enableTitle')}</DialogTitle>
           <DialogDescription className="text-center pt-2">
-            Ne manquez aucune mise à jour de vos commandes ! Autorisez FYS à vous envoyer des notifications poussées.
+            {t('notifications.enableDescription')}
           </DialogDescription>
         </DialogHeader>
         
         <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
           <Button variant="outline" onClick={handleDismiss} disabled={loading} className="w-full">
-            Plus tard
+            {t('profile.onboarding.skip')}
           </Button>
           <Button onClick={handleSubscribe} disabled={loading} className="w-full">
-            {loading ? 'Activation...' : 'Accepter'}
+            {loading ? t('common.loading') : t('common.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'rasengan';
 import { Leaf, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/stores';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const { sidebarOpen, toggleSidebar } = useAppStore();
   const { user } = useAuthStore();
   const location = useLocation();
@@ -63,7 +65,7 @@ export function Sidebar() {
             <Link
               key={item.key}
               to={item.path}
-              title={!sidebarOpen ? item.label : undefined}
+              title={!sidebarOpen ? t(item.labelKey) : undefined}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium',
                 'transition-all duration-150 group relative',
@@ -84,7 +86,7 @@ export function Sidebar() {
                   sidebarOpen ? 'opacity-100 max-w-full' : 'hidden opacity-0 max-w-0',
                 )}
               >
-                {item.label}
+                {t(item.labelKey)}
               </span>
             </Link>
           );
@@ -117,7 +119,7 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             onClick={handleSignOut}
-            title="Se déconnecter"
+            title={t('topbar.signOut')}
             className="shrink-0 size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
             <LogOut className="size-4" />

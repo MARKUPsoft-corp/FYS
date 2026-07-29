@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import { Save, Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -24,6 +26,7 @@ import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam'
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
   const navigate = useNavigate();
@@ -122,9 +125,9 @@ const FysLab: PageComponent = () => {
       .map((id) => fruits.find((f) => f.id === id)?.name)
       .filter((n): n is string => !!n);
     if (names.length === 0) return '';
-    if (names.length === 1) return `Élixir ${names[0]}`;
-    if (names.length === 2) return `${names[0]} & ${names[1]}`;
-    return `${names[0]}, ${names[1]} & cie`;
+    if (names.length === 1) return t('lab.singleName', { name: names[0] });
+    if (names.length === 2) return t('lab.pairName', { a: names[0], b: names[1] });
+    return t('lab.multiName', { a: names[0], b: names[1] });
   }
 
   function setCocktailNameFromUser(name: string) {
@@ -344,7 +347,7 @@ const FysLab: PageComponent = () => {
     const base = pricing?.bottle500mlBase ?? 1500;
     return {
       id: 'draft',
-      name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || 'Création FYS',
+      name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || t('lab.defaultName'),
       type: CocktailType.CUSTOM,
       createdBy: user.uid,
       isActive: true,
@@ -479,9 +482,9 @@ const FysLab: PageComponent = () => {
         <Sheet open={showRenameSheet} onOpenChange={closeRenameSheet}>
           <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
             <SheetHeader>
-              <SheetTitle className="font-display text-xl text-center">Nommez votre création</SheetTitle>
+              <SheetTitle className="font-display text-xl text-center">{t('lab.nameTitle')}</SheetTitle>
               <SheetDescription className="text-center text-xs">
-                Donnez un nom unique à votre cocktail avant de le sauvegarder.
+                {t('lab.nameDescription')}
               </SheetDescription>
             </SheetHeader>
             <div className="space-y-4">
@@ -494,7 +497,7 @@ const FysLab: PageComponent = () => {
                     handleSave();
                   }
                 }}
-                placeholder="Nom suggéré par NutriFYS…"
+                placeholder={t('lab.nameInputPlaceholder')}
                 className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
                 autoFocus
               />
@@ -507,7 +510,7 @@ const FysLab: PageComponent = () => {
                   handleSave();
                 }}
               >
-                {saving ? <><Loader2 className="size-4 animate-spin" /> Enregistrement…</> : <><Save className="size-4" /> Enregistrer le cocktail</>}
+                {saving ? <><Loader2 className="size-4 animate-spin" /> {t('lab.saving')}</> : <><Save className="size-4" /> {t('lab.saveCocktail')}</>}
               </Button>
             </div>
           </SheetContent>
@@ -553,7 +556,7 @@ const FysLab: PageComponent = () => {
               })}
               {selectedIngredients.size === 0 && (
                 <span className="text-xs font-medium text-muted-foreground">
-                  Aucun fruit sélectionné
+                  {t('lab.noFruitSelected')}
                 </span>
               )}
             </div>
@@ -565,7 +568,7 @@ const FysLab: PageComponent = () => {
                 disabled={selectedIngredients.size === 0}
                 onClick={() => handleStepChange(2)}
               >
-                Suivant · Suppléments
+                {t('lab.nextSupplements')}
                 <ChevronRight className="size-5" />
               </Button>
             ) : (
@@ -580,10 +583,10 @@ const FysLab: PageComponent = () => {
                 onClick={analysis ? openRenameSheet : () => handleAnalyze()}
               >
                 {analyzing
-                  ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> Analyse…</>
+                  ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> {t('lab.analyzingShort')}</>
                   : analysis
-                  ? <><Save className="size-5" /> Sauvegarder</>
-                  : <><Sparkles className="size-5" /> Analyser avec NutriFYS</>
+                  ? <><Save className="size-5" /> {t('common.save')}</>
+                  : <><Sparkles className="size-5" /> {t('lab.analyzeWith')}</>
                 }
               </Button>
             )}
@@ -595,8 +598,8 @@ const FysLab: PageComponent = () => {
 };
 
 FysLab.metadata = {
-  title: 'FYS Lab — Créateur de Cocktail',
-  description: 'Créez et validez votre cocktail santé avec NutriFYS',
+  title: i18n.t('lab.pageTitle'),
+  description: i18n.t('lab.pageDesc'),
 };
 
 export default FysLab;

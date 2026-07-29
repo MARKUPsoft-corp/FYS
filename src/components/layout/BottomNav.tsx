@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { getMobileNavItems } from '@/data/navigation';
 
 export function BottomNav() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const location = useLocation();
 
@@ -28,7 +30,7 @@ export function BottomNav() {
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
-          const label = item.label === 'Tableau de bord' ? 'Tableau' : item.label;
+          const label = t(item.labelKey);
           return (
             <Link
               key={item.key}

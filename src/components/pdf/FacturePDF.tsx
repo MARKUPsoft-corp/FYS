@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import type { Order } from '@/entities/order';
 import { OrderStatus } from '@/entities/order';
@@ -11,13 +12,25 @@ const TEXT      = '#111827'; // gray-900
 const WHITE     = '#FFFFFF';
 
 // Status badges
-const STATUS_COLOR: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-  [OrderStatus.PENDING]:   { bg: '#FEF9C3', text: '#854D0E', label: 'En attente' },
-  [OrderStatus.CONFIRMED]: { bg: '#DBEAFE', text: '#1E40AF', label: 'Confirmée'  },
-  [OrderStatus.PREPARING]: { bg: '#FEF3C7', text: '#92400E', label: 'En préparation' },
-  [OrderStatus.READY]:     { bg: '#D1FAE5', text: '#065F46', label: 'Prête' },
-  [OrderStatus.DELIVERED]: { bg: '#DCFCE7', text: '#15803D', label: 'Livrée' },
-  [OrderStatus.CANCELLED]: { bg: '#FEE2E2', text: '#991B1B', label: 'Annulée' },
+function getStatusLabel(status: OrderStatus): string {
+  const labels: Record<OrderStatus, string> = {
+    [OrderStatus.PENDING]:   i18n.t('orders.pending'),
+    [OrderStatus.CONFIRMED]: i18n.t('orders.confirmed'),
+    [OrderStatus.PREPARING]: i18n.t('orders.preparing'),
+    [OrderStatus.READY]:     i18n.t('orders.ready'),
+    [OrderStatus.DELIVERED]: i18n.t('orders.delivered'),
+    [OrderStatus.CANCELLED]: i18n.t('orders.canceled'),
+  };
+  return labels[status];
+}
+
+const STATUS_COLOR: Record<OrderStatus, { bg: string; text: string }> = {
+  [OrderStatus.PENDING]:   { bg: '#FEF9C3', text: '#854D0E' },
+  [OrderStatus.CONFIRMED]: { bg: '#DBEAFE', text: '#1E40AF' },
+  [OrderStatus.PREPARING]: { bg: '#FEF3C7', text: '#92400E' },
+  [OrderStatus.READY]:     { bg: '#D1FAE5', text: '#065F46' },
+  [OrderStatus.DELIVERED]: { bg: '#DCFCE7', text: '#15803D' },
+  [OrderStatus.CANCELLED]: { bg: '#FEE2E2', text: '#991B1B' },
 };
 
 const s = StyleSheet.create({
@@ -68,9 +81,10 @@ interface Props {
 
 export function FacturePDF({ order, ingredientsStr }: Props) {
   const statusCfg = STATUS_COLOR[order.status];
+  const statusLabel = getStatusLabel(order.status);
   const createdDate = order.createdAt?.toDate?.();
   const dateStr = createdDate
-    ? createdDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    ? createdDate.toLocaleString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '—';
 
   const subtotal = order.orderLines?.length
@@ -78,21 +92,21 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
     : (order.cocktailPriceSnapshot || 0) * (order.quantity || 0);
 
   return (
-    <Document title={`Facture — ${order.id}`} author="NutriFYS">
+    <Document title={`${i18n.t('pdf.invoiceTitle')} — ${order.id}`} author="NutriFYS">
       <Page size="A4" style={s.page}>
 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View>
             <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
-            <Text style={s.tagline}>NutriFYS — Votre Partenaire Santé</Text>
+            <Text style={s.tagline}>{i18n.t('pdf.tagline')}</Text>
           </View>
           <View style={s.meta}>
-            <Text style={s.metaTitle}>FACTURE</Text>
+            <Text style={s.metaTitle}>{i18n.t('pdf.invoiceTitle').toUpperCase()}</Text>
             <Text style={s.metaRef}>N° {order.id.toUpperCase().slice(0, 8)}</Text>
-            <Text style={s.metaRef}>Émise le {dateStr}</Text>
+            <Text style={s.metaRef}>{i18n.t('pdf.issuedOn')} {dateStr}</Text>
             <View style={[s.badge, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[s.badgeText, { color: statusCfg.text }]}>{statusCfg.label}</Text>
+              <Text style={[s.badgeText, { color: statusCfg.text }]}>{statusLabel}</Text>
             </View>
           </View>
         </View>
@@ -102,7 +116,7 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
         {/* ── Client & Livraison ─────────────────────────────────────── */}
         <View style={s.cols}>
           <View style={s.col}>
-            <Text style={s.sectionTitle}>Client</Text>
+            <Text style={s.sectionTitle}>{i18n.t('pdf.client')}</Text>
             <View style={s.card}>
               <Text style={[s.value, { marginBottom: 4 }]}>{order.userNameSnapshot}</Text>
               <Text style={s.label}>{order.userEmailSnapshot}</Text>
@@ -111,19 +125,19 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
           </View>
           {order.deliveryDetails && (
             <View style={s.col}>
-              <Text style={s.sectionTitle}>Livraison</Text>
+              <Text style={s.sectionTitle}>{i18n.t('pdf.delivery')}</Text>
               <View style={s.card}>
                 <View style={s.addrRow}>
-                  <Text style={s.addrKey}>Quartier</Text>
+                  <Text style={s.addrKey}>{i18n.t('pdf.district')}</Text>
                   <Text style={s.addrVal}>{order.deliveryDetails.district}</Text>
                 </View>
                 <View style={s.addrRow}>
-                  <Text style={s.addrKey}>Téléphone</Text>
+                  <Text style={s.addrKey}>{i18n.t('pdf.phone')}</Text>
                   <Text style={s.addrVal}>{order.deliveryDetails.phone}</Text>
                 </View>
                 {order.deliveryDetails.instructions && (
                   <View style={s.addrRow}>
-                    <Text style={s.addrKey}>Indications</Text>
+                    <Text style={s.addrKey}>{i18n.t('pdf.indications')}</Text>
                     <Text style={s.addrVal}>{order.deliveryDetails.instructions}</Text>
                   </View>
                 )}
@@ -133,14 +147,14 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
         </View>
 
         {/* ── Commande ───────────────────────────────────────────────── */}
-        <Text style={[s.sectionTitle, { marginTop: 8 }]}>Détail de la commande</Text>
+        <Text style={[s.sectionTitle, { marginTop: 8 }]}>{i18n.t('pdf.orderDetail')}</Text>
         <View style={s.card}>
           {/* Table header */}
           <View style={[s.row, { borderBottomWidth: 1, borderBottomColor: BORDER, paddingBottom: 6, marginBottom: 8 }]}>
-            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>Produit</Text>
-            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>Qté</Text>
-            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>P.U.</Text>
-            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>Total</Text>
+            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>{i18n.t('pdf.product')}</Text>
+            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>{i18n.t('pdf.qty')}</Text>
+            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>{i18n.t('pdf.unitPrice')}</Text>
+            <Text style={[s.label, { fontSize: 8, textTransform: 'uppercase' }]}>{i18n.t('orders.total')}</Text>
           </View>
           
           {/* Product rows — with orderLines support */}
@@ -172,7 +186,7 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
           {ingredientsStr && (
             <View style={s.row}>
                <Text style={[s.label, { flex: 2, fontSize: 8, fontStyle: 'italic' }]}>
-                 Composition : {ingredientsStr}
+                  {i18n.t('pdf.composition')}{ingredientsStr}
                </Text>
                <Text style={{ width: 30 }}></Text>
                <Text style={{ width: 70 }}></Text>
@@ -182,26 +196,26 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
         </View>
 
         {/* ── Totaux ─────────────────────────────────────────────────── */}
-        <Text style={s.sectionTitle}>Récapitulatif</Text>
+        <Text style={s.sectionTitle}>{i18n.t('pdf.summary')}</Text>
         <View style={s.card}>
           <View style={s.row}>
-            <Text style={s.label}>Sous-total</Text>
+            <Text style={s.label}>{i18n.t('pdf.subtotal')}</Text>
             <Text style={s.value}>{subtotal.toLocaleString()} XAF</Text>
           </View>
           <View style={s.rowLast}>
-            <Text style={s.label}>Livraison</Text>
+            <Text style={s.label}>{i18n.t('pdf.delivery')}</Text>
             <Text style={s.value}>{order.deliveryFee.toLocaleString()} XAF</Text>
           </View>
         </View>
         <View style={s.totalRow}>
-          <Text style={s.totalLabel}>TOTAL</Text>
+          <Text style={s.totalLabel}>{i18n.t('orders.total').toUpperCase()}</Text>
           <Text style={s.totalValue}>{order.totalPrice.toLocaleString()} XAF</Text>
         </View>
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <View style={s.footer}>
-          <Text style={s.footerText}>NutriFYS — votre santé, notre priorité 🌿</Text>
-          <Text style={s.footerText}>Merci de votre confiance !</Text>
+          <Text style={s.footerText}>{i18n.t('pdf.footerHealth')}</Text>
+          <Text style={s.footerText}>{i18n.t('pdf.footerThanks')}</Text>
         </View>
       </Page>
     </Document>

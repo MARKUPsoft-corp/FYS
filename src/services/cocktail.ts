@@ -17,6 +17,7 @@ import type { Cocktail, AIAnalysis } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage, isManagedImageUrl } from './storage';
 import { notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from './push';
+import i18n from '@/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: any): any {
@@ -124,12 +125,12 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
 
   if (isPublic) {
     const snap = await getDoc(cocktailRef);
-    if (!snap.exists()) throw new Error('Cocktail introuvable');
+    if (!snap.exists()) throw new Error(i18n.t('cocktail.notFound'));
     const cocktail = { id: snap.id, ...snap.data() } as Cocktail;
     const duplicate = await findPublicDuplicateMix(cocktail);
     if (duplicate) {
       throw new Error(
-        `Ce mélange est déjà publié sous le nom « ${duplicate.name} ». Choisissez une autre composition.`,
+        i18n.t('cocktail.duplicateMix', { name: duplicate.name }),
       );
     }
   }
@@ -144,14 +145,14 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
     if (snap.exists()) {
       const cocktail = snap.data() as Cocktail;
       notifyAdmins({
-        title: 'Nouveau cocktail rendu public 🍹',
-        message: `La recette « ${cocktail.name} » a été partagée dans le catalogue.`,
+        title: i18n.t('notifications.newCocktail'),
+        message: i18n.t('notifications.newCocktailBody', { name: cocktail.name }),
         link: `/board/cocktails?cocktail=${id}`,
       }).catch(console.error);
 
       sendPushNotification({
-        title: 'Nouvelle recette incroyable ! 🍹',
-        body: `Une nouvelle composition au catalogue : découvrez « ${cocktail.name} » !`,
+        title: i18n.t('notifications.newRecipe'),
+        body: i18n.t('notifications.newRecipeBody', { name: cocktail.name }),
         url: `/board/cocktails?cocktail=${id}`,
       });
     }

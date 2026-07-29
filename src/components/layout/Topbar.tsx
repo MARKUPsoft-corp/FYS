@@ -1,10 +1,12 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
 import { LogOut, Settings, User, Wallet, Image } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
 import { getNavItemsForRole } from '@/data/navigation';
 import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { NotificationBell } from '@/components/common/NotificationBell';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -18,6 +20,7 @@ import {
 import { UserRole } from '@/entities/user';
 
 export function Topbar() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -67,7 +70,7 @@ export function Topbar() {
                     : 'text-foreground/70 hover:text-foreground',
                 )}
               >
-                <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 <span
                   className={cn(
                     'absolute -bottom-1 left-0 h-[2px] bg-primary transition-all duration-300 rounded-full',
@@ -79,7 +82,9 @@ export function Topbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <LanguageSwitcher />
+
           <ButtonTheme />
 
           <NotificationBell />
@@ -94,8 +99,8 @@ export function Topbar() {
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
                 )}
-                aria-label="Hero slides"
-                title="Hero slides"
+                aria-label={t('topbar.heroSlides')}
+                title={t('topbar.heroSlides')}
               >
                 <Image className="size-5" />
               </Link>
@@ -107,8 +112,8 @@ export function Topbar() {
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
                 )}
-                aria-label="Tarifs contenants"
-                title="Tarifs"
+                aria-label={t('topbar.pricing')}
+                title={t('topbar.pricing')}
               >
                 <Wallet className="size-5" />
               </Link>
@@ -134,12 +139,12 @@ export function Topbar() {
 
               <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
                 <User className="size-4" />
-                Profile
+                {t('topbar.profile')}
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
                 <Settings className="size-4" />
-                Settings
+                {t('topbar.settings')}
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -149,7 +154,7 @@ export function Topbar() {
                 className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
               >
                 <LogOut className="size-4" />
-                Sign out
+                {t('topbar.signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

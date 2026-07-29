@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ImageOff, ShoppingCart, Sparkles } from 'lucide-react';
 import {
   Sheet,
@@ -25,6 +26,7 @@ const VERDICT_CONFIG: Record<AIVerdict, { label: string; variant: 'success' | 'w
 };
 
 export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
+  const { t } = useTranslation();
   if (!cocktail) return null;
 
   const verdict = cocktail.aiAnalysis
@@ -100,10 +102,10 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
 
           {/* Ingredients — noms seulement, pas de prix */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Composition</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('catalogue.composition')}</h3>
             <Separator />
             {cocktail.ingredients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun ingrédient.</p>
+              <p className="text-sm text-muted-foreground">{t('cocktail.noIngredients')}</p>
             ) : (
               <p className="text-sm text-foreground font-medium leading-relaxed">
                 {cocktail.ingredients.map((ing) => ing.fruitName).join(' · ')}
@@ -114,13 +116,13 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
           {/* Prix opaque — le détail est révélé à la commande via les contenants */}
           <div className="space-y-1.5 pt-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">À partir de</span>
+              <span className="text-sm font-semibold text-foreground">{t('catalogue.from')}</span>
               <span className="text-lg font-bold text-primary">
                 {cocktail.totalPrice.toLocaleString()} XAF
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Prix selon le contenant (50 cl ou 1 L) choisi à la commande.
+              {t('cocktail.priceInfo')}
             </p>
           </div>
         </div>
@@ -129,7 +131,7 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
         <SheetFooter className="px-6 py-4 border-t border-border shrink-0">
           <Button className="w-full rounded-full font-bold h-12 text-base gap-2">
             <ShoppingCart className="size-4" />
-            Order this cocktail
+            {t('catalogue.order')}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -16,7 +16,7 @@ import { getFruits } from '@/services/fruit';
 import { updateOrderStatus, cancelOrder } from '@/services/order';
 import { useQuery } from '@tanstack/react-query';
 import { useOrders, useOrder } from '@/hooks/useOrders';
-import { VERDICT_CONFIG, NutritionalView } from '@/components/features/cocktail/NutritionalView';
+import { VERDICT_CONFIG, getVerdictLabel, NutritionalView } from '@/components/features/cocktail/NutritionalView';
 import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
 import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
 import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
@@ -28,6 +28,8 @@ import {
 } from '@/components/features/orders/PeriodCalendar';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -40,7 +42,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
   dot: string;
 }> = {
   [OrderStatus.PENDING]: {
-    label: 'En attente',
+    label: i18n.t('orders.pending'),
     icon: Clock,
     bg: 'bg-amber-50 dark:bg-amber-950/30',
     text: 'text-amber-700 dark:text-amber-400',
@@ -48,7 +50,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     dot: 'bg-amber-500',
   },
   [OrderStatus.CONFIRMED]: {
-    label: 'Confirmée',
+    label: i18n.t('orders.confirmed'),
     icon: CheckCircle2,
     bg: 'bg-sky-50 dark:bg-sky-950/30',
     text: 'text-sky-700 dark:text-sky-400',
@@ -56,7 +58,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     dot: 'bg-sky-500',
   },
   [OrderStatus.PREPARING]: {
-    label: 'En préparation',
+    label: i18n.t('orders.preparing'),
     icon: ChefHat,
     bg: 'bg-violet-50 dark:bg-violet-950/30',
     text: 'text-violet-700 dark:text-violet-400',
@@ -64,7 +66,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     dot: 'bg-violet-500',
   },
   [OrderStatus.READY]: {
-    label: 'Prête',
+    label: i18n.t('orders.ready'),
     icon: Package,
     bg: 'bg-primary/8 dark:bg-primary/15',
     text: 'text-primary',
@@ -72,7 +74,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     dot: 'bg-primary',
   },
   [OrderStatus.DELIVERED]: {
-    label: 'Livrée',
+    label: i18n.t('orders.delivered'),
     icon: CheckCircle2,
     bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     text: 'text-emerald-700 dark:text-emerald-400',
@@ -80,7 +82,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     dot: 'bg-emerald-500',
   },
   [OrderStatus.CANCELLED]: {
-    label: 'Annulée',
+    label: i18n.t('orders.canceled'),
     icon: XCircle,
     bg: 'bg-muted',
     text: 'text-muted-foreground',
@@ -112,8 +114,8 @@ const CLIENT_CANCELLABLE: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.CONF
 
 function formatDate(ts: { seconds: number } | null | undefined): string {
   if (!ts) return '—';
-  return new Date(ts.seconds * 1000).toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
+  return new Date(ts.seconds * 1000).toLocaleString('fr-FR', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -140,6 +142,7 @@ function OrderCard({
   showCustomer?: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       onClick={onClick}
@@ -163,14 +166,14 @@ function OrderCard({
         {order.orderLines?.length ? (
           order.orderLines.map((line, i) => (
             <span key={i}>
-              {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+              {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
               {i < order.orderLines.length - 1 ? ' + ' : ''}
             </span>
           ))
         ) : (
           // Legacy: pour les anciennes commandes sans orderLines
           <>
-            {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+            {t('orders.bottleCount', { count: order.quantity })}
             {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
           </>
         )}
@@ -190,7 +193,7 @@ function OrderCard({
       <div className="flex items-center justify-between pt-1 border-t border-border/40">
         <p className="font-bold text-foreground tabular-nums">{order.totalPrice.toLocaleString()} XAF</p>
         <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-          Détails <ChevronRight className="size-3.5" />
+          {t('orders.details')} <ChevronRight className="size-3.5" />
         </span>
       </div>
     </div>
@@ -214,6 +217,7 @@ function CocktailInfoBlock({
   clientName?: string;
   cocktailNameFallback?: string;
 }) {
+  const { t } = useTranslation();
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
@@ -247,7 +251,7 @@ function CocktailInfoBlock({
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cocktail</p>
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.cocktailLabel')}</p>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
         <CocktailLabelExport
             cocktailName={name}
@@ -258,7 +262,7 @@ function CocktailInfoBlock({
             badge={
               vcfg ? (
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm ${vcfg.chip}`}>
-                  {vcfg.emoji} {vcfg.label}
+                  {vcfg.emoji} {getVerdictLabel(analysis!.verdict, t)}
                 </span>
               ) : undefined
             }
@@ -272,7 +276,7 @@ function CocktailInfoBlock({
 
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                Ingrédients
+                {t('orders.ingredients')}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {cocktail.ingredients.map((ing) => (
@@ -289,7 +293,7 @@ function CocktailInfoBlock({
             {analysis && vcfg && (
               <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${vcfg.bg} ${vcfg.border}`}>
                 <span className={`text-[12px] font-bold ${vcfg.text}`}>
-                  {vcfg.emoji} NutriFYS — {vcfg.label}
+                  {vcfg.emoji} NutriFYS — {getVerdictLabel(analysis!.verdict, t)}
                 </span>
                 <span className={`text-[12px] font-bold tabular-nums ${vcfg.text}`}>
                   {analysis.score} / 100
@@ -316,6 +320,7 @@ function ClientOrderSheet({
   onOpenChange: (v: boolean) => void;
   onCancel: (orderId: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [cancelling, setCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
   const [downloadingNutrition, setDownloadingNutrition] = useState(false);
@@ -355,11 +360,11 @@ function ClientOrderSheet({
           <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
           <div className="flex items-center gap-2 mt-0.5">
             <p className="text-[13px] text-muted-foreground">
-              Commande du {formatDate(order.createdAt as unknown as { seconds: number })}
+              {t('orders.orderFrom', { date: formatDate(order.createdAt as unknown as { seconds: number }) })}
             </p>
             {order.aiAnalysisSnapshot && (
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
-                {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].label}
+                {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
               </span>
             )}
           </div>
@@ -376,7 +381,7 @@ function ClientOrderSheet({
                 }`}
               >
                 <Package className="size-3.5" />
-                Détails commande
+                {t('orders.details')}
               </button>
               <button
                 type="button"
@@ -388,7 +393,7 @@ function ClientOrderSheet({
                 }`}
               >
                 <Sparkles className="size-3.5" />
-                Fiche NutriFYS
+                {t('orders.nutrifysSheet')}
               </button>
             </div>
           )}
@@ -414,9 +419,9 @@ function ClientOrderSheet({
                 }}
               >
                 {downloadingNutrition ? (
-                  <><Loader2 className="size-4 animate-spin" /> Génération en cours…</>
+                  <><Loader2 className="size-4 animate-spin" /> {t('common.generating')}</>
                 ) : (
-                  <><Download className="size-4" /> Télécharger la Fiche (PDF)</>
+                  <><Download className="size-4" /> {t('orders.downloadPDF')}</>
                 )}
               </Button>
             </div>
@@ -437,14 +442,14 @@ function ClientOrderSheet({
 
           {/* Status actuel */}
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Statut actuel</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.currentStatus')}</p>
             <StatusBadge status={order.status} size="lg" />
           </div>
 
           {/* Timeline */}
           {!isCancelled && (
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Progression</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.progress')}</p>
               <div className="relative">
                 {/* Connecting line */}
                 <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-border/50" />
@@ -477,7 +482,7 @@ function ClientOrderSheet({
                             {cfg.label}
                           </p>
                           {isActive && (
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Étape en cours</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{t('orders.currentStep')}</p>
                           )}
                         </div>
                         {isActive && (
@@ -495,7 +500,7 @@ function ClientOrderSheet({
             <div className="rounded-2xl bg-muted/60 border border-border/50 px-5 py-4 flex items-center gap-3">
               <XCircle className="size-5 text-muted-foreground shrink-0" />
               <p className="text-[13px] text-muted-foreground font-medium">
-                Cette commande a été annulée.
+                {t('orders.cancelledNotice')}
               </p>
             </div>
           )}
@@ -503,19 +508,19 @@ function ClientOrderSheet({
           {/* Informations de Livraison */}
           {order.deliveryDetails && (
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Informations de Livraison</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.deliveryAddress')}</p>
               <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
                 <div className="flex gap-3">
                   <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[13px] font-bold text-foreground">Quartier</p>
+                    <p className="text-[13px] font-bold text-foreground">{t('orders.district')}</p>
                     <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.district}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Phone className="size-4 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[13px] font-bold text-foreground">Téléphone (Livraison)</p>
+                    <p className="text-[13px] font-bold text-foreground">{t('orders.phoneDelivery')}</p>
                     <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.phone}</p>
                   </div>
                 </div>
@@ -523,7 +528,7 @@ function ClientOrderSheet({
                   <div className="flex gap-3">
                     <MessageSquare className="size-4 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[13px] font-bold text-foreground">Indications</p>
+                      <p className="text-[13px] font-bold text-foreground">{t('orders.instructionsLabel')}</p>
                       <p className="text-[12px] text-muted-foreground">{order.deliveryDetails.instructions}</p>
                     </div>
                   </div>
@@ -534,7 +539,7 @@ function ClientOrderSheet({
 
           {/* Résumé commande */}
           <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Récapitulatif</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.summary')}</p>
             <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground">Cocktail</span>
@@ -543,11 +548,11 @@ function ClientOrderSheet({
               {order.orderLines?.length ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
                     <div className="text-right space-y-1">
                       {order.orderLines.map((line, i) => (
                         <p key={i} className="text-[13px] font-semibold text-foreground">
-                          {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+                          {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
                         </p>
                       ))}
                     </div>
@@ -566,9 +571,9 @@ function ClientOrderSheet({
               ) : (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
                     <span className="text-[13px] font-semibold text-foreground">
-                      {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+                      {t('orders.bottleCount', { count: order.quantity })}
                       {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
                     </span>
                   </div>
@@ -584,14 +589,14 @@ function ClientOrderSheet({
               )}
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                  <Truck className="size-3.5" /> Livraison
+                  <Truck className="size-3.5" /> {t('orders.delivery')}
                 </span>
                 <span className="text-[13px] font-semibold text-foreground">
                   {order.deliveryFee.toLocaleString()} XAF
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
-                <span className="text-[14px] font-bold text-foreground">Total</span>
+                <span className="text-[14px] font-bold text-foreground">{t('orders.total')}</span>
                 <span className="text-[16px] font-bold text-primary tabular-nums">
                   {order.totalPrice.toLocaleString()} XAF
                 </span>
@@ -612,9 +617,9 @@ function ClientOrderSheet({
               }}
             >
               {downloadingFacture ? (
-                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> Génération en cours…</>
+                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> {t('common.generating')}</>
               ) : (
-                <><Download className="size-4 text-primary" /> Télécharger la Facture (PDF)</>
+                <><Download className="size-4 text-primary" /> {t('orders.downloadInvoice')}</>
               )}
             </Button>
           </div>
@@ -631,7 +636,7 @@ function ClientOrderSheet({
               disabled={cancelling}
               onClick={handleCancel}
             >
-              {cancelling ? <><Loader2 className="size-4 animate-spin" /> Annulation…</> : <><XCircle className="size-4" /> Annuler la commande</>}
+              {cancelling ? <><Loader2 className="size-4 animate-spin" /> {t('orders.cancelling')}</> : <><XCircle className="size-4" /> {t('orders.cancel')}</>}
             </Button>
           </div>
         )}
@@ -655,6 +660,7 @@ function AdminOrderSheet({
   onStatusChange: (orderId: string, status: OrderStatus) => Promise<void>;
   onCancel: (orderId: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [updating, setUpdating] = useState<OrderStatus | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
@@ -701,7 +707,7 @@ function AdminOrderSheet({
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
 
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
-          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2">
             <div>
               <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
               <div className="flex items-center gap-2 mt-0.5">
@@ -710,7 +716,7 @@ function AdminOrderSheet({
                 </p>
                 {order.aiAnalysisSnapshot && (
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
-                    {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].label}
+                {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
                   </span>
                 )}
               </div>
@@ -730,7 +736,7 @@ function AdminOrderSheet({
                 }`}
               >
                 <Package className="size-3.5" />
-                Détails commande
+                {t('orders.details')}
               </button>
               <button
                 type="button"
@@ -742,14 +748,13 @@ function AdminOrderSheet({
                 }`}
               >
                 <Sparkles className="size-3.5" />
-                Fiche NutriFYS
+                {t('orders.nutrifysSheet')}
               </button>
             </div>
           )}
         </SheetHeader>
 
         <div className="border-b border-border/40 mt-4 shrink-0" />
-
         {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
           <div className="flex-1 overflow-y-auto flex flex-col">
             <div id={`pdf-nutrition-${order.id}`} className="px-6 py-5 pb-8 bg-background shrink-0">
@@ -768,9 +773,9 @@ function AdminOrderSheet({
                 }}
               >
                 {downloadingNutrition ? (
-                  <><Loader2 className="size-4 animate-spin" /> Génération en cours…</>
+                  <><Loader2 className="size-4 animate-spin" /> {t('common.generating')}</>
                 ) : (
-                  <><Download className="size-4" /> Télécharger la Fiche (PDF)</>
+                  <><Download className="size-4" /> {t('orders.downloadPDF')}</>
                 )}
               </Button>
             </div>
@@ -791,7 +796,7 @@ function AdminOrderSheet({
 
           {/* Contact client */}
           <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Client</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.client')}</p>
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
               <div className="flex items-center gap-3 px-4 py-3.5">
                 <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -809,9 +814,8 @@ function AdminOrderSheet({
                           {i < order.orderLines.length - 1 ? ' + ' : ''}
                         </span>
                       ))
-                    ) : (
-                      `${order.quantity} bouteille${order.quantity! > 1 ? 's' : ''}`
-                    )} commandée{((order.orderLines?.reduce((sum, l) => sum + l.quantity, 0) || order.quantity || 0) > 1) ? 's' : ''}
+                    ) : t('orders.bottleCount', { count: order.quantity })
+                    } {t('orders.ordered', { count: order.orderLines?.reduce((sum, l) => sum + l.quantity, 0) || order.quantity || 0 })}
                   </p>
                 </div>
               </div>
@@ -829,13 +833,13 @@ function AdminOrderSheet({
                 >
                   <Phone className="size-4 text-primary shrink-0" />
                   <span className="text-[13px] font-semibold text-primary">{order.userPhoneSnapshot}</span>
-                  <span className="ml-auto text-[11px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded-full">Appeler</span>
+                  <span className="ml-auto text-[11px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded-full">{t('orders.call')}</span>
                 </a>
               )}
               {order.deliveryDetails && (
                 <div className="p-4 bg-muted/10">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-                    Adresse de Livraison
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
+                    {t('orders.deliveryAddress')}
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
@@ -880,7 +884,7 @@ function AdminOrderSheet({
                           className="flex items-center justify-center gap-2 w-full h-10 bg-primary text-primary-foreground font-semibold rounded-xl text-[13px] hover:bg-primary/90 transition-colors"
                         >
                           <Navigation className="size-4" />
-                          Ouvrir l'itinéraire (Google Maps)
+                          {t('orders.mapLink')}
                         </a>
                       </div>
                     )}
@@ -894,7 +898,7 @@ function AdminOrderSheet({
           {!isCancelled && !isDelivered && (
             <div className="space-y-3">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Faire avancer la commande
+                {t('orders.advanceOrder')}
               </p>
               <div className="flex flex-col gap-2">
                 {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
@@ -914,7 +918,7 @@ function AdminOrderSheet({
                         : <Icon className={`size-4 shrink-0 ${cfg.text}`} />
                       }
                       <span className={`text-[13px] font-bold ${cfg.text}`}>
-                        Passer à : {cfg.label}
+                        {t('orders.goToStatus', { label: cfg.label })}
                       </span>
                     </button>
                   );
@@ -927,23 +931,23 @@ function AdminOrderSheet({
             <div className={`rounded-2xl border px-5 py-4 flex items-center gap-3 ${STATUS_CONFIG[order.status].bg} ${STATUS_CONFIG[order.status].border}`}>
               <Circle className={`size-4 shrink-0 ${STATUS_CONFIG[order.status].text}`} />
               <p className={`text-[13px] font-semibold ${STATUS_CONFIG[order.status].text}`}>
-                {isCancelled ? 'Commande annulée.' : 'Commande livrée — terminée.'}
+                {isCancelled ? t('orders.canceled') : t('orders.finalStatus')}
               </p>
             </div>
           )}
 
           {/* Détail commande */}
           <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Détail</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.details')}</p>
             <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
               {order.orderLines?.length ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
                     <div className="text-right space-y-1">
                       {order.orderLines.map((line, i) => (
                         <p key={i} className="text-[13px] font-semibold text-foreground">
-                          {line.quantity} bouteille{line.quantity > 1 ? 's' : ''} · {line.bottleSizeLabel}
+                          {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
                         </p>
                       ))}
                     </div>
@@ -962,9 +966,9 @@ function AdminOrderSheet({
               ) : (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Quantité</span>
+                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
                     <span className="text-[13px] font-semibold text-foreground">
-                      {order.quantity} bouteille{order.quantity! > 1 ? 's' : ''}
+                      {t('orders.bottleCount', { count: order.quantity })}
                       {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
                     </span>
                   </div>
@@ -979,13 +983,13 @@ function AdminOrderSheet({
                 </>
               )}
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">Livraison</span>
+                <span className="text-[13px] text-muted-foreground">{t('orders.delivery')}</span>
                 <span className="text-[13px] font-semibold text-foreground">
                   {order.deliveryFee.toLocaleString()} XAF
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
-                <span className="text-[14px] font-bold text-foreground">Total</span>
+                <span className="text-[14px] font-bold text-foreground">{t('orders.total')}</span>
                 <span className="text-[16px] font-bold text-primary tabular-nums">
                   {order.totalPrice.toLocaleString()} XAF
                 </span>
@@ -1006,9 +1010,9 @@ function AdminOrderSheet({
               }}
             >
               {downloadingFacture ? (
-                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> Génération en cours…</>
+                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> {t('common.generating')}</>
               ) : (
-                <><Download className="size-4 text-primary" /> Télécharger la Facture (PDF)</>
+                <><Download className="size-4 text-primary" /> {t('orders.downloadInvoice')}</>
               )}
             </Button>
           </div>
@@ -1026,8 +1030,8 @@ function AdminOrderSheet({
               onClick={handleCancel}
             >
               {cancelling
-                ? <><Loader2 className="size-4 animate-spin" /> Annulation…</>
-                : <><XCircle className="size-4" /> Annuler la commande</>
+                ? <><Loader2 className="size-4 animate-spin" /> {t('orders.cancelling')}</>
+                : <><XCircle className="size-4" /> {t('orders.cancel')}</>
               }
             </Button>
           </div>
@@ -1040,21 +1044,21 @@ function AdminOrderSheet({
 // ── Period filters ────────────────────────────────────────────────────────────
 
 const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
-  { value: 'all', label: 'Tout' },
-  { value: 'day', label: 'Jour' },
-  { value: 'week', label: 'Semaine' },
-  { value: 'month', label: 'Mois' },
-  { value: 'year', label: 'Année' },
+  { value: 'all', label: i18n.t('orders.filterAll') },
+  { value: 'day', label: i18n.t('orders.filterDay') },
+  { value: 'week', label: i18n.t('orders.filterWeek') },
+  { value: 'month', label: i18n.t('orders.filterMonth') },
+  { value: 'year', label: i18n.t('orders.filterYear') },
 ];
 
 const STATUS_FILTERS = [
-  { value: 'all' as const, label: 'Toutes' },
-  { value: OrderStatus.PENDING,   label: 'En attente' },
-  { value: OrderStatus.CONFIRMED, label: 'Confirmées' },
-  { value: OrderStatus.PREPARING, label: 'En préparation' },
-  { value: OrderStatus.READY,     label: 'Prêtes' },
-  { value: OrderStatus.DELIVERED, label: 'Livrées' },
-  { value: OrderStatus.CANCELLED, label: 'Annulées' },
+  { value: 'all' as const, label: i18n.t('orders.filterAllStatus') },
+  { value: OrderStatus.PENDING,   label: i18n.t('orders.pending') },
+  { value: OrderStatus.CONFIRMED, label: i18n.t('orders.confirmed') },
+  { value: OrderStatus.PREPARING, label: i18n.t('orders.preparing') },
+  { value: OrderStatus.READY,     label: i18n.t('orders.ready') },
+  { value: OrderStatus.DELIVERED, label: i18n.t('orders.delivered') },
+  { value: OrderStatus.CANCELLED, label: i18n.t('orders.canceled') },
 ];
 
 function orderCreatedMs(order: Order): number {
@@ -1075,6 +1079,7 @@ function orderInPeriod(order: Order, type: PeriodType, anchor: Date): boolean {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const Orders: PageComponent = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1160,7 +1165,7 @@ const Orders: PageComponent = () => {
     <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-2.5 text-center mb-0.5">
       <p className="font-display font-extrabold text-xl text-white tabular-nums">{visible.length}</p>
       <p className="text-[9px] text-white/70 font-semibold uppercase tracking-wide">
-        {periodType === 'all' && filterStatus === 'all' ? 'Total' : 'Affichées'}
+        {periodType === 'all' && filterStatus === 'all' ? t('orders.total') : t('orders.showing')}
       </p>
     </div>
   ) : undefined;
@@ -1168,15 +1173,15 @@ const Orders: PageComponent = () => {
   return (
     <>
       <BoardPageShell
-        eyebrow={isAdmin ? 'Gestion' : 'Suivi'}
-        titleBefore={isAdmin ? 'Les' : 'Mes'}
-        titleHighlight="Commandes"
-        sectionBefore={isAdmin ? 'Toutes les' : 'Mes'}
-        sectionHighlight="Commandes"
+        eyebrow={isAdmin ? t('orders.adminEyebrow') : t('orders.customerEyebrow')}
+        titleBefore={isAdmin ? t('orders.titleBeforeAdmin') : t('orders.titleBeforeCustomer')}
+        titleHighlight={t('orders.titleHighlight')}
+        sectionBefore={isAdmin ? t('orders.sectionBeforeAdmin') : t('orders.sectionBeforeCustomer')}
+        sectionHighlight={t('orders.sectionHighlight')}
         subtitle={
           isAdmin
-            ? 'Filtrez, suivez et gérez chaque commande en temps réel.'
-            : "Suivez l'état de vos commandes en temps réel."
+            ? t('orders.adminSubtitle')
+            : t('orders.customerSubtitle')
         }
         imageUrl={heroImageUrl}
         heroExtra={heroExtra}
@@ -1189,7 +1194,7 @@ const Orders: PageComponent = () => {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isAdmin ? 'Rechercher (cocktail, client, email, téléphone…)…' : 'Rechercher une commande…'}
+            placeholder={isAdmin ? t('orders.searchPlaceholder') : t('orders.searchOrder')}
             className="w-full h-12 pl-11 pr-4 rounded-2xl bg-card border border-border/60 text-foreground placeholder:text-muted-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
           />
         </div>
@@ -1197,7 +1202,7 @@ const Orders: PageComponent = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
               <CalendarDays className="size-3.5 text-muted-foreground" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Période</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.periodLabel')}</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
               {PERIOD_OPTIONS.map(({ value, label }) => (
@@ -1226,10 +1231,10 @@ const Orders: PageComponent = () => {
               >
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                    {periodType === 'day' ? 'Jour sélectionné'
-                      : periodType === 'week' ? 'Semaine sélectionnée'
-                      : periodType === 'month' ? 'Mois sélectionné'
-                      : 'Année sélectionnée'}
+                    {periodType === 'day' ? t('orders.daySelected')
+                      : periodType === 'week' ? t('orders.weekSelected')
+                      : periodType === 'month' ? t('orders.monthSelected')
+                      : t('orders.yearSelected')}
                   </p>
                   <p className="text-[13px] font-semibold text-foreground capitalize truncate">
                     {periodLabel}
@@ -1242,7 +1247,7 @@ const Orders: PageComponent = () => {
                 <>
                   <button
                     type="button"
-                    aria-label="Fermer le calendrier"
+                    aria-label={t('orders.closeCalendar')}
                     className="fixed inset-0 z-30 cursor-default"
                     onClick={() => setCalendarOpen(false)}
                   />
@@ -1262,7 +1267,7 @@ const Orders: PageComponent = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
               <Package className="size-3.5 text-muted-foreground" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Statut</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.statusLabel')}</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
               {STATUS_FILTERS.map(({ value, label }) => (
@@ -1329,8 +1334,8 @@ const Orders: PageComponent = () => {
             </div>
             <p className="text-sm font-semibold text-foreground">
               {filterStatus !== 'all' || periodType !== 'all'
-                ? 'Aucune commande pour ces filtres'
-                : 'Aucune commande pour le moment'}
+                ? t('orders.emptyFilter')
+                : t('orders.emptyAll')}
             </p>
             {(filterStatus !== 'all' || periodType !== 'all') && (
               <p className="text-xs text-muted-foreground max-w-[260px]">
@@ -1344,14 +1349,14 @@ const Orders: PageComponent = () => {
             {!isAdmin && filterStatus === 'all' && periodType === 'all' && (
               <>
                 <p className="text-xs text-muted-foreground max-w-[200px]">
-                  Explorez le catalogue et passez votre première commande.
+                  {t('orders.exploreText')}
                 </p>
                 <Button
                   className="rounded-full bg-secondary text-white font-bold hover:bg-secondary/90 px-8 mt-2 gap-2"
                   size="sm"
                   onClick={() => navigate('/board/catalogue')}
                 >
-                  <ShoppingBag className="size-4" /> Explorer le catalogue
+                  <ShoppingBag className="size-4" /> {t('orders.exploreButton')}
                 </Button>
               </>
             )}
@@ -1365,7 +1370,7 @@ const Orders: PageComponent = () => {
                   setPeriodType('all');
                 }}
               >
-                Réinitialiser les filtres
+                {t('orders.resetFilters')}
               </Button>
             )}
           </div>
@@ -1395,8 +1400,8 @@ const Orders: PageComponent = () => {
 };
 
 Orders.metadata = {
-  title: 'FYS — Commandes',
-  description: 'Suivi et gestion des commandes FYS.',
+  title: i18n.t('orders.pageTitle'),
+  description: i18n.t('orders.pageDescription'),
 };
 
 export default Orders;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, FlaskConical, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,16 +24,17 @@ import {
 import { getFruits } from '@/services/fruit';
 import { getCategories } from '@/services/category';
 import { CocktailCard } from '@/components/features/catalogue/CocktailCard';
-import { CatalogueOrderSheet } from '@/components/features/catalogue/CatalogueOrderSheet';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { AdminCatalogue } from '@/components/features/catalogue/AdminCatalogue';
 import { CocktailFormDrawer } from '@/components/features/catalogue/CocktailFormDrawer';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
+import i18n from '@/i18n';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 type CatalogueTab = 'official' | 'public' | 'mine';
 
 const Catalogue: PageComponent = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -159,7 +161,7 @@ const Catalogue: PageComponent = () => {
       await toggleCocktailPublic(cocktail.id, !cocktail.isPublic);
       invalidate();
     } catch (e) {
-      setPublishError(e instanceof Error ? e.message : 'Impossible de publier ce mélange.');
+      setPublishError(e instanceof Error ? e.message : t('catalogue.publishError'));
     }
   }
 
@@ -175,33 +177,48 @@ const Catalogue: PageComponent = () => {
     }
   }
 
+  // Filtrage par période
   // Filtrage cocktails pour chaque onglet
+  const sortByDate = (a: Cocktail, b: Cocktail) => {
+    const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds ?? 0;
+    const diff = bTime - aTime;
+    if (diff !== 0) return diff;
+    return (a.id ?? '').localeCompare(b.id ?? '');
+  };
+
   const visibleOfficial = useMemo(() => {
-    return officialCocktails.filter(
-      (c) => c.isActive && c.isPublic && c.name.toLowerCase().includes(query.toLowerCase())
-    );
+    return [...officialCocktails]
+      .filter((c) => c.isActive && c.isPublic && c.name.toLowerCase().includes(query.toLowerCase()))
+      .sort(sortByDate);
   }, [officialCocktails, query]);
 
   const communityPublic = useMemo(() => {
     if (isAdmin) return [];
     const mineIds = new Set(myCocktails.map((c) => c.id));
     const officialIds = new Set(officialCocktails.map((c) => c.id));
-    return publicCocktails.filter((c) => !mineIds.has(c.id) && !officialIds.has(c.id) && c.name.toLowerCase().includes(query.toLowerCase()));
+    return [...publicCocktails]
+      .filter((c) => !mineIds.has(c.id) && !officialIds.has(c.id) && c.name.toLowerCase().includes(query.toLowerCase()))
+      .sort(sortByDate);
   }, [isAdmin, publicCocktails, myCocktails, officialCocktails, query]);
 
   const visibleMine = useMemo(() => {
-    return myCocktails.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+    return [...myCocktails]
+      .filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
+      .sort(sortByDate);
   }, [myCocktails, query]);
 
   const isLoading = tab === 'official' ? publicLoading : tab === 'public' ? officialLoading : myLoading;
   const currentCocktails = tab === 'official' ? communityPublic : tab === 'public' ? visibleOfficial : visibleMine;
+
+  const sortedOfficial = useMemo(() => [...officialCocktails].sort(sortByDate), [officialCocktails]);
 
   // Rendu Admin
   if (isAdmin) {
     return (
       <>
         <AdminCatalogue
-          cocktails={officialCocktails}
+          cocktails={sortedOfficial}
           loading={officialLoading}
           onEdit={openEdit}
           onDelete={handleDeleteAdmin}
@@ -223,19 +240,19 @@ const Catalogue: PageComponent = () => {
 
   // Rendu Client avec 3 onglets
   const tabConfig = {
-    official: { label: 'Nos creations', subtitle: 'Les creations partagees par la communaute FYS.' },
-    public: { label: 'Public', subtitle: 'Inspires par la nature, valides par votre gout.' },
-    mine: { label: 'Mes cocktails', subtitle: 'Vos melanges personnalises sauvegardes.' },
+    official: { label: t('catalogue.customerEyebrow'), subtitle: t('catalogue.tab_official_subtitle') },
+    public: { label: t('catalogue.public'), subtitle: t('catalogue.customerSubtitle') },
+    mine: { label: t('catalogue.mine'), subtitle: t('catalogue.tab_mine_subtitle') },
   };
 
   return (
     <>
       <BoardPageShell
-        eyebrow="Decouvrez"
-        titleBefore="Le"
-        titleHighlight="Catalogue"
-        sectionBefore={tab === 'official' ? 'Nos' : tab === 'public' ? 'Creations' : 'Mes'}
-        sectionHighlight={tab === 'official' ? 'Creations' : tab === 'public' ? 'publiques' : 'Cocktails'}
+        eyebrow={t('catalogue.eyebrow_customer')}
+        titleBefore={t('catalogue.title_before')}
+        titleHighlight={t('catalogue.title')}
+        sectionBefore={tab === 'official' ? t('catalogue.section_before_official') : tab === 'public' ? t('catalogue.section_before_public') : t('catalogue.section_before_mine')}
+        sectionHighlight={tab === 'official' ? t('catalogue.section_highlight_official') : tab === 'public' ? t('catalogue.section_highlight_public') : t('catalogue.section_highlight_mine')}
         subtitle={tabConfig[tab].subtitle}
         imageUrl="https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=1200"
         actions={
@@ -247,7 +264,7 @@ const Catalogue: PageComponent = () => {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher un cocktail…"
+                placeholder={t('catalogue.search')}
                 className="w-full h-14 pl-12 pr-4 rounded-[2rem] bg-card border border-border/60 text-foreground placeholder:text-muted-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
               />
             </div>
@@ -260,7 +277,7 @@ const Catalogue: PageComponent = () => {
                 className="w-full rounded-[2rem] h-16 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
               >
                 <Plus className="size-5" />
-                Créer un nouveau cocktail
+                {t('catalogue.createCocktail')}
               </Button>
             )}
 
@@ -312,14 +329,14 @@ const Catalogue: PageComponent = () => {
               <div className="size-16 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
                 <FlaskConical className="size-7 text-primary/50 group-hover:text-primary transition-colors" />
               </div>
-              <p className="text-sm font-semibold text-foreground">Créer votre premier mélange</p>
+              <p className="text-sm font-semibold text-foreground">{t('catalogue.createFirst')}</p>
               <p className="text-xs text-muted-foreground max-w-[200px]">
-                Sélectionnez vos fruits préférés et composez votre recette unique dans le FYS Lab.
+                {t('catalogue.emptyDescription')}
               </p>
             </div>
           ) : (
             <p className="text-center text-sm text-muted-foreground py-12">
-              {query ? 'Aucun résultat pour cette recherche.' : 'Aucun cocktail disponible pour le moment.'}
+              {query ? t('catalogue.noSearchResults') : t('catalogue.noCocktails')}
             </p>
           )
         ) : (
@@ -340,40 +357,32 @@ const Catalogue: PageComponent = () => {
       </BoardPageShell>
 
       {orderTarget && user && (
-        (tab === 'mine' && orderTarget.createdBy === user.uid) ? (
-          <OrderSheet
-            cocktail={orderTarget}
-            open={!!orderTarget}
-            onOpenChange={closeCocktailSheet}
-            user={user}
-          />
-        ) : (
-          <CatalogueOrderSheet
-            cocktail={orderTarget}
-            open={!!orderTarget}
-            onOpenChange={closeCocktailSheet}
-          />
-        )
+        <OrderSheet
+          cocktail={orderTarget}
+          open={!!orderTarget}
+          onOpenChange={closeCocktailSheet}
+          user={user}
+        />
       )}
 
       <Dialog open={!!toDelete} onOpenChange={(open: boolean) => !open && setToDelete(null)}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Supprimer ce cocktail ?</DialogTitle>
+            <DialogTitle>{t('catalogue.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              <strong>{toDelete?.name}</strong> sera définitivement supprimé. Cette action est irréversible.
+              {t('catalogue.deleteDescription', { name: toDelete?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" disabled={deleting} onClick={() => setToDelete(null)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleDelete}
               disabled={deleting}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {deleting ? 'Suppression…' : 'Supprimer'}
+              {deleting ? t('common.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -383,8 +392,8 @@ const Catalogue: PageComponent = () => {
 };
 
 Catalogue.metadata = {
-  title: 'FYS — Catalogue',
-  description: 'Catalogue de cocktails FYS.',
+  title: `FYS — ${i18n.t('catalogue.title')}`,
+  description: i18n.t('catalogue.pageDescription'),
 };
 
 export default Catalogue;

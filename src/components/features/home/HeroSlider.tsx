@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { getHeroSlides } from '@/services/settings';
 import { DEFAULT_HERO_SLIDES, type HeroSlide } from '@/entities';
+import { localizedSlideText } from '@/utils/localize';
 
 const SWIPE_THRESHOLD = 50;
 
@@ -81,14 +82,14 @@ export function HeroSlider() {
 
       <div className="relative z-30 flex flex-col h-[420px] justify-center px-4 pointer-events-none">
         <p className="text-white/80 text-xs mb-2 font-bold uppercase tracking-[0.2em] drop-shadow-md">
-          {slide.label}
+          {localizedSlideText(slide, 'label')}
         </p>
         <h1 className="font-display font-extrabold text-5xl md:text-6xl text-white leading-[1.05] mb-2 drop-shadow-lg">
-          {slide.title}
+          {localizedSlideText(slide, 'title')}
         </h1>
         <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-[1.05] mb-6 drop-shadow-lg">
-          <span className="text-secondary italic">{slide.highlight}</span>{' '}
-          <span className="text-white">{slide.titleEnd}</span>
+          <span className="text-secondary italic">{localizedSlideText(slide, 'highlight')}</span>{' '}
+          <span className="text-white">{localizedSlideText(slide, 'titleEnd')}</span>
         </h1>
 
         <div className="pointer-events-auto">
@@ -97,7 +98,7 @@ export function HeroSlider() {
             size="lg"
             className="w-max rounded-full bg-white text-primary hover:bg-stone-50 hover:scale-105 active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.25)] font-bold px-8 h-12"
           >
-            <Link to={slide.ctaLink}>{slide.cta}</Link>
+            <Link to={slide.ctaLink}>{localizedSlideText(slide, 'cta')}</Link>
           </Button>
         </div>
 

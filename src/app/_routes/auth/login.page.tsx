@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PageComponent, useNavigate } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Label } from '@/components/ui/label';
 
 import { Separator } from '@/components/ui/separator';
 import { loginWithEmail, loginWithGoogle } from '@/services/auth';
+import i18n from '@/i18n';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
@@ -23,6 +25,7 @@ const Login: PageComponent = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
   const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleEmailLogin(e: React.FormEvent) {
@@ -35,9 +38,9 @@ const Login: PageComponent = () => {
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        setError('Email ou mot de passe incorrect.');
+        setError(t('auth.login.errors.invalidCredentials'));
       } else {
-        setError('Une erreur est survenue. Réessaie.');
+        setError(t('auth.login.errors.generic'));
       }
     } finally {
       setLoading(false);
@@ -51,7 +54,7 @@ const Login: PageComponent = () => {
       await loginWithGoogle();
       navigate('/board', { replace: true });
     } catch {
-      setError('Connexion Google annulée ou impossible.');
+      setError(t('auth.login.errors.googleCanceled'));
     } finally {
       setGoogleLoading(false);
     }
@@ -60,8 +63,8 @@ const Login: PageComponent = () => {
   return (
     <div className="w-full max-w-sm flex flex-col">
       <div className="text-center mb-10">
-        <h1 className="font-display text-4xl font-bold text-primary mb-2">Connexion</h1>
-        <p className="text-white/70">Retrouve tes jus et ton profil santé.</p>
+        <h1 className="font-display text-4xl font-bold text-primary mb-2">{t('auth.login.title')}</h1>
+        <p className="text-white/70">{t('auth.login.subtitle')}</p>
       </div>
 
       <div className="w-full space-y-6">
@@ -77,23 +80,23 @@ const Login: PageComponent = () => {
           ) : (
             <div className="mr-3"><GoogleIcon /></div>
           )}
-          Continuer avec Google
+          {t('auth.login.continueWithGoogle')}
         </Button>
 
         <div className="flex items-center gap-3 w-full max-w-[80%] mx-auto py-2">
           <Separator className="flex-1 bg-white/10" />
-          <span className="text-[11px] text-white/40 uppercase tracking-widest font-bold">ou</span>
+          <span className="text-[11px] text-white/40 uppercase tracking-widest font-bold">{t('auth.login.or')}</span>
           <Separator className="flex-1 bg-white/10" />
         </div>
 
         {/* Email / password form */}
         <form id="login-form" onSubmit={handleEmailLogin} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs font-semibold text-white/80 uppercase tracking-wider ml-1">Email</Label>
+            <Label htmlFor="email" className="text-xs font-semibold text-white/80 uppercase tracking-wider ml-1">{t('auth.login.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="exemple@fys.fr"
+              placeholder={t('auth.login.emailPlaceholder')}
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -102,11 +105,11 @@ const Login: PageComponent = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs font-semibold text-white/80 uppercase tracking-wider ml-1">Mot de passe</Label>
+            <Label htmlFor="password" className="text-xs font-semibold text-white/80 uppercase tracking-wider ml-1">{t('auth.login.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.login.passwordPlaceholder')}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -128,7 +131,7 @@ const Login: PageComponent = () => {
             disabled={loading || googleLoading}
           >
             {loading && <Loader2 className="size-5 animate-spin mr-3" />}
-            Se connecter
+            {t('auth.login.signIn')}
           </Button>
         </div>
       </div>
@@ -137,8 +140,8 @@ const Login: PageComponent = () => {
 };
 
 Login.metadata = {
-  title: 'FYS — Connexion',
-  description: 'Connecte-toi à ton espace FYS.',
+  title: i18n.t('auth.login.pageTitle'),
+  description: i18n.t('auth.login.pageDescription'),
 };
 
 export default Login;
