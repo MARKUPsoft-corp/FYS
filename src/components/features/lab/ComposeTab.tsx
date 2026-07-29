@@ -480,16 +480,21 @@ export function ComposeTab({
                       type="button"
                       disabled={isDisabled}
                       onClick={() => onToggleFruit(fruit.id)}
-                      className={`flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 ${isSelected
-                          ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
+                      className={`relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-colors duration-300 ${isSelected
+                          ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] animate-card-bounce'
                           : isDisabled
                             ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
                             : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
                         }`}
                     >
+                      {isSelected && (
+                        <span className="absolute inset-0 rounded-[1.25rem] overflow-hidden pointer-events-none">
+                          <span className="absolute inset-0 bg-gradient-to-br from-transparent via-white/25 to-transparent animate-wave-sweep" />
+                        </span>
+                      )}
                       {fruit.imageUrl ? (
                         <div
-                          className="w-full aspect-square rounded-xl bg-cover bg-center"
+                          className="w-full aspect-square rounded-xl bg-cover bg-center ring-1 ring-inset ring-black/5"
                           style={{ backgroundImage: `url('${fruit.imageUrl}')` }}
                         />
                       ) : (

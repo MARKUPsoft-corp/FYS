@@ -29,7 +29,6 @@ export function playFruitSelectSound() {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     
-    // Créer un "plonk" d'eau avec un sweep de fréquence descendant
     const plonk = ctx.createOscillator();
     const plonkGain = ctx.createGain();
     const plonkFilter = ctx.createBiquadFilter();
@@ -47,15 +46,13 @@ export function playFruitSelectSound() {
     plonkFilter.connect(plonkGain);
     plonkGain.connect(ctx.destination);
     
-    // Envelope avec volume augmenté
     plonkGain.gain.setValueAtTime(0, now);
-    plonkGain.gain.linearRampToValueAtTime(0.36, now + 0.01); // Volume augmenté (x7.2)
+    plonkGain.gain.linearRampToValueAtTime(0.75, now + 0.01);
     plonkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     
     plonk.start(now);
     plonk.stop(now + 0.3);
     
-    // Petites bulles d'éclaboussure (très subtiles)
     [0.05, 0.12].forEach((offset) => {
       const bubble = ctx.createOscillator();
       const bubbleGain = ctx.createGain();
@@ -69,7 +66,7 @@ export function playFruitSelectSound() {
       bubbleGain.connect(ctx.destination);
       
       bubbleGain.gain.setValueAtTime(0, now + offset);
-      bubbleGain.gain.linearRampToValueAtTime(0.16, now + offset + 0.01); // Volume augmenté (x8)
+      bubbleGain.gain.linearRampToValueAtTime(0.4, now + offset + 0.01);
       bubbleGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.08);
       
       bubble.start(now + offset);
@@ -84,39 +81,82 @@ export function playFruitSelectSound() {
 // ── 1b. Fruit Deselection Sound (Éclaboussure sortante) ──────────────────────
 
 /**
- * Son de déselection de fruit : Éclaboussure légère, eau qui sort
- * Durée : ~200ms
- * Effet : Inverse du plonk, plus court et ascendant
+ * Son de déselection de fruit : Bulle qui remonte et éclate à la surface
+ * Durée : ~350ms
+ * Effet : Bouillonnement ascendant + pop + micro-éclaboussure
  */
 export function playFruitDeselectSound() {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     
-    // Sweep ascendant (inverse du plonk)
-    const splash = ctx.createOscillator();
-    const splashGain = ctx.createGain();
-    const splashFilter = ctx.createBiquadFilter();
+    const bubble = ctx.createOscillator();
+    const bubbleGain = ctx.createGain();
+    const bubbleFilter = ctx.createBiquadFilter();
     
-    splash.type = 'sine';
-    splash.frequency.setValueAtTime(150, now);
-    splash.frequency.exponentialRampToValueAtTime(350, now + 0.18);
+    bubble.type = 'sine';
+    bubble.frequency.setValueAtTime(200, now);
+    bubble.frequency.exponentialRampToValueAtTime(600, now + 0.2);
     
-    splashFilter.type = 'highpass';
-    splashFilter.frequency.setValueAtTime(200, now);
-    splashFilter.frequency.exponentialRampToValueAtTime(600, now + 0.18);
-    splashFilter.Q.value = 2;
+    bubbleFilter.type = 'lowpass';
+    bubbleFilter.frequency.setValueAtTime(400, now);
+    bubbleFilter.frequency.exponentialRampToValueAtTime(900, now + 0.2);
+    bubbleFilter.Q.value = 2;
     
-    splash.connect(splashFilter);
-    splashFilter.connect(splashGain);
-    splashGain.connect(ctx.destination);
+    bubble.connect(bubbleFilter);
+    bubbleFilter.connect(bubbleGain);
+    bubbleGain.connect(ctx.destination);
     
-    splashGain.gain.setValueAtTime(0, now);
-    splashGain.gain.linearRampToValueAtTime(0.24, now + 0.01); // Volume augmenté (x8)
-    splashGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    bubbleGain.gain.setValueAtTime(0, now);
+    bubbleGain.gain.linearRampToValueAtTime(0.55, now + 0.05);
+    bubbleGain.gain.exponentialRampToValueAtTime(0.25, now + 0.18);
+    bubbleGain.gain.setValueAtTime(0.25, now + 0.19);
+    bubbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     
-    splash.start(now);
-    splash.stop(now + 0.18);
+    bubble.start(now);
+    bubble.stop(now + 0.22);
+    
+    const pop = ctx.createOscillator();
+    const popGain = ctx.createGain();
+    const popFilter = ctx.createBiquadFilter();
+    
+    pop.type = 'sine';
+    pop.frequency.setValueAtTime(800, now + 0.19);
+    pop.frequency.exponentialRampToValueAtTime(1200, now + 0.24);
+    
+    popFilter.type = 'peaking';
+    popFilter.frequency.setValueAtTime(800, now + 0.19);
+    popFilter.Q.value = 15;
+    popFilter.gain.setValueAtTime(10, now + 0.19);
+    popFilter.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    
+    pop.connect(popFilter);
+    popFilter.connect(popGain);
+    popGain.connect(ctx.destination);
+    
+    popGain.gain.setValueAtTime(0, now + 0.19);
+    popGain.gain.linearRampToValueAtTime(0.5, now + 0.2);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    
+    pop.start(now + 0.19);
+    pop.stop(now + 0.28);
+    
+    const drip = ctx.createOscillator();
+    const dripGain = ctx.createGain();
+    
+    drip.type = 'sine';
+    drip.frequency.setValueAtTime(300, now + 0.26);
+    drip.frequency.exponentialRampToValueAtTime(150, now + 0.34);
+    
+    drip.connect(dripGain);
+    dripGain.connect(ctx.destination);
+    
+    dripGain.gain.setValueAtTime(0, now + 0.26);
+    dripGain.gain.linearRampToValueAtTime(0.25, now + 0.28);
+    dripGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    
+    drip.start(now + 0.26);
+    drip.stop(now + 0.35);
     
   } catch (err) {
     console.warn('[FYS Lab Sounds] playFruitDeselectSound failed:', err);
@@ -135,12 +175,10 @@ export function playAnalysisStartSound() {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     
-    // Effet de versement (noise filtré qui descend)
     const bufferSize = ctx.sampleRate;
     const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
     
-    // Pink noise (plus doux que white noise)
     let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
@@ -170,7 +208,7 @@ export function playAnalysisStartSound() {
     pourGain.connect(ctx.destination);
     
     pourGain.gain.setValueAtTime(0, now);
-    pourGain.gain.linearRampToValueAtTime(0.32, now + 0.1); // Volume augmenté (x8)
+    pourGain.gain.linearRampToValueAtTime(0.7, now + 0.1);
     pourGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
     
     pour.start(now);
@@ -186,7 +224,7 @@ export function playAnalysisStartSound() {
 let ambientLoopInterval: number | null = null;
 let ambientSources: AudioBufferSourceNode[] = [];
 let ambientGains: GainNode[] = [];
-let ambientPausedVolume: number | null = null; // Volume avant pause
+let ambientPausedVolume: number | null = null;
 
 /**
  * Son d'arrière-plan pendant l'analyse : Eau qui coule et se mélange continuellement
@@ -195,34 +233,30 @@ let ambientPausedVolume: number | null = null; // Volume avant pause
  */
 export function playAnalysisAmbient() {
   try {
-    // Clear any existing loop
     if (ambientLoopInterval) stopAnalysisAmbient();
     
     const ctx = getAudioContext();
     const startTime = ctx.currentTime;
     
-    // ── Continuous water flow (brown noise + modulation) ──
-    const bufferSize = 2 * ctx.sampleRate; // 2 seconds loop
+    const bufferSize = 2 * ctx.sampleRate;
     const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
     
-    // Brown noise (eau profonde) avec variation organique
     let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
       output[i] = (lastOut + (0.025 * white)) / 1.025;
       lastOut = output[i];
-      // Ajouter variation pour simuler turbulence de l'eau
       output[i] *= (2.5 + Math.sin(i / 500) * 0.5);
     }
     
     const flow = ctx.createBufferSource();
     flow.buffer = noiseBuffer;
-    flow.loop = true; // Loop continu
+    flow.loop = true;
     
     const flowFilter = ctx.createBiquadFilter();
     flowFilter.type = 'bandpass';
-    flowFilter.frequency.value = 400; // Fréquence médiane pour eau qui coule
+    flowFilter.frequency.value = 400;
     flowFilter.Q.value = 2;
     
     const flowGain = ctx.createGain();
@@ -230,20 +264,18 @@ export function playAnalysisAmbient() {
     flowFilter.connect(flowGain);
     flowGain.connect(ctx.destination);
     
-    // Volume constant mais audible
     flowGain.gain.setValueAtTime(0, startTime);
-    flowGain.gain.linearRampToValueAtTime(0.28, startTime + 0.5); // Volume augmenté (x7)
+    flowGain.gain.linearRampToValueAtTime(0.6, startTime + 0.5);
     
     flow.start(startTime);
     ambientSources.push(flow);
     ambientGains.push(flowGain);
     
-    // ── Modulation de filtre (mouvement de l'eau) ──
     function modulateFlow() {
       if (ambientGains.length === 0) return;
       
       const now = ctx.currentTime;
-      const targetFreq = 350 + Math.random() * 150; // Varie la tonalité
+      const targetFreq = 350 + Math.random() * 150;
       const duration = 1.5 + Math.random() * 1;
       
       flowFilter.frequency.cancelScheduledValues(now);
@@ -255,7 +287,6 @@ export function playAnalysisAmbient() {
     
     modulateFlow();
     
-    // ── Bulles d'éclaboussure occasionnelles ──
     function spawnSplash() {
       if (ambientGains.length === 0) return;
       
@@ -277,13 +308,12 @@ export function playAnalysisAmbient() {
       splashGain.connect(ctx.destination);
       
       splashGain.gain.setValueAtTime(0, ctx.currentTime);
-      splashGain.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 0.1); // Volume augmenté (x8)
+      splashGain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.1);
       splashGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       
       splash.start(ctx.currentTime);
       splash.stop(ctx.currentTime + 0.8);
       
-      // Prochaine éclaboussure
       const nextDelay = 1500 + Math.random() * 2500;
       setTimeout(spawnSplash, nextDelay);
     }
@@ -304,16 +334,13 @@ export function stopAnalysisAmbient() {
     ambientLoopInterval = null;
   }
   
-  // Stop all sources
   ambientSources.forEach((source) => {
     try {
       source.stop();
     } catch (e) {
-      // Already stopped
     }
   });
   
-  // Fade out gains
   ambientGains.forEach((gain) => {
     try {
       const ctx = getAudioContext();
@@ -321,7 +348,6 @@ export function stopAnalysisAmbient() {
       gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
     } catch (e) {
-      // Context might be unavailable
     }
   });
   
@@ -330,9 +356,6 @@ export function stopAnalysisAmbient() {
   ambientPausedVolume = null;
 }
 
-/**
- * Met en pause le son d'ambiance (quand l'utilisateur change d'onglet)
- */
 function pauseAnalysisAmbient() {
   if (ambientGains.length === 0 || ambientPausedVolume !== null) return;
   
@@ -341,18 +364,13 @@ function pauseAnalysisAmbient() {
     const currentGain = ambientGains[0];
     ambientPausedVolume = currentGain.gain.value;
     
-    // Fade out rapide
     currentGain.gain.cancelScheduledValues(ctx.currentTime);
     currentGain.gain.setValueAtTime(currentGain.gain.value, ctx.currentTime);
     currentGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
   } catch (e) {
-    console.warn('[FYS Lab Sounds] pauseAnalysisAmbient failed:', e);
   }
 }
 
-/**
- * Reprend le son d'ambiance (quand l'utilisateur revient sur l'onglet)
- */
 function resumeAnalysisAmbient() {
   if (ambientGains.length === 0 || ambientPausedVolume === null) return;
   
@@ -362,12 +380,10 @@ function resumeAnalysisAmbient() {
     const targetVolume = ambientPausedVolume;
     ambientPausedVolume = null;
     
-    // Fade in doux
     currentGain.gain.cancelScheduledValues(ctx.currentTime);
     currentGain.gain.setValueAtTime(0.001, ctx.currentTime);
     currentGain.gain.linearRampToValueAtTime(targetVolume, ctx.currentTime + 0.5);
   } catch (e) {
-    console.warn('[FYS Lab Sounds] resumeAnalysisAmbient failed:', e);
   }
 }
 
@@ -383,10 +399,8 @@ export function playAnalysisCompleteSound() {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     
-    // Stop ambient loop
     stopAnalysisAmbient();
     
-    // Son de stabilisation (sweep doux descendant)
     const settle = ctx.createOscillator();
     const settleGain = ctx.createGain();
     const settleFilter = ctx.createBiquadFilter();
@@ -405,13 +419,12 @@ export function playAnalysisCompleteSound() {
     settleGain.connect(ctx.destination);
     
     settleGain.gain.setValueAtTime(0, now);
-    settleGain.gain.linearRampToValueAtTime(0.28, now + 0.1); // Volume augmenté (x7)
+    settleGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
     settleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
     
     settle.start(now);
     settle.stop(now + 0.8);
     
-    // Dernière bulle qui remonte (très subtile)
     const finalBubble = ctx.createOscillator();
     const finalBubbleGain = ctx.createGain();
     
@@ -423,7 +436,7 @@ export function playAnalysisCompleteSound() {
     finalBubbleGain.connect(ctx.destination);
     
     finalBubbleGain.gain.setValueAtTime(0, now + 0.2);
-    finalBubbleGain.gain.linearRampToValueAtTime(0.16, now + 0.3); // Volume augmenté (x8)
+    finalBubbleGain.gain.linearRampToValueAtTime(0.4, now + 0.3);
     finalBubbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
     
     finalBubble.start(now + 0.2);
@@ -436,15 +449,12 @@ export function playAnalysisCompleteSound() {
 
 // ── Preference Check ──────────────────────────────────────────────────────────
 
-/**
- * Vérifie si les sons sont activés (respecte les préférences utilisateur)
- */
 export function areSoundsEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   
   try {
     const prefs = localStorage.getItem('fys-audio-preference');
-    if (!prefs) return true; // Enabled by default
+    if (!prefs) return true;
     const parsed = JSON.parse(prefs);
     return parsed.enabled !== false;
   } catch {
@@ -452,21 +462,19 @@ export function areSoundsEnabled(): boolean {
   }
 }
 
-// ── Visibility Change Handler (Pause/Resume on tab switch) ───────────────────
+// ── Visibility Change Handler ────────────────────────────────────────────────
 
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      // L'utilisateur a quitté l'onglet → pause
       pauseAnalysisAmbient();
     } else {
-      // L'utilisateur est revenu → reprendre
       resumeAnalysisAmbient();
     }
   });
 }
 
-// ── Main Exports with Preference Check ───────────────────────────────────────
+// ── Main Exports ─────────────────────────────────────────────────────────────
 
 export const labSounds = {
   fruitSelect: () => areSoundsEnabled() && playFruitSelectSound(),

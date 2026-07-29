@@ -30,8 +30,8 @@ function ItemTile({
 }) {
   const selectedCls =
     accent === 'primary'
-      ? 'bg-primary/10 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] scale-[0.97]'
-      : 'bg-secondary/10 border-secondary shadow-[0_4px_12px_rgba(242,105,74,0.15)] scale-[0.97]';
+      ? 'bg-primary/10 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] animate-card-bounce'
+      : 'bg-secondary/10 border-secondary shadow-[0_4px_12px_rgba(242,105,74,0.15)] animate-card-bounce';
   const textCls =
     accent === 'primary' ? 'text-primary' : 'text-secondary';
 
@@ -41,7 +41,7 @@ function ItemTile({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-all duration-200 border-2',
+        'relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-colors duration-300 border-2',
         selected
           ? selectedCls
           : disabled
@@ -49,6 +49,11 @@ function ItemTile({
           : 'bg-card border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5 opacity-80',
       )}
     >
+      {selected && (
+        <span className="absolute inset-0 rounded-[1.25rem] overflow-hidden pointer-events-none">
+          <span className="absolute inset-0 bg-gradient-to-br from-transparent via-white/25 to-transparent animate-wave-sweep" />
+        </span>
+      )}
       {badge && (
         <span className="absolute -top-1.5 -right-1.5 z-10 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#E0982E] text-white shadow-sm">
           {badge}
@@ -56,7 +61,7 @@ function ItemTile({
       )}
       {item.imageUrl ? (
         <div
-          className="w-full aspect-square rounded-xl bg-cover bg-center"
+          className="w-full aspect-square rounded-xl bg-cover bg-center ring-1 ring-inset ring-black/5"
           style={{ backgroundImage: `url('${item.imageUrl}')` }}
         />
       ) : (
@@ -90,8 +95,6 @@ export function SupplementsTab({
   const others = supplements.filter((s) => !recommendedIds.has(s.id));
   const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId);
   const atMaxSupplements = selectedSupplementIds.length >= MAX_LAB_SUPPLEMENTS;
-
-  const fruitNames = selectedFruits.map((f) => f.name).join(' + ');
 
   function renderTile(s: Fruit, accent: 'primary' | 'secondary', badge?: string) {
     const selected = selectedSupplementIds.includes(s.id);
