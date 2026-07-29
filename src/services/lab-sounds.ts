@@ -208,7 +208,7 @@ export function playAnalysisStartSound() {
     pourGain.connect(ctx.destination);
     
     pourGain.gain.setValueAtTime(0, now);
-    pourGain.gain.linearRampToValueAtTime(0.7, now + 0.1);
+    pourGain.gain.linearRampToValueAtTime(1.0, now + 0.1);
     pourGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
     
     pour.start(now);
@@ -265,7 +265,7 @@ export function playAnalysisAmbient() {
     flowGain.connect(ctx.destination);
     
     flowGain.gain.setValueAtTime(0, startTime);
-    flowGain.gain.linearRampToValueAtTime(0.6, startTime + 0.5);
+    flowGain.gain.linearRampToValueAtTime(0.8, startTime + 0.5);
     
     flow.start(startTime);
     ambientSources.push(flow);
@@ -419,7 +419,7 @@ export function playAnalysisCompleteSound() {
     settleGain.connect(ctx.destination);
     
     settleGain.gain.setValueAtTime(0, now);
-    settleGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
+    settleGain.gain.linearRampToValueAtTime(0.8, now + 0.1);
     settleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
     
     settle.start(now);
@@ -477,8 +477,8 @@ if (typeof document !== 'undefined') {
 // ── Main Exports ─────────────────────────────────────────────────────────────
 
 export const labSounds = {
-  fruitSelect: () => areSoundsEnabled() && playFruitSelectSound(),
-  fruitDeselect: () => areSoundsEnabled() && playFruitDeselectSound(),
+  fruitSelect: () => areSoundsEnabled() && playFruitDeselectSound(),
+  fruitDeselect: () => areSoundsEnabled() && playFruitSelectSound(),
   analysisStart: () => areSoundsEnabled() && playAnalysisStartSound(),
   analysisAmbient: () => areSoundsEnabled() && playAnalysisAmbient(),
   analysisComplete: () => areSoundsEnabled() && playAnalysisCompleteSound(),
