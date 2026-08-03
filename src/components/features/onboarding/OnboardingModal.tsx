@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ChevronRight, X, Check, Plus } from 'lucide-react';
+import { ChevronRight, X, Check, Plus, Activity, Leaf, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
 // ── Chip selector ─────────────────────────────────────────────────────────────
 
@@ -150,7 +151,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
   const STEPS = [
     {
       key: 'conditions',
-      emoji: '🩺',
+      Icon: Activity,
       title: t('onboarding.conditionsTitle'),
       subtitle: t('onboarding.conditionsSubtitle'),
       none: t('onboarding.conditionsNone'),
@@ -162,7 +163,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
     },
     {
       key: 'allergies',
-      emoji: '🌿',
+      Icon: Leaf,
       title: t('onboarding.allergiesTitle'),
       subtitle: t('onboarding.allergiesSubtitle'),
       none: t('profile.noAllergies'),
@@ -173,7 +174,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
     },
     {
       key: 'goals',
-      emoji: '🎯',
+      Icon: Target,
       title: t('onboarding.goalsTitle'),
       subtitle: t('onboarding.goalsSubtitle'),
       none: t('onboarding.goalsNone'),
@@ -242,9 +243,17 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
           }}
         >
           {/* Header */}
-          <div className="text-center space-y-2 mb-8">
-            <div className="text-6xl mb-4">{current.emoji}</div>
-            <h2 className="font-display font-bold text-3xl text-foreground">
+          <div className="text-center space-y-3">
+            <div className="mx-auto size-14 rounded-[1.25rem] bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <current.Icon
+                className={cn(
+                  'size-7',
+                  current.key === 'allergies' ? 'text-green-600' :
+                  current.key === 'goals' ? 'text-secondary' : 'text-primary',
+                )}
+              />
+            </div>
+            <h2 className="font-display font-bold text-2xl text-foreground">
               {current.title}
             </h2>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">

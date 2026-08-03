@@ -1,7 +1,9 @@
 import { Link } from 'rasengan';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getHeroSlides } from '@/services/settings';
 import { DEFAULT_HERO_SLIDES, type HeroSlide } from '@/entities';
 import { localizedSlideText } from '@/utils/localize';
@@ -9,6 +11,7 @@ import { localizedSlideText } from '@/utils/localize';
 const SWIPE_THRESHOLD = 50;
 
 export function HeroSlider() {
+  const { t } = useTranslation();
   const { data: slides = DEFAULT_HERO_SLIDES } = useQuery({
     queryKey: ['hero-slides'],
     queryFn: getHeroSlides,
@@ -36,11 +39,8 @@ export function HeroSlider() {
   );
 
   useEffect(() => {
-    if (count <= 1) return;
-    const t = setInterval(() => {
-      if (!pauseAutoplay.current) go(1);
-    }, 5000);
-    return () => clearInterval(t);
+    // Apple-style : pas de défilement autoplay (plus clair pour les utilisateurs
+    // peu à l'aise). Les utilisateurs peuvent encore swiper / choisir un point.
   }, [count, go]);
 
   function onTouchStart(e: React.TouchEvent) {
@@ -102,7 +102,17 @@ export function HeroSlider() {
           </Button>
         </div>
 
-        <div className="flex gap-2 mt-8 pointer-events-auto">
+        {/* Navigation — flèches + points sous le bouton, à l'intérieur de la hero */}
+        <div className="flex items-center justify-center gap-2 mt-8 pointer-events-auto">
+          <button
+            type="button"
+            aria-label={t('common.previous')}
+            onClick={() => go(-1)}
+            className="h-9 w-9 rounded-full bg-background/25 hover:bg-background/40 border border-white/30 text-foreground backdrop-blur flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+
           {slides.map((s, i) => (
             <button
               key={s.id}
@@ -120,6 +130,15 @@ export function HeroSlider() {
               }`}
             />
           ))}
+
+          <button
+            type="button"
+            aria-label={t('common.next')}
+            onClick={() => go(1)}
+            className="h-9 w-9 rounded-full bg-background/25 hover:bg-background/40 border border-white/30 text-foreground backdrop-blur flex items-center justify-center transition-colors"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
       </div>
 

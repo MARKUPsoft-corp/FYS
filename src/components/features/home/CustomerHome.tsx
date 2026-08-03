@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'rasengan';
-import { Plus, Sparkles, Beaker } from 'lucide-react';
+import { Plus, Sparkles, Beaker, MessageCircle, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -27,7 +27,7 @@ export function CustomerHome(_props: Props) {
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { user } = useAuthStore();
-  const { profile, save: saveProfile } = useProfileStore();
+  const { profile, loading: profileLoading, save: saveProfile } = useProfileStore();
   const profileComplete = isProfileComplete(profile);
 
   const { data: storeFruits = [] } = useQuery({
@@ -56,8 +56,9 @@ export function CustomerHome(_props: Props) {
       {/* Content wrapper for things below hero */}
       <div className="px-3 md:px-4 space-y-12 mt-6 lg:mt-8 relative z-10">
 
-        {/* Profile completion banner — uniquement pour les utilisateurs connectés */}
-        {!profileComplete && user && (
+        {/* Profile completion banner — uniquement pour les utilisateurs connectés,
+            une fois le profil chargé (évite le clignotement au chargement) */}
+        {!profileLoading && !profileComplete && user && (
           <ProfileCompletionCard onStart={() => setShowOnboarding(true)} />
         )}
 
@@ -213,6 +214,47 @@ export function CustomerHome(_props: Props) {
           </div>
         </section>
 
+        {/* ASSISTANT SANTÉ — parler au chatbot (section autonome) */}
+        <section>
+          <div className="text-center mb-6">
+            <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
+              <span className="text-foreground">{t('home.customer.assistantHeadingPre')}</span>
+              <span className="text-primary">{t('home.customer.assistantHeadingHighlight')}</span>
+            </h3>
+            <p className="text-muted-foreground mt-3 font-medium max-w-md mx-auto">
+              {t('home.customer.assistantSectionSubtitle')}
+            </p>
+          </div>
+
+          <Link
+            to="/lab?tab=nutrifys"
+            className="block bg-card rounded-[2.5rem] border border-border/40 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow group"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className="size-14 shrink-0 rounded-[1.5rem] bg-secondary/10 border border-secondary/20 flex items-center justify-center mx-auto sm:mx-0">
+                <MessageCircle className="size-7 text-secondary" strokeWidth={2.2} />
+              </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <h4 className="font-display font-bold text-xl md:text-2xl text-foreground leading-tight">
+                  {t('home.customer.assistantTitle')}
+                </h4>
+                <p className="text-muted-foreground mt-1.5 text-sm md:text-base font-medium leading-relaxed">
+                  {t('home.customer.assistantDesc')}
+                </p>
+              </div>
+              <div className="shrink-0 flex justify-center sm:justify-end">
+                <Button
+                  size="lg"
+                  className="rounded-full bg-secondary hover:bg-secondary/85 text-white font-bold px-6 h-12 text-sm gap-1.5 shadow-[0_4px_16px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+                >
+                  {t('home.customer.assistantCta')}
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </Link>
+        </section>
+
         {/* INGREDIENTS PHARES (Fruits de saison) */}
         <section className="pb-10">
           <div className="mb-8 block text-center">
@@ -252,8 +294,8 @@ export function CustomerHome(_props: Props) {
 
       </div>
 
-      {/* Floating profile button — only when profile incomplete (connecté) */}
-      {!profileComplete && user && (
+      {/* Floating profile button — only when profile incomplete and loaded (connecté) */}
+      {!profileLoading && !profileComplete && user && (
         <ProfileFloatingButton onClick={() => setShowOnboarding(true)} />
       )}
 

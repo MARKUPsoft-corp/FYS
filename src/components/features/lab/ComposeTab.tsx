@@ -4,7 +4,7 @@ import {
   Plus, FlaskConical, Sparkles, Save, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
   Lightbulb, Link2, ClipboardList, ShoppingBag,
-  Check, ChevronRight, ChevronLeft,
+  Check, ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -537,12 +537,12 @@ export function ComposeTab({
                         </span>
                       )}
                       {isUnavailable && (
-                        <span className="absolute top-1.5 right-1.5 z-10 text-[8px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
+                        <span className="absolute top-1.5 right-1.5 z-10 text-[9px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
                           {t('lab.unavailable')}
                         </span>
                       )}
                       {isIncompatible && !isUnavailable && (
-                        <span className="absolute top-1.5 right-1.5 z-10 text-[8px] font-bold uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/30 px-1.5 py-0.5 rounded-full">
+                        <span className="absolute top-1.5 right-1.5 z-10 text-[9px] font-bold uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/30 px-1.5 py-0.5 rounded-full">
                           {t('lab.incompatibleBadge')}
                         </span>
                       )}
@@ -556,7 +556,7 @@ export function ComposeTab({
                           🍓
                         </div>
                       )}
-                      <span className={`text-[10px] font-semibold text-center line-clamp-1 w-full ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                      <span className={`text-[11px] sm:text-[12px] font-semibold text-center line-clamp-1 w-full ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
                         {fruit.name}
                       </span>
                     </button>
@@ -569,12 +569,15 @@ export function ComposeTab({
             <div className="mt-6 hidden lg:flex justify-end">
               <Button
                 size="lg"
-                className="h-12 rounded-2xl px-6 font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)]"
-                disabled={!canGoStep2}
-                onClick={() => onStepChange(2)}
+                className="h-12 rounded-2xl px-6 font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+                disabled={(!canAnalyze || analyzing) ? true : undefined}
+                onClick={onAnalyze}
               >
-                {t('lab.nextSupplements')}
-                <ChevronRight className="size-4" />
+                {analyzing ? (
+                  <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzingShort')}</>
+                ) : (
+                  <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
+                )}
               </Button>
             </div>
           </>
@@ -619,25 +622,23 @@ export function ComposeTab({
 
       {/* ── Desktop save panel ── */}
       <div  className="hidden lg:block w-[360px] shrink-0">
-        <SavePanel
-          composeStep={composeStep}
-          onStepChange={onStepChange}
-          selectedFruits={selectedFruits}
-          selectedSupplements={selectedSupplementItems}
-          selectedMainCount={selectedFruits.length}
-          selectedSupplementCount={selectedSupplementItems.length}
-          cocktailName={cocktailName}
-          onNameChange={onNameChange}
-          onSave={onSave}
-          saving={saving}
-          canSave={canSave}
-          analysis={analysis}
-          onAnalyze={onAnalyze}
-          analyzing={analyzing}
-          canAnalyze={canAnalyze}
-          canGoStep2={canGoStep2}
-          onOrderRequest={onOrderRequest}
-        />
+          <SavePanel
+            composeStep={composeStep}
+            selectedFruits={selectedFruits}
+            selectedSupplements={selectedSupplementItems}
+            selectedMainCount={selectedFruits.length}
+            selectedSupplementCount={selectedSupplementItems.length}
+            cocktailName={cocktailName}
+            onNameChange={onNameChange}
+            onSave={onSave}
+            saving={saving}
+            canSave={canSave}
+            analysis={analysis}
+            onAnalyze={onAnalyze}
+            analyzing={analyzing}
+            canAnalyze={canAnalyze}
+            onOrderRequest={onOrderRequest}
+          />
       </div>
     </div>
   );
@@ -647,7 +648,6 @@ export function ComposeTab({
 
 type SavePanelProps = {
   composeStep: ComposeStep;
-  onStepChange: (step: ComposeStep) => void;
   selectedFruits: Fruit[];
   selectedSupplements: Fruit[];
   selectedMainCount: number;
@@ -661,13 +661,11 @@ type SavePanelProps = {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   canAnalyze: boolean;
-  canGoStep2: boolean;
   onOrderRequest: () => void;
 };
 
 export function SavePanel({
   composeStep,
-  onStepChange,
   selectedFruits,
   selectedSupplements,
   selectedMainCount,
@@ -681,7 +679,6 @@ export function SavePanel({
   onAnalyze,
   analyzing,
   canAnalyze,
-  canGoStep2,
   onOrderRequest,
 }: SavePanelProps) {
   const { t } = useTranslation();
@@ -753,34 +750,18 @@ export function SavePanel({
         <div className="border-t border-border/40 mx-6" />
 
         <div className="px-6 py-4 space-y-3">
-          {composeStep === 1 ? (
+          {!analysis ? (
             <Button
-              className="w-full h-11 rounded-2xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)]"
-              disabled={!canGoStep2}
-              onClick={() => onStepChange(2)}
+              className="w-full h-12 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+              disabled={(!canAnalyze || analyzing) ? true : undefined}
+              onClick={onAnalyze}
             >
-              {t('lab.nextSupplements')}
-              <ChevronRight className="size-4" />
-            </Button>
-          ) : !analysis ? (
-            <>
-              {canAnalyze && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  {t('lab.launchAnalysis')}
-                </p>
+              {analyzing ? (
+                <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzing')}</>
+              ) : (
+                <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
               )}
-              <Button
-                className="w-full h-11 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
-                disabled={(!canAnalyze || analyzing) ? true : undefined}
-                onClick={onAnalyze}
-              >
-                {analyzing ? (
-                  <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzing')}</>
-                ) : (
-                  <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
-                )}
-              </Button>
-            </>
+            </Button>
           ) : (
             <>
               <div className={`rounded-xl border px-4 py-3 flex items-center justify-between ${cfg!.bg} ${cfg!.border}`}>

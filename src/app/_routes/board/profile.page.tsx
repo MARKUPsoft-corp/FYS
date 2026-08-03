@@ -6,6 +6,7 @@ import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
   AlertCircle, Loader2, Music, Volume2, VolumeX, Sun,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,6 +143,7 @@ function EditProfileSheet({
   const { t } = useTranslation();
   const { profile, save } = useProfileStore();
   const [saving, setSaving] = useState(false);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
 
   const [conditions, setConditions] = useState<string[]>([]);
   const [allergies, setAllergies] = useState<string[]>([]);
@@ -154,6 +156,7 @@ function EditProfileSheet({
   // Sync state from store when sheet opens
   useEffect(() => {
     if (!open) return;
+    setFormStep(1);
     setConditions(profile?.healthConditions ?? []);
     setAllergies(profile?.allergies ?? []);
     setGoals(profile?.goals ?? []);
@@ -238,104 +241,158 @@ function EditProfileSheet({
           <p className="text-[13px] text-muted-foreground">
             {t('profile.healthEditDesc')}
           </p>
+          <div className="flex gap-1.5 mt-3">
+            {[1, 2, 3].map((n) => (
+              <div
+                key={n}
+                className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                  n <= formStep ? 'bg-primary' : 'bg-border'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-[11px] font-bold text-primary uppercase tracking-widest mt-2">
+            {t('profile.stepProgress', { step: formStep, total: 3 })}
+          </p>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
 
-          {/* Conditions de santé */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                {t('profile.healthConditions')}
-              </p>
-              <p className="text-[12px] text-muted-foreground">
-                {t('profile.healthConditionsSelect')}
-              </p>
+          {/* Question 1 — Allergies */}
+          {formStep === 1 && (
+            <div className="space-y-3">
+              <div className="text-center space-y-1.5">
+                <p className="font-display font-bold text-lg text-foreground">
+                  {t('profile.editStepAllergies')}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {t('profile.editStepAllergiesDesc')}
+                </p>
+              </div>
+              <ChipGroup
+                options={ALLERGIES}
+                selected={allAllergiesSelected}
+                onToggle={toggleAllergy}
+                exclusiveFirst
+              />
+              <TagInput
+                values={customAllergies}
+                onChange={setCustomAllergies}
+                placeholder={t('profile.otherAllergy')}
+              />
             </div>
-            <ChipGroup
-              options={HEALTH_CONDITIONS}
-              selected={allConditionsSelected}
-              onToggle={toggleCondition}
-              exclusiveFirst
-            />
-            <TagInput
-              values={customConditions}
-              onChange={setCustomConditions}
-              placeholder={t('profile.otherCondition')}
-            />
-          </div>
+          )}
 
-          {/* Allergies */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                {t('profile.allergies')}
-              </p>
-              <p className="text-[12px] text-muted-foreground">
-                {t('profile.allergiesDesc')}
-              </p>
+          {/* Question 2 — Conditions de santé */}
+          {formStep === 2 && (
+            <div className="space-y-3">
+              <div className="text-center space-y-1.5">
+                <p className="font-display font-bold text-lg text-foreground">
+                  {t('profile.editStepConditions')}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {t('profile.editStepConditionsDesc')}
+                </p>
+              </div>
+              <ChipGroup
+                options={HEALTH_CONDITIONS}
+                selected={allConditionsSelected}
+                onToggle={toggleCondition}
+                exclusiveFirst
+              />
+              <TagInput
+                values={customConditions}
+                onChange={setCustomConditions}
+                placeholder={t('profile.otherCondition')}
+              />
             </div>
-            <ChipGroup
-              options={ALLERGIES}
-              selected={allAllergiesSelected}
-              onToggle={toggleAllergy}
-              exclusiveFirst
-            />
-            <TagInput
-              values={customAllergies}
-              onChange={setCustomAllergies}
-              placeholder={t('profile.otherAllergy')}
-            />
-          </div>
+          )}
 
-          {/* Objectifs santé */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                {t('profile.goals')}
-              </p>
-              <p className="text-[12px] text-muted-foreground">
-                {t('profile.goalsDesc')}
-              </p>
+          {/* Question 3 — Objectifs santé */}
+          {formStep === 3 && (
+            <div className="space-y-3">
+              <div className="text-center space-y-1.5">
+                <p className="font-display font-bold text-lg text-foreground">
+                  {t('profile.editStepGoals')}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {t('profile.editStepGoalsDesc')}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {GOALS.map(({ label, icon: Icon }) => {
+                  const isSelected = goals.includes(label);
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => toggleGoal(label)}
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-semibold border transition-all active:scale-95 ${
+                        isSelected
+                          ? 'bg-primary/10 text-primary border-primary/30'
+                          : 'bg-card text-muted-foreground border-border/60 hover:border-primary/30 hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      {label}
+                      {isSelected && <Check className="size-3 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {GOALS.map(({ label, icon: Icon }) => {
-                const isSelected = goals.includes(label);
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => toggleGoal(label)}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-[12px] font-semibold border transition-all active:scale-95 ${
-                      isSelected
-                        ? 'bg-primary/10 text-primary border-primary/30'
-                        : 'bg-card text-muted-foreground border-border/60 hover:border-primary/30 hover:text-foreground'
-                    }`}
-                  >
-                    <Icon className="size-3.5 shrink-0" />
-                    {label}
-                    {isSelected && <Check className="size-3 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-border/40 px-6 py-5 space-y-2">
-          <Button
-            size="lg"
-            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
-            disabled={saving}
-            onClick={handleSave}
-          >
-            {saving ? (
-              <><Loader2 className="size-4 animate-spin" /> {t('lab.saving')}</>
-            ) : (
-              <><Check className="size-4" /> {t('common.save')}</>
-            )}
-          </Button>
+        <div className="shrink-0 border-t border-border/40 px-6 py-5 space-y-3">
+          {formStep < 3 ? (
+            <div className="flex items-center gap-3">
+              {formStep > 1 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 rounded-2xl gap-2 font-bold border-border/60 text-foreground hover:bg-muted/50 shrink-0 px-5"
+                  onClick={() => setFormStep((s) => (s - 1) as 1 | 2 | 3)}
+                >
+                  <ChevronLeft className="size-4" />
+                  {t('common.back')}
+                </Button>
+              )}
+              <Button
+                size="lg"
+                className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
+                onClick={() => setFormStep((s) => Math.min(s + 1, 3) as 1 | 2 | 3)}
+              >
+                {t('profile.next')}
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-2xl gap-2 font-bold border-border/60 text-foreground hover:bg-muted/50 shrink-0 px-5"
+                onClick={() => setFormStep(2)}
+              >
+                <ChevronLeft className="size-4" />
+                {t('common.back')}
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
+                disabled={saving}
+                onClick={handleSave}
+              >
+                {saving ? (
+                  <><Loader2 className="size-4 animate-spin" /> {t('lab.saving')}</>
+                ) : (
+                  <><Check className="size-4" /> {t('common.save')}</>
+                )}
+              </Button>
+            </div>
+          )}
           <p className="text-center text-[11px] text-muted-foreground">
             {t('profile.privacyNote')}
           </p>

@@ -15,7 +15,7 @@ type Props = {
 
 const TABS: { id: LabTab; labelKey: string; nutrifys?: boolean }[] = [
   { id: 'compose', labelKey: 'lab.compose' },
-  { id: 'nutrifys', labelKey: 'lab.compose', nutrifys: true },
+  { id: 'nutrifys', labelKey: 'lab.assistantTab', nutrifys: true },
 ];
 
 // Couches UI poussées dans l'historique par le lab (chaque param = 1 entrée)
@@ -93,19 +93,19 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                   >
                     <span
                       className={cn(
-                        'text-[7.5px] lg:text-[8px] uppercase font-bold tracking-widest leading-none mb-0.5 flex items-center gap-0.5',
+                        'text-[10px] lg:text-[11px] uppercase font-bold tracking-widest leading-none mb-1 flex items-center gap-1',
                         'text-secondary', // Ensure it uses the orange semantic color
                       )}
                     >
-                      NutriFYS <Sparkles className="size-2.5" />
+                      NutriFYS <Sparkles className="size-3" />
                     </span>
                     <span
                       className={cn(
-                        'text-xs lg:text-sm font-semibold leading-none',
+                        'text-sm lg:text-base font-semibold leading-none',
                         isActive ? 'text-card-foreground' : '',
                       )}
                     >
-                      compose
+                      {t(tab.labelKey)}
                     </span>
                   </button>
                 );

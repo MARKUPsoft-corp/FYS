@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import { Save, Loader2, ChevronRight, Sparkles } from 'lucide-react';
+import { Save, Loader2, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam'
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { consumePendingAction, saveLabMix, loadLabMix } from '@/lib/pending-action';
+import { saveLabDraft, loadLabDraft, clearLabDraft } from '@/lib/lab-draft';
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
@@ -58,6 +59,7 @@ const FysLab: PageComponent = () => {
   const [selectedSupplements, setSelectedSupplements] = useState<Map<string, number>>(new Map());
   const [cocktailName, setCocktailName] = useState('');
   const nameTouchedRef = useRef(false);
+  const pendingRestoredRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -118,6 +120,7 @@ const FysLab: PageComponent = () => {
         setCocktailName(mix.name);
         nameTouchedRef.current = true;
       }
+      pendingRestoredRef.current = true;
     }
 
     if (action === 'analyze' && mix) {
@@ -131,6 +134,40 @@ const FysLab: PageComponent = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, fruitsLoading, fruits.length]);
+
+  // ── Brouillon : restaure la dernière composition locale (une fois les
+  //    fruits chargés, et uniquement si aucune action pendante n'a été reprise) ──
+  useEffect(() => {
+    if (fruitsLoading || fruits.length === 0 || pendingRestoredRef.current) return;
+    const draft = loadLabDraft();
+    if (!draft) return;
+
+    const usable = new Set(availableFruitIds);
+    const mains = new Map(draft.mains.filter(([id]) => usable.has(id)));
+    const supps = new Map(draft.supps.filter(([id]) => usable.has(id)));
+    if (mains.size === 0 && supps.size === 0) return;
+
+    setSelectedIngredients(mains);
+    setSelectedSupplements(supps);
+    if (draft.name) {
+      setCocktailName(draft.name);
+      nameTouchedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fruitsLoading, fruits.length]);
+
+  // ── Brouillon : sauvegarde différée de la composition en cours ──
+  useEffect(() => {
+    if (fruitsLoading) return;
+    const timer = setTimeout(() => {
+      saveLabDraft({
+        mains: [...selectedIngredients.entries()],
+        supps: [...selectedSupplements.entries()],
+        name: cocktailName,
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [selectedIngredients, selectedSupplements, cocktailName, fruitsLoading]);
 
   function buildCombinedMap(
     mains = selectedIngredients,
@@ -313,13 +350,14 @@ const FysLab: PageComponent = () => {
       return;
     }
     // Retour vers "Je compose"
-    if (!closeHistoryParam('tab')) {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete('tab');
-        return next;
-      }, { replace: true });
-    }
+    // NB : on ne pop pas l'historique (navigate(-1)) car le tab NutriFYS est souvent
+    // atteint via une entrée depuis l'accueil — un back enverrait sinon le visiteur
+    // tout droit à la page d'accueil. On supprime simplement le paramètre (replace).
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('tab');
+      return next;
+    }, { replace: true });
   }
 
   function handleStepChange(step: ComposeStep) {
@@ -487,6 +525,7 @@ const FysLab: PageComponent = () => {
       nameTouchedRef.current = false;
       setAnalysis(null);
       setAiRecommendation(null);
+      clearLabDraft();
       setSearchParams({}, { replace: true });
       navigate(`/board/cocktails?cocktail=${cocktailId}`);
     } finally {
@@ -503,6 +542,7 @@ const FysLab: PageComponent = () => {
     nameTouchedRef.current = false;
     setAnalysis(null);
     setAiRecommendation(null);
+    clearLabDraft();
     setSearchParams({}, { replace: true });
   }
 
@@ -676,15 +716,31 @@ const FysLab: PageComponent = () => {
             </div>
 
             {composeStep === 1 ? (
-              <Button
-                size="lg"
-                className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3 bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.3)]"
-                disabled={selectedIngredients.size === 0}
-                onClick={() => handleStepChange(2)}
-              >
-                {t('lab.nextSupplements')}
-                <ChevronRight className="size-5" />
-              </Button>
+              analysis ? (
+                <Button
+                  size="lg"
+                  className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
+                  style={{ background: '#3F6D4E', color: '#fff', boxShadow: '0 8px 25px rgba(63,109,78,0.3)' }}
+                  onClick={openRenameSheet}
+                >
+                  <Save className="size-5" /> {t('common.save')}
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <Button
+                    size="lg"
+                    className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
+                    style={{ background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }}
+                    disabled={selectedIngredients.size === 0 || analyzing}
+                    onClick={() => handleAnalyze()}
+                  >
+                    {analyzing
+                      ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> {t('lab.analyzingShort')}</>
+                      : <><Sparkles className="size-5" /> {t('lab.analyzeWith')}</>
+                    }
+                  </Button>
+                </div>
+              )
             ) : (
               <Button
                 size="lg"

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogIn, LogOut, Settings, ShoppingBag, User, Wallet, Image } from 'lucide-react';
+import { LogIn, LogOut, ShoppingBag, Wallet, Image } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
@@ -13,7 +13,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -93,7 +92,7 @@ export function Topbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <LanguageSwitcher />
 
           <NotificationBell />
@@ -156,21 +155,23 @@ export function Topbar() {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
-                  <span className="text-sm font-semibold text-foreground truncate">{user.name}</span>
-                  <span className="text-xs text-muted-foreground font-normal truncate">{user.email}</span>
-                </DropdownMenuLabel>
-
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
-                  <User className="size-4" />
-                  {t('topbar.profile')}
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
-                  <Settings className="size-4" />
-                  {t('topbar.settings')}
+                <DropdownMenuItem
+                  onClick={() => navigate('/board/profile')}
+                  className="flex items-center gap-3 cursor-pointer py-2"
+                >
+                  <Avatar className="size-10 border border-border/30">
+                    <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-foreground truncate">{user.name}</span>
+                    <span className="text-sm text-muted-foreground truncate">
+                      {user.email}
+                    </span>
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

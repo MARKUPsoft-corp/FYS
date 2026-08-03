@@ -74,38 +74,28 @@ export function BottomNav() {
   };
 
   const labButton = (
-    <div className="relative flex flex-col items-center justify-end w-full max-w-[6.5rem]">
-      {/* Halo lumineux derrière le bouton */}
-      <span className="absolute -top-6 left-1/2 -translate-x-1/2 size-20 rounded-full bg-primary/35 blur-2xl pointer-events-none" />
-      <Link
-        to="/lab"
-        aria-label={t('nav.fys-lab')}
-        onClick={triggerBounce}
-        className={cn(
-          'flex flex-col items-center gap-1 -mt-9 transition-all duration-300 group',
-          'active:scale-90',
-        )}
-      >
-        <div
+    <div className="flex flex-col items-center justify-end gap-1 -mt-7 w-full max-w-[6.5rem]">
+      <div className="relative flex items-center justify-center">
+        <Link
+          to="/lab"
+          aria-label={t('nav.fys-lab')}
+          onClick={triggerBounce}
           className={cn(
-            'relative flex items-center justify-center size-14 rounded-[1.4rem] bg-primary text-white',
-            'ring-4 ring-primary/25 dark:ring-primary/20',
-            'border-2 border-white/40 dark:border-white/20',
-            'shadow-[0_12px_30px_rgba(63,109,78,0.55),inset_0_1px_0_rgba(255,255,255,0.35)]',
-            'transition-all duration-300 group-hover:shadow-[0_16px_36px_rgba(63,109,78,0.7)] group-hover:-translate-y-0.5 group-hover:brightness-110',
+            'flex items-center justify-center size-14 rounded-2xl bg-primary text-white',
+            'shadow-[0_6px_20px_rgba(63,109,78,0.35)]',
+            'hover:shadow-[0_8px_24px_rgba(63,109,78,0.45)] active:scale-95',
+            'transition-all duration-200',
             bouncing && 'animate-bounce-pop',
           )}
         >
-          <FlaskConical className="size-6" strokeWidth={2.4} />
-          {/* Reflet lumineux en haut */}
-          <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-6 h-1.5 rounded-full bg-white/45 blur-[2px] pointer-events-none" />
-          {/* Petite bulle d'activité */}
-          <span className="absolute -top-1 -right-1 size-3.5 rounded-full bg-secondary border-2 border-background shadow-[0_2px_6px_rgba(0,0,0,0.3)]" />
-        </div>
-        <span className="text-[13px] font-black tracking-tight text-primary bg-primary/10 border border-primary/15 px-3 py-1 rounded-full shadow-[0_2px_8px_rgba(63,109,78,0.2)]">
-          {t('nav.fys-lab')}
-        </span>
-      </Link>
+          <FlaskConical className="size-6" strokeWidth={2.2} />
+        </Link>
+        {/* Point d'activité */}
+        <span className="absolute -top-1 -right-1 size-3 rounded-full bg-secondary border-2 border-background shadow-[0_2px_6px_rgba(0,0,0,0.25)]" />
+      </div>
+      <span className="text-[12px] font-black tracking-tight text-foreground/80">
+        {t('nav.fys-lab')}
+      </span>
     </div>
   );
 
@@ -135,10 +125,9 @@ export function BottomNav() {
         "bottom-[env(safe-area-inset-bottom,16px)] mb-3",
         "bg-background/70 backdrop-blur-[48px] saturate-[180%]",
         "border border-white/40 border-b-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.15)] rounded-3xl",
-        "pt-5",
       )}
     >
-      <div className="grid grid-cols-3 px-2 pb-2 items-center">
+      <div className="grid grid-cols-3 p-2 pb-1 items-center">
         <div className="flex items-center justify-center w-full min-w-0">
           {homeItem ? renderItem(homeItem) : null}
         </div>
