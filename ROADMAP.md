@@ -191,7 +191,7 @@
 | Tour guidé interactif par page (`PageTour`, `@rasenganjs/kage-demo`) | ✅ |
 | Push notifications Web (FCM + service worker) | ✅ |
 | PWA — manifest, service worker (`vite-plugin-pwa`) | ✅ |
-| Firestore security rules (per business rules in CLAUDE.md) | 🔲 |
+| Firestore security rules (per business rules in CLAUDE.md) | ✅ |
 | Firebase custom claims for admin role enforcement | 🔲 |
 | Toast notifications for mutations (create, update, delete) | 🔲 |
 | Skeleton loaders sur toutes les vues de données | 🚧 |

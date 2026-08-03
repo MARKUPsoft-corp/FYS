@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Vérifie si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Vérifie si l'utilisateur est un admin
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+
+    // Vérifie si l'utilisateur courant correspond à l'UID passé
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    
+    // ------------------------------------------------------------------------
+    // Données publiques (Lecture) & Administratives (Écriture)
+    // ------------------------------------------------------------------------
+    
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /fruits/{fruitId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ------------------------------------------------------------------------
+    // Cocktails
+    // ------------------------------------------------------------------------
+    
+    match /cocktails/{cocktailId} {
+      allow read: if true;
+      
+      // Création
+      // - 'catalog': Réservé aux admins
+      // - 'custom': L'utilisateur authentifié s'attribue la création
+      allow create: if (request.resource.data.type == 'catalog' && isAdmin()) ||
+                       (request.resource.data.type == 'custom' && isAuthenticated() && request.resource.data.createdBy == request.auth.uid);
+      
+      // Modification
+      // - 'catalog': Réservé aux admins
+      // - 'custom': Seul le créateur peut modifier
+      allow update: if (resource.data.type == 'catalog' && isAdmin()) ||
+                       (resource.data.type == 'custom' && resource.data.createdBy == request.auth.uid);
+                       
+      // Suppression (idem modification)
+      allow delete: if (resource.data.type == 'catalog' && isAdmin()) ||
+                       (resource.data.type == 'custom' && resource.data.createdBy == request.auth.uid);
+    }
+    
+    // ------------------------------------------------------------------------
+    // Utilisateurs & Profil
+    // ------------------------------------------------------------------------
+    
+    match /users/{userId} {
+      // Document utilisateur
+      allow read, write: if isOwner(userId) || isAdmin();
+      
+      // Profil Santé
+      match /profile/{docId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      // Chats NutriFYS / Conversations
+      match /chats/{chatId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /conversations/{convoId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+        
+        match /messages/{messageId} {
+          allow read, write: if isOwner(userId) || isAdmin();
+        }
+      }
+    }
+    
+    // ------------------------------------------------------------------------
+    // Commandes (Orders)
+    // ------------------------------------------------------------------------
+    
+    match /orders/{orderId} {
+      // Création: l'utilisateur doit être authentifié et commander pour lui-même
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Lecture: l'admin ou le propriétaire de la commande
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Mise à jour: l'admin (pour avancer le statut) ou le propriétaire
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Suppression: réservée aux admins (on garde la trace des commandes)
+      allow delete: if isAdmin();
+    }
+  }
+}

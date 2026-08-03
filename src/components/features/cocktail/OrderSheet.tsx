@@ -675,9 +675,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       onChange={setDistrict}
                     />
                     <GeolocationButton
-                      onLocation={(data) => {
-                        setCoordinates(data);
-                        if (data.address) setDistrict(data.address);
+                      onLocation={({ address, ...coords }) => {
+                        setCoordinates(coords);
+                        if (address) setDistrict(address);
                       }}
                       className="mt-2"
                     />

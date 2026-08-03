@@ -53,7 +53,7 @@ export function BottomNav() {
       >
         <div
           className={cn(
-            'relative flex items-center justify-center size-10 rounded-2xl',
+            'relative flex items-center justify-center size-12 rounded-2xl',
             'transition-all duration-300',
             isActive ? 'bg-primary/20 text-primary shadow-sm' : 'group-hover:bg-foreground/5',
           )}
@@ -61,10 +61,10 @@ export function BottomNav() {
           {isActive && (
             <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-[3px] rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
           )}
-          <Icon className={cn('size-5', isActive && 'scale-110 transition-transform')} strokeWidth={isActive ? 2.5 : 2} />
+          <Icon className={cn('size-6', isActive && 'scale-110 transition-transform')} strokeWidth={isActive ? 2.5 : 2} />
         </div>
         <span className={cn(
-          'text-[11px] sm:text-[12px] tracking-tight leading-tight text-center truncate w-full px-0.5',
+          'text-[12px] sm:text-[13px] tracking-tight leading-tight text-center truncate w-full px-0.5',
           isActive ? 'font-black' : 'font-bold'
         )}>
           {label}
@@ -74,26 +74,26 @@ export function BottomNav() {
   };
 
   const labButton = (
-    <div className="flex flex-col items-center justify-end gap-1 -mt-7 w-full max-w-[6.5rem]">
+    <div className="flex flex-col items-center justify-end gap-1 -mt-8 w-full max-w-[7.5rem]">
       <div className="relative flex items-center justify-center">
         <Link
           to="/lab"
           aria-label={t('nav.fys-lab')}
           onClick={triggerBounce}
           className={cn(
-            'flex items-center justify-center size-14 rounded-2xl bg-primary text-white',
+            'flex items-center justify-center size-16 rounded-[1.25rem] bg-primary text-white',
             'shadow-[0_6px_20px_rgba(63,109,78,0.35)]',
             'hover:shadow-[0_8px_24px_rgba(63,109,78,0.45)] active:scale-95',
             'transition-all duration-200',
             bouncing && 'animate-bounce-pop',
           )}
         >
-          <FlaskConical className="size-6" strokeWidth={2.2} />
+          <FlaskConical className="size-7" strokeWidth={2.2} />
         </Link>
         {/* Point d'activité */}
         <span className="absolute -top-1 -right-1 size-3 rounded-full bg-secondary border-2 border-background shadow-[0_2px_6px_rgba(0,0,0,0.25)]" />
       </div>
-      <span className="text-[12px] font-black tracking-tight text-foreground/80">
+      <span className="text-[13px] font-black tracking-tight text-foreground/80">
         {t('nav.fys-lab')}
       </span>
     </div>
