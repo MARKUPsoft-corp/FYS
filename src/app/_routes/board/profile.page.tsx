@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
-  AlertCircle, Loader2, Music, Volume2, VolumeX,
+  AlertCircle, Loader2, Music, Volume2, VolumeX, Sun,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useAudioStore } from '@/stores/audio';
+import { useTheme } from '@rasenganjs/theme';
 import { UserRole } from '@/entities';
 import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 
@@ -366,6 +367,7 @@ const Profile: PageComponent = () => {
   const { user } = useAuthStore();
   const { profile, loading, fetch } = useProfileStore();
   const audio = useAudioStore();
+  const { actualTheme, setTheme } = useTheme();
   const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
@@ -461,6 +463,44 @@ const Profile: PageComponent = () => {
             </div>
           </div>
         )}
+
+        {/* Appearance / Theme Toggle */}
+        <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                {actualTheme === 'dark' ? (
+                  <Moon className="size-6 text-primary" />
+                ) : (
+                  <Sun className="size-6 text-primary" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-display font-bold text-foreground">{t('profile.appearance')}</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
+                  {t('profile.appearanceDesc')}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
+              aria-label={t('theme.switch')}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                actualTheme === 'dark' ? 'bg-primary' : 'bg-input'
+              }`}
+            >
+              <span
+                className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                  actualTheme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-[12px] font-semibold text-primary mt-3">
+            {actualTheme === 'dark' ? t('theme.dark') : t('theme.light')}
+          </p>
+        </div>
 
         {/* Ambient Music Toggle */}
         <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-4">

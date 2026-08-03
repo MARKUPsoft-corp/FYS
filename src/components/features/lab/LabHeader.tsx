@@ -58,7 +58,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center text-foreground bg-background/80 backdrop-blur-sm shadow-sm rounded-full px-3 py-1.5 hover:bg-background transition-colors text-sm font-semibold"
+            className="inline-flex items-center text-foreground bg-background/40 dark:bg-background/20 backdrop-blur-[40px] saturate-150 border border-white/30 dark:border-white/10 shadow-[inner_0_1px_2px_rgba(255,255,255,0.4)] rounded-full px-3.5 py-1.5 hover:bg-background/60 transition-colors text-sm font-semibold"
           >
             <ChevronLeft className="size-4 mr-1" /> {t('common.back')}
           </button>

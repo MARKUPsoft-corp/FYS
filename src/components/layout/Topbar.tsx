@@ -1,12 +1,11 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogIn, LogOut, Settings, User, Wallet, Image } from 'lucide-react';
+import { LogIn, LogOut, Settings, ShoppingBag, User, Wallet, Image } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
 import { clearPendingAction } from '@/lib/pending-action';
 import { getNavItemsForRole, getGuestNavItems } from '@/data/navigation';
-import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { NotificationBell } from '@/components/common/NotificationBell';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -97,9 +96,23 @@ export function Topbar() {
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <LanguageSwitcher />
 
-          <ButtonTheme />
-
           <NotificationBell />
+
+          {user?.role === UserRole.CUSTOMER && (
+            <Link
+              to="/board/orders"
+              className={cn(
+                'relative flex items-center justify-center size-10 rounded-xl transition-all',
+                location.pathname.startsWith('/board/orders')
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+              )}
+              aria-label={t('nav.orders')}
+              title={t('nav.orders')}
+            >
+              <ShoppingBag className="size-5" />
+            </Link>
+          )}
 
           {user?.role === UserRole.ADMIN && (
             <>
