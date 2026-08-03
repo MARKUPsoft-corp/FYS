@@ -14,8 +14,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Input } from '@/components/ui/input';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
-import { CocktailType, isUsableAsSupplement, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
-import { getFruits } from '@/services/fruit';
+import { CocktailType, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
@@ -23,16 +22,20 @@ import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { consumePendingAction, saveLabMix, loadLabMix } from '@/lib/pending-action';
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const { profile } = useProfileStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const closeHistoryParam = useCloseHistoryParam();
   const queryClient = useQueryClient();
+  const requireAuth = useRequireAuth();
 
   // ── Scroll to top whenever we land on this page or switch tabs ──
   useEffect(() => {
@@ -63,10 +66,7 @@ const FysLab: PageComponent = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const recommendKeyRef = useRef<string>('');
 
-  const { data: fruits = [], isLoading: fruitsLoading } = useQuery({
-    queryKey: ['fruits'],
-    queryFn: getFruits,
-  });
+  const { fruits, isLoading: fruitsLoading } = useFruitsRealtime();
 
   const { data: pricing } = useQuery({
     queryKey: ['pricing-settings'],
@@ -77,6 +77,60 @@ const FysLab: PageComponent = () => {
     () => fruits.filter(isUsableAsSupplement),
     [fruits],
   );
+
+  // ── Temps réel : retire du mélange en cours les fruits/suppléments que
+  //    l'admin vient de rendre indisponibles ──
+  const availableFruitIds = useMemo(
+    () => new Set(fruits.filter(isUsableFruit).map((f) => f.id)),
+    [fruits],
+  );
+
+  useEffect(() => {
+    const prune = (prev: Map<string, number>) => {
+      const stale = [...prev.keys()].some((id) => !availableFruitIds.has(id));
+      if (!stale) return prev;
+      const next = new Map(prev);
+      for (const id of [...next.keys()]) {
+        if (!availableFruitIds.has(id)) {
+          next.delete(id);
+          labSounds.fruitDeselect();
+        }
+      }
+      return next;
+    };
+    setSelectedIngredients(prune);
+    setSelectedSupplements(prune);
+  }, [availableFruitIds]);
+
+  // ── Reprise d'action après connexion : rejoue automatiquement l'action
+  //    qui avait été interrompue (analyser, commander, sauvegarder, tab IA) ──
+  useEffect(() => {
+    if (loading || !user || fruitsLoading || fruits.length === 0) return;
+
+    const action = consumePendingAction();
+    if (!action) return;
+
+    const mix = loadLabMix();
+    if (mix) {
+      setSelectedIngredients(mix.mains);
+      setSelectedSupplements(mix.supps);
+      if (mix.name) {
+        setCocktailName(mix.name);
+        nameTouchedRef.current = true;
+      }
+    }
+
+    if (action === 'analyze' && mix) {
+      setTimeout(() => handleAnalyze(mix.mains, mix.supps), 150);
+    } else if (action === 'order' && mix) {
+      setTimeout(() => pushHistoryParam(setSearchParams, 'sheet', 'order'), 150);
+    } else if (action === 'save' && mix) {
+      setTimeout(() => handleSave(), 150);
+    } else if (action === 'nutrifys') {
+      setTimeout(() => handleTabChange('nutrifys'), 150);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user, fruitsLoading, fruits.length]);
 
   function buildCombinedMap(
     mains = selectedIngredients,
@@ -151,6 +205,17 @@ const FysLab: PageComponent = () => {
         // 🎵 Play deselect sound
         labSounds.fruitDeselect();
       } else if (next.size < MAX_LAB_MAIN_FRUITS) {
+        // Retire automatiquement les fruits incompatibles déjà sélectionnés
+        const newFruit = fruits.find((f) => f.id === id);
+        if (newFruit) {
+          for (const [fid] of [...next.keys()]) {
+            const existing = fruits.find((f) => f.id === fid);
+            if (existing && areFruitsIncompatible(newFruit, existing)) {
+              next.delete(fid);
+              labSounds.fruitDeselect();
+            }
+          }
+        }
         next.set(id, 100);
         // 🎵 Play fruit selection sound
         labSounds.fruitSelect();
@@ -197,6 +262,11 @@ const FysLab: PageComponent = () => {
   }
 
   async function fetchSupplementRecommendations(mains: Map<string, number>) {
+    // L'analyse NutriFYS nécessite une connexion (profil santé)
+    if (!user) {
+      setAiRecommendation(null);
+      return;
+    }
     if (mains.size === 0 || supplements.length === 0) {
       setAiRecommendation(null);
       return;
@@ -234,6 +304,11 @@ const FysLab: PageComponent = () => {
   function handleTabChange(tab: LabTab) {
     if (tab === activeTab) return;
     if (tab === 'nutrifys') {
+      // NutriFYS = analyse IA → connexion requise
+      if (!user) {
+        requireAuth('nutrifys');
+        return;
+      }
       pushHistoryParam(setSearchParams, 'tab', 'nutrifys');
       return;
     }
@@ -286,6 +361,16 @@ const FysLab: PageComponent = () => {
   }
 
   function openOrderSheet() {
+    // Commander nécessite une connexion
+    if (!user) {
+      saveLabMix({
+        mains: selectedIngredients,
+        supps: selectedSupplements,
+        name: cocktailName,
+      });
+      requireAuth('order');
+      return;
+    }
     pushHistoryParam(setSearchParams, 'sheet', 'order');
   }
 
@@ -301,6 +386,16 @@ const FysLab: PageComponent = () => {
   }
 
   async function handleAnalyze(forcedMains?: Map<string, number>, forcedSupps?: Map<string, number>) {
+    // L'analyse NutriFYS nécessite une connexion (profil santé)
+    if (!user) {
+      saveLabMix({
+        mains: forcedMains ?? selectedIngredients,
+        supps: forcedSupps ?? selectedSupplements,
+        name: cocktailName,
+      });
+      requireAuth('analyze');
+      return;
+    }
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);
     if (combined.size === 0) return;
@@ -360,7 +455,16 @@ const FysLab: PageComponent = () => {
   }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing]);
 
   async function handleSave() {
-    if (!user || !cocktailName.trim() || selectedIngredients.size === 0) return;
+    if (!user) {
+      saveLabMix({
+        mains: selectedIngredients,
+        supps: selectedSupplements,
+        name: cocktailName,
+      });
+      requireAuth('save');
+      return;
+    }
+    if (!cocktailName.trim() || selectedIngredients.size === 0) return;
     setSaving(true);
     try {
       const ingredients = buildIngredients();
@@ -403,12 +507,22 @@ const FysLab: PageComponent = () => {
   }
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
+    // Filtre de sécurité : ne garde que les fruits non incompatibles entre eux
     const next = new Map<string, number>();
-    proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS).forEach((id) => next.set(id, 100));
+    for (const id of proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS)) {
+      const newFruit = fruits.find((f) => f.id === id);
+      if (!newFruit) continue;
+      const conflicts = [...next.keys()].some((fid) => {
+        const existing = fruits.find((f) => f.id === fid);
+        return existing ? areFruitsIncompatible(newFruit, existing) : false;
+      });
+      if (!conflicts) next.set(id, 100);
+    }
     const nextSupps = new Map<string, number>();
     proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS).forEach((id) => {
       if (!next.has(id)) nextSupps.set(id, 20);
     });
+    if (next.size === 0) return; // tout était incompatible : on ne compose rien
     setSelectedIngredients(next);
     setSelectedSupplements(nextSupps);
     setCocktailName(proposal.name);

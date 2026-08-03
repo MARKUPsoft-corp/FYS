@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
+import { PageComponent, useNavigate, useSearchParams, useLocation } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, FlaskConical, Plus } from 'lucide-react';
@@ -37,6 +37,7 @@ const Catalogue: PageComponent = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === UserRole.ADMIN;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -103,6 +104,14 @@ const Catalogue: PageComponent = () => {
   }
 
   function openCocktail(cocktail: Cocktail) {
+    // Commander nécessite une connexion — on revient avec ?cocktail=id
+    // pour rouvrir automatiquement la commande après connexion.
+    if (!user) {
+      const params = new URLSearchParams(location.search);
+      params.set('cocktail', cocktail.id);
+      navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname + '?' + params.toString())}`);
+      return;
+    }
     setOrderTarget(cocktail);
     pushHistoryParam(setSearchParams, 'cocktail', cocktail.id);
   }

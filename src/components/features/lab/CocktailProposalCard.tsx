@@ -9,7 +9,7 @@ import {
   type CocktailProposal,
 } from '@/data/nutrifys-chat';
 import { getLabItemById } from '@/data/lab-items';
-import type { Fruit } from '@/entities';
+import { isUsableFruit, areFruitsIncompatible, type Fruit } from '@/entities';
 import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 
 type Props = {
@@ -143,6 +143,16 @@ export function CocktailProposalCard({
   const atMaxFruits = fruitIds.length >= MAX_LAB_MAIN_FRUITS;
   const atMaxSupplements = supplementIds.length >= MAX_LAB_SUPPLEMENTS;
 
+  // Fruits bloqués par incompatibilité avec la sélection courante
+  const incompatibleIds = new Set<string>();
+  for (const fid of fruitIds) {
+    const selected = fruitsCatalog.find((f) => f.id === fid);
+    if (!selected) continue;
+    for (const f of fruitsCatalog) {
+      if (areFruitsIncompatible(selected, f)) incompatibleIds.add(f.id);
+    }
+  }
+
   return (
     <div className="mt-3 rounded-2xl border border-border/60 bg-background/80 overflow-hidden shadow-sm">
       <div className="px-4 py-3 bg-primary/5 border-b border-border/40 flex items-center gap-3">
@@ -180,11 +190,15 @@ export function CocktailProposalCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {fruits.map((fruit, i) => {
+            const catalogFruit = fruitsCatalog.find((f) => f.id === fruit.id);
+            const unavailable = catalogFruit ? !isUsableFruit(catalogFruit) : false;
+            const incompatible = incompatibleIds.has(fruit.id);
             const selected = fruitIds.includes(fruit.id);
-            const disabled = !selected && atMaxFruits;
+            const disabled = unavailable || incompatible || (!selected && atMaxFruits);
             return (
             <div
               key={fruit.id}
+              title={incompatible ? t('lab.incompatibleTitle') : undefined}
               className={cn(pulseId === fruit.id && 'animate-pulse', 'animate-in fade-in slide-in-from-bottom-1 duration-300')}
               style={{ animationDelay: `${i * 60}ms` }}
             >

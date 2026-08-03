@@ -16,12 +16,26 @@ const AppLayout: LayoutComponent = () => {
   const isAuthRoute = location.pathname.startsWith('/auth');
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
+  // Pages réservées à l'admin
+  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/hero', '/board/pricing', '/board/users', '/board/cocktails'];
+  // Pages qui nécessitent une connexion (mais accessibles client + admin)
+  const LOGIN_REQUIRED_PATHS = ['/board/profile', '/board/orders'];
+
   useEffect(() => {
-    console.log({loading, user, isAuthRoute})
-    if (!loading && !user && !isAuthRoute) {
-      navigate('/auth/login', { replace: true });
+    if (loading || isAuthRoute) return;
+
+    const isAdminOnly = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
+    const isLoginRequired = LOGIN_REQUIRED_PATHS.some((p) => location.pathname.startsWith(p));
+
+    if (isAdminOnly && user?.role !== UserRole.ADMIN) {
+      navigate('/board', { replace: true });
+      return;
     }
-  }, [user, loading, isAuthRoute]);
+    if (isLoginRequired && !user) {
+      const redirect = encodeURIComponent(location.pathname + location.search);
+      navigate(`/auth/login?redirect=${redirect}`, { replace: true });
+    }
+  }, [user, loading, isAuthRoute, location.pathname, location.search]);
 
   useEffect(() => {
     if (user && isCustomer) {
@@ -30,7 +44,7 @@ const AppLayout: LayoutComponent = () => {
   }, [user?.uid]);
 
   const showOnboarding =
-    !isAuthRoute && isCustomer && !profileLoading && !isProfileComplete(profile) && !modalDismissed;
+    !isAuthRoute && !!user && isCustomer && !profileLoading && !isProfileComplete(profile) && !modalDismissed;
 
   async function handleOnboardingComplete(data: {
     healthConditions: string[];

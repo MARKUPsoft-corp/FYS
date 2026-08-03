@@ -1,15 +1,16 @@
 import { Link, useLocation } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { LogIn } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
-import { getMobileNavItems } from '@/data/navigation';
+import { getMobileNavItems, getGuestNavItems } from '@/data/navigation';
 
 export function BottomNav() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const location = useLocation();
 
-  const items = user ? getMobileNavItems(user.role) : [];
+  const items = user ? getMobileNavItems(user.role) : getGuestNavItems();
 
   // Masquer le BottomNav sur la page Lab (qui a sa propre barre fixe)
   if (location.pathname === '/lab') {
@@ -62,6 +63,21 @@ export function BottomNav() {
             </Link>
           );
         })}
+
+        {/* Visiteur : bouton Se connecter */}
+        {!user && (
+          <Link
+            to="/auth/login"
+            className="flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full max-w-[5.5rem] transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-center size-10 rounded-2xl bg-primary/15 text-primary group-hover:bg-primary/25 transition-all duration-300">
+              <LogIn className="size-5" strokeWidth={2.5} />
+            </div>
+            <span className="text-[11px] sm:text-[12px] tracking-tight leading-tight text-center truncate w-full px-0.5 text-primary font-black">
+              {t('topbar.signIn')}
+            </span>
+          </Link>
+        )}
       </div>
     </nav>
   );

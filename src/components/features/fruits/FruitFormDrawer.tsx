@@ -217,13 +217,14 @@ type Props = {
   open: boolean;
   fruit?: Fruit | null;
   categories: Category[];
+  fruits: Fruit[];
   onClose: () => void;
   onSave: (data: Omit<Fruit, 'id' | 'createdAt' | 'updatedAt'>, imageFile: File | null, fruitId?: string) => Promise<void>;
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Props) {
+export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSave }: Props) {
   const { t } = useTranslation();
   // Basic info
   const [name, setName] = useState('');
@@ -234,6 +235,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isMainFruit, setIsMainFruit] = useState(true);
   const [isSupplement, setIsSupplement] = useState(false);
+  const [isActive, setIsActive] = useState(true);
+  const [incompatibleIds, setIncompatibleIds] = useState<string[]>([]);
 
   // Cocktail profile
   const [benefits, setBenefits] = useState<string[]>([]);
@@ -282,6 +285,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       setImageFile(null);
       setIsMainFruit(fruit.isMainFruit !== false);
       setIsSupplement(fruit.isSupplement === true);
+      setIsActive(fruit.isActive !== false);
+      setIncompatibleIds(fruit.incompatibleIds ?? []);
       setBenefits(fruit.benefits);
       setWarnings(fruit.warnings);
       setAvoidIf(fruit.avoidIf ?? []);
@@ -305,7 +310,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
     } else {
       setName(''); setScientificName(''); setPricePerGram('');
       setCategoryIds([]); setCocktailRole(''); setImageFile(null);
-      setIsMainFruit(true); setIsSupplement(false);
+      setIsMainFruit(true); setIsSupplement(false); setIsActive(true);
+      setIncompatibleIds([]);
       setBenefits([]); setWarnings([]); setAvoidIf([]);
       setTiming('');
       setRegion('');
@@ -321,6 +327,12 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
 
   function toggleCategory(id: string) {
     setCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
+  }
+
+  function toggleIncompatible(id: string) {
+    setIncompatibleIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
   }
@@ -341,6 +353,8 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
       imageUrl: fruit?.imageUrl,
       isMainFruit,
       isSupplement,
+      isActive,
+      incompatibleIds: incompatibleIds.length ? incompatibleIds : undefined,
       benefits,
       warnings,
       cocktailRole: (cocktailRole as CocktailRole) || undefined,
@@ -482,6 +496,34 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{t('fruits.incompatibleWith')}</Label>
+              <p className="text-[11px] text-muted-foreground">
+                {t('fruits.incompatibleHint')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {fruits
+                  .filter((f) => f.id !== fruit?.id)
+                  .map((f) => {
+                    const active = incompatibleIds.includes(f.id);
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => toggleIncompatible(f.id)}
+                        className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                          active
+                            ? 'bg-red-500/15 text-red-500 border-red-500/60 font-bold'
+                            : 'border-border text-muted-foreground hover:border-red-500/50 hover:text-foreground'
+                        }`}
+                      >
+                        {active ? '✕ ' : ''}{f.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Cocktail role</Label>
               <Select value={cocktailRole} onValueChange={(v) => setCocktailRole(v as CocktailRole)}>
@@ -496,6 +538,25 @@ export function FruitFormDrawer({ open, fruit, categories, onClose, onSave }: Pr
                   <SelectItem value="base">Base</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">{t('fruits.availability')}</Label>
+              <button
+                type="button"
+                onClick={() => setIsActive((v) => !v)}
+                className={`w-full text-xs font-bold px-3 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 transition-colors ${
+                  isActive
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/60'
+                    : 'bg-red-500/10 text-red-500 border-red-500/50'
+                }`}
+              >
+                <span className={`size-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                {isActive ? t('fruits.available') : t('fruits.unavailable')}
+              </button>
+              <p className="text-[11px] text-muted-foreground">
+                {isActive ? t('fruits.availableHint') : t('fruits.unavailableHint')}
+              </p>
             </div>
 
             <div className="space-y-2">

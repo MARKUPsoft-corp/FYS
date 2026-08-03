@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus, FlaskConical, Sparkles, Save, Loader2,
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { SupplementsTab } from '@/components/features/lab/SupplementsTab';
 import type { AIRecommendation } from '@/services/ai.shared';
 import type { Fruit, AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
-import { isUsableAsMainFruit, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
+import { isUsableFruit, isUsableAsMainFruit, areFruitsIncompatible, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 
 
 // ── Verdict config ────────────────────────────────────────────────────────────
@@ -412,7 +412,24 @@ export function ComposeTab({
   loadingAI,
 }: Props) {
   const { t } = useTranslation();
-  const mainFruits = fruits.filter(isUsableAsMainFruit);
+  const mainFruits = fruits.filter((f) => isUsableFruit(f) && isUsableAsMainFruit(f));
+  const unavailableFruits = fruits.filter((f) => !isUsableFruit(f) || !isUsableAsMainFruit(f));
+  const displayedFruits = [...mainFruits, ...unavailableFruits];
+
+  // Fruits bloqués par incompatibilité : un fruit sélectionné interdit les
+  // fruits listés comme incompatibles avec lui (et réciproquement).
+  const incompatibleIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const [fid] of selectedIngredients) {
+      const selected = fruits.find((f) => f.id === fid);
+      if (!selected) continue;
+      for (const f of fruits) {
+        if (areFruitsIncompatible(selected, f)) set.add(f.id);
+      }
+    }
+    return set;
+  }, [selectedIngredients, fruits]);
+
   const selectedFruits = mainFruits.filter((f) => selectedIngredients.has(f.id));
   const selectedSupplementItems = supplements.filter((f) => selectedSupplements.has(f.id));
   const atMaxFruits = selectedIngredients.size >= MAX_LAB_MAIN_FRUITS;
@@ -493,25 +510,40 @@ export function ComposeTab({
               </div>
             ) : (
               <div  className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                {mainFruits.map((fruit) => {
+                {displayedFruits.map((fruit) => {
+                  const isUnavailable = !isUsableFruit(fruit) || !isUsableAsMainFruit(fruit);
+                  const isIncompatible = incompatibleIds.has(fruit.id);
                   const isSelected = selectedIngredients.has(fruit.id);
-                  const isDisabled = !isSelected && atMaxFruits;
+                  const isDisabled = isUnavailable || isIncompatible || (!isSelected && atMaxFruits);
                   return (
                     <button
                       key={fruit.id}
                       type="button"
                       disabled={isDisabled}
                       onClick={() => onToggleFruit(fruit.id)}
+                      title={isIncompatible ? t('lab.incompatibleTitle') : undefined}
                       className={`relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-colors duration-300 ${isSelected
                           ? 'bg-primary/10 border-2 border-primary shadow-[0_4px_12px_rgba(63,109,78,0.15)] animate-card-bounce'
-                          : isDisabled
-                            ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
-                            : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
+                          : isUnavailable
+                            ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed grayscale'
+                            : isDisabled
+                              ? 'bg-muted/40 border-2 border-border/30 opacity-45 cursor-not-allowed'
+                              : 'bg-card border-2 border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5'
                         }`}
                     >
                       {isSelected && (
                         <span className="absolute inset-0 rounded-[1.25rem] overflow-hidden pointer-events-none">
                           <span className="absolute inset-0 bg-gradient-to-br from-transparent via-white/25 to-transparent animate-wave-sweep" />
+                        </span>
+                      )}
+                      {isUnavailable && (
+                        <span className="absolute top-1.5 right-1.5 z-10 text-[8px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
+                          {t('lab.unavailable')}
+                        </span>
+                      )}
+                      {isIncompatible && !isUnavailable && (
+                        <span className="absolute top-1.5 right-1.5 z-10 text-[8px] font-bold uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/30 px-1.5 py-0.5 rounded-full">
+                          {t('lab.incompatibleBadge')}
                         </span>
                       )}
                       {fruit.imageUrl ? (

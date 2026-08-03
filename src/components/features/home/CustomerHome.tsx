@@ -17,12 +17,12 @@ import { OnboardingModal } from '@/components/features/onboarding/OnboardingModa
 import { useAuthStore } from '@/stores/auth';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
-import type { Fruit } from '@/entities';
+import { isUsableFruit, type Fruit } from '@/entities';
 import { HeroSlider } from '@/components/features/home/HeroSlider';
 
-type Props = { name: string };
+type Props = Record<string, never>;
 
-export function CustomerHome({ name }: Props) {
+export function CustomerHome(_props: Props) {
   const { t } = useTranslation();
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -56,8 +56,8 @@ export function CustomerHome({ name }: Props) {
       {/* Content wrapper for things below hero */}
       <div className="px-3 md:px-4 space-y-12 mt-6 lg:mt-8 relative z-10">
 
-        {/* Profile completion banner */}
-        {!profileComplete && (
+        {/* Profile completion banner — uniquement pour les utilisateurs connectés */}
+        {!profileComplete && user && (
           <ProfileCompletionCard onStart={() => setShowOnboarding(true)} />
         )}
 
@@ -224,7 +224,7 @@ export function CustomerHome({ name }: Props) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-8">
             
-            {storeFruits.map((fruit) => (
+            {storeFruits.filter(isUsableFruit).map((fruit) => (
               <div 
                 key={fruit.id} 
                 onClick={() => setSelectedFruit(fruit)}
@@ -252,8 +252,8 @@ export function CustomerHome({ name }: Props) {
 
       </div>
 
-      {/* Floating profile button — only when profile incomplete */}
-      {!profileComplete && (
+      {/* Floating profile button — only when profile incomplete (connecté) */}
+      {!profileComplete && user && (
         <ProfileFloatingButton onClick={() => setShowOnboarding(true)} />
       )}
 

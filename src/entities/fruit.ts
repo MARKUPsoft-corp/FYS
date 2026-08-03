@@ -118,6 +118,19 @@ export interface Fruit {
   region?: CameroonRegion;       // lieu de provenance
 
   /**
+   * Disponible / actif (affiché publiquement et sélectionnable au Lab).
+   * Défaut: true si le champ est absent (rétrocompatibilité).
+   */
+  isActive?: boolean;
+
+  /**
+   * Fruits à ne PAS mélanger avec celui-ci (ids).
+   * Configuré par l'admin ; au Lab, sélectionner ce fruit désactive
+   * (et retire de la sélection) les fruits incompatibles.
+   */
+  incompatibleIds?: string[];
+
+  /**
    * Disponible à l'étape 1 du Lab (sélection fruits).
    * Défaut: true si le champ est absent (rétrocompatibilité).
    */
@@ -162,6 +175,19 @@ export interface Category {
 /** Fruit principal (étape 1) — défaut true pour les docs sans le champ */
 export function isUsableAsMainFruit(fruit: Fruit): boolean {
   return fruit.isMainFruit !== false;
+}
+
+/** Fruit disponible/actif (visible publiquement, sélectionnable) — défaut true */
+export function isUsableFruit(fruit: Fruit): boolean {
+  return fruit.isActive !== false;
+}
+
+/** Deux fruits sont incompatibles si l'un référence l'autre dans incompatibleIds */
+export function areFruitsIncompatible(
+  a: Pick<Fruit, 'id' | 'incompatibleIds'>,
+  b: Pick<Fruit, 'id' | 'incompatibleIds'>,
+): boolean {
+  return (a.incompatibleIds ?? []).includes(b.id) || (b.incompatibleIds ?? []).includes(a.id);
 }
 
 /** Supplément (étape 2) — défaut false */

@@ -436,6 +436,18 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
 
   const fruitIds = mainFruits.map(f => f.id).join(', ');
 
+  // Règles d'incompatibilité (configurées par l'admin) — l'IA ne doit
+  // JAMAIS proposer un mélange qui les enfreint.
+  const incompatibleFruits = mainFruits.filter((f) => (f.incompatibleIds ?? []).length > 0);
+  const incompatibilityRules = incompatibleFruits.length > 0
+    ? incompatibleFruits.map((f) => {
+      const names = (f.incompatibleIds ?? [])
+        .map((id) => mainFruits.find((x) => x.id === id)?.name ?? id)
+        .join(', ');
+      return `  • ${f.name} [id: ${f.id}] ${isEn ? 'must NEVER be mixed with' : 'ne doit JAMAIS être mélangé avec'} : ${names}`;
+    }).join('\n')
+    : (isEn ? 'No incompatibility rules.' : 'Aucune règle d\'incompatibilité.');
+
   const supplementCatalog = supplements.length > 0
     ? supplements.map((s) => `  • ${s.name} [id: ${s.id}] — ${isEn ? 'Benefits' : 'Bénéfices'}: ${s.benefits?.join(', ') || noneSpecified}`).join('\n')
     : (isEn ? '(No supplements loaded)' : '(Aucun supplément chargé)');
@@ -465,6 +477,9 @@ ${supplementCatalog}
 
 VALID FRUIT IDs FOR "proposal.fruitIds": [${fruitIds}]
 VALID SUPPLEMENT IDs FOR "proposal.supplementIds": [${supplementIds}]
+
+INCOMPATIBILITY RULES (ABSOLUTE — NEVER put two incompatible fruits in the same "proposal.fruitIds"):
+${incompatibilityRules}
 
 GOLDEN TASTE RULE (TASTE IS PARAMOUNT):
 - NEVER propose a purely utilitarian cocktail without a sweet base (e.g. Ginger + Spinach + Spirulina is undrinkable).
@@ -530,6 +545,9 @@ ${supplementCatalog}
 
 FRUIT IDs VALIDES POUR LE CHAMP "proposal.fruitIds": [${fruitIds}]
 SUPPLEMENT IDs VALIDES POUR LE CHAMP "proposal.supplementIds": [${supplementIds}]
+
+RÈGLES D'INCOMPATIBILITÉ (ABSOLU — ne mets JAMAIS deux fruits incompatibles dans le même "proposal.fruitIds") :
+${incompatibilityRules}
 
 RÈGLE D'OR GUSTATIVE (LE GOÛT EST PRIMORDIAL):
 - Ne propose JAMAIS un cocktail purement utilitaire sans base douce (ex: Gingembre + Épinard + Spiruline est imbuvable).

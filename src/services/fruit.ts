@@ -7,6 +7,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
@@ -32,6 +33,13 @@ function stripUndefined(obj: any): any {
 export async function getFruits(): Promise<Fruit[]> {
   const snap = await getDocs(collection(db, COLLECTIONS.FRUITS));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Fruit));
+}
+
+/** Écoute en temps réel le catalogue fruits (Firestore onSnapshot). */
+export function subscribeToFruits(onData: (fruits: Fruit[]) => void): () => void {
+  return onSnapshot(collection(db, COLLECTIONS.FRUITS), (snap) => {
+    onData(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Fruit)));
+  });
 }
 
 export async function getMainFruits(): Promise<Fruit[]> {
@@ -92,11 +100,18 @@ export async function updateFruit(
     imageUrl = await uploadFruitImage(id, imageFile);
   }
 
-  await updateDoc(doc(db, COLLECTIONS.FRUITS, id), stripUndefined({
+  const payload: Record<string, unknown> = {
     ...data,
-    imageUrl: imageUrl ?? null,
     updatedAt: serverTimestamp(),
-  }));
+  };
+
+  // N'écrire imageUrl que si elle est explicitement fournie : un update
+  // partiel (ex: toggle Disponibilité) ne doit pas écraser l'image existante.
+  if (imageFile || typeof data.imageUrl === 'string' || data.imageUrl === null) {
+    payload.imageUrl = imageUrl ?? null;
+  }
+
+  await updateDoc(doc(db, COLLECTIONS.FRUITS, id), stripUndefined(payload));
 }
 
 export async function deleteFruit(id: string, imageUrl?: string): Promise<void> {

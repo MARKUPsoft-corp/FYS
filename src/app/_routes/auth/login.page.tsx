@@ -28,13 +28,21 @@ const Login: PageComponent = () => {
   const { t } = useTranslation();
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // URL de retour (ex: /lab?tab=nutrifys) — posée avant de venir ici
+  const redirectPath = new URLSearchParams(window.location.search).get('redirect');
+
+  function afterLogin() {
+    const target = redirectPath?.startsWith('/') ? redirectPath : '/board';
+    navigate(target, { replace: true });
+  }
+
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await loginWithEmail(email, password);
-      navigate('/board', { replace: true });
+      afterLogin();
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
@@ -52,7 +60,7 @@ const Login: PageComponent = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      navigate('/board', { replace: true });
+      afterLogin();
     } catch {
       setError(t('auth.login.errors.googleCanceled'));
     } finally {

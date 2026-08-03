@@ -8,7 +8,7 @@ import { FruitFormDrawer } from '@/components/features/fruits/FruitFormDrawer';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getFruits, createFruit, updateFruit, deleteFruit } from '@/services/fruit';
 import { getCategories } from '@/services/category';
-import type { Fruit } from '@/entities';
+import { isUsableFruit, type Fruit } from '@/entities';
 
 const Fruits: PageComponent = () => {
   const queryClient = useQueryClient();
@@ -40,6 +40,11 @@ const Fruits: PageComponent = () => {
   async function handleDelete(fruit: Fruit) {
     if (!confirm(`Delete "${fruit.name}"?`)) return;
     await deleteFruit(fruit.id, fruit.imageUrl);
+    queryClient.invalidateQueries({ queryKey: ['fruits'] });
+  }
+
+  async function handleToggleActive(fruit: Fruit) {
+    await updateFruit(fruit.id, { isActive: !isUsableFruit(fruit) });
     queryClient.invalidateQueries({ queryKey: ['fruits'] });
   }
 
@@ -88,6 +93,7 @@ const Fruits: PageComponent = () => {
               categories={categories}
               onEdit={openEdit}
               onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
             />
           </div>
         )}
@@ -97,6 +103,7 @@ const Fruits: PageComponent = () => {
         open={drawerOpen}
         fruit={editing}
         categories={categories}
+        fruits={fruits}
         onClose={() => setDrawerOpen(false)}
         onSave={handleSave}
       />

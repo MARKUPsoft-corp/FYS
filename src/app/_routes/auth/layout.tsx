@@ -8,7 +8,9 @@ const AuthLayout: LayoutComponent = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/board', { replace: true });
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      const target = redirect?.startsWith('/') ? redirect : '/board';
+      navigate(target, { replace: true });
     }
   }, [user, loading]);
 

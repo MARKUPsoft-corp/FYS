@@ -8,11 +8,12 @@ import { CustomerHome } from '@/components/features/home/CustomerHome';
 const Home: PageComponent = () => {
   const { user } = useAuthStore();
 
-  if (!user) return null;
+  // Sans connexion : expérience visiteur (page d'accueil publique).
+  if (!user) return <CustomerHome />;
 
   return user.role === UserRole.ADMIN
     ? <AdminHome name={user.name} />
-    : <CustomerHome name={user.name} />;
+    : <CustomerHome />;
 };
 
 Home.metadata = {

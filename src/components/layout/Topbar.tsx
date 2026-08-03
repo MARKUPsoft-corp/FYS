@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogOut, Settings, User, Wallet, Image } from 'lucide-react';
+import { LogIn, LogOut, Settings, User, Wallet, Image } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
-import { getNavItemsForRole } from '@/data/navigation';
+import { clearPendingAction } from '@/lib/pending-action';
+import { getNavItemsForRole, getGuestNavItems } from '@/data/navigation';
 import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { NotificationBell } from '@/components/common/NotificationBell';
@@ -25,7 +26,7 @@ export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = user ? getNavItemsForRole(user.role) : [];
+  const navItems = user ? getNavItemsForRole(user.role) : getGuestNavItems();
 
   const initials = user?.name
     .split(' ')
@@ -35,9 +36,20 @@ export function Topbar() {
     .slice(0, 2) ?? '?';
 
   async function handleSignOut() {
+    clearPendingAction();
     await signOut();
-    navigate('/auth/login');
+    navigate('/board');
   }
+
+  const signInButton = (
+    <Link
+      to="/auth/login"
+      className="flex items-center gap-2 h-10 px-4 rounded-full bg-primary text-white text-sm font-bold shadow-[0_4px_14px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
+    >
+      <LogIn className="size-4" />
+      {t('topbar.signIn')}
+    </Link>
+  );
 
   return (
     <header
@@ -120,44 +132,48 @@ export function Topbar() {
             </>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar  className="size-11 shadow-sm border-2 border-transparent hover:border-primary/40 cursor-pointer transition-all select-none">
-                <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar  className="size-11 shadow-sm border-2 border-transparent hover:border-primary/40 cursor-pointer transition-all select-none">
+                  <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
-                <span className="text-sm font-semibold text-foreground truncate">{user?.name}</span>
-                <span className="text-xs text-muted-foreground font-normal truncate">{user?.email}</span>
-              </DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
+                  <span className="text-sm font-semibold text-foreground truncate">{user.name}</span>
+                  <span className="text-xs text-muted-foreground font-normal truncate">{user.email}</span>
+                </DropdownMenuLabel>
 
-              <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
-                <User className="size-4" />
-                {t('topbar.profile')}
-              </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
+                  <User className="size-4" />
+                  {t('topbar.profile')}
+                </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
-                <Settings className="size-4" />
-                {t('topbar.settings')}
-              </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/board/profile')} className="gap-2 cursor-pointer">
+                  <Settings className="size-4" />
+                  {t('topbar.settings')}
+                </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
 
-              <DropdownMenuItem
-                onClick={handleSignOut}
-                className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-              >
-                <LogOut className="size-4" />
-                {t('topbar.signOut')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <LogOut className="size-4" />
+                  {t('topbar.signOut')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            signInButton
+          )}
         </div>
       </div>
     </header>

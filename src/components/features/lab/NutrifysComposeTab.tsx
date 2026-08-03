@@ -26,7 +26,7 @@ import { createSession, getSessions, getSessionMessages, saveChatMessageToSessio
 import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
 import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
-import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
+import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS, areFruitsIncompatible } from '@/entities';
 import { cn } from '@/lib/utils';
 import { labSounds } from '@/services/lab-sounds';
 
@@ -135,9 +135,17 @@ function ProposalMessageBubble({
         return prev.filter((f) => f !== id);
       }
       if (prev.length >= MAX_LAB_MAIN_FRUITS) return prev;
+      // Retire automatiquement les fruits incompatibles déjà sélectionnés
+      const newFruit = fruitsCatalog.find((f) => f.id === id);
+      const next = newFruit
+        ? prev.filter((fid) => {
+            const existing = fruitsCatalog.find((x) => x.id === fid);
+            return !(existing && areFruitsIncompatible(newFruit, existing));
+          })
+        : prev;
       // 🎵 Play select sound
       labSounds.fruitSelect();
-      return [...prev, id];
+      return [...next, id];
     });
     setPulseId(id);
     setTimeout(() => setPulseId(null), 600);

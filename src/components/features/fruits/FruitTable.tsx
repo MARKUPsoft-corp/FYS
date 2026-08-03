@@ -3,13 +3,14 @@ import { Pencil, Trash2, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Fruit, Category } from '@/entities';
+import { isUsableFruit, type Fruit, type Category } from '@/entities';
 
 type Props = {
   fruits: Fruit[];
   categories: Category[];
   onEdit: (fruit: Fruit) => void;
   onDelete: (fruit: Fruit) => void;
+  onToggleActive: (fruit: Fruit) => void;
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -22,7 +23,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning'> = {
   partial: 'warning',
 };
 
-export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
+export function FruitTable({ fruits, categories, onEdit, onDelete, onToggleActive }: Props) {
   const { t } = useTranslation();
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
@@ -45,7 +46,7 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Role</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Lab</th>
             <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Price</th>
-            <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">Status</th>
+            <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('fruits.availability')}</th>
             <th className="px-4 py-3 w-20" />
           </tr>
         </thead>
@@ -71,7 +72,12 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
 
               {/* Name */}
               <td className="px-4 py-3">
-                <p className="font-medium text-foreground">{fruit.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-foreground">{fruit.name}</p>
+                  <Badge variant={STATUS_VARIANT[fruit.dataStatus]} className="text-[10px] capitalize">
+                    {fruit.dataStatus}
+                  </Badge>
+                </div>
                 {fruit.scientificName && (
                   <p className="text-xs text-muted-foreground italic">{fruit.scientificName}</p>
                 )}
@@ -120,11 +126,22 @@ export function FruitTable({ fruits, categories, onEdit, onDelete }: Props) {
                   : <span className="text-muted-foreground">—</span>}
               </td>
 
-              {/* Status */}
+              {/* Availability */}
               <td className="px-4 py-3 hidden sm:table-cell">
-                <Badge variant={STATUS_VARIANT[fruit.dataStatus]} className="text-xs capitalize">
-                  {fruit.dataStatus}
-                </Badge>
+                <button
+                  type="button"
+                  onClick={() => onToggleActive(fruit)}
+                  title={isUsableFruit(fruit) ? t('fruits.availableHint') : t('fruits.unavailableHint')}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer',
+                    isUsableFruit(fruit)
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/50 hover:bg-emerald-500/20'
+                      : 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500/20',
+                  )}
+                >
+                  <span className={cn('size-1.5 rounded-full', isUsableFruit(fruit) ? 'bg-emerald-500' : 'bg-red-500')} />
+                  {isUsableFruit(fruit) ? t('fruits.available') : t('fruits.unavailable')}
+                </button>
               </td>
 
               {/* Actions */}

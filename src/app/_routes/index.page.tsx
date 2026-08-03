@@ -4,15 +4,15 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 
 const RootIndex: PageComponent = () => {
-  const { user, loading } = useAuthStore();
+  const { loading } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
-      if (user) navigate('/board', { replace: true });
-      else navigate('/auth/login', { replace: true });
+      // L'appli est accessible sans connexion : accueil direct.
+      navigate('/board', { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [loading, navigate]);
 
   return (
     <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-8 animate-in fade-in duration-700">

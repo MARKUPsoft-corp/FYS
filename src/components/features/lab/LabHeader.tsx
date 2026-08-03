@@ -18,13 +18,20 @@ const TABS: { id: LabTab; labelKey: string; nutrifys?: boolean }[] = [
   { id: 'nutrifys', labelKey: 'lab.compose', nutrifys: true },
 ];
 
+// Couches UI poussées dans l'historique par le lab (chaque param = 1 entrée)
+const LAB_LAYER_PARAMS = ['tab', 'step', 'sheet'];
+
 export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   function handleBack() {
-    if (window.history.length > 1) {
-      navigate(-1);
+    const params = new URLSearchParams(window.location.search);
+    const openLayers = LAB_LAYER_PARAMS.filter((k) => params.get(k)).length;
+    const steps = openLayers + 1;
+
+    if (window.history.length > steps) {
+      navigate(-steps);
     } else {
       navigate('/board');
     }

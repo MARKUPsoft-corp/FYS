@@ -167,3 +167,12 @@ export function getNavItemsForRole(role: UserRole): NavItem[] {
 export function getMobileNavItems(role: UserRole): NavItem[] {
   return NAV_ITEMS.filter((item) => item.roles.includes(role) && item.showInMobileTab);
 }
+
+/** Navigation publique (sans connexion) : accueil, lab, catalogue */
+export function getGuestNavItems(): NavItem[] {
+  return NAV_ITEMS.filter(
+    (item) =>
+      item.roles.includes(UserRole.CUSTOMER) &&
+      ['/board', '/lab', '/board/catalogue'].includes(item.path),
+  );
+}
