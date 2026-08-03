@@ -8,8 +8,13 @@ service cloud.firestore {
     }
     
     // Vérifie si l'utilisateur est un admin
+    // Le rôle admin est stocké dans users/{uid}.role (et éventuellement en
+    // custom claim). Les deux sont acceptés pour correspondre à l'app.
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // Vérifie si l'utilisateur courant correspond à l'UID passé
@@ -103,6 +108,36 @@ service cloud.firestore {
       
       // Suppression: réservée aux admins (on garde la trace des commandes)
       allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------------
+    // Notifications (cloche)
+    // ------------------------------------------------------------------------
+    
+    match /notifications/{notificationId} {
+      // Création: tout utilisateur authentifié (l'utilisateur crée ses
+      // notifications, et les admins sont notifiés via notifyAdmins)
+      allow create: if isAuthenticated();
+      
+      // Lecture: l'admin ou le propriétaire de la notification
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      
+      // Marquer comme lu / suppression: propriétaire ou admin
+      allow update: if isAdmin() || isOwner(resource.data.userId);
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
+    }
+
+    // ------------------------------------------------------------------------
+    // Jetons FCM (push) — chaque utilisateur ne gère que ses propres jetons
+    // ------------------------------------------------------------------------
+    
+    match /fcm_tokens/{tokenId} {
+      // Création + reprise (update) : l'utilisateur écrit TOUJOURS son propre
+      // uid. La reprise permet de récupérer un jeton d'appareil laissé par un
+      // compte précédent sur le même navigateur (sinon setDoc = update est
+      // refusé car le doc existant appartient à l'ancien uid).
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if isOwner(resource.data.uid);
     }
   }
 }

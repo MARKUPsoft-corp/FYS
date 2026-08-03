@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageComponent, useNavigate } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { Separator } from '@/components/ui/separator';
-import { loginWithEmail, loginWithGoogle } from '@/services/auth';
+import { loginWithEmail, loginWithGoogle, consumeGoogleRedirect } from '@/services/auth';
+import { useAuthStore } from '@/stores/auth';
 import i18n from '@/i18n';
 
 const GoogleIcon = () => (
@@ -27,9 +28,22 @@ const Login: PageComponent = () => {
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const { user } = useAuthStore();
 
   // URL de retour (ex: /lab?tab=nutrifys) — posée avant de venir ici
   const redirectPath = new URLSearchParams(window.location.search).get('redirect');
+
+  // Au retour de la redirection Google : consomme le résultat (crée le doc
+  // Firestore si c'est un nouvel utilisateur).
+  useEffect(() => {
+    consumeGoogleRedirect().catch(() => {});
+  }, []);
+
+  // Une fois connecté (y compris après le redirect Google), on repart vers la
+  // destination prévue.
+  useEffect(() => {
+    if (user) afterLogin();
+  }, [user]);
 
   function afterLogin() {
     const target = redirectPath?.startsWith('/') ? redirectPath : '/board';
@@ -59,11 +73,22 @@ const Login: PageComponent = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      await loginWithGoogle();
-      afterLogin();
-    } catch {
-      setError(t('auth.login.errors.googleCanceled'));
-    } finally {
+      // POPUP d'abord (retourne l'utilisateur directement) ; si le popup est
+      // bloqué, bascule automatiquement sur une redirection vers Google (la
+      // page quitte puis revient ; afterLogin() s'exécute via useAuthStore).
+      const googleUser = await loginWithGoogle();
+      if (googleUser) {
+        afterLogin();
+      } else {
+        setGoogleLoading(false);
+      }
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      setError(
+        code === 'auth/popup-closed-by-user'
+          ? t('auth.login.errors.googleCanceled')
+          : t('auth.login.errors.googleFailed'),
+      );
       setGoogleLoading(false);
     }
   }

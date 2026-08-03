@@ -212,29 +212,28 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md px-safe py-safe">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-safe py-safe animate-in fade-in duration-300">
+      <div className="relative w-full max-w-md bg-card border border-border/60 shadow-[0_25px_80px_rgba(0,0,0,0.35)] rounded-[2rem] p-6 sm:p-8 max-h-[calc(100dvh-var(--sat)-var(--sab)-2rem)] overflow-y-auto animate-in zoom-in-95 fade-in slide-in-from-bottom-4 duration-300">
 
-      {/* Skip */}
-      <button
-        onClick={onSkip}
-        className="absolute top-[calc(var(--sat)+1.25rem)] right-[calc(var(--sar)+1.25rem)] flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {t('onboarding.skip')} <X className="size-4" />
-      </button>
-
-      <div className="w-full max-w-lg space-y-8">
+        {/* Skip */}
+        <button
+          onClick={onSkip}
+          className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-3 py-2 rounded-full transition-colors"
+        >
+          {t('onboarding.skip')} <X className="size-3.5" />
+        </button>
 
         {/* Progress */}
-        <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary text-center">
-            Étape {step + 1} sur {STEPS.length}
+        <div className="space-y-3 pr-24">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            {t('onboarding.stepLabel', { step: step + 1, total: STEPS.length })}
           </p>
           <ProgressBar step={step} total={STEPS.length} />
         </div>
 
         {/* Step content */}
         <div
-          className="transition-all duration-200"
+          className="transition-all duration-200 mt-8"
           style={{
             opacity: animating ? 0 : 1,
             transform: animating
@@ -271,7 +270,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-6">
           {step > 0 ? (
             <button
               onClick={() => navigate(step - 1, 'back')}

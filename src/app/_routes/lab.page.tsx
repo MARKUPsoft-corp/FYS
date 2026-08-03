@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import { Save, Loader2, Sparkles } from 'lucide-react';
+import { Save, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,11 @@ import { cn } from '@/lib/utils';
 import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
 import { ComposeTab, type ComposeStep } from '@/components/features/lab/ComposeTab';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
+import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
-import { CocktailType, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
+import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
@@ -76,24 +75,30 @@ const FysLab: PageComponent = () => {
   });
 
   const supplements = useMemo(
-    () => fruits.filter(isUsableAsSupplement),
+    () => fruits.filter((f) => isUsableAsSupplement(f) && isUsableFruit(f)),
     [fruits],
   );
 
   // ── Temps réel : retire du mélange en cours les fruits/suppléments que
-  //    l'admin vient de rendre indisponibles ──
-  const availableFruitIds = useMemo(
-    () => new Set(fruits.filter(isUsableFruit).map((f) => f.id)),
+  //    l'admin vient de rendre indisponibles OU qui ne sont plus autorisés
+  //    dans leur rôle (ex : fruit passé en « uniquement supplément ») ──
+  const availableMainIds = useMemo(
+    () => new Set(fruits.filter((f) => isUsableAsMainFruit(f) && isUsableFruit(f)).map((f) => f.id)),
+    [fruits],
+  );
+
+  const availableSupplementIds = useMemo(
+    () => new Set(fruits.filter((f) => isUsableAsSupplement(f) && isUsableFruit(f)).map((f) => f.id)),
     [fruits],
   );
 
   useEffect(() => {
     const prune = (prev: Map<string, number>) => {
-      const stale = [...prev.keys()].some((id) => !availableFruitIds.has(id));
+      const stale = [...prev.keys()].some((id) => !availableMainIds.has(id));
       if (!stale) return prev;
       const next = new Map(prev);
       for (const id of [...next.keys()]) {
-        if (!availableFruitIds.has(id)) {
+        if (!availableMainIds.has(id)) {
           next.delete(id);
           labSounds.fruitDeselect();
         }
@@ -101,8 +106,20 @@ const FysLab: PageComponent = () => {
       return next;
     };
     setSelectedIngredients(prune);
-    setSelectedSupplements(prune);
-  }, [availableFruitIds]);
+    const pruneSupps = (prev: Map<string, number>) => {
+      const stale = [...prev.keys()].some((id) => !availableSupplementIds.has(id));
+      if (!stale) return prev;
+      const next = new Map(prev);
+      for (const id of [...next.keys()]) {
+        if (!availableSupplementIds.has(id)) {
+          next.delete(id);
+          labSounds.fruitDeselect();
+        }
+      }
+      return next;
+    };
+    setSelectedSupplements(pruneSupps);
+  }, [availableMainIds, availableSupplementIds]);
 
   // ── Reprise d'action après connexion : rejoue automatiquement l'action
   //    qui avait été interrompue (analyser, commander, sauvegarder, tab IA) ──
@@ -142,9 +159,8 @@ const FysLab: PageComponent = () => {
     const draft = loadLabDraft();
     if (!draft) return;
 
-    const usable = new Set(availableFruitIds);
-    const mains = new Map(draft.mains.filter(([id]) => usable.has(id)));
-    const supps = new Map(draft.supps.filter(([id]) => usable.has(id)));
+    const mains = new Map(draft.mains.filter(([id]) => availableMainIds.has(id)));
+    const supps = new Map(draft.supps.filter(([id]) => availableSupplementIds.has(id)));
     if (mains.size === 0 && supps.size === 0) return;
 
     setSelectedIngredients(mains);
@@ -527,7 +543,7 @@ const FysLab: PageComponent = () => {
       setAiRecommendation(null);
       clearLabDraft();
       setSearchParams({}, { replace: true });
-      navigate(`/board/cocktails?cocktail=${cocktailId}`);
+      navigate(`/board/catalogue?cocktail=${cocktailId}`);
     } finally {
       setSaving(false);
     }
@@ -547,11 +563,11 @@ const FysLab: PageComponent = () => {
   }
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
-    // Filtre de sécurité : ne garde que les fruits non incompatibles entre eux
+    // Filtre de sécurité : ne garde que les fruits actifs et non incompatibles entre eux
     const next = new Map<string, number>();
     for (const id of proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS)) {
       const newFruit = fruits.find((f) => f.id === id);
-      if (!newFruit) continue;
+      if (!newFruit || !isUsableFruit(newFruit)) continue;
       const conflicts = [...next.keys()].some((fid) => {
         const existing = fruits.find((f) => f.id === fid);
         return existing ? areFruitsIncompatible(newFruit, existing) : false;
@@ -560,7 +576,8 @@ const FysLab: PageComponent = () => {
     }
     const nextSupps = new Map<string, number>();
     proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS).forEach((id) => {
-      if (!next.has(id)) nextSupps.set(id, 20);
+      // `supplements` n'expose déjà que les suppléments actifs
+      if (supplements.some((s) => s.id === id) && !next.has(id)) nextSupps.set(id, 20);
     });
     if (next.size === 0) return; // tout était incompatible : on ne compose rien
     setSelectedIngredients(next);
@@ -614,7 +631,7 @@ const FysLab: PageComponent = () => {
               onChangeQuantity={changeQuantity}
               cocktailName={cocktailName}
               onNameChange={setCocktailNameFromUser}
-              onSave={() => handleSave()}
+              onSaveClick={openRenameSheet}
               saving={saving}
               analysis={analysis}
               onAnalyze={() => handleAnalyze()}
@@ -632,43 +649,18 @@ const FysLab: PageComponent = () => {
           )}
         </div>
 
-        {/* Sheets */}
-        <Sheet open={showRenameSheet} onOpenChange={closeRenameSheet}>
-          <SheetContent side="bottom" className="rounded-t-3xl border-border/40 p-6 flex flex-col gap-6 lg:hidden">
-            <SheetHeader>
-              <SheetTitle className="font-display text-xl text-center">{t('lab.nameTitle')}</SheetTitle>
-              <SheetDescription className="text-center text-xs">
-                {t('lab.nameDescription')}
-              </SheetDescription>
-            </SheetHeader>
-            <div className="space-y-4">
-              <Input
-                value={cocktailName}
-                onChange={(e) => setCocktailNameFromUser(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && cocktailName.trim() && !saving) {
-                    closeRenameSheet(false);
-                    handleSave();
-                  }
-                }}
-                placeholder={t('lab.nameInputPlaceholder')}
-                className="h-12 rounded-xl text-base px-4 bg-muted/30 focus-visible:ring-primary/40"
-                autoFocus
-              />
-              <Button
-                size="lg"
-                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 text-base shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95"
-                disabled={!cocktailName.trim() || saving}
-                onClick={() => {
-                  closeRenameSheet(false);
-                  handleSave();
-                }}
-              >
-                {saving ? <><Loader2 className="size-4 animate-spin" /> {t('lab.saving')}</> : <><Save className="size-4" /> {t('lab.saveCocktail')}</>}
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* Modale d'enregistrement du cocktail */}
+        <SaveCocktailDialog
+          open={showRenameSheet}
+          onOpenChange={closeRenameSheet}
+          cocktailName={cocktailName}
+          onNameChange={setCocktailNameFromUser}
+          selectedFruits={fruits.filter((f) => selectedIngredients.has(f.id))}
+          selectedSupplements={fruits.filter((f) => selectedSupplements.has(f.id))}
+          analysis={analysis}
+          saving={saving}
+          onSave={() => handleSave()}
+        />
 
         {draftCocktail && user && (
           <OrderSheet

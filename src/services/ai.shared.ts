@@ -417,8 +417,11 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
   const knowledgeContext = buildKnowledgeContext([], profile, isEn ? 'en' : 'fr');
 
   // Build a rich fruit catalog from real Firestore data
-  const mainFruits = fruits.filter(f => !f.isSupplement);
-  const supplements = fruits.filter(f => f.isSupplement);
+  // Seuls les fruits actifs (isActive !== false) sont référencables : un fruit
+  // indisponible ne doit JAMAIS apparaître dans les suggestions de l'assistant.
+  const activeFruits = fruits.filter(f => f.isActive !== false);
+  const mainFruits = activeFruits.filter(f => !f.isSupplement);
+  const supplements = activeFruits.filter(f => f.isSupplement);
 
   const noneSpecified = isEn ? 'not specified' : 'non spécifié';
   const noneWarn = isEn ? 'none' : 'aucun';
@@ -453,6 +456,13 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
     : (isEn ? '(No supplements loaded)' : '(Aucun supplément chargé)');
   const supplementIds = supplements.map(s => s.id).join(', ');
 
+  // Fruits indisponibles (isActive: false) : l'IA doit les reconnaître quand
+  // l'utilisateur les nomme, mais ne JAMAIS les proposer.
+  const unavailableFruits = fruits.filter(f => f.isActive === false);
+  const unavailableCatalog = unavailableFruits.length > 0
+    ? unavailableFruits.map((f) => `  • ${f.name} [id: ${f.id}]`).join('\n')
+    : (isEn ? 'none' : 'aucun');
+
   if (isEn) {
     return `You are NutriFYS, an expert nutritionist assistant specialized in FYS healthy fruit cocktails, trained by field experts. You have a deep mastery of nutritional biochemistry, nutrient interactions, and the impact of food on the human body. But you are also an excellent educator — you love explaining nutrition simply, as if talking to someone who knows nothing about the field.
 
@@ -464,6 +474,11 @@ Your style :
 - You ALWAYS adapt your analysis to the user's health profile. If they are diabetic, you mention blood sugar elevation and explain it simply. If they have specific goals, you address them directly.
 - You converse naturally, like a real consultation. You ask questions, you listen.
 
+RESPONSE LANGUAGE (ABSOLUTE):
+- You must ALWAYS write your entire response in ENGLISH, regardless of the language used by the user (French, English, or any other).
+- Even if the user writes in French, answer in English anyway — the app interface is in English.
+- The proposal name, benefits and explanation must also be in English.
+
 ${profileSection}
 
 NUTRITIONAL KNOWLEDGE BASE:
@@ -474,6 +489,13 @@ ${fruitCatalog}
 
 AVAILABLE SUPPLEMENTS CATALOG:
 ${supplementCatalog}
+
+UNAVAILABLE FRUITS (NEVER propose these — acknowledge politely and suggest an alternative):
+${unavailableCatalog}
+
+RULE ON UNAVAILABLE FRUITS (ABSOLUTE):
+- If the user asks for a fruit from the "UNAVAILABLE FRUITS" list above (or any fruit NOT in the available catalogs), reply that it is currently unavailable today, apologize briefly, then suggest the closest alternative from the available catalog.
+- NEVER say an unavailable fruit is available. NEVER include it in "proposal.fruitIds" or "proposal.supplementIds".
 
 VALID FRUIT IDs FOR "proposal.fruitIds": [${fruitIds}]
 VALID SUPPLEMENT IDs FOR "proposal.supplementIds": [${supplementIds}]
@@ -532,6 +554,11 @@ Ton style :
 - Tu adaptes TOUJOURS ton analyse au profil santé de l\'utilisateur. Si il est diabetique, tu mentionnes l\'élévation de glycémie et tu l\'expliques simplement. Si il a des objectifs spécifiques, tu y répondres directement.
 - Tu discutes naturellement, comme une vraie consultation. Tu poses des questions, tu réécoutes.
 
+LANGUE DE RÉPONSE (ABSOLU) :
+- Tu dois TOUJOURS écrire ta réponse entièrement en FRANÇAIS, quelle que soit la langue utilisée par le client (français, anglais ou autre).
+- Même si le client écrit en anglais, réponds en français — l\'interface de l\'app est en français.
+- Le nom de la proposition, ses bénéfices et son explication doivent aussi être en français.
+
 ${profileSection}
 
 BASE DE CONNAISSANCES NUTRITIONNELLES:
@@ -542,6 +569,13 @@ ${fruitCatalog}
 
 CATALOGUE DES SUPPLÉMENTS DISPONIBLES:
 ${supplementCatalog}
+
+FRUITS INDISPONIBLES (À NE JAMAIS PROPOSER — reconnais-les poliment et propose une alternative) :
+${unavailableCatalog}
+
+RÈGLE SUR LES FRUITS INDISPONIBLES (ABSOLU) :
+- Si l'utilisateur demande un fruit de la liste "FRUITS INDISPONIBLES" ci-dessus (ou tout fruit ABSENT des catalogues disponibles), réponds qu'il est temporairement indisponible aujourd'hui, excuse-toi brièvement, puis suggère l'alternative la plus proche du catalogue disponible.
+- Ne dis JAMAIS qu'un fruit indisponible est disponible. Ne l'inclus JAMAIS dans "proposal.fruitIds" ni "proposal.supplementIds".
 
 FRUIT IDs VALIDES POUR LE CHAMP "proposal.fruitIds": [${fruitIds}]
 SUPPLEMENT IDs VALIDES POUR LE CHAMP "proposal.supplementIds": [${supplementIds}]

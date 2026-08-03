@@ -134,8 +134,12 @@ export function CocktailProposalCard({
 }: Props) {
   const { t } = useTranslation();
   // Toujours afficher les fruits de la proposal ; la sélection se gère via selected=
-  const fruits = resolveFruitDisplays(proposal.fruitIds, fruitsCatalog);
-  const supplements = resolveFruitDisplays(proposal.supplementIds, fruitsCatalog);
+  // Un id absent du catalogue (fruit/supplément indisponible) est retiré de l'affichage
+  const catalogLoaded = fruitsCatalog.length > 0;
+  const fruits = resolveFruitDisplays(proposal.fruitIds, fruitsCatalog)
+    .filter((item) => !catalogLoaded || fruitsCatalog.some((f) => f.id === item.id));
+  const supplements = resolveFruitDisplays(proposal.supplementIds, fruitsCatalog)
+    .filter((item) => !catalogLoaded || fruitsCatalog.some((f) => f.id === item.id));
 
   const verdictColor = getVerdictColor(proposal.verdict);
   const activeProposal = buildProposalSelection(proposal, fruitIds, supplementIds);
@@ -227,8 +231,10 @@ export function CocktailProposalCard({
           </div>
           <div className="flex flex-wrap gap-2">
             {supplements.map((sup, i) => {
+              const catalogSup = fruitsCatalog.find((f) => f.id === sup.id);
+              const unavailable = catalogSup ? !isUsableFruit(catalogSup) : false;
               const selected = supplementIds.includes(sup.id);
-              const disabled = !selected && atMaxSupplements;
+              const disabled = unavailable || (!selected && atMaxSupplements);
               return (
               <div key={sup.id} className={cn(pulseId === sup.id && 'animate-pulse', 'animate-in fade-in slide-in-from-bottom-1 duration-300')} style={{ animationDelay: `${i * 60}ms` }}>
                 <IngredientTile

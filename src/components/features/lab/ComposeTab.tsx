@@ -20,7 +20,7 @@ import { isUsableFruit, isUsableAsMainFruit, areFruitsIncompatible, MAX_LAB_MAIN
 
 // ── Verdict config ────────────────────────────────────────────────────────────
 
-function getVerdictLabel(verdict: AIVerdict, t: (key: string) => string): string {
+export function getVerdictLabel(verdict: AIVerdict, t: (key: string) => string): string {
   const labels: Record<AIVerdict, string> = {
     beneficial: t('nutrition.verdictBeneficial'),
     neutral: t('nutrition.verdictNeutral'),
@@ -30,7 +30,7 @@ function getVerdictLabel(verdict: AIVerdict, t: (key: string) => string): string
   return labels[verdict];
 }
 
-const VERDICT_CONFIG: Record<AIVerdict, {
+export const VERDICT_CONFIG: Record<AIVerdict, {
   emoji: string;
   bg: string;
   border: string;
@@ -380,7 +380,7 @@ type Props = {
   onChangeQuantity: (fruitId: string, grams: number) => void;
   cocktailName: string;
   onNameChange: (name: string) => void;
-  onSave: () => Promise<void>;
+  onSaveClick: () => void;
   saving: boolean;
   analysis: AIAnalysis | null;
   onAnalyze: () => Promise<void>;
@@ -402,7 +402,7 @@ export function ComposeTab({
   onToggleSupplement,
   cocktailName,
   onNameChange,
-  onSave,
+  onSaveClick,
   saving,
   analysis,
   onAnalyze,
@@ -412,8 +412,10 @@ export function ComposeTab({
   loadingAI,
 }: Props) {
   const { t } = useTranslation();
+  // Étape 1 : uniquement les fruits principaux. Un fruit qui n'est QUE
+  // supplément (isMainFruit=false) n'apparaît pas ici du tout.
   const mainFruits = fruits.filter((f) => isUsableFruit(f) && isUsableAsMainFruit(f));
-  const unavailableFruits = fruits.filter((f) => !isUsableFruit(f) || !isUsableAsMainFruit(f));
+  const unavailableFruits = fruits.filter((f) => isUsableAsMainFruit(f) && !isUsableFruit(f));
   const displayedFruits = [...mainFruits, ...unavailableFruits];
 
   // Fruits bloqués par incompatibilité : un fruit sélectionné interdit les
@@ -511,7 +513,7 @@ export function ComposeTab({
             ) : (
               <div  className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
                 {displayedFruits.map((fruit) => {
-                  const isUnavailable = !isUsableFruit(fruit) || !isUsableAsMainFruit(fruit);
+                  const isUnavailable = !isUsableFruit(fruit);
                   const isIncompatible = incompatibleIds.has(fruit.id);
                   const isSelected = selectedIngredients.has(fruit.id);
                   const isDisabled = isUnavailable || isIncompatible || (!isSelected && atMaxFruits);
@@ -610,7 +612,7 @@ export function ComposeTab({
             </div>
             <SupplementsTab
               selectedFruits={selectedFruits}
-              supplements={supplements}
+              fruits={fruits}
               selectedSupplementIds={[...selectedSupplements.keys()]}
               onToggleSupplement={onToggleSupplement}
               aiRecommendation={aiRecommendation}
@@ -630,7 +632,7 @@ export function ComposeTab({
             selectedSupplementCount={selectedSupplementItems.length}
             cocktailName={cocktailName}
             onNameChange={onNameChange}
-            onSave={onSave}
+            onSaveClick={onSaveClick}
             saving={saving}
             canSave={canSave}
             analysis={analysis}
@@ -654,7 +656,7 @@ type SavePanelProps = {
   selectedSupplementCount: number;
   cocktailName: string;
   onNameChange: (name: string) => void;
-  onSave: () => Promise<void>;
+  onSaveClick: () => void;
   saving: boolean;
   canSave: boolean;
   analysis: AIAnalysis | null;
@@ -672,7 +674,7 @@ export function SavePanel({
   selectedSupplementCount,
   cocktailName,
   onNameChange,
-  onSave,
+  onSaveClick,
   saving,
   canSave,
   analysis,
@@ -793,7 +795,7 @@ export function SavePanel({
           <Input
             value={cocktailName}
             onChange={(e) => onNameChange(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && canSave && !saving && onSave()}
+            onKeyDown={(e) => e.key === 'Enter' && canSave && onSaveClick()}
             placeholder={t('lab.nameInputPlaceholder')}
             className="h-10 rounded-xl text-base"
           />
@@ -804,7 +806,7 @@ export function SavePanel({
             size="lg"
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_8px_25px_rgba(63,109,78,0.3)] active:scale-95 transition-all gap-2"
             disabled={(!canSave || saving) ? true : undefined}
-            onClick={onSave}
+            onClick={onSaveClick}
           >
             {saving ? (
               t('lab.saving')

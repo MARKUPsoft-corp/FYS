@@ -12,7 +12,7 @@ import {
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
 import type { Fruit } from '@/entities';
-import { isUsableAsMainFruit, isUsableAsSupplement } from '@/entities';
+import { isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit } from '@/entities';
 import { uploadFruitImage, deleteFruitImage, isManagedImageUrl } from './storage';
 import { sendPushNotification } from './push';
 import i18n from '@/i18n';
@@ -44,12 +44,12 @@ export function subscribeToFruits(onData: (fruits: Fruit[]) => void): () => void
 
 export async function getMainFruits(): Promise<Fruit[]> {
   const all = await getFruits();
-  return all.filter(isUsableAsMainFruit);
+  return all.filter((f) => isUsableAsMainFruit(f) && isUsableFruit(f));
 }
 
 export async function getSupplementFruits(): Promise<Fruit[]> {
   const all = await getFruits();
-  return all.filter(isUsableAsSupplement);
+  return all.filter((f) => isUsableAsSupplement(f) && isUsableFruit(f));
 }
 
 export async function getFruitById(id: string): Promise<Fruit | null> {

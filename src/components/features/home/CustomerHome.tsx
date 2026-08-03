@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'rasengan';
-import { Plus, Sparkles, Beaker, MessageCircle, ChevronRight } from 'lucide-react';
+import { Plus, Sparkles, Beaker, MessageCircle, ChevronRight, Zap, Leaf, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/auth';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import { isUsableFruit, type Fruit } from '@/entities';
+import { cn } from '@/lib/utils';
 import { HeroSlider } from '@/components/features/home/HeroSlider';
 
 type Props = Record<string, never>;
@@ -216,43 +217,65 @@ export function CustomerHome(_props: Props) {
 
         {/* ASSISTANT SANTÉ — parler au chatbot (section autonome) */}
         <section>
-          <div className="text-center mb-6">
-            <h3 className="font-display font-bold text-3xl md:text-4xl leading-none">
-              <span className="text-foreground">{t('home.customer.assistantHeadingPre')}</span>
-              <span className="text-primary">{t('home.customer.assistantHeadingHighlight')}</span>
-            </h3>
-            <p className="text-muted-foreground mt-3 font-medium max-w-md mx-auto">
-              {t('home.customer.assistantSectionSubtitle')}
-            </p>
-          </div>
+          <div className="bg-card rounded-[2.5rem] border border-border/60 shadow-sm overflow-hidden">
+            <div className="flex flex-col lg:flex-row">
+              {/* Colonne contenu */}
+              <div className="flex-1 p-7 sm:p-10 lg:p-14 space-y-6">
+                <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-secondary/10 border border-secondary/25 self-start">
+                  <MessageCircle className="size-4 text-secondary" />
+                  <span className="text-secondary font-bold uppercase tracking-widest text-[10px]">
+                    {t('home.customer.assistantBadge')}
+                  </span>
+                </div>
 
-          <Link
-            to="/lab?tab=nutrifys"
-            className="block bg-card rounded-[2.5rem] border border-border/40 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow group"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              <div className="size-14 shrink-0 rounded-[1.5rem] bg-secondary/10 border border-secondary/20 flex items-center justify-center mx-auto sm:mx-0">
-                <MessageCircle className="size-7 text-secondary" strokeWidth={2.2} />
-              </div>
-              <div className="flex-1 min-w-0 text-center sm:text-left">
-                <h4 className="font-display font-bold text-xl md:text-2xl text-foreground leading-tight">
-                  {t('home.customer.assistantTitle')}
-                </h4>
-                <p className="text-muted-foreground mt-1.5 text-sm md:text-base font-medium leading-relaxed">
+                <h2 className="font-display font-extrabold text-3xl sm:text-4xl xl:text-5xl text-foreground leading-[1.15] max-w-xl">
+                  {t('home.customer.assistantHeadingPre')}
+                  <span className="text-primary">{t('home.customer.assistantHeadingHighlight')}</span>
+                </h2>
+
+                <p className="text-muted-foreground text-base sm:text-lg font-medium leading-relaxed max-w-lg">
                   {t('home.customer.assistantDesc')}
                 </p>
+
+                <div className="pt-2">
+                  <Link to="/lab?tab=nutrifys">
+                    <Button
+                      size="lg"
+                      className="rounded-full bg-secondary hover:bg-secondary/85 text-white font-bold px-8 h-13 text-sm gap-1.5 shadow-[0_4px_16px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+                    >
+                      {t('home.customer.assistantCta')}
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              <div className="shrink-0 flex justify-center sm:justify-end">
-                <Button
-                  size="lg"
-                  className="rounded-full bg-secondary hover:bg-secondary/85 text-white font-bold px-6 h-12 text-sm gap-1.5 shadow-[0_4px_16px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
-                >
-                  {t('home.customer.assistantCta')}
-                  <ChevronRight className="size-4" />
-                </Button>
+
+              {/* Colonne exemples — rend le bénéfice concret, sans surcharge */}
+              <div className="lg:w-[400px] shrink-0 border-t lg:border-t-0 lg:border-l border-border/50 bg-muted/20 px-7 py-8 sm:px-10 lg:px-12 lg:py-14 flex flex-col justify-center gap-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                  {t('home.customer.assistantExampleLabel')}
+                </p>
+
+                {[
+                  { icon: Zap, label: t('home.customer.assistantExampleEnergy') },
+                  { icon: Leaf, label: t('home.customer.assistantExampleDigestion') },
+                  { icon: Moon, label: t('home.customer.assistantExampleSleep') },
+                ].map((ex) => (
+                  <Link
+                    key={ex.label}
+                    to={`/lab?tab=nutrifys&prompt=${encodeURIComponent(ex.label)}`}
+                    className="group flex items-center gap-3.5 rounded-2xl border border-border/60 bg-card px-4 py-3.5 hover:border-secondary/40 hover:shadow-md transition-all"
+                  >
+                    <span className="size-9 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+                      <ex.icon className="size-4 text-secondary" />
+                    </span>
+                    <span className="flex-1 text-sm font-semibold text-foreground">{ex.label}</span>
+                    <ChevronRight className="size-4 text-muted-foreground group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
+                  </Link>
+                ))}
               </div>
             </div>
-          </Link>
+          </div>
         </section>
 
         {/* INGREDIENTS PHARES (Fruits de saison) */}
@@ -266,28 +289,43 @@ export function CustomerHome(_props: Props) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-8">
             
-            {storeFruits.filter(isUsableFruit).map((fruit) => (
-              <div 
-                key={fruit.id} 
-                onClick={() => setSelectedFruit(fruit)}
-                className="bg-card w-full p-3 rounded-[2rem] border border-border/40 shadow-sm hover:shadow-md transition-shadow group flex flex-col items-center cursor-pointer"
-              >
-                 <div 
-                   className="w-full aspect-square rounded-[1.5rem] shadow-inner mb-3 bg-cover bg-center transition-transform group-hover:scale-105 bg-muted"
-                   style={{ backgroundImage: fruit.imageUrl ? `url('${fruit.imageUrl}')` : 'none' }}
-                 />
-                 <h5 className="font-bold text-sm text-foreground text-center line-clamp-1 w-full px-1">{fruit.name}</h5>
-                 <p className="text-[11px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.benefits?.[0] || 'Fruit Naturel'}</p>
-                 
-                 <Button 
-                   variant="ghost" 
-                   size="icon" 
-                   className="h-8 w-8 rounded-full mt-3 bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors"
-                 >
+            {/* Tous les fruits sont affichés — les indisponibles sont grisés */}
+            {storeFruits.map((fruit) => {
+              const unavailable = !isUsableFruit(fruit);
+              return (
+                <div
+                  key={fruit.id}
+                  onClick={() => !unavailable && setSelectedFruit(fruit)}
+                  className={cn(
+                    'relative bg-card w-full p-3 rounded-[2rem] border border-border/40 shadow-sm transition-all group flex flex-col items-center',
+                    unavailable
+                      ? 'opacity-45 grayscale cursor-not-allowed'
+                      : 'hover:shadow-md cursor-pointer',
+                  )}
+                >
+                  {unavailable && (
+                    <span className="absolute top-2 right-2 z-10 text-[9px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      {t('lab.unavailable')}
+                    </span>
+                  )}
+                  <div
+                    className="w-full aspect-square rounded-[1.5rem] shadow-inner mb-3 bg-cover bg-center transition-transform group-hover:scale-105 bg-muted"
+                    style={{ backgroundImage: fruit.imageUrl ? `url('${fruit.imageUrl}')` : 'none' }}
+                  />
+                  <h5 className="font-bold text-sm text-foreground text-center line-clamp-1 w-full px-1">{fruit.name}</h5>
+                  <p className="text-[11px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.benefits?.[0] || 'Fruit Naturel'}</p>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={unavailable}
+                    className="h-8 w-8 rounded-full mt-3 bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors disabled:opacity-0"
+                  >
                     <Plus className="size-4" />
-                 </Button>
-              </div>
-            ))}
+                  </Button>
+                </div>
+              );
+            })}
 
           </div>
         </section>

@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { createStore } from '@rasenganjs/kurama';
 import { auth, db } from '@/lib/firebase';
 import { User, COLLECTIONS } from '@/entities';
+import { consumeGoogleRedirect } from '@/services/auth';
 
 type AuthState = {
   user: User | null;
@@ -20,7 +21,14 @@ export const useAuthStore = createStore<AuthState>((set) => ({
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const snap = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+          let snap = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+          if (!snap.exists()) {
+            // Nouvel utilisateur Google revenant d'un sign-in par redirection :
+            // le document n'existe pas encore — consomme le résultat du
+            // redirect (crée le doc) puis recharge.
+            await consumeGoogleRedirect();
+            snap = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+          }
           set({
             firebaseUser,
             user: snap.exists() ? (snap.data() as User) : null,

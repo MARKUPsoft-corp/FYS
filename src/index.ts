@@ -25,7 +25,14 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 // Register service worker — runs after the app shell is mounted
-if ('serviceWorker' in navigator) {
+// Les service workers n'existent qu'en contexte sécurisé (HTTPS ou localhost)
+const isSecureEnvironment =
+  window.isSecureContext &&
+  (location.protocol === 'https:' ||
+    location.hostname === 'localhost' ||
+    location.hostname === '127.0.0.1');
+
+if ('serviceWorker' in navigator && isSecureEnvironment) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
@@ -43,8 +50,12 @@ if ('serviceWorker' in navigator) {
         });
       })
       .catch((err) => {
-        // SW registration failure is non-fatal — app still works online
-        console.warn('[FYS] Service Worker registration failed:', err);
+        // SW registration failure is non-fatal — app still works online.
+        // "The operation is insecure" survient hors contexte sécurisé (ou
+        // via des extensions qui modifient l'environnement) : silencieux.
+        if ((err as DOMException)?.name !== 'SecurityError') {
+          console.warn('[FYS] Service Worker registration failed:', err);
+        }
       });
 
     // Reload the page when the new SW takes control

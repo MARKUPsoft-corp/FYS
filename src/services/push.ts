@@ -10,17 +10,21 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string;
  */
 export async function subscribeToPush(uid: string): Promise<'granted' | 'denied' | 'unsupported'> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+  // Les service workers n'existent qu'en contexte sécurisé — éviter l'écriture
+  // Firestore si on sait que getToken échouera (SecurityError)
+  if (!window.isSecureContext) return 'unsupported';
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return 'denied';
 
+  let token: string | null = null;
   try {
     const messaging = getMessaging(app);
     let swRegistration = await navigator.serviceWorker.getRegistration();
     if (!swRegistration) {
       swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
-    const token = await getToken(messaging, { 
+    token = await getToken(messaging, { 
        vapidKey: VAPID_PUBLIC_KEY, 
        serviceWorkerRegistration: swRegistration 
     });
@@ -35,7 +39,11 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
 
     return 'granted';
   } catch (err) {
-    console.error('[push] subscribe error:', err);
+    const code = (err as { code?: string })?.code;
+    console.error(
+      `[push] subscribe error (${code}) — opération : getToken ou écriture fcm_tokens/${token ? token : '?'} :`,
+      err,
+    );
     return 'denied';
   }
 }

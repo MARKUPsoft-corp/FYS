@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Loader2,
@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'rasengan';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { CocktailProposalCard } from '@/components/features/lab/CocktailProposalCard';
@@ -26,7 +27,7 @@ import { createSession, getSessions, getSessionMessages, saveChatMessageToSessio
 import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
 import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
-import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS, areFruitsIncompatible } from '@/entities';
+import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS, areFruitsIncompatible, isUsableFruit } from '@/entities';
 import { cn } from '@/lib/utils';
 import { labSounds } from '@/services/lab-sounds';
 
@@ -104,10 +105,30 @@ function ProposalMessageBubble({
   fruitsCatalog: Fruit[];
   isNew?: boolean;
 }) {
-  const [fruitIds, setFruitIds] = useState(message.proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS));
-  const [supplementIds, setSupplementIds] = useState(message.proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS));
+  const [fruitIds, setFruitIds] = useState(() =>
+    fruitsCatalog.length === 0
+      ? message.proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS)
+      : message.proposal.fruitIds
+          .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
+          .slice(0, MAX_LAB_MAIN_FRUITS),
+  );
+  const [supplementIds, setSupplementIds] = useState(() =>
+    fruitsCatalog.length === 0
+      ? message.proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS)
+      : message.proposal.supplementIds
+          .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
+          .slice(0, MAX_LAB_SUPPLEMENTS),
+  );
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [cardVisible, setCardVisible] = useState(!isNew);
+
+  // Un fruit indisponible (isActive: false) ne peut ni rester sélectionné ni être ajouté
+  useEffect(() => {
+    if (fruitsCatalog.length === 0) return; // catalogue encore en chargement
+    const isUsable = (id: string) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f));
+    setFruitIds((prev) => prev.filter(isUsable));
+    setSupplementIds((prev) => prev.filter(isUsable));
+  }, [fruitsCatalog]);
 
   const typewrittenContent = useTypewriter(message.content, !!isNew, 6, () => {
     if (window.innerWidth < 1024) {
@@ -128,6 +149,8 @@ function ProposalMessageBubble({
   }, [typewrittenContent, message.content.length, isNew, cardVisible]);
 
   function toggleFruit(id: string) {
+    const catalogFruit = fruitsCatalog.find((f) => f.id === id);
+    if (!catalogFruit || !isUsableFruit(catalogFruit)) return;
     setFruitIds((prev) => {
       if (prev.includes(id)) {
         // 🎵 Play deselect sound
@@ -152,6 +175,8 @@ function ProposalMessageBubble({
   }
 
   function toggleSupplement(id: string) {
+    const catalogSup = fruitsCatalog.find((f) => f.id === id);
+    if (!catalogSup || !isUsableFruit(catalogSup)) return;
     setSupplementIds((prev) => {
       if (prev.includes(id)) {
         // 🎵 Play deselect sound
@@ -386,11 +411,34 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
   const [editTitle, setEditTitle] = useState('');
 
   const user = useAuthStore((s) => s.user);
-  
+  const [, setSearchParams] = useSearchParams();
+  const promptSentRef = useRef(false);
+
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
   });
+
+  // Catalogue filtré : un fruit indisponible (isActive: false) ne doit être ni
+  // suggéré par l'IA ni affiché comme sélectionnable dans les cartes proposées.
+  const usableFruits = useMemo(() => fruits.filter(isUsableFruit), [fruits]);
+
+  // Mini-réponse depuis la page d'accueil (?tab=nutrifys&prompt=…) :
+  // pré-remplit la barre ET envoie le message directement. On attend que le
+  // catalogue fruits soit chargé pour que l'IA ait un contexte complet, et le
+  // paramètre est nettoyé de l'URL pour ne jamais être renvoyé.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prompt = params.get('prompt');
+    if (!prompt || promptSentRef.current) return;
+    if (fruits.length === 0) return;
+    promptSentRef.current = true;
+    params.delete('prompt');
+    setSearchParams(params, { replace: true });
+    setInput(prompt);
+    sendMessage(prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fruits, setSearchParams]);
 
   // Load profile + session list on mount
   useEffect(() => {
@@ -466,6 +514,18 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
+    // Si un fruit/supplément indisponible apparaît dans la réponse IA, on le retire
+    // immédiatement : il ne doit jamais finir sélectionné ni enregistré en session.
+    const sanitizeProposal = (proposal: CocktailProposal): CocktailProposal => {
+      if (usableFruits.length === 0) return proposal;
+      const isUsableId = (id: string) => usableFruits.some((f) => f.id === id && isUsableFruit(f));
+      return {
+        ...proposal,
+        fruitIds: proposal.fruitIds.filter(isUsableId),
+        supplementIds: proposal.supplementIds.filter(isUsableId),
+      };
+    };
+
     // If first user message, create a session now
     let sessionId = currentSessionId;
     if (!sessionId && user) {
@@ -482,10 +542,10 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
         .filter((m) => !(m.role === 'assistant' && m.content === t('nutrifys.welcome')))
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-      const aiReply = await chatCocktail(historyForAI, profile, fruits);
+      const aiReply = await chatCocktail(historyForAI, profile, usableFruits);
 
       const replyMsg = aiReply.proposal
-        ? createProposalMessage(aiReply.text, aiReply.proposal as CocktailProposal)
+        ? createProposalMessage(aiReply.text, sanitizeProposal(aiReply.proposal as CocktailProposal))
         : createTextMessage('assistant', aiReply.text);
 
       setMessages((prev) => [...prev, replyMsg]);
@@ -693,7 +753,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                   key={msg.id}
                   message={msg}
                   onAnalyze={onAnalyzeProposal}
-                  fruitsCatalog={fruits}
+                  fruitsCatalog={usableFruits}
                   isNew={msg.id === latestAssistantId}
                 />
               ))}
