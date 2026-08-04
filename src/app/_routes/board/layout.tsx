@@ -5,6 +5,7 @@ import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { UserRole } from '@/entities/user';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
+import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
 
 const AppLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
@@ -45,6 +46,9 @@ const AppLayout: LayoutComponent = () => {
 
   const showOnboarding =
     !isAuthRoute && !!user && isCustomer && !profileLoading && !isProfileComplete(profile) && !modalDismissed;
+
+  const showFloatingButton =
+    !isAuthRoute && !!user && isCustomer && !profileLoading && !isProfileComplete(profile) && modalDismissed;
 
   async function handleOnboardingComplete(data: {
     healthConditions: string[];
@@ -99,14 +103,19 @@ const AppLayout: LayoutComponent = () => {
   }
 
   return (
-    <DashboardShell>
-      <Outlet />
+    <>
+      <DashboardShell>
+        <Outlet />
+      </DashboardShell>
       <OnboardingModal
         open={showOnboarding}
         onSkip={() => setModalDismissed(true)}
         onComplete={handleOnboardingComplete}
       />
-    </DashboardShell>
+      {showFloatingButton && (
+        <ProfileFloatingButton onClick={() => setModalDismissed(false)} />
+      )}
+    </>
   );
 };
 

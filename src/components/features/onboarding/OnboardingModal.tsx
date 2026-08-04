@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ChevronRight, X, Check, Plus, Activity, Leaf, Target } from 'lucide-react';
+import { ChevronRight, ChevronLeft, X, Check, Plus, Activity, Leaf, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 // ── Chip selector ─────────────────────────────────────────────────────────────
 
 function ChipSelector({
@@ -209,94 +209,101 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-safe py-safe animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-card border border-border/60 shadow-[0_25px_80px_rgba(0,0,0,0.35)] rounded-[2rem] p-6 sm:p-8 max-h-[calc(100dvh-var(--sat)-var(--sab)-2rem)] overflow-y-auto animate-in zoom-in-95 fade-in slide-in-from-bottom-4 duration-300">
-
-        {/* Skip */}
-        <button
-          onClick={onSkip}
-          className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-3 py-2 rounded-full transition-colors"
-        >
-          {t('onboarding.skip')} <X className="size-3.5" />
-        </button>
-
-        {/* Progress */}
-        <div className="space-y-3 pr-24">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            {t('onboarding.stepLabel', { step: step + 1, total: STEPS.length })}
-          </p>
-          <ProgressBar step={step} total={STEPS.length} />
-        </div>
-
-        {/* Step content */}
-        <div
-          className="transition-all duration-200 mt-8"
-          style={{
-            opacity: animating ? 0 : 1,
-            transform: animating
-              ? `translateX(${direction === 'forward' ? '-24px' : '24px'})`
-              : 'translateX(0)',
-          }}
-        >
-          {/* Header */}
-          <div className="text-center space-y-3">
-            <div className="mx-auto size-14 rounded-[1.25rem] bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <current.Icon
-                className={cn(
-                  'size-7',
-                  current.key === 'allergies' ? 'text-green-600' :
-                  current.key === 'goals' ? 'text-secondary' : 'text-primary',
-                )}
-              />
-            </div>
-            <h2 className="font-display font-bold text-2xl text-foreground">
-              {current.title}
-            </h2>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-              {current.subtitle}
-            </p>
-          </div>
-
-          {/* Chips */}
-          <ChipSelector
-            chips={current.chips}
-            noneLabel={current.none}
-            selected={values[step]}
-            onChange={setters[step]}
-          />
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-6">
-          {step > 0 ? (
-            <button
-              onClick={() => navigate(step - 1, 'back')}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
-            >
-              ← {t('common.back')}
-            </button>
-          ) : (
-            <div />
-          )}
-
-          <Button
-            onClick={isLast ? handleFinish : () => navigate(step + 1, 'forward')}
-            disabled={!canContinue || saving}
-            size="lg"
-            className="rounded-full px-8 font-bold gap-2 transition-all"
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onSkip(); }}>
+      <SheetContent side="right" showCloseButton={false} className="w-full max-w-[500px] p-0 flex flex-col border-l-0 sm:border-l">
+        {/* Header / progress */}
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/40 shrink-0 relative">
+          <SheetTitle className="sr-only">Onboarding</SheetTitle>
+          
+          {/* Skip */}
+          <button
+            onClick={onSkip}
+            className="absolute top-6 right-6 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-3 py-2 rounded-full transition-colors"
           >
-            {saving
-              ? t('lab.saving')
-              : isLast
-              ? `🎉 ${t('profile.onboarding.complete')}`
-              : t('profile.onboarding.next')}
-            {!isLast && !saving && <ChevronRight className="size-4" />}
-          </Button>
+            {t('onboarding.skip')} <X className="size-3.5" />
+          </button>
+
+          <div className="space-y-3 pr-24 mt-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              {t('onboarding.stepLabel', { step: step + 1, total: STEPS.length })}
+            </p>
+            <ProgressBar step={step} total={STEPS.length} />
+          </div>
+        </SheetHeader>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div
+            className="transition-all duration-200 mt-2"
+            style={{
+              opacity: animating ? 0 : 1,
+              transform: animating
+                ? `translateX(${direction === 'forward' ? '-24px' : '24px'})`
+                : 'translateX(0)',
+            }}
+          >
+            {/* Header */}
+            <div className="text-center space-y-3 mb-8">
+              <div className="mx-auto size-14 rounded-[1.25rem] bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <current.Icon
+                  className={cn(
+                    'size-7',
+                    current.key === 'allergies' ? 'text-green-600' :
+                    current.key === 'goals' ? 'text-secondary' : 'text-primary',
+                  )}
+                />
+              </div>
+              <h2 className="font-display font-bold text-2xl text-foreground">
+                {current.title}
+              </h2>
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
+                {current.subtitle}
+              </p>
+            </div>
+
+            {/* Chips */}
+            <ChipSelector
+              chips={current.chips}
+              noneLabel={current.none}
+              selected={values[step]}
+              onChange={setters[step]}
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Navigation Footer */}
+        <div className="p-6 border-t border-border/40 shrink-0 bg-card">
+          <div className="flex items-center gap-3">
+            {step > 0 && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-2xl gap-2 font-bold border-border/60 text-foreground hover:bg-muted/50 shrink-0 px-5"
+                onClick={() => navigate(step - 1, 'back')}
+              >
+                <ChevronLeft className="size-4" />
+                {t('common.back')}
+              </Button>
+            )}
+
+            <Button
+              onClick={isLast ? handleFinish : () => navigate(step + 1, 'forward')}
+              disabled={!canContinue || saving}
+              size="lg"
+              className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
+            >
+              {saving
+                ? t('lab.saving')
+                : isLast
+                ? `🎉 ${t('profile.onboarding.complete')}`
+                : t('profile.onboarding.next')}
+              {!isLast && !saving && <ChevronRight className="size-4" />}
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
+

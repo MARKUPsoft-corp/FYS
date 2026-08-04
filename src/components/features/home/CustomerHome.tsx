@@ -11,9 +11,7 @@ import {
 } from '@/components/ui/drawer';
 import { useState, useMemo } from 'react';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
-import { ProfileCompletionCard } from '@/components/features/profile/ProfileCompletionCard';
-import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
-import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
+
 import { useAuthStore } from '@/stores/auth';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
@@ -26,25 +24,15 @@ type Props = Record<string, never>;
 export function CustomerHome(_props: Props) {
   const { t } = useTranslation();
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const { user } = useAuthStore();
-  const { profile, loading: profileLoading, save: saveProfile } = useProfileStore();
-  const profileComplete = isProfileComplete(profile);
+  const { profile, loading: profileLoading } = useProfileStore();
 
   const { data: storeFruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
   });
 
-  async function handleOnboardingComplete(data: {
-    healthConditions: string[];
-    allergies: string[];
-    goals: string[];
-  }) {
-    if (!user) return;
-    await saveProfile(user.uid, data);
-    setShowOnboarding(false);
-  }
+
 
   return (
     <div className="min-h-dvh bg-background pb-4 overflow-x-clip relative">
@@ -57,11 +45,7 @@ export function CustomerHome(_props: Props) {
       {/* Content wrapper for things below hero */}
       <div className="px-3 md:px-4 space-y-12 mt-6 lg:mt-8 relative z-10">
 
-        {/* Profile completion banner — uniquement pour les utilisateurs connectés,
-            une fois le profil chargé (évite le clignotement au chargement) */}
-        {!profileLoading && !profileComplete && user && (
-          <ProfileCompletionCard onStart={() => setShowOnboarding(true)} />
-        )}
+
 
         {/* FYS Lab section - Clean Split Hero (Desktop) / Card Overlay (Mobile) */}
         <section  className="relative py-8 lg:py-20">
@@ -332,17 +316,7 @@ export function CustomerHome(_props: Props) {
 
       </div>
 
-      {/* Floating profile button — only when profile incomplete and loaded (connecté) */}
-      {!profileLoading && !profileComplete && user && (
-        <ProfileFloatingButton onClick={() => setShowOnboarding(true)} />
-      )}
 
-      {/* Inline onboarding modal (triggered from card or floating button) */}
-      <OnboardingModal
-        open={showOnboarding}
-        onSkip={() => setShowOnboarding(false)}
-        onComplete={handleOnboardingComplete}
-      />
 
       {/* Fruit Details Bottom Sheet / Drawer */}
       <Drawer open={!!selectedFruit} onOpenChange={(open) => !open && setSelectedFruit(null)}>
