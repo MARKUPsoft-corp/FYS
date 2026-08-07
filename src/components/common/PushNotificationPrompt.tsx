@@ -6,6 +6,8 @@ import { BellRing, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { subscribeToPush } from '@/services/push';
 
+import { trackEvent } from '@/lib/analytics';
+
 export function PushNotificationPrompt() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -39,7 +41,10 @@ export function PushNotificationPrompt() {
       setLoading(true);
       const result = await subscribeToPush(user.uid);
       if (result === 'granted') {
+        trackEvent('push_subscribe', { success: true });
         setOpen(false);
+      } else {
+        trackEvent('push_subscribe', { success: false });
       }
     } catch (err) {
       console.error(err);
@@ -52,6 +57,7 @@ export function PushNotificationPrompt() {
   };
 
   const handleDismiss = () => {
+    trackEvent('push_dismiss');
     localStorage.setItem('fys_push_prompt_ignored', 'true');
     setOpen(false);
   };

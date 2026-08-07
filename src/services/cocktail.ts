@@ -17,6 +17,7 @@ import type { Cocktail, AIAnalysis } from '@/entities';
 import { uploadCocktailImage, deleteCocktailImage, isManagedImageUrl } from './storage';
 import { notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from './push';
+import { trackEvent } from '@/lib/analytics';
 import i18n from '@/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -144,6 +145,9 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
     const snap = await getDoc(cocktailRef);
     if (snap.exists()) {
       const cocktail = snap.data() as Cocktail;
+      
+      trackEvent('publish_recipe', { item_id: cocktail.id, item_name: cocktail.name });
+
       notifyAdmins({
         title: i18n.t('notifications.newCocktail'),
         message: i18n.t('notifications.newCocktailBody', { name: cocktail.name }),

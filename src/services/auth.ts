@@ -14,6 +14,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
 import { UserRole } from '@/entities';
+import { trackEvent } from '@/lib/analytics';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -39,6 +40,9 @@ async function createGoogleUserDocIfNew(credential: UserCredential) {
       user.displayName ?? 'Utilisateur',
       user.email ?? '',
     );
+    trackEvent('sign_up', { method: 'google' });
+  } else {
+    trackEvent('login', { method: 'google' });
   }
 }
 
@@ -46,11 +50,13 @@ export async function registerWithEmail(name: string, email: string, password: s
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName: name });
   await createUserDoc(credential.user.uid, name, email);
+  trackEvent('sign_up', { method: 'email' });
   return credential.user;
 }
 
 export async function loginWithEmail(email: string, password: string) {
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  trackEvent('login', { method: 'email' });
   return credential.user;
 }
 

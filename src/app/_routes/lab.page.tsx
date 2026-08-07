@@ -19,6 +19,7 @@ import { createCocktail } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
+import { trackEvent } from '@/lib/analytics';
 import { useProfileStore } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -466,6 +467,10 @@ const FysLab: PageComponent = () => {
       })).filter((i) => i.fruit);
       const result = await analyzeCocktail(ingredients, profile);
       setAnalysis(result);
+      trackEvent('generate_custom_mix', {
+        item_count: ingredients.length,
+        items: ingredients.map(i => ({ item_id: i.fruit.id, item_category: 'fruit' })),
+      });
       if (!nameTouchedRef.current && result.suggestedName?.trim()) {
         setCocktailName(result.suggestedName.trim());
       }

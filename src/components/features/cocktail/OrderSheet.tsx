@@ -30,6 +30,7 @@ import { buildFruitVisuals, pickCocktailCoverUrl } from '@/components/features/c
 import { CameroonMap } from '@/components/features/cocktail/CameroonMap';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
+import { trackEvent } from '@/lib/analytics';
 
 type Tab = 'order' | 'nutrition';
 
@@ -93,6 +94,12 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
       contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [ordered]);
+
+  useEffect(() => {
+    if (open && cocktail) {
+      trackEvent('begin_checkout', { items: [{ item_name: cocktail.name, item_category: cocktail.type }] });
+    }
+  }, [open, cocktail?.id]);
 
   if (!cocktail || !user) return null;
 
@@ -252,6 +259,20 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           },
         );
       }
+
+      trackEvent('purchase', {
+        value: (quantity500ml * price500) + (quantity1L * price1L) + deliveryFee,
+        currency: 'XAF',
+        items: [
+          {
+            item_id: cocktail.id,
+            item_name: customName || cocktail.name,
+            item_category: cocktail.type,
+            quantity: quantity500ml + quantity1L,
+            price: price500,
+          }
+        ]
+      });
 
       setOrdered(true);
     } catch (error) {
