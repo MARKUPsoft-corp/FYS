@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: import.meta.env.RASENGAN_FIREBASE_API_KEY,
@@ -16,3 +17,8 @@ export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Initialise Firebase Analytics de manière sécurisée (côté client uniquement)
+export const analytics = typeof window !== 'undefined' 
+  ? isSupported().then(yes => yes ? getAnalytics(app) : null) 
+  : null;
