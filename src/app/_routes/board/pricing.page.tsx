@@ -199,9 +199,9 @@ const Pricing: PageComponent = () => {
                 <div className="bg-white p-2.5 rounded-xl shadow-sm border border-border/40">
                   <QRCodeSVG
                     id="qr-flyer-svg"
-                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://fys.cm'}/board/lab?promo=FLYER`}
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/board/lab?promo=FLYER`}
                     size={100}
-                    level="H"
+                    level="M"
                     includeMargin={false}
                   />
                 </div>

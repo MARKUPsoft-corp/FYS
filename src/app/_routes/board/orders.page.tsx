@@ -905,9 +905,9 @@ function AdminOrderSheet({
               <div className="bg-white p-3 rounded-xl shadow-sm border border-border/40">
                 <QRCodeSVG
                   id={`qr-reorder-${order.id}`}
-                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://fys.cm'}/board/lab?load=${order.cocktailId}&promo=REORDER`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/board/lab?load=${order.cocktailId}&promo=REORDER`}
                   size={140}
-                  level="H"
+                  level="M"
                   includeMargin={false}
                 />
               </div>

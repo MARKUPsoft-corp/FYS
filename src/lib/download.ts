@@ -2,7 +2,11 @@ export function downloadSvgAsPng(svgId: string, filename: string) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   
-  const svgData = new XMLSerializer().serializeToString(svg);
+  let svgData = new XMLSerializer().serializeToString(svg);
+  if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const img = new Image();
