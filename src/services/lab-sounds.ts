@@ -477,8 +477,9 @@ if (typeof document !== 'undefined') {
 // ── Main Exports ─────────────────────────────────────────────────────────────
 
 export const labSounds = {
-  fruitSelect: () => areSoundsEnabled() && playFruitSelectSound(),
-  fruitDeselect: () => areSoundsEnabled() && playFruitDeselectSound(),
+  // Les sons ont été inversés à la demande de l'utilisateur
+  fruitSelect: () => areSoundsEnabled() && playFruitDeselectSound(),
+  fruitDeselect: () => areSoundsEnabled() && playFruitSelectSound(),
   analysisStart: () => areSoundsEnabled() && playAnalysisStartSound(),
   analysisAmbient: () => areSoundsEnabled() && playAnalysisAmbient(),
   analysisComplete: () => areSoundsEnabled() && playAnalysisCompleteSound(),

@@ -536,6 +536,23 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           <>
             <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
 
+              {/* Bannière promo active */}
+              {promoCode && pricing && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl p-3.5 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                  <div className="p-2 bg-amber-500/20 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-500 shrink-0 mt-0.5">
+                    <Sparkles className="size-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-700 dark:text-amber-500">
+                      Lien promotionnel activé
+                    </h4>
+                    <p className="text-[12px] text-amber-700/80 dark:text-amber-500/80 mt-1 leading-relaxed">
+                      Vous bénéficiez d'une réduction de <strong className="font-bold">{(promoCode === 'FLYER' ? pricing.promoFlyerDiscount : pricing.promoReorderDiscount)?.toLocaleString()} XAF</strong> sur votre commande grâce à votre {promoCode === 'FLYER' ? 'flyer' : "code d'étiquette"}. La réduction sera déduite du montant total.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   {t('orders.chooseContainer')}
@@ -778,7 +795,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 {totalBottles > 0 && discountAmount > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] font-bold text-amber-600 flex items-center gap-1.5">
-                      <Sparkles className="size-3.5" /> Réduction Promo
+                      <Sparkles className="size-3.5" /> Lien de réduction utilisé ({promoCode === 'FLYER' ? 'Flyer' : 'Étiquette'})
                     </span>
                     <span className="text-[13px] font-bold text-amber-600">
                       -{discountAmount.toLocaleString()} XAF
