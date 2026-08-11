@@ -1,7 +1,7 @@
 import { useTranslation, Trans } from 'react-i18next';
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
-  MapPin, Phone, MessageSquare,
+  MapPin, Phone, MessageSquare, TimerOff,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -130,9 +130,19 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const isFlyer = promoCode?.toUpperCase() === 'FLYER';
   const isReorder = promoCode?.toUpperCase() === 'REORDER';
 
+  // Vérifie si une promo est actuellement valide (active + non expirée)
+  function isPromoValid(active?: boolean, expiresAt?: { toDate: () => Date } | null): boolean {
+    if (!active) return false;
+    if (!expiresAt) return true; // Pas de date = valide indéfiniment
+    return expiresAt.toDate() > new Date();
+  }
+
+  const flyerValid = isFlyer && isPromoValid(pricing?.promoFlyerActive, pricing?.promoFlyerExpiresAt);
+  const reorderValid = isReorder && isPromoValid(pricing?.promoReorderActive, pricing?.promoReorderExpiresAt);
+
   const discountAmount = totalBottles > 0 && pricing
-    ? (isFlyer ? pricing.promoFlyerDiscount 
-       : isReorder ? pricing.promoReorderDiscount 
+    ? (flyerValid ? pricing.promoFlyerDiscount
+       : reorderValid ? pricing.promoReorderDiscount
        : 0) || 0
     : 0;
 
@@ -538,22 +548,37 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           /* ── Commander tab ── */
           <>
             <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-
-              {/* Bannière promo active */}
+              {/* Bannière promo active ou expirée */}
               {(isFlyer || isReorder) && pricing && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl p-3.5 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                  <div className="p-2 bg-amber-500/20 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-500 shrink-0 mt-0.5">
-                    <Sparkles className="size-4" />
+                flyerValid || reorderValid ? (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl p-3.5 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                    <div className="p-2 bg-amber-500/20 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-500 shrink-0 mt-0.5">
+                      <Sparkles className="size-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-700 dark:text-amber-500">
+                        Lien promotionnel activé
+                      </h4>
+                      <p className="text-[12px] text-amber-700/80 dark:text-amber-500/80 mt-1 leading-relaxed">
+                        Vous bénéficiez d'une réduction de <strong className="font-bold">{(flyerValid ? pricing.promoFlyerDiscount : pricing.promoReorderDiscount)?.toLocaleString()} XAF</strong> sur votre commande grâce à votre {isFlyer ? 'flyer' : "code d'étiquette"}. La réduction sera déduite du montant total.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-amber-700 dark:text-amber-500">
-                      Lien promotionnel activé
-                    </h4>
-                    <p className="text-[12px] text-amber-700/80 dark:text-amber-500/80 mt-1 leading-relaxed">
-                      Vous bénéficiez d'une réduction de <strong className="font-bold">{(isFlyer ? pricing.promoFlyerDiscount : pricing.promoReorderDiscount)?.toLocaleString()} XAF</strong> sur votre commande grâce à votre {isFlyer ? 'flyer' : "code d'étiquette"}. La réduction sera déduite du montant total.
-                    </p>
+                ) : (
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-700/30 rounded-xl p-3.5 flex items-start gap-3">
+                    <div className="p-2 bg-red-500/10 rounded-lg text-red-500 shrink-0 mt-0.5">
+                      <TimerOff className="size-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-red-600 dark:text-red-400">
+                        Lien promotionnel expiré
+                      </h4>
+                      <p className="text-[12px] text-red-600/80 dark:text-red-400/80 mt-1 leading-relaxed">
+                        Ce lien promotionnel n'est plus actif. Votre commande sera traitée au tarif normal.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )
               )}
 
               <div className="space-y-3">

@@ -20,7 +20,11 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     bottle1LBase: data.bottle1LBase ?? DEFAULT_PRICING.bottle1LBase,
     deliveryFee: data.deliveryFee ?? DEFAULT_PRICING.deliveryFee,
     promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
+    promoFlyerActive: data.promoFlyerActive ?? false,
+    promoFlyerExpiresAt: data.promoFlyerExpiresAt ?? null,
     promoReorderDiscount: data.promoReorderDiscount ?? 0,
+    promoReorderActive: data.promoReorderActive ?? false,
+    promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
     ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
   };
 }
@@ -35,7 +39,11 @@ export async function updatePricingSettings(
       bottle1LBase: data.bottle1LBase,
       deliveryFee: data.deliveryFee,
       promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
+      promoFlyerActive: data.promoFlyerActive ?? false,
+      promoFlyerExpiresAt: data.promoFlyerExpiresAt ?? null,
       promoReorderDiscount: data.promoReorderDiscount ?? 0,
+      promoReorderActive: data.promoReorderActive ?? false,
+      promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
       updatedAt: serverTimestamp(),
     },
     { merge: true },

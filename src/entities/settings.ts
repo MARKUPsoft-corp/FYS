@@ -22,9 +22,18 @@ export interface PricingSettings {
   bottle1LBase: number;
   deliveryFee: number;
   promoFlyerDiscount?: number;
+  /** Promo Flyer activée ou non par l'admin */
+  promoFlyerActive?: boolean;
+  /** Date d'expiration du QR Flyer (null = pas d'expiration) */
+  promoFlyerExpiresAt?: Timestamp | null;
   promoReorderDiscount?: number;
+  /** Promo Étiquette activée ou non par l'admin */
+  promoReorderActive?: boolean;
+  /** Date d'expiration du QR Étiquette (null = pas d'expiration) */
+  promoReorderExpiresAt?: Timestamp | null;
   updatedAt?: Timestamp;
 }
+
 
 export const DEFAULT_PRICING: PricingSettings = {
   bottle500mlBase: 1500,

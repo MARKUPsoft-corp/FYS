@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine, Download } from 'lucide-react';
+import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadSvgAsPng } from '@/lib/download';
@@ -31,7 +31,11 @@ const Pricing: PageComponent = () => {
   const [bottle1L, setBottle1L] = useState('');
   const [delivery, setDelivery] = useState('');
   const [promoFlyer, setPromoFlyer] = useState('');
+  const [promoFlyerActive, setPromoFlyerActive] = useState(false);
+  const [promoFlyerExpires, setPromoFlyerExpires] = useState(''); // ISO date string YYYY-MM-DD
   const [promoReorder, setPromoReorder] = useState('');
+  const [promoReorderActive, setPromoReorderActive] = useState(false);
+  const [promoReorderExpires, setPromoReorderExpires] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -41,7 +45,19 @@ const Pricing: PageComponent = () => {
     setBottle1L(String(pricing.bottle1LBase));
     setDelivery(String(pricing.deliveryFee));
     setPromoFlyer(String(pricing.promoFlyerDiscount ?? 0));
+    setPromoFlyerActive(pricing.promoFlyerActive ?? false);
+    setPromoFlyerExpires(
+      pricing.promoFlyerExpiresAt
+        ? pricing.promoFlyerExpiresAt.toDate().toISOString().split('T')[0]
+        : ''
+    );
     setPromoReorder(String(pricing.promoReorderDiscount ?? 0));
+    setPromoReorderActive(pricing.promoReorderActive ?? false);
+    setPromoReorderExpires(
+      pricing.promoReorderExpiresAt
+        ? pricing.promoReorderExpiresAt.toDate().toISOString().split('T')[0]
+        : ''
+    );
   }, [pricing]);
 
   async function handleSave(e: React.FormEvent) {
@@ -49,12 +65,25 @@ const Pricing: PageComponent = () => {
     setSaving(true);
     setSaved(false);
     try {
+      // Convertir les dates en Timestamp Firestore
+      const { Timestamp } = await import('firebase/firestore');
+      const flyerExpAt = promoFlyerExpires
+        ? Timestamp.fromDate(new Date(promoFlyerExpires + 'T23:59:59'))
+        : null;
+      const reorderExpAt = promoReorderExpires
+        ? Timestamp.fromDate(new Date(promoReorderExpires + 'T23:59:59'))
+        : null;
+
       await updatePricingSettings({
         bottle500mlBase: Number(bottle500) || 0,
         bottle1LBase: Number(bottle1L) || 0,
         deliveryFee: Number(delivery) || 0,
         promoFlyerDiscount: Number(promoFlyer) || 0,
+        promoFlyerActive,
+        promoFlyerExpiresAt: flyerExpAt,
         promoReorderDiscount: Number(promoReorder) || 0,
+        promoReorderActive,
+        promoReorderExpiresAt: reorderExpAt,
       });
       queryClient.invalidateQueries({ queryKey: ['pricing-settings'] });
       setSaved(true);
@@ -164,7 +193,7 @@ const Pricing: PageComponent = () => {
 
           <div className="flex items-start gap-4 pb-6 pt-6 border-b border-border/40">
             <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <span className="text-xl">🏷️</span>
+              <Tag className="size-5 text-amber-500" />
             </div>
             <div className="flex-1">
               <h3 className="font-display font-bold text-lg text-foreground">Réductions QR Codes</h3>
@@ -175,6 +204,7 @@ const Pricing: PageComponent = () => {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-6">
+            {/* ── QR Flyer ── */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="promo-flyer" className="text-sm font-semibold">
@@ -197,8 +227,58 @@ const Pricing: PageComponent = () => {
                 <p className="text-[11px] text-muted-foreground">Montant déduit pour un nouveau scan</p>
               </div>
 
+              {/* Contrôles d'activation */}
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-3">
+                {/* Toggle actif/inactif */}
+                <button
+                  type="button"
+                  onClick={() => setPromoFlyerActive((v) => !v)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                    promoFlyerActive
+                      ? 'bg-primary/10 border border-primary/30'
+                      : 'bg-muted/60 border border-border/40'
+                  }`}
+                >
+                  <span className={`text-sm font-semibold flex items-center gap-1.5 ${
+                    promoFlyerActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {promoFlyerActive
+                      ? <><CheckCircle2 className="size-4" /> Promo activée</>
+                      : <><XCircle className="size-4" /> Promo désactivée</>
+                    }
+                  </span>
+                  {promoFlyerActive
+                    ? <ToggleRight className="size-6 text-primary" />
+                    : <ToggleLeft className="size-6 text-muted-foreground" />
+                  }
+                </button>
+
+                {/* Date d'expiration */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                    <CalendarClock className="size-3.5 text-amber-500" />
+                    Expire le (optionnel)
+                  </label>
+                  <Input
+                    type="date"
+                    value={promoFlyerExpires}
+                    onChange={(e) => setPromoFlyerExpires(e.target.value)}
+                    className="h-9 rounded-lg text-sm"
+                  />
+                  {promoFlyerExpires && (
+                    <button
+                      type="button"
+                      onClick={() => setPromoFlyerExpires('')}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                    >
+                      Retirer la date d'expiration
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Générateur QR Flyer intégré */}
-              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex flex-col items-center justify-center gap-3 text-center mt-4">
+              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex flex-col items-center justify-center gap-3 text-center">
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                   QR Code à Imprimer
                 </p>
@@ -230,25 +310,76 @@ const Pricing: PageComponent = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="promo-reorder" className="text-sm font-semibold">
-                QR Étiquette (Fidélité)
-              </Label>
-              <div className="relative">
-                <Input
-                  id="promo-reorder"
-                  type="number"
-                  min={0}
-                  step={50}
-                  value={promoReorder}
-                  onChange={(e) => setPromoReorder(e.target.value)}
-                  className="h-11 rounded-xl pr-14"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                  XAF
-                </span>
+            {/* ── QR Étiquette ── */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="promo-reorder" className="text-sm font-semibold">
+                  QR Étiquette (Fidélité)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="promo-reorder"
+                    type="number"
+                    min={0}
+                    step={50}
+                    value={promoReorder}
+                    onChange={(e) => setPromoReorder(e.target.value)}
+                    className="h-11 rounded-xl pr-14"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                    XAF
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Montant déduit pour une re-commande</p>
               </div>
-              <p className="text-[11px] text-muted-foreground">Montant déduit pour une re-commande</p>
+
+              {/* Contrôles d'activation */}
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setPromoReorderActive((v) => !v)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                    promoReorderActive
+                      ? 'bg-primary/10 border border-primary/30'
+                      : 'bg-muted/60 border border-border/40'
+                  }`}
+                >
+                  <span className={`text-sm font-semibold flex items-center gap-1.5 ${
+                    promoReorderActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {promoReorderActive
+                      ? <><CheckCircle2 className="size-4" /> Promo activée</>
+                      : <><XCircle className="size-4" /> Promo désactivée</>
+                    }
+                  </span>
+                  {promoReorderActive
+                    ? <ToggleRight className="size-6 text-primary" />
+                    : <ToggleLeft className="size-6 text-muted-foreground" />
+                  }
+                </button>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+                    <CalendarClock className="size-3.5 text-amber-500" />
+                    Expire le (optionnel)
+                  </label>
+                  <Input
+                    type="date"
+                    value={promoReorderExpires}
+                    onChange={(e) => setPromoReorderExpires(e.target.value)}
+                    className="h-9 rounded-lg text-sm"
+                  />
+                  {promoReorderExpires && (
+                    <button
+                      type="button"
+                      onClick={() => setPromoReorderExpires('')}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                    >
+                      Retirer la date d'expiration
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
