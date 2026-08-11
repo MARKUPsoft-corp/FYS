@@ -25,13 +25,13 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   const { user } = useAuthStore();
 
   function handleBack() {
-    // Si l'utilisateur vient d'une page du site (referrer interne)
-    const referrer = document.referrer;
-    const sameOrigin = referrer && new URL(referrer).origin === window.location.origin;
-    if (sameOrigin) {
+    // history.length === 1 : l'utilisateur a ouvert le Lab directement
+    // (QR code, lien externe, onglet vierge) — pas de page pr\u00e9c\u00e9dente.
+    // history.length > 1 : il vient d'une navigation interne → on revient en arri\u00e8re.
+    if (window.history.length > 1) {
       navigate(-1);
     } else {
-      // Arrivé directement (QR code, lien extérieur, nouvel onglet)
+      // Arriv\u00e9 directement (QR code, lien partag\u00e9, onglet vierge)
       if (user) {
         navigate('/board');
       } else {
@@ -39,6 +39,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
       }
     }
   }
+
 
   return (
     <div
