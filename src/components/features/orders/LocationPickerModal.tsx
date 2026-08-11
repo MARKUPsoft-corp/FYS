@@ -18,6 +18,25 @@ interface LocationPickerModalProps {
   onConfirm: (location: { lat: number; lng: number; address?: string }) => void;
 }
 
+const YAOUNDE_CENTER = { lat: 3.8480, lng: 11.5021 };
+const MAX_RADIUS_KM = 20;
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
+}
+
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 function MyLocationControl({ onLocationUpdate }: { onLocationUpdate: (coords: {lat: number, lng: number}) => void }) {
   const map = useMap();
   const [loading, setLoading] = useState(false);
@@ -60,6 +79,7 @@ function MyLocationControl({ onLocationUpdate }: { onLocationUpdate: (coords: {l
 export function LocationPickerModal({ open, onOpenChange, initialLocation, onConfirm }: LocationPickerModalProps) {
   const { t } = useTranslation();
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && initialLocation) {
@@ -73,6 +93,14 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
 
   function handleConfirm() {
     if (!center) return;
+    
+    setError(null);
+    const distance = getDistanceFromLatLonInKm(YAOUNDE_CENTER.lat, YAOUNDE_CENTER.lng, center.lat, center.lng);
+    if (distance > MAX_RADIUS_KM) {
+      setError("Désolé, nous ne livrons qu'à Yaoundé et ses environs pour le moment.");
+      return;
+    }
+
     setConfirming(true);
     
     if (!window.google?.maps?.Geocoder) {
@@ -122,6 +150,7 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
               onCenterChanged={(e) => {
                 if (e.detail.center) {
                     setCenter(e.detail.center);
+                    if (error) setError(null);
                 }
               }}
               mapId="DEMO_MAP_ID"
@@ -144,6 +173,11 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
         </div>
 
         <div className="p-4 sm:p-6 bg-background/80 backdrop-blur-md border-t border-border/40">
+          {error && (
+            <div className="mb-3 px-3 py-2 bg-destructive/10 border border-destructive/20 text-destructive text-[12px] font-semibold rounded-lg text-center animate-in fade-in zoom-in-95">
+              {error}
+            </div>
+          )}
           <Button 
             className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
             onClick={handleConfirm}
