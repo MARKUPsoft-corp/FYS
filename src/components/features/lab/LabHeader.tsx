@@ -19,24 +19,19 @@ const TABS: { id: LabTab; labelKey: string; nutrifys?: boolean }[] = [
   { id: 'nutrifys', labelKey: 'lab.assistantTab', nutrifys: true },
 ];
 
-// Couches UI poussées dans l'historique par le lab (chaque param = 1 entrée)
-const LAB_LAYER_PARAMS = ['tab', 'step', 'sheet'];
-
 export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
   function handleBack() {
-    const params = new URLSearchParams(window.location.search);
-    const openLayers = LAB_LAYER_PARAMS.filter((k) => params.get(k)).length;
-    const steps = openLayers + 1;
-
-    // Si on navigue depuis le site (historique existant)
-    if (window.history.length > steps) {
-      navigate(-steps);
+    // Si l'utilisateur vient d'une page du site (referrer interne)
+    const referrer = document.referrer;
+    const sameOrigin = referrer && new URL(referrer).origin === window.location.origin;
+    if (sameOrigin) {
+      navigate(-1);
     } else {
-      // Si on arrive directement (ex: QR code dans un nouvel onglet)
+      // Arrivé directement (QR code, lien extérieur, nouvel onglet)
       if (user) {
         navigate('/board');
       } else {

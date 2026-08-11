@@ -20,18 +20,20 @@ import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
 import { trackEvent } from '@/lib/analytics';
-import { useProfileStore } from '@/stores/profile';
+import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { consumePendingAction, saveLabMix, loadLabMix } from '@/lib/pending-action';
+import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
+import { UserRole } from '@/entities/user';
 
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
   const { t } = useTranslation();
   const { user, loading } = useAuthStore();
-  const { profile, fetch: fetchProfile, loading: profileLoading } = useProfileStore();
+  const { profile, fetch: fetchProfile, loading: profileLoading, save: saveProfile } = useProfileStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const closeHistoryParam = useCloseHistoryParam();
@@ -72,6 +74,7 @@ const FysLab: PageComponent = () => {
   const [saving, setSaving] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [showOnboardingForAnalysis, setShowOnboardingForAnalysis] = useState(false);
 
   const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -457,6 +460,18 @@ const FysLab: PageComponent = () => {
       requireAuth('analyze');
       return;
     }
+
+    // Si le profil de santé est incomplet, afficher l'onboarding d'abord
+    if (user.role === UserRole.CUSTOMER && !isProfileComplete(profile)) {
+      // Mémoriser le mix pour ne pas perdre la sélection
+      saveLabMix({
+        mains: forcedMains ?? selectedIngredients,
+        supps: forcedSupps ?? selectedSupplements,
+        name: cocktailName,
+      });
+      setShowOnboardingForAnalysis(true);
+      return;
+    }
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);
     if (combined.size === 0) return;
@@ -682,6 +697,30 @@ const FysLab: PageComponent = () => {
           />
         )}
       </div>
+
+      {/* Onboarding modal déclenché par l'analyse si profil incomplet */}
+      {user && (
+        <OnboardingModal
+          open={showOnboardingForAnalysis}
+          onSkip={() => setShowOnboardingForAnalysis(false)}
+          onComplete={async (data) => {
+            if (!user) return;
+            await saveProfile(user.uid, data);
+            await fetchProfile(user.uid);
+            setShowOnboardingForAnalysis(false);
+            // Reprendre l'analyse avec le mix sauvegardé
+            const mix = loadLabMix();
+            if (mix) {
+              setSelectedIngredients(mix.mains);
+              setSelectedSupplements(mix.supps);
+              if (mix.name) setCocktailName(mix.name);
+              setTimeout(() => handleAnalyze(mix.mains, mix.supps), 200);
+            } else {
+              setTimeout(() => handleAnalyze(), 200);
+            }
+          }}
+        />
+      )}
 
       {/* ── Mobile sticky bottom bar (OUTSIDE main container) ─────────────────────────────────────────── */}
       {activeTab === 'compose' && (

@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation, ScanLine,
+  CalendarDays, Search, Navigation,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
