@@ -908,7 +908,7 @@ function AdminOrderSheet({
                 {origin ? (
                   <QRCodeSVG
                     id={`qr-reorder-${order.id}`}
-                    value={`${origin}/board/lab?load=${order.cocktailId}&promo=REORDER`}
+                    value={`${origin}/lab?load=${order.cocktailId}&promo=REORDER`}
                     size={160}
                     level="M"
                     includeMargin={true}

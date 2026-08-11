@@ -206,7 +206,7 @@ const Pricing: PageComponent = () => {
                   {origin ? (
                     <QRCodeSVG
                       id="qr-flyer-svg"
-                      value={`${origin}/board/lab?promo=FLYER`}
+                      value={`${origin}/lab?promo=FLYER`}
                       size={160}
                       level="M"
                       includeMargin={true}
