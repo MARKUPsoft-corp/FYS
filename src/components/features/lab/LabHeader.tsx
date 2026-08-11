@@ -4,6 +4,7 @@ import { ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ButtonTheme } from '@/components/common/atoms/ButtonTheme';
 import { NotificationBell } from '@/components/common/NotificationBell';
+import { useAuthStore } from '@/stores/auth';
 
 export type LabTab = 'compose' | 'supplements' | 'nutrifys';
 
@@ -24,16 +25,23 @@ const LAB_LAYER_PARAMS = ['tab', 'step', 'sheet'];
 export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   function handleBack() {
     const params = new URLSearchParams(window.location.search);
     const openLayers = LAB_LAYER_PARAMS.filter((k) => params.get(k)).length;
     const steps = openLayers + 1;
 
+    // Si on navigue depuis le site (historique existant)
     if (window.history.length > steps) {
       navigate(-steps);
     } else {
-      navigate('/');
+      // Si on arrive directement (ex: QR code dans un nouvel onglet)
+      if (user) {
+        navigate('/board');
+      } else {
+        navigate('/');
+      }
     }
   }
 
