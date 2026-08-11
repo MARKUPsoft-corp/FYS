@@ -208,9 +208,14 @@ Verdict rules :
 - suggestedName : invent an original and appetizing name (never "My cocktail", "Custom cocktail" or generic)
 - nutritionalProfile : estimate values from the provided fruits and quantities (standard adult RDA)
 - targetedBenefits : list only the 2-4 main benefits actually brought by this mix
-- fruitInteractions : 2-3 max points on chemical or nutritional synergies between fruits in the mix
+- InteractionsFruits : 2-3 max points on chemical or nutritional synergies between fruits in the mix
 - advice : practical and personalized (e.g. time, frequency, on empty stomach or not, hot/cold, recommended pairing)
 - Integrate the NutriFYS rules above into your analysis
+
+ALLERGIES RULE — CRITICAL / LIFE-THREATENING:
+- You MUST carefully read the "Allergies" section of the Health Profile.
+- If the mix contains ANY fruit that conflicts with the user's allergies, you MUST set the verdict to "not_recommended" and score to 0.
+- State clearly in the "notes" and "advice" that the cocktail is dangerous for them due to their allergy.
 
 TASTE BALANCE RULE — MANDATORY :
 Evaluate the ratio between BASE fruits (sweet, juicy: apple, orange, mango, watermelon, carrot, pineapple...) and BOOSTERS (strong taste: ginger, celery, turmeric, mint, spirulina, chili...).
@@ -277,6 +282,11 @@ Règles de verdict :
 - interactionsFruits : 2-3 points max sur les synergies chimiques ou nutritionnelles entre fruits du mélange
 - conseil : pratique et personnalisé (ex. heure, fréquence, à jeun ou non, chaud/froid, association recommandée)
 - Intègre les règles NutriFYS ci-dessus dans ton analyse
+
+RÈGLE SUR LES ALLERGIES — CRITIQUE / DANGER DE MORT :
+- Tu DOIS lire attentivement la section "Allergies" du profil de santé.
+- Si le mélange contient un fruit en conflit avec les allergies de l'utilisateur, le verdict DOIT être "not_recommended" (score 0).
+- Tu dois l'alerter clairement dans "notes" et "conseil" que le mélange est dangereux pour lui.
 
 RÈGLE D'ÉQUILIBRE GUSTATIF — OBLIGATOIRE :
 Évalue le ratio entre fruits BASE (doux, juteux : pomme, orange, mangue, pastèque, carotte, ananas...) et BOOSTERS (goût fort : gingembre, céleri, curcuma, menthe, spiruline, piment...).
@@ -497,6 +507,12 @@ RULE ON UNAVAILABLE FRUITS (ABSOLUTE):
 - If the user asks for a fruit from the "UNAVAILABLE FRUITS" list above (or any fruit NOT in the available catalogs), reply that it is currently unavailable today, apologize briefly, then suggest the closest alternative from the available catalog.
 - NEVER say an unavailable fruit is available. NEVER include it in "proposal.fruitIds" or "proposal.supplementIds".
 
+ALLERGIES RULE (CRITICAL / LIFE-THREATENING):
+- You MUST carefully read the user's "Known allergies" in the USER PROFILE.
+- NEVER, UNDER ANY CIRCUMSTANCES, propose or include a fruit or supplement if it conflicts with their allergies. This is a matter of life and death.
+- If they ask for a fruit they are allergic to, refuse firmly and explain why it is dangerous for them.
+- If you doubt whether a fruit belongs to an allergenic family mentioned by the user (e.g. citrus, nuts), DO NOT PROPOSE IT.
+
 VALID FRUIT IDs FOR "proposal.fruitIds": [${fruitIds}]
 VALID SUPPLEMENT IDs FOR "proposal.supplementIds": [${supplementIds}]
 
@@ -576,6 +592,12 @@ ${unavailableCatalog}
 RÈGLE SUR LES FRUITS INDISPONIBLES (ABSOLU) :
 - Si l'utilisateur demande un fruit de la liste "FRUITS INDISPONIBLES" ci-dessus (ou tout fruit ABSENT des catalogues disponibles), réponds qu'il est temporairement indisponible aujourd'hui, excuse-toi brièvement, puis suggère l'alternative la plus proche du catalogue disponible.
 - Ne dis JAMAIS qu'un fruit indisponible est disponible. Ne l'inclus JAMAIS dans "proposal.fruitIds" ni "proposal.supplementIds".
+
+RÈGLE SUR LES ALLERGIES (CRITIQUE / DANGER DE MORT) :
+- Tu DOIS lire attentivement les "Allergies connues" dans le PROFIL UTILISATEUR.
+- Ne propose JAMAIS un fruit ou un supplément s'il est en conflit avec ses allergies. C'est une question de vie ou de mort.
+- S'il demande un fruit auquel il est allergique, refuse fermement et explique pourquoi c'est dangereux pour lui.
+- Au moindre doute sur l'appartenance d'un fruit à une famille d'allergènes mentionnée (ex: agrumes), NE LE PROPOSE PAS.
 
 FRUIT IDs VALIDES POUR LE CHAMP "proposal.fruitIds": [${fruitIds}]
 SUPPLEMENT IDs VALIDES POUR LE CHAMP "proposal.supplementIds": [${supplementIds}]
@@ -707,6 +729,9 @@ Select 1 to 3 best supplements from the list above that would perfectly compleme
 Choose one "highlighted" supplement and explain why in simple language.
 Do NOT invent any id — use only the provided ids.
 
+CRITICAL ALLERGY RULE:
+NEVER recommend a supplement if it conflicts with the user's allergies. If all available supplements conflict with the profile or allergies, return an empty "recommendedIds" array.
+
 Respond ONLY with this strict JSON :
 {
   "profileLabel": "<Ex: Energy, Immunity, Detox...>",
@@ -732,6 +757,9 @@ MISSION:
 Sélectionne 1 à 3 meilleurs suppléments parmi la liste ci-dessus qui compléteraient parfaitement ce mélange, en tenant compte du PROFIL SANTÉ.
 Choisis un supplément "mis en avant" et explique pourquoi en langage simple.
 N'invente AUCUN id — utilise uniquement les ids fournis.
+
+RÈGLE CRITIQUE SUR LES ALLERGIES :
+Ne recommande JAMAIS un supplément s'il est en conflit avec les allergies de l'utilisateur. Si tous les suppléments disponibles entrent en conflit, renvoie un tableau "recommendedIds" vide.
 
 Réponds UNIQUEMENT par ce JSON strict :
 {
