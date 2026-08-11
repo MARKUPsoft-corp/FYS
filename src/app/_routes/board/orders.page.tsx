@@ -2,9 +2,10 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation,
+  CalendarDays, Search, Navigation, ScanLine,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { QRCodeSVG } from 'qrcode.react';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -28,6 +29,7 @@ import {
 } from '@/components/features/orders/PeriodCalendar';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
+import { downloadSvgAsPng } from '@/lib/download';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 
@@ -891,6 +893,40 @@ function AdminOrderSheet({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* QR Code pour l'étiquette */}
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              QR Code Étiquette (Fidélité)
+            </p>
+            <div className="rounded-2xl border border-border/60 bg-card p-5 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="bg-white p-3 rounded-xl shadow-sm border border-border/40">
+                <QRCodeSVG
+                  id={`qr-reorder-${order.id}`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://fys.cm'}/board/lab?load=${order.cocktailId}&promo=REORDER`}
+                  size={140}
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="w-full max-w-[140px] mx-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 text-[12px] h-8"
+                  onClick={() => downloadSvgAsPng(`qr-reorder-${order.id}`, `qr-fys-${order.cocktailNameSnapshot.replace(/\s+/g, '-')}.png`)}
+                >
+                  <Download className="size-3" /> Télécharger PNG
+                </Button>
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-foreground mt-2">Retrouver ce mélange</p>
+                <p className="text-[11px] text-muted-foreground mt-1 max-w-[200px] mx-auto">
+                  Imprimez ce QR Code sur la bouteille pour que le client recommande avec réduction.
+                </p>
+              </div>
             </div>
           </div>
 

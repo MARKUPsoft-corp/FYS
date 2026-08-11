@@ -477,8 +477,8 @@ if (typeof document !== 'undefined') {
 // ── Main Exports ─────────────────────────────────────────────────────────────
 
 export const labSounds = {
-  fruitSelect: () => areSoundsEnabled() && playFruitDeselectSound(),
-  fruitDeselect: () => areSoundsEnabled() && playFruitSelectSound(),
+  fruitSelect: () => areSoundsEnabled() && playFruitSelectSound(),
+  fruitDeselect: () => areSoundsEnabled() && playFruitDeselectSound(),
   analysisStart: () => areSoundsEnabled() && playAnalysisStartSound(),
   analysisAmbient: () => areSoundsEnabled() && playAnalysisAmbient(),
   analysisComplete: () => areSoundsEnabled() && playAnalysisCompleteSound(),

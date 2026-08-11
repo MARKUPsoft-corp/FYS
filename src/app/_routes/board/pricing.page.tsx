@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine } from 'lucide-react';
+import { Loader2, Save, Wine, Download } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { QRCodeSVG } from 'qrcode.react';
+import { downloadSvgAsPng } from '@/lib/download';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +24,8 @@ const Pricing: PageComponent = () => {
   const [bottle500, setBottle500] = useState('');
   const [bottle1L, setBottle1L] = useState('');
   const [delivery, setDelivery] = useState('');
+  const [promoFlyer, setPromoFlyer] = useState('');
+  const [promoReorder, setPromoReorder] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -30,6 +34,8 @@ const Pricing: PageComponent = () => {
     setBottle500(String(pricing.bottle500mlBase));
     setBottle1L(String(pricing.bottle1LBase));
     setDelivery(String(pricing.deliveryFee));
+    setPromoFlyer(String(pricing.promoFlyerDiscount ?? 0));
+    setPromoReorder(String(pricing.promoReorderDiscount ?? 0));
   }, [pricing]);
 
   async function handleSave(e: React.FormEvent) {
@@ -41,6 +47,8 @@ const Pricing: PageComponent = () => {
         bottle500mlBase: Number(bottle500) || 0,
         bottle1LBase: Number(bottle1L) || 0,
         deliveryFee: Number(delivery) || 0,
+        promoFlyerDiscount: Number(promoFlyer) || 0,
+        promoReorderDiscount: Number(promoReorder) || 0,
       });
       queryClient.invalidateQueries({ queryKey: ['pricing-settings'] });
       setSaved(true);
@@ -145,6 +153,92 @@ const Pricing: PageComponent = () => {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                 XAF
               </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 pb-6 pt-6 border-b border-border/40">
+            <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <span className="text-xl">🏷️</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-lg text-foreground">Réductions QR Codes</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configurez les montants de réduction fixes offerts aux clients.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="promo-flyer" className="text-sm font-semibold">
+                  QR Flyer (Acquisition)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="promo-flyer"
+                    type="number"
+                    min={0}
+                    step={50}
+                    value={promoFlyer}
+                    onChange={(e) => setPromoFlyer(e.target.value)}
+                    className="h-11 rounded-xl pr-14"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                    XAF
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Montant déduit pour un nouveau scan</p>
+              </div>
+
+              {/* Générateur QR Flyer intégré */}
+              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex flex-col items-center justify-center gap-3 text-center mt-4">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                  QR Code à Imprimer
+                </p>
+                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-border/40">
+                  <QRCodeSVG
+                    id="qr-flyer-svg"
+                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://fys.cm'}/board/lab?promo=FLYER`}
+                    size={100}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full max-w-[150px] mt-2 gap-2 text-[12px] h-8"
+                  type="button"
+                  onClick={() => downloadSvgAsPng('qr-flyer-svg', 'qr-flyer-fys.png')}
+                >
+                  <Download className="size-3" /> PNG
+                </Button>
+                <p className="text-[10px] text-muted-foreground max-w-[150px] mt-1">
+                  À envoyer à votre imprimeur.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promo-reorder" className="text-sm font-semibold">
+                QR Étiquette (Fidélité)
+              </Label>
+              <div className="relative">
+                <Input
+                  id="promo-reorder"
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={promoReorder}
+                  onChange={(e) => setPromoReorder(e.target.value)}
+                  className="h-11 rounded-xl pr-14"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                  XAF
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Montant déduit pour une re-commande</p>
             </div>
           </div>
 

@@ -15,7 +15,6 @@ import {
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
-import { YAOUNDE_DISTRICTS } from '@/components/features/orders/YaoundeDistrictPicker';
 import i18n from '@/i18n';
 
 const statusLabel = (status: OrderStatus): string => i18n.t(`orders.${status === OrderStatus.CANCELLED ? 'canceled' : status}`);
@@ -37,6 +36,8 @@ export type CreateOrderLine = {
 export type CreateOrderVisuals = {
   cocktailImageSnapshot?: string;
   ingredientImageSnapshots?: string[];
+  discountAmount?: number;
+  promoCodeApplied?: string;
 };
 
 export async function createOrder(
@@ -75,8 +76,7 @@ export async function createOrder(
 
   // Calculate totals
   const subtotal = orderLines.reduce((sum, line) => sum + (line.pricePerBottle * line.quantity), 0);
-  const totalPrice = subtotal + deliveryFee;
-  const totalQuantity = orderLines.reduce((sum, line) => sum + line.quantity, 0);
+  const totalPrice = Math.max(0, subtotal + deliveryFee - (visuals?.discountAmount ?? 0));
 
   // Build order lines with labels
   const orderLinesWithLabels = orderLines.map(line => ({
@@ -105,6 +105,8 @@ export async function createOrder(
     ...(cocktail.aiAnalysis ? { aiAnalysisSnapshot: cocktail.aiAnalysis } : {}),
     ...(cover ? { cocktailImageSnapshot: cover } : {}),
     ...(fruitImgs?.length ? { ingredientImageSnapshots: fruitImgs } : {}),
+    ...(visuals?.discountAmount ? { discountAmount: visuals.discountAmount } : {}),
+    ...(visuals?.promoCodeApplied ? { promoCodeApplied: visuals.promoCodeApplied } : {}),
   };
   
   await setDoc(ref, {

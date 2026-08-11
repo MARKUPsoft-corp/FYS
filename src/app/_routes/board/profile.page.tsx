@@ -1,7 +1,7 @@
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
@@ -15,7 +15,6 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useAudioStore } from '@/stores/audio';
 import { useTheme } from '@rasenganjs/theme';
-import { UserRole } from '@/entities';
 import { PushOptInButton } from '@/components/features/admin/PushNotificationPanel';
 
 // ── Predefined options ────────────────────────────────────────────────────────
@@ -436,7 +435,6 @@ const Profile: PageComponent = () => {
     : '?';
 
   const complete = isProfileComplete(profile);
-  const isCustomer = user?.role === UserRole.CUSTOMER;
 
   const NONE_CONDITION = HEALTH_CONDITIONS[0]?.toLowerCase();
   const NONE_ALLERGY = ALLERGIES[0]?.toLowerCase();

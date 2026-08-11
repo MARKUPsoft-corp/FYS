@@ -21,6 +21,8 @@ export interface PricingSettings {
   /** Prix de base contenant 1 L (hors fruits) */
   bottle1LBase: number;
   deliveryFee: number;
+  promoFlyerDiscount?: number;
+  promoReorderDiscount?: number;
   updatedAt?: Timestamp;
 }
 

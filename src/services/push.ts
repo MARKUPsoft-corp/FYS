@@ -49,7 +49,7 @@ export async function subscribeToPush(uid: string): Promise<'granted' | 'denied'
 }
 
 /** Unsubscribes and removes the FCM token from Firestore */
-export async function unsubscribeFromPush(uid: string): Promise<void> {
+export async function unsubscribeFromPush(_uid: string): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
 
   try {

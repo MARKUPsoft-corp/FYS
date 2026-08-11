@@ -5,11 +5,17 @@ import { Button } from '@/components/ui/button';
 import { MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 interface LocationPickerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialLocation: { lat: number; lng: number } | null;
-  onConfirm: (location: { lat: number; lng: number }) => void;
+  onConfirm: (location: { lat: number; lng: number; address?: string }) => void;
 }
 
 function MyLocationControl({ onLocationUpdate }: { onLocationUpdate: (coords: {lat: number, lng: number}) => void }) {
@@ -76,19 +82,19 @@ export function LocationPickerModal({ open, onOpenChange, initialLocation, onCon
     }
 
     const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: center }, (results, status) => {
+    geocoder.geocode({ location: center }, (results: any[], status: string) => {
       setConfirming(false);
-      let address = undefined;
+      let address: string | undefined = undefined;
       
       if (status === 'OK' && results && results.length > 0) {
         // Try to find the neighborhood or route
-        const addressComponents = results[0].address_components;
-        const neighborhood = addressComponents.find(c => c.types.includes('neighborhood') || c.types.includes('sublocality'));
+        const addressComponents = results[0].address_components || [];
+        const neighborhood = addressComponents.find((c: any) => c.types.includes('neighborhood') || c.types.includes('sublocality'));
         if (neighborhood) {
           address = neighborhood.long_name;
         } else {
           // Fallback to route or something else if no neighborhood
-          const route = addressComponents.find(c => c.types.includes('route'));
+          const route = addressComponents.find((c: any) => c.types.includes('route'));
           if (route) address = route.long_name;
         }
       }

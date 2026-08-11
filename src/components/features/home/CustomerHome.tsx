@@ -5,14 +5,9 @@ import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
 } from '@/components/ui/drawer';
-import { useState, useMemo } from 'react';
-import { useProfileStore, isProfileComplete } from '@/stores/profile';
+import { useState } from 'react';
 
-import { useAuthStore } from '@/stores/auth';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import { isUsableFruit, type Fruit } from '@/entities';
@@ -24,8 +19,6 @@ type Props = Record<string, never>;
 export function CustomerHome(_props: Props) {
   const { t } = useTranslation();
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
-  const { user } = useAuthStore();
-  const { profile, loading: profileLoading } = useProfileStore();
 
   const { data: storeFruits = [] } = useQuery({
     queryKey: ['fruits'],
@@ -369,21 +362,21 @@ export function CustomerHome(_props: Props) {
                     <div className="grid grid-cols-3 gap-2">
                       {selectedFruit.nutrients.macros && (
                         <>
-                          {selectedFruit.nutrients.macros.proteines_g && (
+                          {selectedFruit.nutrients.macros.protein_g && (
                             <div className="bg-muted/50 rounded-xl p-2.5 text-center">
-                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.proteines_g}g</p>
+                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.protein_g}g</p>
                               <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Prots</p>
                             </div>
                           )}
-                          {selectedFruit.nutrients.macros.glucides_g && (
+                          {selectedFruit.nutrients.macros.carbs_g && (
                             <div className="bg-muted/50 rounded-xl p-2.5 text-center">
-                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.glucides_g}g</p>
+                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.carbs_g}g</p>
                               <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Gluc</p>
                             </div>
                           )}
-                          {selectedFruit.nutrients.macros.lipides_g && (
+                          {selectedFruit.nutrients.macros.fat_g && (
                             <div className="bg-muted/50 rounded-xl p-2.5 text-center">
-                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.lipides_g}g</p>
+                              <p className="text-sm font-bold text-foreground">{selectedFruit.nutrients.macros.fat_g}g</p>
                               <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Lip</p>
                             </div>
                           )}

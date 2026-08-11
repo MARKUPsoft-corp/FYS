@@ -40,9 +40,10 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   user?: { uid: string; name: string; email: string; phone?: string };
   onOrderSuccess?: () => void;
+  promoCode?: string;
 };
 
-export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, onOrderSuccess }: Props) {
+export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, onOrderSuccess, promoCode }: Props) {
   const { t } = useTranslation();
   const { user: storeUser } = useAuthStore();
   const { profile } = useProfileStore();
@@ -124,8 +125,15 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
   const subtotal = subtotal500 + subtotal1L;
-  const total = subtotal + deliveryFee;
   const totalBottles = quantity500ml + quantity1L;
+
+  const discountAmount = totalBottles > 0 && pricing
+    ? (promoCode === 'FLYER' ? pricing.promoFlyerDiscount 
+       : promoCode === 'REORDER' ? pricing.promoReorderDiscount 
+       : 0) || 0
+    : 0;
+
+  const total = Math.max(0, subtotal + deliveryFee - discountAmount);
 
   const deliveryOk = district.trim().length > 0 && phone.trim().length > 0;
 
@@ -228,6 +236,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           {
             cocktailImageSnapshot: coverUrl,
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
+            discountAmount,
+            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
           },
         );
       } else if (!isOwner && !isDraft) {
@@ -244,6 +254,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             ingredientImageSnapshots: cocktail.ingredients.map(
               (ing) => fruits.find((f: Fruit) => f.id === ing.fruitId)?.imageUrl ?? '',
             ),
+            discountAmount,
+            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
           },
         );
       } else {
@@ -256,6 +268,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           {
             cocktailImageSnapshot: coverUrl ?? cocktail.imageUrl,
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
+            discountAmount,
+            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
           },
         );
       }
@@ -758,6 +772,16 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     </span>
                     <span className="text-[13px] font-semibold text-foreground">
                       {deliveryFee.toLocaleString()} XAF
+                    </span>
+                  </div>
+                )}
+                {totalBottles > 0 && discountAmount > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] font-bold text-amber-600 flex items-center gap-1.5">
+                      <Sparkles className="size-3.5" /> Réduction Promo
+                    </span>
+                    <span className="text-[13px] font-bold text-amber-600">
+                      -{discountAmount.toLocaleString()} XAF
                     </span>
                   </div>
                 )}

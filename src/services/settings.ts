@@ -19,12 +19,14 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     bottle500mlBase: data.bottle500mlBase ?? DEFAULT_PRICING.bottle500mlBase,
     bottle1LBase: data.bottle1LBase ?? DEFAULT_PRICING.bottle1LBase,
     deliveryFee: data.deliveryFee ?? DEFAULT_PRICING.deliveryFee,
+    promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
+    promoReorderDiscount: data.promoReorderDiscount ?? 0,
     ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
   };
 }
 
 export async function updatePricingSettings(
-  data: Pick<PricingSettings, 'bottle500mlBase' | 'bottle1LBase' | 'deliveryFee'>,
+  data: Omit<PricingSettings, 'updatedAt'>,
 ): Promise<void> {
   await setDoc(
     doc(db, COLLECTIONS.SETTINGS, PRICING_DOC_ID),
@@ -32,6 +34,8 @@ export async function updatePricingSettings(
       bottle500mlBase: data.bottle500mlBase,
       bottle1LBase: data.bottle1LBase,
       deliveryFee: data.deliveryFee,
+      promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
+      promoReorderDiscount: data.promoReorderDiscount ?? 0,
       updatedAt: serverTimestamp(),
     },
     { merge: true },

@@ -42,6 +42,8 @@ export interface Order {
   
   deliveryFee: number;
   totalPrice: number;
+  discountAmount?: number;
+  promoCodeApplied?: string;
   status: OrderStatus;
   deliveryDetails?: {
     district: string;

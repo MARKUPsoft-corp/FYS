@@ -15,7 +15,7 @@ import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
 import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
-import { createCocktail } from '@/services/cocktail';
+import { createCocktail, getCocktailById } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { useAuthStore } from '@/stores/auth';
@@ -25,7 +25,7 @@ import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam'
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { consumePendingAction, saveLabMix, loadLabMix } from '@/lib/pending-action';
-import { saveLabDraft, loadLabDraft, clearLabDraft } from '@/lib/lab-draft';
+
 import { labSounds } from '@/services/lab-sounds';
 
 const FysLab: PageComponent = () => {
@@ -49,6 +49,8 @@ const FysLab: PageComponent = () => {
   const tabParam = searchParams.get('tab');
   const stepParam = searchParams.get('step');
   const sheetParam = searchParams.get('sheet');
+  const loadParam = searchParams.get('load');
+  const promoParam = searchParams.get('promo');
 
   const activeTab: LabTab = tabParam === 'nutrifys' ? 'nutrifys' : 'compose';
   const composeStep: ComposeStep = stepParam === '2' ? 2 : 1;
@@ -74,6 +76,35 @@ const FysLab: PageComponent = () => {
     queryKey: ['pricing-settings'],
     queryFn: getPricingSettings,
   });
+
+  const { data: loadedCocktail } = useQuery({
+    queryKey: ['cocktail', loadParam],
+    queryFn: () => loadParam ? getCocktailById(loadParam) : null,
+    enabled: !!loadParam,
+  });
+
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (loadedCocktail && fruits.length > 0 && !loadedRef.current) {
+      const mains = new Map<string, number>();
+      const supps = new Map<string, number>();
+      for (const ing of loadedCocktail.ingredients) {
+        if (ing.role === 'supplement') {
+          supps.set(ing.fruitId, ing.quantityGrams);
+        } else {
+          mains.set(ing.fruitId, ing.quantityGrams);
+        }
+      }
+      setSelectedIngredients(mains);
+      setSelectedSupplements(supps);
+      setCocktailName(loadedCocktail.name);
+      nameTouchedRef.current = true;
+      if (loadedCocktail.aiAnalysis) {
+        setAnalysis(loadedCocktail.aiAnalysis);
+      }
+      loadedRef.current = true;
+    }
+  }, [loadedCocktail, fruits.length]);
 
   const supplements = useMemo(
     () => fruits.filter((f) => isUsableAsSupplement(f) && isUsableFruit(f)),
@@ -153,38 +184,6 @@ const FysLab: PageComponent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, fruitsLoading, fruits.length]);
 
-  // ── Brouillon : restaure la dernière composition locale (une fois les
-  //    fruits chargés, et uniquement si aucune action pendante n'a été reprise) ──
-  useEffect(() => {
-    if (fruitsLoading || fruits.length === 0 || pendingRestoredRef.current) return;
-    const draft = loadLabDraft();
-    if (!draft) return;
-
-    const mains = new Map(draft.mains.filter(([id]) => availableMainIds.has(id)));
-    const supps = new Map(draft.supps.filter(([id]) => availableSupplementIds.has(id)));
-    if (mains.size === 0 && supps.size === 0) return;
-
-    setSelectedIngredients(mains);
-    setSelectedSupplements(supps);
-    if (draft.name) {
-      setCocktailName(draft.name);
-      nameTouchedRef.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fruitsLoading, fruits.length]);
-
-  // ── Brouillon : sauvegarde différée de la composition en cours ──
-  useEffect(() => {
-    if (fruitsLoading) return;
-    const timer = setTimeout(() => {
-      saveLabDraft({
-        mains: [...selectedIngredients.entries()],
-        supps: [...selectedSupplements.entries()],
-        name: cocktailName,
-      });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [selectedIngredients, selectedSupplements, cocktailName, fruitsLoading]);
 
   function buildCombinedMap(
     mains = selectedIngredients,
@@ -546,7 +545,6 @@ const FysLab: PageComponent = () => {
       nameTouchedRef.current = false;
       setAnalysis(null);
       setAiRecommendation(null);
-      clearLabDraft();
       setSearchParams({}, { replace: true });
       navigate(`/board/catalogue?cocktail=${cocktailId}`);
     } finally {
@@ -563,7 +561,6 @@ const FysLab: PageComponent = () => {
     nameTouchedRef.current = false;
     setAnalysis(null);
     setAiRecommendation(null);
-    clearLabDraft();
     setSearchParams({}, { replace: true });
   }
 
@@ -674,6 +671,7 @@ const FysLab: PageComponent = () => {
             onOpenChange={closeOrderSheet}
             user={{ uid: user.uid, name: (user as any).displayName || (user as any).name || '', email: user.email || '' }}
             onOrderSuccess={handleOrderSuccess}
+            promoCode={promoParam || undefined}
           />
         )}
       </div>

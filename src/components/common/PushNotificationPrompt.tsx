@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BellRing, X } from 'lucide-react';
+import { BellRing } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { subscribeToPush } from '@/services/push';
 
