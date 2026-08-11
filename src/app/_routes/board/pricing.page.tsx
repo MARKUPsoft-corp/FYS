@@ -16,6 +16,12 @@ import { BOTTLE_VOLUME_LABELS } from '@/entities';
 const Pricing: PageComponent = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   const { data: pricing, isLoading } = useQuery({
     queryKey: ['pricing-settings'],
     queryFn: getPricingSettings,
@@ -196,14 +202,18 @@ const Pricing: PageComponent = () => {
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                   QR Code à Imprimer
                 </p>
-                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-border/40">
-                  <QRCodeSVG
-                    id="qr-flyer-svg"
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/board/lab?promo=FLYER`}
-                    size={100}
-                    level="M"
-                    includeMargin={false}
-                  />
+                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-border/40 min-h-[160px] flex items-center justify-center">
+                  {origin ? (
+                    <QRCodeSVG
+                      id="qr-flyer-svg"
+                      value={`${origin}/board/lab?promo=FLYER`}
+                      size={160}
+                      level="M"
+                      includeMargin={true}
+                    />
+                  ) : (
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 <Button
                   variant="outline"

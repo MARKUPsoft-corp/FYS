@@ -668,8 +668,10 @@ function AdminOrderSheet({
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
   const [downloadingNutrition, setDownloadingNutrition] = useState(false);
   const [downloadingFacture, setDownloadingFacture] = useState(false);
+  const [origin, setOrigin] = useState('');
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     if (open) setActiveTab('order');
   }, [open]);
 
@@ -902,14 +904,18 @@ function AdminOrderSheet({
               QR Code Étiquette (Fidélité)
             </p>
             <div className="rounded-2xl border border-border/60 bg-card p-5 flex flex-col items-center justify-center gap-4 text-center">
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-border/40">
-                <QRCodeSVG
-                  id={`qr-reorder-${order.id}`}
-                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/board/lab?load=${order.cocktailId}&promo=REORDER`}
-                  size={140}
-                  level="M"
-                  includeMargin={false}
-                />
+              <div className="bg-white p-3 rounded-xl shadow-sm border border-border/40 min-h-[160px] flex items-center justify-center">
+                {origin ? (
+                  <QRCodeSVG
+                    id={`qr-reorder-${order.id}`}
+                    value={`${origin}/board/lab?load=${order.cocktailId}&promo=REORDER`}
+                    size={160}
+                    level="M"
+                    includeMargin={true}
+                  />
+                ) : (
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                )}
               </div>
               <div className="w-full max-w-[140px] mx-auto">
                 <Button
