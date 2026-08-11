@@ -31,7 +31,7 @@ import { labSounds } from '@/services/lab-sounds';
 const FysLab: PageComponent = () => {
   const { t } = useTranslation();
   const { user, loading } = useAuthStore();
-  const { profile } = useProfileStore();
+  const { profile, fetch: fetchProfile, loading: profileLoading } = useProfileStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const closeHistoryParam = useCloseHistoryParam();
@@ -44,6 +44,13 @@ const FysLab: PageComponent = () => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, []);
+
+  // ── S'assurer que le profil de santé est chargé pour l'analyse IA ──
+  useEffect(() => {
+    if (user && !profile && !profileLoading) {
+      fetchProfile(user.uid);
+    }
+  }, [user, profile, profileLoading, fetchProfile]);
 
 
   const tabParam = searchParams.get('tab');

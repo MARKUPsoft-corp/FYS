@@ -33,7 +33,7 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
     if (window.history.length > steps) {
       navigate(-steps);
     } else {
-      navigate('/board');
+      navigate('/');
     }
   }
 
