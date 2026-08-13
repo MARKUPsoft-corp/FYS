@@ -35,7 +35,23 @@ export default function App({ Component, children }: AppProps) {
   useEffect(() => {
     const unsubscribe = initAuth();
     initAudio();
-    return unsubscribe;
+
+    // Fix global pour le clavier mobile sur tous les champs de saisie
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener('focusin', handleFocusIn);
+    };
   }, []);
 
 
