@@ -10,6 +10,7 @@ import {
   Users,
   Wallet,
   Image,
+  CreditCard,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -157,6 +158,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
+  },
+  {
+    key: 'payments',
+    label: 'Paiements',
+    labelKey: 'nav.payments',
+    path: '/board/payments',
+    icon: CreditCard,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: false,
   },
 ];
 

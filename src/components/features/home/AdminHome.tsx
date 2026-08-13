@@ -3,7 +3,7 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle, Wallet, Image,
+  XCircle, AlertCircle, Wallet, Image, CreditCard,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -159,6 +159,15 @@ export function AdminHome({ name }: Props) {
       iconColor: 'text-primary',
       path: '/board/categories',
       cta: t('categories.addCategory'),
+    },
+    {
+      label: 'Paiements K-Pay',
+      description: 'Consultez l\'historique des transactions Mobile Money (Orange Money, MTN MoMo).',
+      icon: CreditCard,
+      iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
+      iconColor: 'text-emerald-600',
+      path: '/board/payments',
+      cta: 'Voir les paiements',
     },
   ];
 

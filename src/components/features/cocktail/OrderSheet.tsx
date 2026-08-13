@@ -1,13 +1,14 @@
 import { useTranslation, Trans } from 'react-i18next';
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
-  MapPin, Phone, MessageSquare, TimerOff,
+  MapPin, Phone, MessageSquare, TimerOff, Smartphone, Banknote,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { YaoundeDistrictPicker } from '@/components/features/orders/YaoundeDistrictPicker';
 import { GeolocationButton } from '@/components/features/orders/GeolocationButton';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -34,6 +35,14 @@ import { trackEvent } from '@/lib/analytics';
 
 type Tab = 'order' | 'nutrition';
 
+function detectOperator(phone: string): 'MTN' | 'ORANGE' | null {
+  const num = phone.replace(/[^0-9]/g, '').replace(/^(237|00237)/, '');
+  if (num.length !== 9) return null;
+  if (/^6(7|80|81|82|83|50|51|52|53|54)/.test(num)) return 'MTN';
+  if (/^6(9|55|56|57|58|59)/.test(num)) return 'ORANGE';
+  return null;
+}
+
 type Props = {
   cocktail: Cocktail | null;
   open: boolean;
@@ -58,6 +67,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const [quantity1L, setQuantity1L] = useState(0);
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'momo'>('momo');
+  const [waitingForPayment, setWaitingForPayment] = useState(false);
 
   const [customName, setCustomName] = useState(cocktail?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -230,7 +241,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
         });
       }
 
-      if (isDraft) {
+      const isOwnerCheck = isOwner;
+      const isDraftCheck = isDraft;
+      let finalOrderId = '';
+
+      if (isDraftCheck) {
         const newCocktailId = await createCocktail({
           ...cocktail,
           name: customName,
@@ -240,7 +255,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           ...(coverUrl ? { imageUrl: coverUrl } : {}),
         });
 
-        await createOrder(
+        finalOrderId = await createOrder(
           user,
           { ...cocktail, name: customName, id: newCocktailId, totalPrice: price500, imageUrl: coverUrl },
           orderLines,
@@ -253,10 +268,10 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
           },
         );
-      } else if (!isOwner && !isDraft) {
+      } else if (!isOwnerCheck && !isDraftCheck) {
         const cloned = await cloneCocktailFromCatalogue(cocktail, user.uid, analysisResult ?? undefined);
 
-        await createOrder(
+        finalOrderId = await createOrder(
           user,
           { ...cloned, totalPrice: price500 },
           orderLines,
@@ -272,9 +287,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           },
         );
       } else {
-        await createOrder(
+        finalOrderId = await createOrder(
           user,
-          { ...cocktail, name: isOwner ? customName : cocktail.name, totalPrice: price500, imageUrl: coverUrl ?? cocktail.imageUrl },
+          { ...cocktail, name: isOwnerCheck ? customName : cocktail.name, totalPrice: price500, imageUrl: coverUrl ?? cocktail.imageUrl },
           orderLines,
           deliveryFee,
           deliveryDetails,
@@ -288,18 +303,46 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
       }
 
       trackEvent('purchase', {
-        value: (quantity500ml * price500) + (quantity1L * price1L) + deliveryFee,
+        value: total,
         currency: 'XAF',
         items: [
           {
             item_id: cocktail.id,
             item_name: customName || cocktail.name,
             item_category: cocktail.type,
-            quantity: quantity500ml + quantity1L,
+            quantity: totalBottles,
             price: price500,
           }
         ]
       });
+
+      // Traitement du paiement
+      if (paymentMethod === 'momo' && finalOrderId) {
+        setWaitingForPayment(true);
+        const operator = detectOperator(phone);
+        
+        try {
+          const res = await fetch('/api/kpay-init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: total,
+              phone: phone.trim(),
+              provider: operator,
+              orderId: finalOrderId,
+              customerName: user.name,
+            })
+          });
+          
+          if (!res.ok) {
+            console.error('[OrderSheet] Error K-Pay init:', await res.json());
+            // Même si erreur d'initiation K-Pay, la commande est créée (PENDING)
+            // L'utilisateur pourra payer plus tard dans "Mes commandes" ou à la livraison
+          }
+        } catch (e) {
+          console.error('[OrderSheet] Failed to contact K-Pay init API', e);
+        }
+      }
 
       setOrdered(true);
     } catch (error) {
@@ -316,6 +359,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
       setQuantity500ml(0);
       setQuantity1L(0);
       setOrdered(false);
+      setWaitingForPayment(false);
+      setPaymentMethod('momo');
       setDistrict('');
       setPhone(user?.phone || '');
       setInstructions('');
@@ -445,20 +490,43 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             <div ref={contentRef} className="flex-1 overflow-y-auto">
               {/* Success Header - Split Layout */}
               <div className="px-6 pt-6 pb-6 border-b border-border/20">
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 text-center sm:text-left">
                   {/* Left: Bravo */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
-                      <ShoppingBag className="size-10 text-primary" />
-                    </div>
-                    <h3 className="font-display font-bold text-3xl text-primary">{t('orders.bravo')}</h3>
+                    {waitingForPayment ? (
+                      <div className="size-20 rounded-full bg-amber-500/10 flex items-center justify-center relative">
+                        <Smartphone className="size-10 text-amber-500 animate-pulse" />
+                        <Loader2 className="absolute -bottom-1 -right-1 size-6 text-amber-500 animate-spin bg-background rounded-full" />
+                      </div>
+                    ) : (
+                      <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <ShoppingBag className="size-10 text-primary" />
+                      </div>
+                    )}
+                    <h3 className={cn("font-display font-bold text-2xl md:text-3xl", waitingForPayment ? "text-amber-500 text-center" : "text-primary")}>
+                      {waitingForPayment ? "Paiement en attente" : t('orders.bravo')}
+                    </h3>
                   </div>
 
                   {/* Right: Order Details */}
                   <div className="flex-1 space-y-4 pt-2">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {t('orders.successMessage')}
-                    </p>
+                    {waitingForPayment ? (
+                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-700/50 rounded-xl p-4 space-y-3">
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                          Veuillez consulter votre téléphone !
+                        </p>
+                        <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+                          Un menu s'est affiché sur votre écran. Entrez votre code secret <b>Mobile Money</b> pour confirmer le paiement de <b>{total.toLocaleString()} XAF</b>.
+                        </p>
+                        <p className="text-[11px] text-amber-700/60 dark:text-amber-400/60 italic">
+                          Une fois le paiement validé sur votre téléphone, votre commande sera automatiquement confirmée.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {t('orders.successMessage')}
+                      </p>
+                    )}
 
                     {/* Order Summary Card */}
                     <div className="bg-muted/30 rounded-xl p-4 space-y-2">
@@ -766,13 +834,31 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <Phone className="size-3.5 text-primary" /> {t('orders.phone')}
                     </label>
-                    <input
-                      type="tel"
-                      className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      placeholder={t('orders.phonePlaceholder')}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        className="w-full h-10 px-3 bg-muted/60 border border-border/40 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors pr-24"
+                        placeholder={t('orders.phonePlaceholder')}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
+                      {phone.length >= 8 && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          {detectOperator(phone) === 'MTN' && (
+                            <span className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 text-[10px] font-bold text-yellow-800 dark:text-yellow-400 px-2 py-1 rounded">
+                              <img src="/logos/mtn-1.jpg" alt="MTN" className="size-3 object-cover rounded-sm" />
+                              MTN
+                            </span>
+                          )}
+                          {detectOperator(phone) === 'ORANGE' && (
+                            <span className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 text-[10px] font-bold text-orange-800 dark:text-orange-400 px-2 py-1 rounded">
+                              <img src="/logos/orange-money.jpg" alt="Orange" className="size-3 object-cover rounded-sm" />
+                              Orange
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
@@ -785,6 +871,48 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       onChange={(e) => setInstructions(e.target.value)}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Mode de paiement */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Mode de paiement
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('momo')}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all h-[90px]",
+                      paymentMethod === 'momo'
+                        ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-sm"
+                        : "border-border/60 bg-card hover:border-border"
+                    )}
+                  >
+                    <Smartphone className={cn("size-6", paymentMethod === 'momo' ? "text-amber-500" : "text-muted-foreground")} />
+                    <span className={cn("text-xs font-bold", paymentMethod === 'momo' ? "text-amber-700 dark:text-amber-500" : "text-muted-foreground")}>
+                      Mobile Money
+                    </span>
+                    {paymentMethod === 'momo' && detectOperator(phone) === null && phone.length > 8 && (
+                      <span className="text-[9px] text-red-500 font-semibold absolute bottom-1">Numéro invalide</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cod')}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all h-[90px]",
+                      paymentMethod === 'cod'
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border/60 bg-card hover:border-border"
+                    )}
+                  >
+                    <Banknote className={cn("size-6", paymentMethod === 'cod' ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("text-xs font-bold", paymentMethod === 'cod' ? "text-primary" : "text-muted-foreground")}>
+                      À la livraison
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -861,7 +989,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
               <Button
                 size="lg"
                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] disabled:opacity-50 active:scale-95 transition-all"
-                disabled={ordering || !deliveryOk || !pricing || totalBottles === 0}
+                disabled={ordering || !deliveryOk || !pricing || totalBottles === 0 || (paymentMethod === 'momo' && detectOperator(phone) === null)}
                 onClick={handleOrder}
               >
                 {ordering ? (
@@ -870,8 +998,12 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   <>{t('orders.fillAddress')}</>
                 ) : totalBottles === 0 ? (
                   <>{t('orders.selectBottle')}</>
+                ) : paymentMethod === 'momo' && detectOperator(phone) === null ? (
+                  <>Vérifiez votre numéro (MTN/Orange)</>
                 ) : (
-                  <><ShoppingBag className="size-5" /> {t('orders.orderWithPrice', { total: total.toLocaleString() })}</>
+                  paymentMethod === 'momo' 
+                    ? <><Smartphone className="size-5" /> Payer {total.toLocaleString()} XAF</>
+                    : <><ShoppingBag className="size-5" /> {t('orders.orderWithPrice', { total: total.toLocaleString() })}</>
                 )}
               </Button>
             </div>

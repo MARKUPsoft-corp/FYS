@@ -18,7 +18,7 @@ const AppLayout: LayoutComponent = () => {
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
   // Pages réservées à l'admin
-  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/hero', '/board/pricing', '/board/users', '/board/cocktails'];
+  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/hero', '/board/pricing', '/board/users', '/board/cocktails', '/board/payments'];
   // Pages qui nécessitent une connexion (mais accessibles client + admin)
   const LOGIN_REQUIRED_PATHS = ['/board/profile', '/board/orders'];
 

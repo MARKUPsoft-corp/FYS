@@ -7,6 +7,7 @@ export const COLLECTIONS = {
   CHATS: 'chats',
   CONVERSATIONS: 'conversations',
   SETTINGS: 'settings',
+  KPAY_TRANSACTIONS: 'kpay_transactions',
 } as const;
 
 // Sous-collection profil santé, chemin: users/{uid}/profile/main
