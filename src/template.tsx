@@ -50,7 +50,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                 "@context": "https://schema.org",
                 "@type": "Organization",
                 "name": "FYS",
-                "alternateName": "For Your Self",
+                "alternateName": ["For Your Self", "NutriFYS"],
                 "url": "https://fys-app.com",
                 "logo": "https://fys-app.com/icons/icon-512.png",
                 "description": "Startup FoodTech camerounaise spécialisée dans les cocktails de fruits santé personnalisés par intelligence artificielle (NutriFYS)."
@@ -68,6 +68,33 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                   },
                   "query-input": "required name=search_term_string"
                 }
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "itemListElement": [
+                  {
+                    "@type": "SiteNavigationElement",
+                    "position": 1,
+                    "name": "Le FYS Lab",
+                    "description": "Créez votre cocktail sur mesure avec l'IA NutriFYS",
+                    "url": "https://fys-app.com/lab"
+                  },
+                  {
+                    "@type": "SiteNavigationElement",
+                    "position": 2,
+                    "name": "Notre Catalogue",
+                    "description": "Découvrez nos cocktails signatures et jus naturels",
+                    "url": "https://fys-app.com/board/catalogue"
+                  },
+                  {
+                    "@type": "SiteNavigationElement",
+                    "position": 3,
+                    "name": "Espace Santé",
+                    "description": "Suivez vos statistiques nutritionnelles",
+                    "url": "https://fys-app.com/board/profile"
+                  }
+                ]
               }
             ])
           }}
