@@ -27,12 +27,14 @@ import { createSession, getSessions, getSessionMessages, saveChatMessageToSessio
 import { useQuery } from '@tanstack/react-query';
 import { Timestamp } from 'firebase/firestore';
 import type { Fruit, HealthProfile, ChatMessageEntity, ChatRole, ChatSession } from '@/entities';
-import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS, areFruitsIncompatible, isUsableFruit } from '@/entities';
+import { areFruitsIncompatible, isUsableFruit } from '@/entities';
 import { cn } from '@/lib/utils';
 import { labSounds } from '@/services/lab-sounds';
 
 type Props = {
   onAnalyzeProposal: (proposal: CocktailProposal) => void;
+  maxMainFruits: number;
+  maxSupplements: number;
 };
 
 /** Typewriter hook — reveals text character by character. */
@@ -99,25 +101,29 @@ function ProposalMessageBubble({
   onAnalyze,
   fruitsCatalog,
   isNew,
+  maxMainFruits,
+  maxSupplements,
 }: {
   message: Extract<ChatMessageEntity, { type: 'proposal' }>;
   onAnalyze: (proposal: CocktailProposal) => void;
   fruitsCatalog: Fruit[];
   isNew?: boolean;
+  maxMainFruits: number;
+  maxSupplements: number;
 }) {
   const [fruitIds, setFruitIds] = useState(() =>
     fruitsCatalog.length === 0
-      ? message.proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS)
+      ? message.proposal.fruitIds.slice(0, maxMainFruits)
       : message.proposal.fruitIds
           .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
-          .slice(0, MAX_LAB_MAIN_FRUITS),
+          .slice(0, maxMainFruits),
   );
   const [supplementIds, setSupplementIds] = useState(() =>
     fruitsCatalog.length === 0
-      ? message.proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS)
+      ? message.proposal.supplementIds.slice(0, maxSupplements)
       : message.proposal.supplementIds
           .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
-          .slice(0, MAX_LAB_SUPPLEMENTS),
+          .slice(0, maxSupplements),
   );
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [cardVisible, setCardVisible] = useState(!isNew);
@@ -157,7 +163,7 @@ function ProposalMessageBubble({
         labSounds.fruitDeselect();
         return prev.filter((f) => f !== id);
       }
-      if (prev.length >= MAX_LAB_MAIN_FRUITS) return prev;
+      if (prev.length >= maxMainFruits) return prev;
       // Retire automatiquement les fruits incompatibles déjà sélectionnés
       const newFruit = fruitsCatalog.find((f) => f.id === id);
       const next = newFruit
@@ -183,7 +189,7 @@ function ProposalMessageBubble({
         labSounds.fruitDeselect();
         return prev.filter((s) => s !== id);
       }
-      if (prev.length >= MAX_LAB_SUPPLEMENTS) return prev;
+      if (prev.length >= maxSupplements) return prev;
       // 🎵 Play select sound
       labSounds.fruitSelect();
       return [...prev, id];
@@ -221,6 +227,8 @@ function ProposalMessageBubble({
               pulseId={pulseId}
               onTermClick={handleTermClick}
               fruitsCatalog={fruitsCatalog}
+              maxMainFruits={maxMainFruits}
+              maxSupplements={maxSupplements}
             />
           </div>
         )}
@@ -237,11 +245,15 @@ function ChatBubble({
   onAnalyze,
   fruitsCatalog,
   isNew,
+  maxMainFruits,
+  maxSupplements,
 }: {
   message: ChatMessageEntity;
   onAnalyze: (proposal: CocktailProposal) => void;
   fruitsCatalog: Fruit[];
   isNew?: boolean;
+  maxMainFruits: number;
+  maxSupplements: number;
 }) {
   if (message.type === 'proposal') {
     return (
@@ -250,6 +262,8 @@ function ChatBubble({
         onAnalyze={onAnalyze}
         fruitsCatalog={fruitsCatalog}
         isNew={isNew}
+        maxMainFruits={maxMainFruits}
+        maxSupplements={maxSupplements}
       />
     );
   }
@@ -392,7 +406,7 @@ function InfoSidebar() {
   );
 }
 
-export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
+export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupplements }: Props) {
   const { t } = useTranslation();
   const welcomeMessage = t('nutrifys.welcome');
   const [messages, setMessages] = useState<ChatMessageEntity[]>([
@@ -755,6 +769,8 @@ export function NutrifysComposeTab({ onAnalyzeProposal }: Props) {
                   onAnalyze={onAnalyzeProposal}
                   fruitsCatalog={usableFruits}
                   isNew={msg.id === latestAssistantId}
+                  maxMainFruits={maxMainFruits}
+                  maxSupplements={maxSupplements}
                 />
               ))}
 

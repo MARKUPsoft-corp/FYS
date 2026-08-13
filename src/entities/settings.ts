@@ -31,6 +31,10 @@ export interface PricingSettings {
   promoReorderActive?: boolean;
   /** Date d'expiration du QR Étiquette (null = pas d'expiration) */
   promoReorderExpiresAt?: Timestamp | null;
+  /** Limite max de fruits principaux dans le lab */
+  maxMainFruits?: number;
+  /** Limite max de suppléments dans le lab */
+  maxSupplements?: number;
   updatedAt?: Timestamp;
 }
 
@@ -39,6 +43,8 @@ export const DEFAULT_PRICING: PricingSettings = {
   bottle500mlBase: 1500,
   bottle1LBase: 2500,
   deliveryFee: 500,
+  maxMainFruits: 5,
+  maxSupplements: 3,
 };
 
 export const PRICING_DOC_ID = 'pricing';

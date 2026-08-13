@@ -10,7 +10,6 @@ import {
 } from '@/data/nutrifys-chat';
 import { getLabItemById } from '@/data/lab-items';
 import { isUsableFruit, areFruitsIncompatible, type Fruit } from '@/entities';
-import { MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
 
 type Props = {
   proposal: CocktailProposal;
@@ -23,6 +22,8 @@ type Props = {
   onTermClick?: (term: HighlightTerm) => void;
   /** Catalogue Firestore — pour afficher les vraies images des fruits */
   fruitsCatalog?: Fruit[];
+  maxMainFruits: number;
+  maxSupplements: number;
 };
 
 type DisplayItem = {
@@ -131,6 +132,8 @@ export function CocktailProposalCard({
   pulseId,
   onTermClick,
   fruitsCatalog = [],
+  maxMainFruits,
+  maxSupplements,
 }: Props) {
   const { t } = useTranslation();
   // Toujours afficher les fruits de la proposal ; la sélection se gère via selected=
@@ -144,8 +147,8 @@ export function CocktailProposalCard({
   const verdictColor = getVerdictColor(proposal.verdict);
   const activeProposal = buildProposalSelection(proposal, fruitIds, supplementIds);
   const hasSelection = fruitIds.length > 0;
-  const atMaxFruits = fruitIds.length >= MAX_LAB_MAIN_FRUITS;
-  const atMaxSupplements = supplementIds.length >= MAX_LAB_SUPPLEMENTS;
+  const atMaxFruits = fruitIds.length >= maxMainFruits;
+  const atMaxSupplements = supplementIds.length >= maxSupplements;
 
   // Fruits bloqués par incompatibilité avec la sélection courante
   const incompatibleIds = new Set<string>();
@@ -180,7 +183,7 @@ export function CocktailProposalCard({
       </div>
 
       <p className="px-4 pt-3 text-[11px] text-muted-foreground font-medium">
-        {t('lab.touchInstruction', { fruits: MAX_LAB_MAIN_FRUITS, supplements: MAX_LAB_SUPPLEMENTS })}
+        {t('lab.touchInstruction', { fruits: maxMainFruits, supplements: maxSupplements })}
       </p>
 
       <div className="px-4 pt-3 pb-2">
@@ -189,7 +192,7 @@ export function CocktailProposalCard({
             {t('lab.proposedFruits')}
           </p>
           <span className={`text-[10px] font-bold tabular-nums ${atMaxFruits ? 'text-secondary' : 'text-muted-foreground'}`}>
-            {fruitIds.length}/{MAX_LAB_MAIN_FRUITS}
+            {fruitIds.length}/{maxMainFruits}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -226,7 +229,7 @@ export function CocktailProposalCard({
               {t('lab.supplements')}
             </p>
             <span className={`text-[10px] font-bold tabular-nums ${atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'}`}>
-              {supplementIds.length}/{MAX_LAB_SUPPLEMENTS}
+              {supplementIds.length}/{maxSupplements}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">

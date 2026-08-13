@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import { Save, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -13,7 +12,7 @@ import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
-import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
+import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail, getCocktailById } from '@/services/cocktail';
 import { analyzeCocktail, recommendSupplements } from '@/services/ai';
@@ -92,6 +91,9 @@ const FysLab: PageComponent = () => {
     queryFn: () => loadParam ? getCocktailById(loadParam) : null,
     enabled: !!loadParam,
   });
+
+  const maxMainFruits = pricing?.maxMainFruits ?? 5;
+  const maxSupplements = pricing?.maxSupplements ?? 3;
 
   const loadedRef = useRef(false);
   useEffect(() => {
@@ -270,7 +272,7 @@ const FysLab: PageComponent = () => {
         next.delete(id);
         // 🎵 Play deselect sound
         labSounds.fruitDeselect();
-      } else if (next.size < MAX_LAB_MAIN_FRUITS) {
+      } else if (next.size < maxMainFruits) {
         // Retire automatiquement les fruits incompatibles déjà sélectionnés
         const newFruit = fruits.find((f) => f.id === id);
         if (newFruit) {
@@ -309,7 +311,7 @@ const FysLab: PageComponent = () => {
         next.delete(id);
         // 🎵 Play deselect sound
         labSounds.fruitDeselect();
-      } else if (next.size < MAX_LAB_SUPPLEMENTS) {
+      } else if (next.size < maxSupplements) {
         next.set(id, 20);
         // 🎵 Play fruit selection sound
         labSounds.fruitSelect();
@@ -354,7 +356,7 @@ const FysLab: PageComponent = () => {
       // Pré-sélectionner uniquement les suggestions NutriFYS (remplace l'ancienne sélection)
       setSelectedSupplements(() => {
         const next = new Map<string, number>();
-        for (const id of result.recommendedIds.slice(0, MAX_LAB_SUPPLEMENTS)) {
+        for (const id of result.recommendedIds.slice(0, maxSupplements)) {
           if (!mains.has(id)) next.set(id, 20);
         }
         return next;
@@ -604,7 +606,7 @@ const FysLab: PageComponent = () => {
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
     // Filtre de sécurité : ne garde que les fruits actifs et non incompatibles entre eux
     const next = new Map<string, number>();
-    for (const id of proposal.fruitIds.slice(0, MAX_LAB_MAIN_FRUITS)) {
+    for (const id of proposal.fruitIds.slice(0, maxMainFruits)) {
       const newFruit = fruits.find((f) => f.id === id);
       if (!newFruit || !isUsableFruit(newFruit)) continue;
       const conflicts = [...next.keys()].some((fid) => {
@@ -614,7 +616,7 @@ const FysLab: PageComponent = () => {
       if (!conflicts) next.set(id, 100);
     }
     const nextSupps = new Map<string, number>();
-    proposal.supplementIds.slice(0, MAX_LAB_SUPPLEMENTS).forEach((id) => {
+    proposal.supplementIds.slice(0, maxSupplements).forEach((id) => {
       // `supplements` n'expose déjà que les suppléments actifs
       if (supplements.some((s) => s.id === id) && !next.has(id)) nextSupps.set(id, 20);
     });
@@ -678,12 +680,16 @@ const FysLab: PageComponent = () => {
               onOrderRequest={openOrderSheet}
               aiRecommendation={aiRecommendation}
               loadingAI={loadingAI}
+              maxMainFruits={maxMainFruits}
+              maxSupplements={maxSupplements}
             />
           )}
 
           {activeTab === 'nutrifys' && (
             <NutrifysComposeTab
               onAnalyzeProposal={handleAnalyzeFromProposal}
+              maxMainFruits={maxMainFruits}
+              maxSupplements={maxSupplements}
             />
           )}
         </div>

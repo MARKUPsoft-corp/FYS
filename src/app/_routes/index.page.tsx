@@ -1,5 +1,4 @@
 import { PageComponent, useNavigate } from 'rasengan';
-import i18n from '@/i18n';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 

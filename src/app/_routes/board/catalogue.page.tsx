@@ -28,7 +28,6 @@ import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { AdminCatalogue } from '@/components/features/catalogue/AdminCatalogue';
 import { CocktailFormDrawer } from '@/components/features/catalogue/CocktailFormDrawer';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
-import i18n from '@/i18n';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 
 type CatalogueTab = 'official' | 'public' | 'mine';

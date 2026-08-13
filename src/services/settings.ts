@@ -25,6 +25,8 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     promoReorderDiscount: data.promoReorderDiscount ?? 0,
     promoReorderActive: data.promoReorderActive ?? false,
     promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
+    maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
+    maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
     ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
   };
 }
@@ -44,6 +46,8 @@ export async function updatePricingSettings(
       promoReorderDiscount: data.promoReorderDiscount ?? 0,
       promoReorderActive: data.promoReorderActive ?? false,
       promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
+      maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
+      maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
       updatedAt: serverTimestamp(),
     },
     { merge: true },

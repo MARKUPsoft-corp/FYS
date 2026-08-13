@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { SupplementsTab } from '@/components/features/lab/SupplementsTab';
 import type { AIRecommendation } from '@/services/ai.shared';
 import type { Fruit, AIAnalysis, AIVerdict, NutrientInfo } from '@/entities';
-import { isUsableFruit, isUsableAsMainFruit, areFruitsIncompatible, MAX_LAB_MAIN_FRUITS, MAX_LAB_SUPPLEMENTS } from '@/entities';
+import { isUsableFruit, isUsableAsMainFruit, areFruitsIncompatible } from '@/entities';
 
 
 // ── Verdict config ────────────────────────────────────────────────────────────
@@ -388,6 +388,8 @@ type Props = {
   onOrderRequest: () => void;
   aiRecommendation: AIRecommendation | null;
   loadingAI: boolean;
+  maxMainFruits: number;
+  maxSupplements: number;
 };
 
 export function ComposeTab({
@@ -410,6 +412,8 @@ export function ComposeTab({
   onOrderRequest,
   aiRecommendation,
   loadingAI,
+  maxMainFruits,
+  maxSupplements,
 }: Props) {
   const { t } = useTranslation();
   // Étape 1 : uniquement les fruits principaux. Un fruit qui n'est QUE
@@ -434,7 +438,7 @@ export function ComposeTab({
 
   const selectedFruits = mainFruits.filter((f) => selectedIngredients.has(f.id));
   const selectedSupplementItems = supplements.filter((f) => selectedSupplements.has(f.id));
-  const atMaxFruits = selectedIngredients.size >= MAX_LAB_MAIN_FRUITS;
+  const atMaxFruits = selectedIngredients.size >= maxMainFruits;
   const canSave = selectedIngredients.size > 0 && cocktailName.trim().length > 0;
   const canAnalyze = selectedIngredients.size > 0;
   const canGoStep2 = selectedIngredients.size > 0;
@@ -459,7 +463,7 @@ export function ComposeTab({
                   {t('lab.step1Title')}
                 </span>
                 <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-                  {t('lab.step1Description', { fruits: MAX_LAB_MAIN_FRUITS, supplements: MAX_LAB_SUPPLEMENTS })}
+                  {t('lab.step1Description', { fruits: maxMainFruits, supplements: maxSupplements })}
                 </p>
               </div>
             </div>
@@ -473,7 +477,7 @@ export function ComposeTab({
                   {t('lab.step2Title')}
                 </span>
                 <p className="text-foreground text-[12px] md:text-[13px] font-medium leading-relaxed">
-                  {t('lab.step2Description', { supplements: MAX_LAB_SUPPLEMENTS })}
+                  {t('lab.step2Description', { supplements: maxSupplements })}
                 </p>
               </div>
             </div>
@@ -494,7 +498,7 @@ export function ComposeTab({
               </div>
               <span className={`text-[11px] font-bold tabular-nums shrink-0 ${atMaxFruits ? 'text-secondary' : 'text-muted-foreground'
                 }`}>
-                {selectedIngredients.size}/{MAX_LAB_MAIN_FRUITS}
+                {selectedIngredients.size}/{maxMainFruits}
               </span>
             </div>
 
@@ -617,6 +621,7 @@ export function ComposeTab({
               onToggleSupplement={onToggleSupplement}
               aiRecommendation={aiRecommendation}
               loadingAI={loadingAI}
+              maxSupplements={maxSupplements}
             />
           </>
         )}
@@ -640,6 +645,8 @@ export function ComposeTab({
             analyzing={analyzing}
             canAnalyze={canAnalyze}
             onOrderRequest={onOrderRequest}
+            maxMainFruits={maxMainFruits}
+            maxSupplements={maxSupplements}
           />
       </div>
     </div>
@@ -664,6 +671,8 @@ type SavePanelProps = {
   analyzing: boolean;
   canAnalyze: boolean;
   onOrderRequest: () => void;
+  maxMainFruits: number;
+  maxSupplements: number;
 };
 
 export function SavePanel({
@@ -682,6 +691,8 @@ export function SavePanel({
   analyzing,
   canAnalyze,
   onOrderRequest,
+  maxMainFruits,
+  maxSupplements,
 }: SavePanelProps) {
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -706,8 +717,8 @@ export function SavePanel({
             <p className="text-xs text-muted-foreground">
               {selectedMainCount === 0
                 ? t('lab.noFruitSelected')
-                : `${selectedMainCount}/${MAX_LAB_MAIN_FRUITS} ${t('lab.fruitCount', { count: selectedMainCount })}${selectedSupplementCount > 0
-                  ? ` · ${selectedSupplementCount}/${MAX_LAB_SUPPLEMENTS} ${t('lab.supplementCount', { count: selectedSupplementCount })}`
+                : `${selectedMainCount}/${maxMainFruits} ${t('lab.fruitCount', { count: selectedMainCount })}${selectedSupplementCount > 0
+                  ? ` · ${selectedSupplementCount}/${maxSupplements} ${t('lab.supplementCount', { count: selectedSupplementCount })}`
                   : ''
                 }`}
             </p>

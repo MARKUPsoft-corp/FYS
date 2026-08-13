@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Lightbulb, Sparkles } from 'lucide-react';
 import type { Fruit } from '@/entities';
-import { MAX_LAB_SUPPLEMENTS } from '@/entities';
 import { isUsableFruit, isUsableAsSupplement } from '@/entities';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { cn } from '@/lib/utils';
@@ -14,6 +13,7 @@ type Props = {
   onToggleSupplement: (id: string) => void;
   aiRecommendation?: AIRecommendation | null;
   loadingAI?: boolean;
+  maxSupplements: number;
 };
 
 function ItemTile({
@@ -96,6 +96,7 @@ export function SupplementsTab({
   onToggleSupplement,
   aiRecommendation,
   loadingAI,
+  maxSupplements,
 }: Props) {
   const { t } = useTranslation();
   // Calculé ici même depuis le catalogue complet : un supplément indisponible
@@ -106,7 +107,7 @@ export function SupplementsTab({
   const recommended = supplements.filter((s) => recommendedIds.has(s.id));
   const others = supplements.filter((s) => !recommendedIds.has(s.id));
   const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId);
-  const atMaxSupplements = selectedSupplementIds.length >= MAX_LAB_SUPPLEMENTS;
+  const atMaxSupplements = selectedSupplementIds.length >= maxSupplements;
 
   function renderTile(s: Fruit, accent: 'primary' | 'secondary', badge?: string, unavailable = false) {
     const selected = selectedSupplementIds.includes(s.id);
@@ -160,7 +161,7 @@ export function SupplementsTab({
           <span className={`text-[11px] font-bold tabular-nums ${
             atMaxSupplements ? 'text-secondary' : 'text-muted-foreground'
           }`}>
-            {selectedSupplementIds.length}/{MAX_LAB_SUPPLEMENTS}
+            {selectedSupplementIds.length}/{maxSupplements}
           </span>
         </div>
 

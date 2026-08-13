@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadSvgAsPng } from '@/lib/download';
@@ -36,6 +36,8 @@ const Pricing: PageComponent = () => {
   const [promoReorder, setPromoReorder] = useState('');
   const [promoReorderActive, setPromoReorderActive] = useState(false);
   const [promoReorderExpires, setPromoReorderExpires] = useState('');
+  const [maxMainFruits, setMaxMainFruits] = useState('5');
+  const [maxSupplements, setMaxSupplements] = useState('3');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -58,6 +60,8 @@ const Pricing: PageComponent = () => {
         ? pricing.promoReorderExpiresAt.toDate().toISOString().split('T')[0]
         : ''
     );
+    setMaxMainFruits(String(pricing.maxMainFruits ?? 5));
+    setMaxSupplements(String(pricing.maxSupplements ?? 3));
   }, [pricing]);
 
   async function handleSave(e: React.FormEvent) {
@@ -84,6 +88,8 @@ const Pricing: PageComponent = () => {
         promoReorderDiscount: Number(promoReorder) || 0,
         promoReorderActive,
         promoReorderExpiresAt: reorderExpAt,
+        maxMainFruits: Number(maxMainFruits) || 5,
+        maxSupplements: Number(maxSupplements) || 3,
       });
       queryClient.invalidateQueries({ queryKey: ['pricing-settings'] });
       setSaved(true);
@@ -188,6 +194,55 @@ const Pricing: PageComponent = () => {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                 XAF
               </span>
+            </div>
+          </div>
+
+          {/* ── Limites FYS Lab ── */}
+          <div className="flex items-start gap-4 pb-6 pt-6 border-b border-border/40">
+            <div className="size-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+              <Beaker className="size-5 text-indigo-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-lg text-foreground">Limites de composition FYS Lab</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configurez le nombre maximum d'ingrédients que les clients peuvent sélectionner.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="max-main-fruits" className="text-sm font-semibold">
+                Fruits Principaux Max
+              </Label>
+              <Input
+                id="max-main-fruits"
+                type="number"
+                min={1}
+                max={10}
+                value={maxMainFruits}
+                onChange={(e) => setMaxMainFruits(e.target.value)}
+                className="h-11 rounded-xl"
+                required
+              />
+              <p className="text-[11px] text-muted-foreground">Ex: 5 fruits maximum par mix.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="max-supplements" className="text-sm font-semibold">
+                Suppléments Max
+              </Label>
+              <Input
+                id="max-supplements"
+                type="number"
+                min={0}
+                max={5}
+                value={maxSupplements}
+                onChange={(e) => setMaxSupplements(e.target.value)}
+                className="h-11 rounded-xl"
+                required
+              />
+              <p className="text-[11px] text-muted-foreground">Ex: 3 boosters maximum par mix.</p>
             </div>
           </div>
 
