@@ -404,6 +404,7 @@ const Pricing: PageComponent = () => {
 Pricing.metadata = {
   title: i18n.t('pricing.pageTitle'),
   description: i18n.t('pricing.pageDescription'),
+  metaTags: [{ name: 'robots', content: 'noindex, nofollow' }],
 };
 
 export default Pricing;

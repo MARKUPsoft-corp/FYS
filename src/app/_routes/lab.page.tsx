@@ -824,8 +824,8 @@ const FysLab: PageComponent = () => {
 };
 
 FysLab.metadata = {
-  title: i18n.t('lab.pageTitle'),
-  description: i18n.t('lab.pageDesc'),
+  title: 'FYS Lab — Créez votre cocktail santé sur mesure',
+  description: "Composez votre jus de fruits santé idéal. Notre intelligence artificielle NutriFYS l'analyse en temps réel selon votre profil médical.",
 };
 
 export default FysLab;

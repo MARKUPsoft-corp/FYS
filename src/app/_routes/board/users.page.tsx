@@ -146,6 +146,7 @@ const Users: PageComponent = () => {
 Users.metadata = {
   title: i18n.t('users.pageTitle'),
   description: i18n.t('users.pageDescription'),
+  metaTags: [{ name: 'robots', content: 'noindex, nofollow' }],
 };
 
 export default Users;

@@ -1,7 +1,11 @@
-user-agent: *
-  disallow: /downloads/
-  disallow: /private/
-  allow: /
-  
-  user-agent: magicsearchbot
-  disallow: /uploads/
+User-agent: *
+Allow: /
+Disallow: /board/orders
+Disallow: /board/profile
+Disallow: /board/users
+Disallow: /board/fruits
+Disallow: /board/categories
+Disallow: /board/pricing
+Disallow: /board/hero
+
+Sitemap: https://fys-app.com/sitemap.xml

@@ -52,8 +52,8 @@ const RootIndex: PageComponent = () => {
 
 RootIndex.path = '/';
 RootIndex.metadata = {
-  title: 'FYS',
-  description: i18n.t('page.indexDesc'),
+  title: 'FYS — Cocktails Santé Personnalisés par IA',
+  description: "FYS (For Your Self) crée pour vous des cocktails de fruits sur mesure, analysés et validés par l'intelligence artificielle NutriFYS en fonction de votre santé.",
 };
 
 export default RootIndex;

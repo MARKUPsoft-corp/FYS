@@ -401,8 +401,8 @@ const Catalogue: PageComponent = () => {
 };
 
 Catalogue.metadata = {
-  title: `FYS — ${i18n.t('catalogue.title')}`,
-  description: i18n.t('catalogue.pageDescription'),
+  title: 'Catalogue des cocktails FYS — Recettes santé',
+  description: "Découvrez notre catalogue officiel de cocktails santé FYS, ou explorez les créations de la communauté validées par NutriFYS.",
 };
 
 export default Catalogue;

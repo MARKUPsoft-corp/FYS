@@ -1444,6 +1444,7 @@ const Orders: PageComponent = () => {
 Orders.metadata = {
   title: i18n.t('orders.pageTitle'),
   description: i18n.t('orders.pageDescription'),
+  metaTags: [{ name: 'robots', content: 'noindex, nofollow' }],
 };
 
 export default Orders;
