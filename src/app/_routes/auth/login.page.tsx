@@ -31,7 +31,9 @@ const Login: PageComponent = () => {
   const { user } = useAuthStore();
 
   // URL de retour (ex: /lab?tab=nutrifys) — posée avant de venir ici
-  const redirectPath = new URLSearchParams(window.location.search).get('redirect');
+  const redirectPath = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('redirect')
+    : null;
 
   // Au retour de la redirection Google : consomme le résultat (crée le doc
   // Firestore si c'est un nouvel utilisateur).
