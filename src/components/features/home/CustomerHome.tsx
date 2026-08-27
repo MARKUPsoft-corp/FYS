@@ -272,13 +272,8 @@ export function CustomerHome(_props: Props) {
               return (
                 <div
                   key={fruit.id}
-                  onClick={() => !unavailable && setSelectedFruit(fruit)}
-                  className={cn(
-                    'relative bg-card w-full p-3 rounded-[2rem] border border-border/40 shadow-sm transition-all group flex flex-col items-center',
-                    unavailable
-                      ? 'opacity-45 grayscale cursor-not-allowed'
-                      : 'hover:shadow-md cursor-pointer',
-                  )}
+                  onClick={() => setSelectedFruit(fruit)}
+                  className="relative bg-card w-full p-3 rounded-[2rem] border border-border/40 shadow-sm transition-all group flex flex-col items-center cursor-pointer hover:shadow-md"
                 >
                   {unavailable && (
                     <span className="absolute top-2 right-2 z-10 text-[9px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
