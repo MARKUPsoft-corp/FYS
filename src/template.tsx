@@ -23,15 +23,15 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
         <meta name="apple-mobile-web-app-title" content="FYS" />
 
         {/* ── Icons ── */}
-        <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" href="/logos/fys_favicon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/logos/fys_favicon.png" />
 
         {/* ── Open Graph & SEO ── */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content="FYS — For Your Self" />
         <meta property="og:description" content="Cocktails de fruits santé personnalisés par l'IA NutriFYS à Yaoundé, Cameroun." />
         <meta property="og:url" content="https://fys-app.com" />
-        <meta property="og:image" content="https://fys-app.com/icons/icon-512.png" />
+        <meta property="og:image" content="https://fys-app.com/logos/fys_favicon.png" />
         <meta property="og:locale" content="fr_FR" />
         <meta name="keywords" content="cocktails santé, fruits frais, IA nutrition, NutriFYS, Yaoundé, Cameroun, bien-être, For Your Self" />
         
@@ -39,7 +39,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="FYS — For Your Self" />
         <meta name="twitter:description" content="Découvrez le FYS Lab : votre assistant nutritionnel NutriFYS valide et personnalise vos cocktails de fruits selon votre santé." />
-        <meta name="twitter:image" content="https://fys-app.com/icons/icon-512.png" />
+        <meta name="twitter:image" content="https://fys-app.com/logos/fys_favicon.png" />
 
         {/* ── Structured Data (JSON-LD) for Sitelinks & SEO ── */}
         <script
@@ -52,7 +52,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                 "name": "FYS",
                 "alternateName": ["For Your Self", "NutriFYS"],
                 "url": "https://fys-app.com",
-                "logo": "https://fys-app.com/icons/icon-512.png",
+                "logo": "https://fys-app.com/logos/fys_favicon.png",
                 "description": "Startup FoodTech camerounaise spécialisée dans les cocktails de fruits santé personnalisés par intelligence artificielle (NutriFYS)."
               },
               {

@@ -61,8 +61,8 @@ export function Topbar() {
     >
       <div className="h-20 flex items-center justify-between px-3 md:px-6 lg:px-12">
         <div className="flex shrink-0">
-          <Link to="/board"  className="font-display font-extrabold text-3xl tracking-tighter text-primary hover:text-primary/80 transition-colors">
-            FYS<span className="text-secondary">.</span>
+          <Link to="/board" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-10 w-auto object-contain" />
           </Link>
         </div>
 

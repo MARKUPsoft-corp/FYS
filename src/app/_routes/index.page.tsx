@@ -33,10 +33,9 @@ const RootIndex: PageComponent = () => {
       <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
         {/* Glow halo */}
         <div className="absolute inset-0 bg-primary/15 blur-2xl rounded-full scale-125" />
-        {/* FYS wordmark */}
-        <div className="fys-logo-text relative z-10 flex items-end justify-center gap-0.5">
-          <span className="font-display font-extrabold text-primary text-5xl leading-none tracking-tight">FYS</span>
-          <span className="size-2.5 rounded-full bg-secondary mb-0.5 shrink-0 fys-orbit-dot absolute" />
+        {/* FYS logo */}
+        <div className="fys-logo-text relative z-10 flex items-center justify-center">
+          <img src="/logos/fys_logo.png" alt="FYS Logo" className="w-24 h-auto object-contain" />
         </div>
       </div>
       {/* Loading indicator */}

@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(async () => {
   return {
     ssr: false,
+    prerender: true,
     vite: {
       plugins: [
         tailwindcss(),
