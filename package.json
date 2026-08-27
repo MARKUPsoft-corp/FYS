@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "rasengan dev",
-    "build": "rasengan build",
+    "build": "rasengan build && cp -r static/* dist/ 2>/dev/null || true",
     "serve": "rasengan-serve ./dist",
     "seed": "npx tsx scripts/seed.ts",
     "generate-icons": "node scripts/generate-icons.mjs"
