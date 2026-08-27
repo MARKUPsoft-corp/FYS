@@ -8,8 +8,11 @@ const RootIndex: PageComponent = () => {
 
   useEffect(() => {
     if (!loading) {
-      // L'appli est accessible sans connexion : accueil direct.
-      navigate('/board', { replace: true });
+      // Prevent redirecting search engine bots so they can index the homepage and show sitelinks
+      const isBot = /bot|googlebot|crawler|spider|robot|crawling|bingbot/i.test(navigator.userAgent);
+      if (!isBot) {
+        navigate('/board', { replace: true });
+      }
     }
   }, [loading, navigate]);
 
