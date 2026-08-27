@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import { Save, Sparkles } from 'lucide-react';
+import { Save, Sparkles, ChevronRight } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -350,14 +350,46 @@ const FysLab: PageComponent = () => {
         grams,
       })).filter((i) => i.fruit);
 
-      const result = await recommendSupplements(ingredients, profile, supplements);
+      // Filtrer les suppléments pour ne passer à l'IA QUE ceux qui sont compatibles
+      const compatibleSupplements = supplements.filter(supp => {
+        let isConflicting = false;
+        for (const [mid] of mains) {
+          const mainFruit = fruits.find(f => f.id === mid);
+          if (mainFruit && areFruitsIncompatible(mainFruit, supp)) {
+            isConflicting = true;
+            break;
+          }
+        }
+        return !isConflicting;
+      });
+
+      const result = await recommendSupplements(ingredients, profile, compatibleSupplements);
       setAiRecommendation(result);
 
-      // Pré-sélectionner uniquement les suggestions NutriFYS (remplace l'ancienne sélection)
+      // Pré-sélectionner uniquement les suggestions NutriFYS non incompatibles (remplace l'ancienne sélection)
       setSelectedSupplements(() => {
         const next = new Map<string, number>();
-        for (const id of result.recommendedIds.slice(0, maxSupplements)) {
-          if (!mains.has(id)) next.set(id, 20);
+        let selectedCount = 0;
+        for (const id of result.recommendedIds) {
+          if (selectedCount >= maxSupplements) break;
+          if (!mains.has(id)) {
+            // Vérifier l'incompatibilité avec les fruits principaux
+            const newSupp = fruits.find((f) => f.id === id);
+            let isConflicting = false;
+            if (newSupp) {
+              for (const [mid] of mains) {
+                const mainFruit = fruits.find((f) => f.id === mid);
+                if (mainFruit && areFruitsIncompatible(mainFruit, newSupp)) {
+                  isConflicting = true;
+                  break;
+                }
+              }
+            }
+            if (!isConflicting) {
+              next.set(id, 20);
+              selectedCount++;
+            }
+          }
         }
         return next;
       });
@@ -793,13 +825,10 @@ const FysLab: PageComponent = () => {
                     size="lg"
                     className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
                     style={{ background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }}
-                    disabled={selectedIngredients.size === 0 || analyzing}
-                    onClick={() => handleAnalyze()}
+                    disabled={selectedIngredients.size === 0}
+                    onClick={() => handleStepChange(2)}
                   >
-                    {analyzing
-                      ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> {t('lab.analyzingShort')}</>
-                      : <><Sparkles className="size-5" /> {t('lab.analyzeWith')}</>
-                    }
+                    Suivant : Suppléments <ChevronRight className="size-5" />
                   </Button>
                 </div>
               )

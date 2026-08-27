@@ -14,6 +14,7 @@ type Props = {
   aiRecommendation?: AIRecommendation | null;
   loadingAI?: boolean;
   maxSupplements: number;
+  incompatibleIds: Set<string>;
 };
 
 function ItemTile({
@@ -24,6 +25,9 @@ function ItemTile({
   badge,
   disabled = false,
   unavailable = false,
+  incompatible = false,
+  incompatibleText = 'Incompatible',
+  unavailableText = 'Indisponible',
 }: {
   item: Fruit;
   selected: boolean;
@@ -32,6 +36,9 @@ function ItemTile({
   badge?: string;
   disabled?: boolean;
   unavailable?: boolean;
+  incompatible?: boolean;
+  incompatibleText?: string;
+  unavailableText?: string;
 }) {
   const selectedCls =
     accent === 'primary'
@@ -40,19 +47,21 @@ function ItemTile({
   const textCls =
     accent === 'primary' ? 'text-primary' : 'text-secondary';
 
+  const isDisabled = disabled || unavailable || incompatible;
+
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={isDisabled}
       onClick={onClick}
       className={cn(
         'relative flex flex-col items-center justify-start gap-1.5 p-2.5 rounded-[1.25rem] transition-colors duration-300 border-2',
-        unavailable
-          ? 'bg-muted/40 border-border/30 opacity-45 cursor-not-allowed grayscale'
-          : selected
+        selected
           ? selectedCls
-          : disabled
+          : (disabled && !unavailable && !incompatible)
           ? 'bg-muted/40 border-border/30 opacity-45 cursor-not-allowed'
+          : (unavailable || incompatible)
+          ? 'bg-card border-border/60 shadow-sm cursor-not-allowed'
           : 'bg-card border-border/60 hover:border-primary/40 shadow-sm hover:-translate-y-0.5 opacity-80',
       )}
     >
@@ -61,7 +70,17 @@ function ItemTile({
           <span className="absolute inset-0 bg-gradient-to-br from-transparent via-white/25 to-transparent animate-wave-sweep" />
         </span>
       )}
-      {badge && (
+      {unavailable && (
+        <span className="absolute top-1.5 right-1.5 z-10 text-[9px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full">
+          {unavailableText || 'Indisponible'}
+        </span>
+      )}
+      {incompatible && !unavailable && (
+        <span className="absolute top-1.5 right-1.5 z-10 text-[9px] font-bold uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/30 px-1.5 py-0.5 rounded-full">
+          {incompatibleText || 'Incompatible'}
+        </span>
+      )}
+      {badge && !unavailable && !incompatible && (
         <span className="absolute -top-1.5 -right-1.5 z-10 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#E0982E] text-white shadow-sm">
           {badge}
         </span>
@@ -97,21 +116,28 @@ export function SupplementsTab({
   aiRecommendation,
   loadingAI,
   maxSupplements,
+  incompatibleIds,
 }: Props) {
   const { t } = useTranslation();
   // Calculé ici même depuis le catalogue complet : un supplément indisponible
   // (isActive: false) est grisé et non cliquable, comme à l'étape 1.
   const supplements = fruits.filter((f) => isUsableAsSupplement(f) && isUsableFruit(f));
   const unavailableSupplements = fruits.filter((f) => isUsableAsSupplement(f) && !isUsableFruit(f));
-  const recommendedIds = new Set(aiRecommendation?.recommendedIds ?? []);
+  
+  // Filter out incompatible supplements from AI recommendations
+  const recommendedIds = new Set(
+    (aiRecommendation?.recommendedIds ?? []).filter(id => !incompatibleIds.has(id))
+  );
+  
   const recommended = supplements.filter((s) => recommendedIds.has(s.id));
   const others = supplements.filter((s) => !recommendedIds.has(s.id));
-  const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId);
+  const highlighted = supplements.find((s) => s.id === aiRecommendation?.highlightedSupplementId && !incompatibleIds.has(s.id));
   const atMaxSupplements = selectedSupplementIds.length >= maxSupplements;
 
   function renderTile(s: Fruit, accent: 'primary' | 'secondary', badge?: string, unavailable = false) {
     const selected = selectedSupplementIds.includes(s.id);
     const disabled = unavailable || (!selected && atMaxSupplements);
+    const incompatible = incompatibleIds.has(s.id);
     return (
       <ItemTile
         key={s.id}
@@ -119,6 +145,9 @@ export function SupplementsTab({
         selected={selected}
         disabled={disabled}
         unavailable={unavailable}
+        incompatible={incompatible}
+        incompatibleText={t('lab.incompatibleBadge')}
+        unavailableText={t('lab.unavailable')}
         onClick={() => onToggleSupplement(s.id)}
         accent={accent}
         badge={badge}

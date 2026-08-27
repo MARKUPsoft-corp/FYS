@@ -451,11 +451,11 @@ export function buildChatSystemPrompt(profile: HealthProfile | null, fruits: Fru
 
   // Règles d'incompatibilité (configurées par l'admin) — l'IA ne doit
   // JAMAIS proposer un mélange qui les enfreint.
-  const incompatibleFruits = mainFruits.filter((f) => (f.incompatibleIds ?? []).length > 0);
+  const incompatibleFruits = activeFruits.filter((f) => (f.incompatibleIds ?? []).length > 0);
   const incompatibilityRules = incompatibleFruits.length > 0
     ? incompatibleFruits.map((f) => {
       const names = (f.incompatibleIds ?? [])
-        .map((id) => mainFruits.find((x) => x.id === id)?.name ?? id)
+        .map((id) => activeFruits.find((x) => x.id === id)?.name ?? id)
         .join(', ');
       return `  • ${f.name} [id: ${f.id}] ${isEn ? 'must NEVER be mixed with' : 'ne doit JAMAIS être mélangé avec'} : ${names}`;
     }).join('\n')
@@ -516,7 +516,9 @@ ALLERGIES RULE (CRITICAL / LIFE-THREATENING):
 VALID FRUIT IDs FOR "proposal.fruitIds": [${fruitIds}]
 VALID SUPPLEMENT IDs FOR "proposal.supplementIds": [${supplementIds}]
 
-INCOMPATIBILITY RULES (ABSOLUTE — NEVER put two incompatible fruits in the same "proposal.fruitIds"):
+INCOMPATIBILITY RULES (ABSOLUTE):
+- NEVER put two incompatible fruits in the same "proposal.fruitIds" or "proposal.supplementIds".
+- If the user explicitly asks to mix incompatible fruits (based on the rules below), you must politely refuse, explain that they are incompatible and cannot be mixed in a FYS cocktail, and propose an alternative.
 ${incompatibilityRules}
 
 GOLDEN TASTE RULE (TASTE IS PARAMOUNT):
@@ -546,7 +548,9 @@ CONSULTATION GUIDELINES :
 You must generate your response ONLY as valid JSON:
 {
   "text": "<Your pedagogical text response (3-5 sentences, warm and expert). If it's a proposal, include FYS thanks and delivery promise.>",
-  "proposal": {
+  "proposal": null // IMPORTANT: Leave as null UNLESS the user explicitly agreed in their previous message. If so, replace null with the object below:
+  /*
+  {
     "name": "<Creative cocktail name>",
     "profileLabel": "<Goal: Energy, Immunity, Digestion, etc.>",
     "fruitIds": ["<exact fruit id from the list>", ...],
@@ -556,8 +560,9 @@ You must generate your response ONLY as valid JSON:
     "score": <0-100>,
     "verdict": "beneficial" | "neutral" | "caution" | "not_recommended"
   }
+  */
 }
-CRITICAL REMINDER: "proposal" is STRICTLY OPTIONAL. Only when the user has explicitly validated. Provide only this valid JSON, no other text before or after.`;
+CRITICAL REMINDER: "proposal" MUST be null by default. Only fill it if the user replied "yes/ok" to your composition suggestion. Provide only this valid JSON, no other text before or after.`;
   }
 
   return `Tu es NutriFYS, un assistant nutritionniste expert spécialisé dans les cocktails de fruits santé de FYS entrainé par les experts du domaine. Tu as une profonde maîtrise de la biochimie nutritionnelle, des interactions entre nutriments, et de l\'impact des aliments sur le corps humain. Mais tu es aussi un excellent pédagogue — tu adores expliquer la nutrition simplement, comme si tu parlais à quelqu\'un qui ne connaît rien au domaine.
@@ -602,7 +607,9 @@ RÈGLE SUR LES ALLERGIES (CRITIQUE / DANGER DE MORT) :
 FRUIT IDs VALIDES POUR LE CHAMP "proposal.fruitIds": [${fruitIds}]
 SUPPLEMENT IDs VALIDES POUR LE CHAMP "proposal.supplementIds": [${supplementIds}]
 
-RÈGLES D'INCOMPATIBILITÉ (ABSOLU — ne mets JAMAIS deux fruits incompatibles dans le même "proposal.fruitIds") :
+RÈGLES D'INCOMPATIBILITÉ (ABSOLU) :
+- Ne mets JAMAIS deux fruits incompatibles dans le même "proposal.fruitIds" ni "proposal.supplementIds".
+- Si l'utilisateur demande explicitement de mélanger des fruits incompatibles (selon les règles ci-dessous), refuse poliment en expliquant qu'ils sont incompatibles et ne peuvent pas être mélangés dans un cocktail FYS, et propose une alternative.
 ${incompatibilityRules}
 
 RÈGLE D'OR GUSTATIVE (LE GOÛT EST PRIMORDIAL):
@@ -632,7 +639,9 @@ DIRECTIVES DE CONSULTATION :
 Tu dois générer ta réponse UNIQUEMENT au format JSON valide :
 {
   "text": "<Ta réponse textuelle pédagogique (3-5 phrases, chaleureux et expert). Si c'est une proposition, inclus les remerciements FYS et la promesse de livraison.>",
-  "proposal": {
+  "proposal": null // IMPORTANT: Laisse à null SAUF SI l'utilisateur a explicitement donné son accord dans son message précédent. Si oui, remplace null par l'objet ci-dessous :
+  /*
+  {
     "name": "<Nom créatif du cocktail>",
     "profileLabel": "<Objectif: Énergie, Immunité, Digestion, etc.>",
     "fruitIds": ["<id exact du fruit de la liste>", ...],
@@ -642,8 +651,9 @@ Tu dois générer ta réponse UNIQUEMENT au format JSON valide :
     "score": <0-100>,
     "verdict": "beneficial" | "neutral" | "caution" | "not_recommended"
   }
+  */
 }
-RAPPEL CRITIQUE : "proposal" est STRICTEMENT OPTIONNEL. Uniquement quand l\'utilisateur a validé explicitement. Ne fournis que ce JSON valide, aucun autre texte avant ou après.`;
+RAPPEL CRITIQUE : "proposal" DOIT être null par défaut. Ne le remplis que si l'utilisateur a répondu "oui/ok" à ta suggestion de composer. Ne fournis que ce JSON valide, aucun autre texte avant ou après.`;
 }
 
 export function parseChatResponse(raw: string): ChatAIResponse {

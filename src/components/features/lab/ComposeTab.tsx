@@ -4,7 +4,7 @@ import {
   Plus, FlaskConical, Sparkles, Save, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
   Lightbulb, Link2, ClipboardList, ShoppingBag,
-  Check, ChevronLeft,
+  Check, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -576,14 +576,10 @@ export function ComposeTab({
               <Button
                 size="lg"
                 className="h-12 rounded-2xl px-6 font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
-                disabled={(!canAnalyze || analyzing) ? true : undefined}
-                onClick={onAnalyze}
+                disabled={(!canGoStep2) ? true : undefined}
+                onClick={() => onStepChange(2)}
               >
-                {analyzing ? (
-                  <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzingShort')}</>
-                ) : (
-                  <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
-                )}
+                Suivant : Suppléments <ChevronRight className="size-4" />
               </Button>
             </div>
           </>
@@ -622,6 +618,7 @@ export function ComposeTab({
               aiRecommendation={aiRecommendation}
               loadingAI={loadingAI}
               maxSupplements={maxSupplements}
+              incompatibleIds={incompatibleIds}
             />
           </>
         )}
@@ -631,6 +628,7 @@ export function ComposeTab({
       <div  className="hidden lg:block w-[360px] shrink-0">
           <SavePanel
             composeStep={composeStep}
+            onStepChange={onStepChange}
             selectedFruits={selectedFruits}
             selectedSupplements={selectedSupplementItems}
             selectedMainCount={selectedFruits.length}
@@ -657,6 +655,7 @@ export function ComposeTab({
 
 type SavePanelProps = {
   composeStep: ComposeStep;
+  onStepChange: (step: ComposeStep) => void;
   selectedFruits: Fruit[];
   selectedSupplements: Fruit[];
   selectedMainCount: number;
@@ -677,6 +676,7 @@ type SavePanelProps = {
 
 export function SavePanel({
   composeStep,
+  onStepChange,
   selectedFruits,
   selectedSupplements,
   selectedMainCount,
@@ -764,17 +764,27 @@ export function SavePanel({
 
         <div className="px-6 py-4 space-y-3">
           {!analysis ? (
-            <Button
-              className="w-full h-12 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
-              disabled={(!canAnalyze || analyzing) ? true : undefined}
-              onClick={onAnalyze}
-            >
-              {analyzing ? (
-                <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzing')}</>
-              ) : (
-                <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
-              )}
-            </Button>
+            composeStep === 1 ? (
+              <Button
+                className="w-full h-12 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+                disabled={!canAnalyze ? true : undefined}
+                onClick={() => onStepChange(2)}
+              >
+                Suivant : Suppléments <ChevronRight className="size-4" />
+              </Button>
+            ) : (
+              <Button
+                className="w-full h-12 rounded-2xl font-bold gap-2 bg-[#E0982E] hover:bg-[#E0982E]/90 text-white shadow-[0_8px_25px_rgba(224,152,46,0.25)] active:scale-95 transition-all"
+                disabled={(!canAnalyze || analyzing) ? true : undefined}
+                onClick={onAnalyze}
+              >
+                {analyzing ? (
+                  <><Loader2 className="size-4 animate-spin" /> {t('lab.analyzing')}</>
+                ) : (
+                  <><Sparkles className="size-4" /> {t('lab.analyzeWith')}</>
+                )}
+              </Button>
+            )
           ) : (
             <>
               <div className={`rounded-xl border px-4 py-3 flex items-center justify-between ${cfg!.bg} ${cfg!.border}`}>

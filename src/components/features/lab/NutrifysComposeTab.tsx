@@ -528,15 +528,39 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Si un fruit/supplément indisponible apparaît dans la réponse IA, on le retire
-    // immédiatement : il ne doit jamais finir sélectionné ni enregistré en session.
     const sanitizeProposal = (proposal: CocktailProposal): CocktailProposal => {
       if (usableFruits.length === 0) return proposal;
-      const isUsableId = (id: string) => usableFruits.some((f) => f.id === id && isUsableFruit(f));
+      
+      const validFruitIds: string[] = [];
+      for (const id of proposal.fruitIds) {
+        const f = usableFruits.find((x) => x.id === id);
+        if (!f) continue;
+        
+        const isConflicting = validFruitIds.some((validId) => {
+           const existing = usableFruits.find((x) => x.id === validId);
+           return existing && areFruitsIncompatible(existing, f);
+        });
+        
+        if (!isConflicting) validFruitIds.push(id);
+      }
+      
+      const validSupplementIds: string[] = [];
+      for (const id of proposal.supplementIds) {
+        const s = usableFruits.find((x) => x.id === id);
+        if (!s) continue;
+        
+        const isConflicting = validFruitIds.some((validId) => {
+           const existing = usableFruits.find((x) => x.id === validId);
+           return existing && areFruitsIncompatible(existing, s);
+        });
+        
+        if (!isConflicting) validSupplementIds.push(id);
+      }
+
       return {
         ...proposal,
-        fruitIds: proposal.fruitIds.filter(isUsableId),
-        supplementIds: proposal.supplementIds.filter(isUsableId),
+        fruitIds: validFruitIds,
+        supplementIds: validSupplementIds,
       };
     };
 

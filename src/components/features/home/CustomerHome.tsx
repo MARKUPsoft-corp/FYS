@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
 import { isUsableFruit, type Fruit } from '@/entities';
-import { cn } from '@/lib/utils';
+
 import { HeroSlider } from '@/components/features/home/HeroSlider';
 
 type Props = Record<string, never>;
