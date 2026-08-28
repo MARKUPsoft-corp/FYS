@@ -140,16 +140,7 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: false,
     showInDesktopNav: false,
   },
-  {
-    key: 'hero-slides',
-    label: 'Hero',
-    labelKey: 'nav.hero',
-    path: '/board/hero',
-    icon: Image,
-    roles: [UserRole.ADMIN],
-    showInMobileTab: false,
-    showInDesktopNav: false,
-  },
+
   {
     key: 'users',
     label: 'Utilisateurs',

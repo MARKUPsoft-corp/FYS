@@ -10,12 +10,14 @@ type ProfileState = {
   clear: () => void;
 };
 
-export const useProfileStore = createStore<ProfileState>((set) => ({
+export const useProfileStore = createStore<ProfileState>((set, get) => ({
   profile: null,
   loading: false,
 
   fetch: async (uid) => {
-    set({ loading: true });
+    if (!get().profile) {
+      set({ loading: true });
+    }
     const profile = await getProfile(uid);
     set({ profile, loading: false });
   },

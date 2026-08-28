@@ -3,7 +3,7 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle, Wallet, Image, CreditCard,
+  XCircle, AlertCircle, Wallet, CreditCard, LayoutTemplate
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -134,13 +134,13 @@ export function AdminHome({ name }: Props) {
       cta: t('fruits.addFruit'),
     },
     {
-      label: 'Hero slides',
-      description: 'Images et textes de la page d\'accueil client.',
-      icon: Image,
+      label: 'Images Publiques',
+      description: 'Gérez toutes les images affichées sur la vitrine publique.',
+      icon: LayoutTemplate,
       iconBg: 'bg-sky-50 dark:bg-sky-950/30',
       iconColor: 'text-sky-600',
-      path: '/board/hero',
-      cta: 'Modifier les slides',
+      path: '/board/landing',
+      cta: 'Modifier les images',
     },
     {
       label: t('pricing.title'),

@@ -4,11 +4,14 @@ import {
   COLLECTIONS,
   DEFAULT_HERO_SLIDES,
   DEFAULT_PRICING,
+  DEFAULT_LANDING_IMAGES,
   HERO_SLIDES_DOC_ID,
   PRICING_DOC_ID,
+  LANDING_IMAGES_DOC_ID,
   type HeroSlide,
   type HeroSlidesSettings,
   type PricingSettings,
+  type LandingImagesSettings,
 } from '@/entities';
 
 export async function getPricingSettings(): Promise<PricingSettings> {
@@ -69,6 +72,37 @@ export async function updateHeroSlides(slides: HeroSlide[]): Promise<void> {
     doc(db, COLLECTIONS.SETTINGS, HERO_SLIDES_DOC_ID),
     {
       slides: normalized,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function getLandingImagesSettings(): Promise<LandingImagesSettings> {
+  const snap = await getDoc(doc(db, COLLECTIONS.SETTINGS, LANDING_IMAGES_DOC_ID));
+  if (!snap.exists()) return { ...DEFAULT_LANDING_IMAGES };
+  const data = snap.data() as Partial<LandingImagesSettings>;
+  return {
+    hero: data.hero ?? DEFAULT_LANDING_IMAGES.hero,
+    featureNutrify: data.featureNutrify ?? DEFAULT_LANDING_IMAGES.featureNutrify,
+    featureCatalog: data.featureCatalog ?? DEFAULT_LANDING_IMAGES.featureCatalog,
+    nutrifysAssistant: data.nutrifysAssistant ?? DEFAULT_LANDING_IMAGES.nutrifysAssistant,
+    gallery1: data.gallery1 ?? DEFAULT_LANDING_IMAGES.gallery1,
+    gallery2: data.gallery2 ?? DEFAULT_LANDING_IMAGES.gallery2,
+    gallery3: data.gallery3 ?? DEFAULT_LANDING_IMAGES.gallery3,
+    step1: data.step1 ?? DEFAULT_LANDING_IMAGES.step1,
+    step2: data.step2 ?? DEFAULT_LANDING_IMAGES.step2,
+    step3: data.step3 ?? DEFAULT_LANDING_IMAGES.step3,
+  };
+}
+
+export async function updateLandingImagesSettings(
+  data: Partial<Omit<LandingImagesSettings, 'updatedAt'>>,
+): Promise<void> {
+  await setDoc(
+    doc(db, COLLECTIONS.SETTINGS, LANDING_IMAGES_DOC_ID),
+    {
+      ...data,
       updatedAt: serverTimestamp(),
     },
     { merge: true },

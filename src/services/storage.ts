@@ -24,7 +24,7 @@ function assertCloudinaryConfigured() {
  */
 async function uploadImage(
   file: File,
-  category: 'fruits' | 'cocktails' | 'hero',
+  category: 'fruits' | 'cocktails' | 'hero' | 'landing',
   entityId: string,
 ): Promise<string> {
   assertCloudinaryConfigured();
@@ -75,6 +75,10 @@ export async function uploadCocktailImage(cocktailId: string, file: File): Promi
 
 export async function uploadHeroImage(slideId: string, file: File): Promise<string> {
   return uploadImage(file, 'hero', `${slideId}-${Date.now()}`);
+}
+
+export async function uploadLandingImage(key: string, file: File): Promise<string> {
+  return uploadImage(file, 'landing', `${key}-${Date.now()}`);
 }
 
 /**

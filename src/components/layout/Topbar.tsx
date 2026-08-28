@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogIn, LogOut, ShoppingBag, Wallet, Image } from 'lucide-react';
+import { LogIn, LogOut, ShoppingBag, Wallet, Image, LayoutTemplate } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
@@ -36,7 +36,7 @@ export function Topbar() {
   async function handleSignOut() {
     clearPendingAction();
     await signOut();
-    navigate('/board');
+    navigate('/');
   }
 
   const signInButton = (
@@ -116,17 +116,17 @@ export function Topbar() {
           {user?.role === UserRole.ADMIN && (
             <>
               <Link
-                to="/board/hero"
+                to="/board/landing"
                 className={cn(
                   'relative flex items-center justify-center size-10 rounded-xl transition-all',
-                  location.pathname.startsWith('/board/hero')
+                  location.pathname.startsWith('/board/landing')
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
                 )}
-                aria-label={t('topbar.heroSlides')}
-                title={t('topbar.heroSlides')}
+                aria-label="Images Publiques"
+                title="Images Publiques"
               >
-                <Image className="size-5" />
+                <LayoutTemplate className="size-5" />
               </Link>
               <Link
                 to="/board/pricing"

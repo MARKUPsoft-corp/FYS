@@ -27,7 +27,7 @@ export function Sidebar() {
 
   async function handleSignOut() {
     await signOut();
-    navigate('/board');
+    navigate('/');
   }
 
   return (

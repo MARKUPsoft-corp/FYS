@@ -49,6 +49,34 @@ export const DEFAULT_PRICING: PricingSettings = {
 
 export const PRICING_DOC_ID = 'pricing';
 export const HERO_SLIDES_DOC_ID = 'heroSlides';
+export const LANDING_IMAGES_DOC_ID = 'landingImages';
+
+export interface LandingImagesSettings {
+  hero: string;
+  featureNutrify: string;
+  featureCatalog: string;
+  nutrifysAssistant: string;
+  gallery1: string;
+  gallery2: string;
+  gallery3: string;
+  step1: string;
+  step2: string;
+  step3: string;
+  updatedAt?: Timestamp;
+}
+
+export const DEFAULT_LANDING_IMAGES: LandingImagesSettings = {
+  hero: 'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  featureNutrify: 'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+  featureCatalog: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop',
+  nutrifysAssistant: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=800&auto=format&fit=crop',
+  gallery1: 'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+  gallery2: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800&auto=format&fit=crop',
+  gallery3: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop',
+  step1: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?q=80&w=800&auto=format&fit=crop',
+  step2: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop',
+  step3: 'https://images.unsplash.com/photo-1570696516188-ade861b84a49?q=80&w=800&auto=format&fit=crop',
+};
 
 /** Slide de la hero page d'accueil client */
 export interface HeroSlide {

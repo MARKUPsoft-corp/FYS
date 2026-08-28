@@ -18,23 +18,21 @@ const AppLayout: LayoutComponent = () => {
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
   // Pages réservées à l'admin
-  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/hero', '/board/pricing', '/board/users', '/board/cocktails', '/board/payments'];
-  // Pages qui nécessitent une connexion (mais accessibles client + admin)
-  const LOGIN_REQUIRED_PATHS = ['/board/profile', '/board/orders'];
+  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/landing', '/board/pricing', '/board/users', '/board/cocktails', '/board/payments'];
 
   useEffect(() => {
     if (loading || isAuthRoute) return;
 
-    const isAdminOnly = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
-    const isLoginRequired = LOGIN_REQUIRED_PATHS.some((p) => location.pathname.startsWith(p));
-
-    if (isAdminOnly && user?.role !== UserRole.ADMIN) {
-      navigate('/board', { replace: true });
+    if (!user) {
+      navigate('/', { replace: true });
       return;
     }
-    if (isLoginRequired && !user) {
-      const redirect = encodeURIComponent(location.pathname + location.search);
-      navigate(`/auth/login?redirect=${redirect}`, { replace: true });
+
+    const isAdminOnly = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
+
+    if (isAdminOnly && user.role !== UserRole.ADMIN) {
+      navigate('/board', { replace: true });
+      return;
     }
   }, [user, loading, isAuthRoute, location.pathname, location.search]);
 
