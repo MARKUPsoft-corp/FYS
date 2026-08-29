@@ -55,14 +55,12 @@ service cloud.firestore {
                        (request.resource.data.type == 'custom' && isAuthenticated() && request.resource.data.createdBy == request.auth.uid);
       
       // Modification
-      // - 'catalog': Réservé aux admins
-      // - 'custom': Seul le créateur peut modifier
-      allow update: if (resource.data.type == 'catalog' && isAdmin()) ||
-                       (resource.data.type == 'custom' && resource.data.createdBy == request.auth.uid);
+      // - Admins peuvent tout modifier
+      // - Les utilisateurs ne peuvent modifier que leurs propres créations
+      allow update: if isAdmin() || resource.data.createdBy == request.auth.uid;
                        
-      // Suppression (idem modification)
-      allow delete: if (resource.data.type == 'catalog' && isAdmin()) ||
-                       (resource.data.type == 'custom' && resource.data.createdBy == request.auth.uid);
+      // Suppression
+      allow delete: if isAdmin() || resource.data.createdBy == request.auth.uid;
     }
     
     // ------------------------------------------------------------------------

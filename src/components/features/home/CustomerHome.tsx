@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useUserOrders } from '@/hooks/useOrders';
 import { CocktailBanner } from '@/components/features/cocktail/CocktailBanner';
+import { getSessions } from '@/services/chat';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -30,9 +31,16 @@ export function CustomerHome(_props: Props) {
   const { profile, fetch: fetchProfile, loading: profileLoading } = useProfileStore();
   const { orders, isLoading: ordersLoading } = useUserOrders(user?.uid);
   
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['chat-sessions', user?.uid],
+    queryFn: () => getSessions(user!.uid),
+    enabled: !!user?.uid,
+  });
+
   // Computations for real stats
   const uniqueCocktailsCreated = new Set(orders.map(o => o.cocktailId)).size;
   const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const aiExchangesCount = sessions.reduce((acc, s) => acc + (s.messageCount || 0), 0);
   const preparingCount = orders.filter(o => ['confirmed', 'preparing', 'ready'].includes(o.status)).length;
   const deliveredCount = orders.filter(o => o.status === 'delivered').length;
   
@@ -229,7 +237,7 @@ export function CustomerHome(_props: Props) {
             {/* Stat 3: IA */}
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-emerald-500/10 transition-all duration-300 cursor-default shadow-sm">
               <div>
-                <p className="text-5xl md:text-6xl font-black font-display text-emerald-500 tracking-tighter leading-none">34</p>
+                <p className="text-5xl md:text-6xl font-black font-display text-emerald-500 tracking-tighter leading-none">{aiExchangesCount}</p>
                 <p className="text-sm font-bold text-foreground mt-3 leading-tight">Échanges <br/> <span className="text-muted-foreground font-medium text-xs">avec NutriFYS</span></p>
               </div>
               <div className="size-16 md:size-20 rounded-[1.5rem] bg-emerald-500/15 flex items-center justify-center shadow-inner rotate-6 hover:rotate-12 transition-transform duration-300">

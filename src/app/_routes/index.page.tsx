@@ -1,11 +1,12 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
-import { useEffect, useState } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
 import { useTranslation } from 'react-i18next';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { isUsableFruit, type Fruit, COLLECTIONS } from '@/entities';
 import { Button } from '@/components/ui/button';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -28,6 +29,56 @@ const RootIndex: PageComponent = () => {
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [activeProcessStep, setActiveProcessStep] = useState(0);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeSection, setActiveSection] = useState('home');
+
+  // Suivi de la section active
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['features', 'how-it-works', 'nutrifys'];
+      let current = 'home';
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= window.innerHeight * 0.3 && rect.bottom > 0) {
+            current = section;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+    handleScroll(); // Init
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Animation au scroll pour "Comment ça marche"
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = Number(entry.target.getAttribute('data-step-index'));
+            setActiveProcessStep(index);
+          }
+        });
+      },
+      {
+        // On crée une "ligne de détection" très fine (1% de l'écran) exactement au milieu.
+        // Ainsi, une étape ne devient active QUE lorsque son bord supérieur touche le milieu exact de l'écran.
+        // Puisque l'étape 2 est grande quand elle est ouverte, elle restera active tant que l'étape 3 n'a pas atteint le milieu.
+        rootMargin: '-50% 0px -49% 0px',
+        threshold: 0
+      }
+    );
+
+    stepRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const { data: landingImages = DEFAULT_LANDING_IMAGES } = useQuery({
     queryKey: ['landing-images'],
@@ -74,42 +125,85 @@ const RootIndex: PageComponent = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Fonctionnalités</a>
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">Comment ça marche</a>
-            <a href="#nutrifys" className="hover:text-foreground transition-colors">NutriFYS</a>
+            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
+            <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Comment ça marche</a>
+            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="size-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
-              aria-label="Changer le thème"
-            >
-              {actualTheme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
+          <div className="flex items-center gap-4">
+            <button onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')} className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/50 transition-all">
+              {actualTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
-            <Link
-              to="/auth/login"
-              className="hidden sm:flex h-10 px-5 rounded-full border-2 border-primary text-primary text-sm font-bold items-center gap-2 hover:bg-primary/5 active:scale-95 transition-all"
-            >
-              Se connecter
-            </Link>
+            {/* ── Desktop Buttons ── */}
+            <div className="hidden sm:flex items-center gap-4">
+              <Link
+                to="/auth/login"
+                className="h-10 px-5 rounded-full border border-border/80 text-sm font-bold flex items-center gap-2 hover:bg-muted/50 transition-all text-foreground"
+              >
+                Se connecter
+              </Link>
+              <Link
+                to="/lab"
+                className="h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
+              >
+                Commencer
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
 
-            <Link
-              to="/lab"
-              className="hidden sm:flex h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-bold items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
-            >
-              Commencer
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              to="/auth/login"
-              className="flex sm:hidden h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-bold items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
-            >
-              Connexion
-            </Link>
+            {/* ── Mobile Hamburger Menu ── */}
+            <div className="sm:hidden flex items-center">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button className="p-2 text-foreground rounded-full hover:bg-muted/50 transition-all flex items-center justify-center">
+                    <Menu className="w-6 h-6" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background dark:bg-background/80 dark:backdrop-blur-[48px] dark:saturate-[180%] border-l border-border dark:border-white/10 p-6 flex flex-col gap-6 shadow-2xl">
+                  <div className="flex items-center gap-3 pt-4">
+                    <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-8 w-auto" />
+                    <span className="text-xl font-extrabold tracking-tight text-foreground font-display">FYS</span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1 mt-6">
+                    <SheetClose asChild>
+                      <a href="#features" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'features' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        Fonctionnalités
+                      </a>
+                    </SheetClose>
+                    
+                    <SheetClose asChild>
+                      <a href="#how-it-works" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'how-it-works' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        Comment ça marche
+                      </a>
+                    </SheetClose>
+                    
+                    <SheetClose asChild>
+                      <a href="#nutrifys" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'nutrifys' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        L'assistant NutriFYS
+                      </a>
+                    </SheetClose>
+                  </div>
+                  
+                  <div className="mt-auto flex flex-col gap-4 pb-8">
+                    <Link
+                      to="/auth/login"
+                      className="h-12 w-full rounded-full border-2 border-border/80 text-base font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all text-foreground"
+                    >
+                      Se connecter
+                    </Link>
+                    <Link
+                      to="/lab"
+                      className="h-12 w-full rounded-full bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                    >
+                      Commencer maintenant
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </nav>
@@ -121,7 +215,7 @@ const RootIndex: PageComponent = () => {
         
         {/* Subtle Background Image */}
         <div 
-          className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-15 dark:opacity-30 transition-opacity"
+          className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-[0.12] dark:opacity-[0.10] transition-opacity"
           style={{ 
             backgroundImage: `url('${landingImages.hero}')`,
             WebkitMaskImage: 'linear-gradient(to right, transparent, black 60%)',
@@ -129,18 +223,21 @@ const RootIndex: PageComponent = () => {
           }} 
         />
 
+        {/* Mobile contrast overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
+
         <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
           <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
             <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Le Premier Bar à Jus <br className="hidden md:block"/>
-              Piloté par <span className="text-primary">l'IA</span>
+              Piloté par <span className="text-primary brightness-110 dark:brightness-125">un nutritionniste</span>
             </h1>
 
             <p className="text-sm font-bold uppercase tracking-wider text-secondary">
               Votre santé mérite du sur-mesure
             </p>
 
-            <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto lg:mx-0">
+            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
               Discutez avec NutriFYS, votre assistant nutritionniste, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
             </p>
 
@@ -149,16 +246,16 @@ const RootIndex: PageComponent = () => {
                 to="/lab"
                 className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                Tester le FYS Lab
+                Composez mon jus 100% naturel
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="#how-it-works"
-                className="h-12 px-5 rounded-full text-sm font-semibold flex items-center gap-2 bg-background border border-border/80 hover:bg-muted/50 transition-all text-foreground shadow-sm"
+              <Link
+                to="/lab?tab=nutrifys"
+                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm"
               >
-                <Play className="w-3.5 h-3.5" fill="currentColor" />
-                Comment ça marche
-              </a>
+                <Sparkles className="w-4 h-4 text-secondary" />
+                Discuter avec l'assistant
+              </Link>
             </div>
           </div>
         </div>
@@ -171,21 +268,20 @@ const RootIndex: PageComponent = () => {
       </section>
 
       {/* ━━━ STATS BAR ━━━ */}
-      <section className="py-16 px-5 md:px-8 relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
+      <section className="py-12 md:py-16 px-5 md:px-8 relative z-10">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
           {[
-            { value: fruitsLoading ? '...' : `${fruits.length}+`, label: 'Fruits disponibles', icon: Leaf, color: '#3F6D4E' },
+            { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: 'Fruits disponibles', icon: Leaf, color: '#3F6D4E' },
             { value: '2 min', label: 'Pour créer un jus', icon: Zap, color: '#E0982E' },
             { value: '100%', label: 'Naturel et frais', icon: ShieldCheck, color: '#F2694A' },
-            { value: recipesCount === null ? '...' : `${recipesCount}+`, label: 'Recettes créées', icon: Users, color: '#AECBB2' },
+            { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: 'Recettes créées', icon: Users, color: '#AECBB2' },
           ].map((stat, i) => (
-            <div key={i} className="flex flex-col items-center gap-3 bg-card/60 backdrop-blur-md border border-border/50 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all">
+            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
                 <stat.icon className="w-6 h-6" />
               </div>
-              <p className="text-2xl md:text-3xl font-extrabold" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
-              <p className="text-sm text-muted-foreground font-bold">{stat.label}</p>
+              <p className="text-2xl md:text-3xl font-extrabold text-foreground" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -233,16 +329,21 @@ const RootIndex: PageComponent = () => {
               const isActive = activeProcessStep === i;
               const isLast = i === arr.length - 1;
               return (
-                <div key={i} className="relative pl-14 md:pl-24 pb-4 md:pb-8">
+                <div 
+                  key={i} 
+                  ref={(el) => { stepRefs.current[i] = el; }}
+                  data-step-index={i}
+                  className="relative pl-14 md:pl-24 pb-4 md:pb-8 group"
+                >
                   {/* Ligne temporelle (Timeline) */}
                   {!isLast && (
-                    <div className="absolute top-14 left-6 md:left-10 bottom-0 w-[2px] bg-border/80" />
+                    <div className="absolute top-14 left-6 md:left-10 bottom-0 w-[2px] transition-colors duration-500" style={{ backgroundColor: isActive ? item.color : 'hsl(var(--border) / 0.8)' }} />
                   )}
 
                   {/* Point / Numéro */}
                   <div 
                     onClick={() => setActiveProcessStep(i)}
-                    className="absolute left-0 md:left-3 top-4 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-extrabold text-lg md:text-xl cursor-pointer shadow-sm transition-all duration-500 z-10"
+                    className={`absolute left-0 md:left-3 top-4 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-extrabold text-lg md:text-xl cursor-pointer shadow-sm z-10 transition-transform duration-700 ${isActive ? 'scale-110' : 'scale-100'}`}
                     style={{ 
                       background: isActive ? item.color : 'var(--muted)', 
                       color: isActive ? '#fff' : 'var(--muted-foreground)',
@@ -256,29 +357,29 @@ const RootIndex: PageComponent = () => {
                   {/* Contenu (Accordeon) */}
                   <div 
                     onClick={() => setActiveProcessStep(i)}
-                    className={`cursor-pointer group rounded-[2.5rem] border transition-all duration-500 overflow-hidden
+                    className={`cursor-pointer group rounded-[2.5rem] border transition-all duration-700 overflow-hidden
                       ${isActive 
-                        ? 'bg-card/80 backdrop-blur-md shadow-xl border-border/60' 
-                        : 'bg-transparent border-transparent hover:bg-card/40'
+                        ? 'bg-white/40 dark:bg-black/40 backdrop-blur-[32px] saturate-[150%] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border-white/60 dark:border-white/10' 
+                        : 'bg-transparent border-transparent hover:bg-white/20 dark:hover:bg-black/10 opacity-60 hover:opacity-90'
                       }`}
                   >
-                    <div className="p-5 md:p-8 flex items-center justify-between gap-4">
-                      <h3 className={`text-xl md:text-2xl font-extrabold tracking-tight transition-colors duration-300 ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'}`} style={{ fontFamily: 'var(--font-display)' }}>
+                    <div className="p-6 md:p-10 flex items-center justify-between gap-4">
+                      <h3 className={`text-xl md:text-3xl font-extrabold tracking-tight transition-colors duration-500 ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'}`} style={{ fontFamily: 'var(--font-display)' }}>
                         {item.title}
                       </h3>
-                      {/* Indicateur de clic (Chevron) */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${isActive ? 'bg-background shadow-inner' : 'bg-muted/50 group-hover:bg-muted'}`}>
-                        <ChevronRight className={`w-5 h-5 transition-transform duration-500 ${isActive ? 'rotate-90 text-foreground' : 'text-muted-foreground group-hover:translate-x-0.5'}`} />
+                      {/* Indicateur d'état */}
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-700 ${isActive ? 'bg-white/50 dark:bg-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3)]' : 'bg-muted/50 group-hover:bg-muted'}`}>
+                        <ChevronDown className={`w-6 h-6 transition-transform duration-700 ${isActive ? 'rotate-180 text-foreground' : 'text-muted-foreground'}`} />
                       </div>
                     </div>
 
-                    <div className={`grid transition-all duration-500 ease-in-out ${isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                    <div className={`grid transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="overflow-hidden">
-                        <div className="px-5 md:px-8 pb-8 space-y-6">
-                          <p className="text-muted-foreground leading-relaxed font-medium text-base md:text-lg">
+                        <div className="px-6 md:px-10 pb-10 space-y-8">
+                          <p className="text-foreground/80 leading-relaxed font-medium text-lg">
                             {item.desc}
                           </p>
-                          <div className="w-full aspect-[16/10] sm:aspect-[21/9] rounded-2xl overflow-hidden shadow-inner relative group/img">
+                          <div className="w-full aspect-[16/10] sm:aspect-[21/9] rounded-3xl overflow-hidden shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] relative group/img">
                             <div className="absolute inset-0 bg-black/10 group-hover/img:bg-transparent transition-colors z-10" />
                             <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700" />
                           </div>
@@ -319,50 +420,52 @@ const RootIndex: PageComponent = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Card 1 — User Compose */}
-            <div className="rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500">
-              <div className="aspect-[16/10] overflow-hidden">
+            <Link to="/lab" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+              <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
-                  src={landingImages.featureCatalog}
+                  src={landingImages.featureCatalog || 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop'}
                   alt="Composition manuelle de jus de fruits — FYS"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop'; }}
                 />
               </div>
               <div className="p-8 space-y-4">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#E0982E20', color: '#E0982E' }}>
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold">Composez vous-même</h3>
+                <h3 className="text-xl font-bold text-foreground">Composez vous-même</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   Choisissez vos fruits préférés parmi notre sélection de saison. Ajoutez des compléments (gingembre, miel, citron…). NutriFYS valide automatiquement votre mélange et vous donne le score santé, les bénéfices et les précautions.
                 </p>
-                <Link to="/lab" className="inline-flex items-center gap-1.5 text-sm font-bold hover:gap-3 transition-all" style={{ color: '#E0982E' }}>
+                <div className="inline-flex items-center gap-1.5 text-sm font-bold group-hover:gap-3 transition-all" style={{ color: '#E0982E' }}>
                   Essayer le FYS Lab <ChevronRight className="w-4 h-4" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Card 2 — NutriFYS Compose */}
-            <div className="rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500">
-              <div className="aspect-[16/10] overflow-hidden">
+            <Link to="/lab?tab=nutrifys" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+              <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
-                  src={landingImages.featureNutrify}
+                  src={landingImages.featureNutrify || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop'}
                   alt="NutriFYS assistant nutritionniste — cocktail santé"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop'; }}
                 />
               </div>
               <div className="p-8 space-y-4">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#3F6D4E20', color: '#3F6D4E' }}>
                   <Heart className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold">Confiez-le à NutriFYS</h3>
+                <h3 className="text-xl font-bold text-foreground">Confiez-le à NutriFYS</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   Décrivez simplement ce que vous ressentez : fatigue, problème de digestion, besoin d'énergie… Votre assistant nutritionniste compose instantanément un jus adapté à votre profil de santé, vos allergies et vos objectifs.
                 </p>
-                <Link to="/lab?tab=nutrifys" className="inline-flex items-center gap-1.5 text-sm font-bold hover:gap-3 transition-all" style={{ color: '#3F6D4E' }}>
+                <div className="inline-flex items-center gap-1.5 text-sm font-bold group-hover:gap-3 transition-all" style={{ color: '#3F6D4E' }}>
                   Parler à NutriFYS <ChevronRight className="w-4 h-4" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -431,7 +534,7 @@ const RootIndex: PageComponent = () => {
               <div className="order-1 lg:order-2 space-y-8">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: '#F2694A20', color: '#F2694A' }}>
                   <Sparkles className="w-3.5 h-3.5" />
-                  Assistant IA
+                  Assistant Nutritionniste
                 </div>
 
                 <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
@@ -503,28 +606,24 @@ const RootIndex: PageComponent = () => {
                   <div
                     key={fruit.id}
                     onClick={() => setSelectedFruit(fruit)}
-                    className="relative bg-card/60 backdrop-blur-md w-full p-4 rounded-[2rem] border border-border/50 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:shadow-xl hover:-translate-y-1"
+                    className="relative bg-card/40 hover:bg-card/60 w-full p-2.5 rounded-[1.5rem] border border-border/40 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:-translate-y-1"
                   >
-                    {unavailable && (
-                      <span className="absolute top-3 right-3 z-10 text-[9px] font-bold uppercase tracking-widest bg-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded-full backdrop-blur-sm">
-                        {t('lab.unavailable')}
-                      </span>
-                    )}
-                    <div
-                      className="w-full aspect-square rounded-[1.5rem] shadow-inner mb-4 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 bg-muted"
-                      style={{ backgroundImage: fruit.imageUrl ? `url('${fruit.imageUrl}')` : 'none' }}
-                    />
-                    <h5 className="font-extrabold text-sm text-foreground text-center line-clamp-1 w-full px-1">{fruit.name}</h5>
-                    <p className="text-[11px] font-medium text-muted-foreground text-center line-clamp-1 w-full mt-1 px-1">{fruit.benefits?.[0] || 'Fruit Naturel'}</p>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={unavailable}
-                      className="h-10 w-10 rounded-full mt-4 bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors disabled:opacity-0"
-                    >
-                      <Plus className="size-5" />
-                    </Button>
+                    <div className="w-full aspect-square rounded-[1.25rem] overflow-hidden mb-3 relative bg-muted">
+                      {unavailable && (
+                        <span className="absolute top-2 right-2 z-10 text-[8px] font-bold uppercase tracking-widest bg-black/70 text-white px-2 py-0.5 rounded-full backdrop-blur-md">
+                          ÉPUISÉ
+                        </span>
+                      )}
+                      <img 
+                        src={fruit.imageUrl || ''} 
+                        alt={fruit.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-col items-center justify-center text-center px-1 pb-2 w-full">
+                       <h5 className="font-bold text-[13px] text-foreground line-clamp-1 w-full">{fruit.name}</h5>
+                       <p className="text-[10px] font-medium text-muted-foreground line-clamp-1 w-full mt-0.5">{fruit.benefits?.[0] || '100% Naturel'}</p>
+                    </div>
                   </div>
                 );
               })}
@@ -541,23 +640,31 @@ const RootIndex: PageComponent = () => {
       {/* ━━━ CTA FINAL ━━━ */}
       <section className="py-24 px-5 md:px-8 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        <div className="max-w-5xl mx-auto bg-[#3F6D4E] rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl z-10">
+        <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10">
           
-          {/* Cercles décoratifs Glassmorphism */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
+          
+          {/* Image de fond subtile (comme le Hero) */}
+          <div 
+            className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none opacity-[0.12] dark:opacity-[0.10] transition-opacity"
+            style={{ 
+              backgroundImage: `url('${landingImages.hero}')`,
+              maskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
+              WebkitMaskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)' 
+            }} 
+          />
           
           <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              Prêt à créer <span className="text-[#AECBB2]">votre premier jus</span> ?
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              Prêt à créer <span className="text-primary brightness-110 dark:brightness-125">votre premier jus</span> ?
             </h2>
-            <p className="text-lg md:text-xl text-white/80 font-medium">
+            <p className="text-lg md:text-xl text-foreground/80 font-medium">
               Rejoignez la communauté FYS et découvrez une nouvelle façon de prendre soin de votre santé, un cocktail à la fois.
             </p>
-            <div className="pt-4">
+            <div className="pt-4 flex justify-center">
               <Link
                 to="/lab"
-                className="inline-flex h-16 px-12 items-center gap-3 rounded-full text-lg font-bold active:scale-95 transition-all shadow-xl bg-white text-[#3F6D4E] hover:bg-white/90"
+                className="inline-flex h-16 px-12 items-center justify-center gap-3 rounded-full text-lg font-bold active:scale-95 transition-all shadow-xl bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Commencer gratuitement
                 <ArrowRight className="w-5 h-5" />
@@ -568,20 +675,49 @@ const RootIndex: PageComponent = () => {
       </section>
 
       {/* ━━━ FOOTER ━━━ */}
-      <footer className="border-t border-border/50 py-12 px-5 md:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-8 w-auto" />
-            <span className="text-lg font-bold">FYS</span>
+      <footer className="border-t border-border/50 py-16 lg:py-20 px-6 md:px-12 lg:px-16 bg-card">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
+          <div className="lg:col-span-5 space-y-6">
+            <div className="flex items-center gap-3">
+              <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-8 w-auto grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              <span className="text-xl font-extrabold font-display tracking-tight text-foreground">FYS</span>
+            </div>
+            <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
+              Le premier bar à jus santé du Cameroun, piloté par un assistant nutritionniste. Des recettes 100% naturelles, pressées à froid, qui répondent vraiment à votre corps.
+            </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-            <Link to="/lab" className="hover:text-foreground transition-colors">FYS Lab</Link>
-            <Link to="/board/catalogue" className="hover:text-foreground transition-colors">Catalogue</Link>
-            <Link to="/board/profile" className="hover:text-foreground transition-colors">Mon Profil</Link>
+          
+          <div className="lg:col-span-4 space-y-6 lg:ml-auto">
+            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Contact & Aide</h4>
+            <ul className="text-sm md:text-base text-muted-foreground space-y-4">
+              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
+                <Phone className="w-4 h-4 text-primary" /> WhatsApp : +237 6 00 00 00 00
+              </li>
+              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
+                <Mail className="w-4 h-4 text-primary" /> contact@fys.cm
+              </li>
+              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
+                <MapPin className="w-4 h-4 text-primary" /> Yaoundé, Cameroun
+              </li>
+            </ul>
           </div>
-          <p className="text-sm text-muted-foreground text-center md:text-right">
-            © {new Date().getFullYear()} FYS · Conçu au Cameroun
-          </p>
+          
+          <div className="lg:col-span-3 space-y-6 lg:ml-auto">
+            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Liens Rapides</h4>
+            <ul className="text-sm md:text-base text-muted-foreground space-y-4">
+              <li><Link to="/lab" className="hover:text-primary transition-colors flex items-center gap-2">FYS Lab</Link></li>
+              <li><Link to="/board/catalogue" className="hover:text-primary transition-colors flex items-center gap-2">Notre Catalogue</Link></li>
+              <li><Link to="/board/profile" className="hover:text-primary transition-colors flex items-center gap-2">Mon Profil Santé</Link></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-muted-foreground font-medium">
+          <p>© {new Date().getFullYear()} FYS · Du made in Cameroun</p>
+          <div className="flex items-center gap-6">
+            <span className="cursor-pointer hover:text-foreground transition-colors">Mentions Légales</span>
+            <span className="cursor-pointer hover:text-foreground transition-colors">Politique de Confidentialité</span>
+          </div>
         </div>
       </footer>
 

@@ -20,7 +20,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     getDocs(collection(db, COLLECTIONS.FRUITS)),
     getDocs(query(
       collection(db, COLLECTIONS.COCKTAILS),
-      where('type', '==', CocktailType.CATALOG),
+      where('isPublic', '==', true),
     )),
     getDocs(query(collection(db, COLLECTIONS.ORDERS), orderBy('createdAt', 'desc'))),
     getDocs(collection(db, COLLECTIONS.USERS)),

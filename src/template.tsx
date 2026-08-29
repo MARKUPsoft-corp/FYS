@@ -8,8 +8,8 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 
         {/* ── Primary meta ── */}
-        <title>FYS App — Cocktails santé par IA | Healthy custom juices by AI</title>
-        <meta name="description" content="Découvrez FYS App (NutriFYS) : vos cocktails de fruits santé sur mesure validés par l'IA au Cameroun. Discover FYS App: your healthy custom fruit juices validated by AI." />
+        <title>FYS App — Cocktails santé par un nutritionniste | Healthy custom juices by nutritionist</title>
+        <meta name="description" content="Découvrez FYS App (NutriFYS) : vos cocktails de fruits santé sur mesure validés par votre assistant nutritionniste au Cameroun. Discover FYS App: your healthy custom fruit juices validated by your nutritionist assistant." />
         <link rel="alternate" hrefLang="fr" href="https://fys-app.com/" />
         <link rel="alternate" hrefLang="en" href="https://fys-app.com/" />
         <link rel="alternate" hrefLang="x-default" href="https://fys-app.com/" />
@@ -31,16 +31,16 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
 
         {/* ── Open Graph & SEO ── */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="FYS App — Cocktails santé par IA | Healthy custom juices by AI" />
-        <meta property="og:description" content="FYS App (NutriFYS) : cocktails de fruits santé personnalisés par intelligence artificielle. Healthy custom fruit juices validated by AI in Cameroon." />
+        <meta property="og:title" content="FYS App — Cocktails santé par un nutritionniste | Healthy custom juices by nutritionist" />
+        <meta property="og:description" content="FYS App (NutriFYS) : cocktails de fruits santé personnalisés par un assistant nutritionniste. Healthy custom fruit juices validated by a nutritionist assistant in Cameroon." />
         <meta property="og:url" content="https://fys-app.com" />
         <meta property="og:image" content="https://fys-app.com/logos/fys_favicon.png" />
         <meta property="og:locale" content="fr_FR" />
-        <meta name="keywords" content="fys app, nutrifys, fys jus, cocktails santé, fruits frais, IA nutrition, Yaoundé, Cameroun, bien-être, For Your Self" />
+        <meta name="keywords" content="fys app, nutrifys, fys jus, cocktails santé, fruits frais, assistant nutritionniste, Yaoundé, Cameroun, bien-être, For Your Self" />
         
         {/* ── Twitter Cards ── */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="FYS App — Cocktails santé par IA | Healthy custom juices by AI" />
+        <meta name="twitter:title" content="FYS App — Cocktails santé par un nutritionniste | Healthy custom juices by nutritionist" />
         <meta name="twitter:description" content="Découvrez le FYS Lab : votre assistant nutritionnel NutriFYS valide et personnalise vos cocktails de fruits selon votre santé." />
         <meta name="twitter:image" content="https://fys-app.com/logos/fys_favicon.png" />
 
@@ -56,7 +56,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                 "alternateName": ["For Your Self", "NutriFYS"],
                 "url": "https://fys-app.com",
                 "logo": "https://fys-app.com/logos/fys_favicon.png",
-                "description": "Startup FoodTech camerounaise spécialisée dans les cocktails de fruits santé personnalisés par intelligence artificielle (NutriFYS)."
+                "description": "Startup FoodTech camerounaise spécialisée dans les cocktails de fruits santé personnalisés par un assistant nutritionniste (NutriFYS)."
               },
               {
                 "@context": "https://schema.org",
@@ -80,7 +80,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                     "@type": "SiteNavigationElement",
                     "position": 1,
                     "name": "Le FYS Lab",
-                    "description": "Créez votre cocktail sur mesure avec l'IA NutriFYS",
+                    "description": "Créez votre cocktail sur mesure avec l'assistant nutritionniste NutriFYS",
                     "url": "https://fys-app.com/lab"
                   },
                   {
@@ -120,7 +120,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                     "name": "Qu'est-ce que FYS App ?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "FYS (For Your Self) est une application qui crée des jus et cocktails de fruits santé (fys jus) sur mesure, analysés par l'intelligence artificielle NutriFYS."
+                      "text": "FYS (For Your Self) est une application qui crée des jus et cocktails de fruits santé (fys jus) sur mesure, analysés par l'assistant nutritionniste NutriFYS."
                     }
                   },
                   {
@@ -128,7 +128,7 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
                     "name": "What is NutriFYS?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "NutriFYS is the artificial intelligence behind FYS App that validates and customizes your healthy fruit juice recipes based on your dietary and health goals."
+                      "text": "NutriFYS is the nutritionist assistant behind FYS App that validates and customizes your healthy fruit juice recipes based on your dietary and health goals."
                     }
                   }
                 ]

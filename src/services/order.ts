@@ -1,5 +1,5 @@
 import {
-  collection, doc, setDoc, updateDoc, getDocs, getDoc,
+  collection, doc, setDoc, updateDoc, getDocs, getDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, onSnapshot,
   type Unsubscribe,
   type QuerySnapshot,
@@ -306,3 +306,9 @@ export async function cancelOrder(orderId: string): Promise<void> {
     });
   }
 }
+
+export async function deleteOrderCompletely(orderId: string): Promise<void> {
+  const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
+  await deleteDoc(orderRef);
+}
+

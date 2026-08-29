@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { Users as UsersIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { deleteUserCompletely } from '@/services/auth';
 import { getUsers } from '@/services/stats';
 import { UserRole } from '@/entities';
 import type { User as UserType } from '@/entities';
@@ -18,11 +19,20 @@ const FILTER_OPTIONS = [
 
 const Users: PageComponent = () => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: getUsers,
     staleTime: 60_000,
   });
+
+  async function handleDeleteUser(uid: string) {
+    if (confirm(t('users.confirmDelete', { defaultValue: 'Êtes-vous sûr de vouloir supprimer définitivement cet utilisateur et toutes ses données ?' }))) {
+      await deleteUserCompletely(uid);
+      setSelectedUser(null);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  }
 
   const [filterType, setFilterType] = useState<'recent' | 'online' | 'alpha'>('recent');
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
@@ -138,6 +148,7 @@ const Users: PageComponent = () => {
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(v) => { if (!v) setSelectedUser(null); }}
+        onDelete={handleDeleteUser}
       />
     </>
   );

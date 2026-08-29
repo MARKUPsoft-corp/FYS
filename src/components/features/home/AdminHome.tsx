@@ -101,7 +101,7 @@ export function AdminHome({ name }: Props) {
       label: 'Cocktails',
       value: stats?.catalogueCocktailsCount ?? 0,
       icon: GlassWater,
-      path: '/board/cocktails',
+      path: '/board/catalogue',
       color: 'text-primary',
       bg: 'bg-primary/10 border-primary/20',
     },

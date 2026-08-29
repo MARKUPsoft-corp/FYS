@@ -617,16 +617,16 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
 
         {/* Desktop : sticky plein écran dès que le haut de la box atteint le viewport */}
         <div className="flex-1 min-w-0 w-full lg:sticky lg:sticky-top-safe lg:self-start lg:z-30 lg:h-[calc(100dvh-var(--sat)-var(--sab))]">
-          <div className="bg-card rounded-2xl lg:rounded-3xl border border-border/60 shadow-lg flex flex-col relative lg:h-full lg:overflow-hidden">
+          <div className="flex flex-col relative lg:h-full lg:overflow-hidden">
 
-            <div className="bg-primary dark:bg-emerald-900/60 backdrop-blur-md px-3 lg:px-4 py-4 flex items-center justify-between shrink-0 rounded-t-2xl lg:rounded-t-3xl border-b border-border/40 sticky sticky-top-safe lg:static z-40">
+            <div className="sticky top-0 z-40 -mx-4 px-4 lg:-mx-16 lg:px-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-white/15 flex items-center justify-center border border-white/20">
+                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
                   <Sparkles className="size-4 text-[#E0982E]" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest">NutriFYS</p>
-                  <p className="text-white text-sm font-semibold">NutriFYS</p>
+                  <p className="text-foreground text-sm font-semibold truncate">{sessions.find(s => s.id === currentSessionId)?.title || t('nutrifys.newConversation')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -634,7 +634,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                   variant="ghost"
                   size="sm"
                   onClick={startNewConversation}
-                  className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
+                  className="px-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent"
                 >
                   <Plus className="size-3.5" />
                   <span className="hidden lg:inline">{t('nutrifys.newConversation')}</span>
@@ -645,7 +645,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="px-3 text-white/70 hover:text-white hover:bg-white/10 rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent hover:border-white/10"
+                      className="px-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl gap-1.5 font-semibold text-xs transition-colors border border-transparent"
                     >
                       <History className="size-4" />
                       <span className="hidden lg:inline">{t('nutrifys.history')}</span>
@@ -811,7 +811,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
             </div>
 
             {/* Input bar - desktop only */}
-            <div className="hidden lg:block z-30 shrink-0 w-full bg-background/50 backdrop-blur-md border-t border-border/40 px-4 pb-4 pt-2">
+            <div className="hidden lg:block z-30 shrink-0 w-full px-2 lg:px-4 pb-4 pt-2">
               <form onSubmit={handleSubmit} className="w-full">
                 <ChatComposer
                   value={input}

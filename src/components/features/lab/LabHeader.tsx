@@ -91,25 +91,17 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
                     type="button"
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      'flex flex-col items-center justify-center px-5 py-2 rounded-[1.5rem] transition-all duration-300 whitespace-nowrap',
+                      'flex flex-col items-center justify-center px-5 py-2 rounded-[1.5rem] transition-all duration-300',
                       isActive ? 'bg-background/90 dark:bg-card/90 shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-white/40 dark:border-white/10 scale-100' : 'text-foreground/70 hover:text-foreground scale-95 opacity-80 hover:opacity-100 hover:scale-100',
                     )}
                   >
                     <span
                       className={cn(
-                        'text-[10px] lg:text-[11px] uppercase font-bold tracking-widest leading-none mb-1 flex items-center gap-1',
-                        'text-secondary', // Ensure it uses the orange semantic color
-                      )}
-                    >
-                      NutriFYS <Sparkles className="size-3" />
-                    </span>
-                    <span
-                      className={cn(
-                        'text-sm lg:text-base font-semibold leading-none',
+                        'text-[13px] lg:text-sm font-semibold leading-tight text-center flex flex-col items-center gap-0.5 whitespace-pre-line',
                         isActive ? 'text-card-foreground' : '',
                       )}
                     >
-                      {t(tab.labelKey)}
+                      <span>{t(tab.labelKey)}</span>
                     </span>
                   </button>
                 );

@@ -10,7 +10,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import type { User as FirebaseUser, UserCredential } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/entities';
 import { UserRole } from '@/entities';
@@ -121,4 +121,31 @@ export async function signOut() {
 export async function updateLastActive(uid: string) {
   const ref = doc(db, COLLECTIONS.USERS, uid);
   await setDoc(ref, { lastActiveAt: serverTimestamp() }, { merge: true });
+}
+
+import { getUserOrders, deleteOrderCompletely } from './order';
+import { getUserCocktails, deleteCocktail } from './cocktail';
+import { deleteAllSessions } from './chat';
+
+export async function deleteUserCompletely(uid: string): Promise<void> {
+  // 1. Delete all user orders
+  const orders = await getUserOrders(uid);
+  for (const order of orders) {
+    await deleteOrderCompletely(order.id);
+  }
+
+  // 2. Delete all user cocktails
+  const cocktails = await getUserCocktails(uid);
+  for (const cocktail of cocktails) {
+    await deleteCocktail(cocktail.id, cocktail.imageUrl);
+  }
+
+  // 3. Delete all chat sessions and messages
+  await deleteAllSessions(uid);
+
+  // 4. Delete user profile
+  await deleteDoc(doc(db, COLLECTIONS.USERS, uid, 'profile', 'main'));
+
+  // 5. Delete user main document
+  await deleteDoc(doc(db, COLLECTIONS.USERS, uid));
 }

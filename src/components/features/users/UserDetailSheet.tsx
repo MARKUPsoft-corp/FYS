@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Mail, Phone, ShieldCheck, User, Clock, HeartPulse,
   ShoppingBag, FlaskConical, Globe, Lock, Loader2,
-  AlertCircle, Calendar, Activity, Wallet, ChevronRight,
+  AlertCircle, Calendar, Activity, Wallet, ChevronRight, Trash2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -167,11 +167,23 @@ type Props = {
   user: UserType | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: (uid: string) => Promise<void>;
 };
 
-export function UserDetailSheet({ user, open, onOpenChange }: Props) {
+export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('overview');
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!onDelete || !user) return;
+    setDeleting(true);
+    try {
+      await onDelete(user.uid);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const { data: healthProfile, isLoading: healthLoading } = useQuery({
     queryKey: ['admin-profile', user?.uid],
@@ -329,6 +341,23 @@ export function UserDetailSheet({ user, open, onOpenChange }: Props) {
                 <div>
                   <SectionLabel>{t('users.lastOrder')}</SectionLabel>
                   <OrderRow order={orders[0]} />
+                </div>
+              )}
+
+              {onDelete && (
+                <div className="pt-4 border-t border-border/40 mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-2xl border-destructive/40 text-destructive hover:bg-destructive/5 font-bold gap-2"
+                    disabled={deleting}
+                    onClick={handleDelete}
+                  >
+                    {deleting ? (
+                      <><Loader2 className="size-4 animate-spin" /> Suppression...</>
+                    ) : (
+                      <><Trash2 className="size-4" /> Supprimer le compte</>
+                    )}
+                  </Button>
                 </div>
               )}
             </>

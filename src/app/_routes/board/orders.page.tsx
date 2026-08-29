@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation,
+  CalendarDays, Search, Navigation, Trash2,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
@@ -14,7 +14,7 @@ import { UserRole, OrderStatus } from '@/entities';
 import type { Order, Cocktail } from '@/entities';
 import { getCocktailById } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
-import { updateOrderStatus, cancelOrder } from '@/services/order';
+import { updateOrderStatus, cancelOrder, deleteOrderCompletely } from '@/services/order';
 import { useQuery } from '@tanstack/react-query';
 import { useOrders, useOrder } from '@/hooks/useOrders';
 import { VERDICT_CONFIG, getVerdictLabel, NutritionalView } from '@/components/features/cocktail/NutritionalView';
@@ -655,16 +655,19 @@ function AdminOrderSheet({
   onOpenChange,
   onStatusChange,
   onCancel,
+  onDelete,
 }: {
   order: Order | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onStatusChange: (orderId: string, status: OrderStatus) => Promise<void>;
   onCancel: (orderId: string) => Promise<void>;
+  onDelete: (orderId: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [updating, setUpdating] = useState<OrderStatus | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
   const [downloadingNutrition, setDownloadingNutrition] = useState(false);
   const [downloadingFacture, setDownloadingFacture] = useState(false);
@@ -703,6 +706,15 @@ function AdminOrderSheet({
       await onCancel(order!.id);
     } finally {
       setCancelling(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await onDelete(order!.id);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -1062,13 +1074,13 @@ function AdminOrderSheet({
         )}
 
         {/* Footer — cancel (admin) */}
-        {!isCancelled && !isDelivered && (
-          <div className="shrink-0 border-t border-border/40 px-6 py-5">
+        <div className="shrink-0 border-t border-border/40 px-6 py-5 flex flex-col gap-3">
+          {!isCancelled && !isDelivered && (
             <Button
               variant="outline"
               size="lg"
-              className="w-full h-12 rounded-2xl border-destructive/40 text-destructive hover:bg-destructive/5 font-bold gap-2"
-              disabled={cancelling || !!updating}
+              className="w-full h-12 rounded-2xl border-border text-foreground hover:bg-accent font-bold gap-2"
+              disabled={cancelling || !!updating || deleting}
               onClick={handleCancel}
             >
               {cancelling
@@ -1076,8 +1088,20 @@ function AdminOrderSheet({
                 : <><XCircle className="size-4" /> {t('orders.cancel')}</>
               }
             </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full h-12 rounded-2xl border-destructive/40 text-destructive hover:bg-destructive/5 font-bold gap-2"
+            disabled={cancelling || !!updating || deleting}
+            onClick={handleDelete}
+          >
+            {deleting
+              ? <><Loader2 className="size-4 animate-spin" /> Suppression...</>
+              : <><Trash2 className="size-4" /> Supprimer définitivement</>
+            }
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -1164,6 +1188,13 @@ const Orders: PageComponent = () => {
 
   async function handleCancel(orderId: string) {
     await cancelOrder(orderId);
+  }
+
+  async function handleDelete(orderId: string) {
+    if (confirm(t('orders.confirmDelete', { defaultValue: 'Êtes-vous sûr de vouloir supprimer définitivement cette commande ?' }))) {
+      await deleteOrderCompletely(orderId);
+      closeOrderSheet();
+    }
   }
 
   function handlePeriodTypeChange(type: PeriodType) {
@@ -1428,6 +1459,7 @@ const Orders: PageComponent = () => {
           onOpenChange={(v) => { if (!v) closeOrderSheet(); }}
           onStatusChange={handleStatusChange}
           onCancel={handleCancel}
+          onDelete={handleDelete}
         />
       ) : (
         <ClientOrderSheet

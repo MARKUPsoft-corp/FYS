@@ -404,11 +404,6 @@ const FysLab: PageComponent = () => {
   function handleTabChange(tab: LabTab) {
     if (tab === activeTab) return;
     if (tab === 'nutrifys') {
-      // NutriFYS = analyse IA → connexion requise
-      if (!user) {
-        requireAuth('nutrifys');
-        return;
-      }
       pushHistoryParam(setSearchParams, 'tab', 'nutrifys');
       return;
     }

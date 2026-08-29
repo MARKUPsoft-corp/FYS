@@ -127,7 +127,7 @@ export default {
     title: 'FYS Lab',
     compose: 'Mix',
     nutrifys: 'NutriFYS',
-    assistantTab: 'Health advice',
+    assistantTab: 'Chat with\nNutriFYS',
     fruits: 'Fruits',
     supplements: 'Extras',
     selectedFruits: 'Your fruit base',

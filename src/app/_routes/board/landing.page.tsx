@@ -11,7 +11,7 @@ import { LandingImagesSettings } from '@/entities';
 
 const IMAGE_FIELDS = [
   { key: 'hero', label: 'Section Héro', description: 'Image principale tout en haut' },
-  { key: 'featureNutrify', label: 'Fonctionnalité NutriFYS', description: 'Création avec l\'IA' },
+  { key: 'featureNutrify', label: 'Fonctionnalité NutriFYS', description: 'Création avec le nutritionniste' },
   { key: 'featureCatalog', label: 'Fonctionnalité Catalogue', description: 'Nos créations signatures' },
   { key: 'nutrifysAssistant', label: 'NutriFYS Assistant', description: 'Image de la section Rencontrez NutriFYS' },
   { key: 'gallery1', label: 'Galerie Produit (1/3)', description: 'Jus Vert' },
