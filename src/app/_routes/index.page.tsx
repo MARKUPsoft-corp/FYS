@@ -215,7 +215,7 @@ const RootIndex: PageComponent = () => {
         
         {/* Subtle Background Image */}
         <div 
-          className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-[0.12] dark:opacity-[0.10] transition-opacity"
+          className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-[0.25] dark:opacity-[0.10] transition-opacity"
           style={{ 
             backgroundImage: `url('${landingImages.hero}')`,
             WebkitMaskImage: 'linear-gradient(to right, transparent, black 60%)',
@@ -230,7 +230,7 @@ const RootIndex: PageComponent = () => {
           <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
             <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Le Premier Bar à Jus <br className="hidden md:block"/>
-              Piloté par <span className="text-primary brightness-110 dark:brightness-125">un nutritionniste</span>
+              Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
             </h1>
 
             <p className="text-sm font-bold uppercase tracking-wider text-secondary">
@@ -238,7 +238,7 @@ const RootIndex: PageComponent = () => {
             </p>
 
             <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
-              Discutez avec NutriFYS, votre assistant nutritionniste, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
+              Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4">
@@ -646,7 +646,7 @@ const RootIndex: PageComponent = () => {
           
           {/* Image de fond subtile (comme le Hero) */}
           <div 
-            className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none opacity-[0.12] dark:opacity-[0.10] transition-opacity"
+            className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none opacity-[0.25] dark:opacity-[0.10] transition-opacity"
             style={{ 
               backgroundImage: `url('${landingImages.hero}')`,
               maskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
