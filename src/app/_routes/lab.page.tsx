@@ -652,8 +652,14 @@ const FysLab: PageComponent = () => {
     setSelectedSupplements(nextSupps);
     setCocktailName(proposal.name);
     nameTouchedRef.current = true;
-    // Remplacer la vue chatbot par l'étape 2 compose
-    setSearchParams({ step: '2' }, { replace: true });
+    // Remplacer la vue chatbot par l'étape 2 compose (supprimer 'tab' pour basculer sur 'compose')
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('tab');
+      next.set('step', '2');
+      return next;
+    }, { replace: true });
+    
     setTimeout(() => handleAnalyze(next, nextSupps), 50);
   }
 

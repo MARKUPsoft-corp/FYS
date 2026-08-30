@@ -35,11 +35,9 @@ const Login: PageComponent = () => {
     ? new URLSearchParams(window.location.search).get('redirect')
     : null;
 
-  // Au retour de la redirection Google : consomme le résultat (crée le doc
-  // Firestore si c'est un nouvel utilisateur).
-  useEffect(() => {
-    consumeGoogleRedirect().catch(() => {});
-  }, []);
+  // Au retour de la redirection Google, useAuthStore s'occupe déjà de
+  // consommer le résultat et créer le document Firestore. Il n'est plus
+  // nécessaire de le faire ici.
 
   // Une fois connecté (y compris après le redirect Google), on repart vers la
   // destination prévue.

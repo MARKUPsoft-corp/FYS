@@ -554,7 +554,7 @@ You must generate your response ONLY as valid JSON:
     "name": "<Creative cocktail name>",
     "profileLabel": "<Goal: Energy, Immunity, Digestion, etc.>",
     "fruitIds": ["<exact fruit id from the list>", ...],
-    "supplementIds": ["<exact supplement id>", ...],
+    "supplementIds": [], // IMPORTANT: Leave empty unless the user explicitly requested a supplement
     "benefits": ["<Benefit 1>", "<Benefit 2>"],
     "explanation": "<Pedagogical explanation of why this mix is ideal for this profile>",
     "score": <0-100>,
@@ -645,7 +645,7 @@ Tu dois générer ta réponse UNIQUEMENT au format JSON valide :
     "name": "<Nom créatif du cocktail>",
     "profileLabel": "<Objectif: Énergie, Immunité, Digestion, etc.>",
     "fruitIds": ["<id exact du fruit de la liste>", ...],
-    "supplementIds": ["<id exact du supplément>", ...],
+    "supplementIds": [], // IMPORTANT: Laisse vide sauf si l'utilisateur a explicitement demandé un supplément
     "benefits": ["<Bénéfice 1>", "<Bénéfice 2>"],
     "explanation": "<Explication pédagogique de pourquoi ce mélange est idéal pour ce profil>",
     "score": <0-100>,

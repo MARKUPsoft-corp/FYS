@@ -12,7 +12,9 @@ export function useRequireAuth() {
 
   return (action?: string) => {
     if (action) setPendingAction(action);
-    const current = location.pathname + location.search;
+    // Utiliser window.location pour garantir qu'on a l'URL la plus à jour
+    // si un setSearchParams vient d'être déclenché juste avant.
+    const current = window.location.pathname + window.location.search;
     navigate(`/auth/login?redirect=${encodeURIComponent(current)}`);
   };
 }
