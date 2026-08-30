@@ -32,7 +32,7 @@ import { labSounds } from '@/services/lab-sounds';
 const FysLab: PageComponent = () => {
   const { t } = useTranslation();
   const { user, loading } = useAuthStore();
-  const { profile, fetch: fetchProfile, loading: profileLoading, save: saveProfile } = useProfileStore();
+  const { profile, fetch: fetchProfile, loading: profileLoading, fetched: profileFetched, save: saveProfile } = useProfileStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const closeHistoryParam = useCloseHistoryParam();
@@ -170,8 +170,8 @@ const FysLab: PageComponent = () => {
   useEffect(() => {
     // Attendre que l'auth ET le profil soient chargés avant de rejouer
     if (loading || !user || fruitsLoading || fruits.length === 0) return;
-    // Si le profil est encore en cours de chargement, on attend
-    if (profileLoading) return;
+    // Si le profil n'a pas encore été récupéré depuis Firebase, on attend
+    if (!profileFetched) return;
 
     const action = consumePendingAction();
     if (!action) return;
@@ -197,7 +197,7 @@ const FysLab: PageComponent = () => {
       setTimeout(() => handleTabChange('nutrifys'), 150);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, user, fruitsLoading, fruits.length, profileLoading]);
+  }, [loading, user, fruitsLoading, fruits.length, profileFetched]);
 
 
   function buildCombinedMap(
@@ -494,9 +494,9 @@ const FysLab: PageComponent = () => {
     }
 
     // Si le profil de santé est incomplet (et bien chargé), afficher l'onboarding d'abord.
-    // Ne pas déclencher l'onboarding si le profil est encore en cours de chargement
-    // (profileLoading = true) car le profil pourrait être complet mais pas encore arrivé.
-    if (user.role === UserRole.CUSTOMER && !profileLoading && !isProfileComplete(profile)) {
+    // Ne pas déclencher l'onboarding si le profil n'a pas encore été récupéré depuis Firebase
+    // (profileFetched = false) car le profil pourrait être complet mais pas encore arrivé.
+    if (user.role === UserRole.CUSTOMER && profileFetched && !isProfileComplete(profile)) {
       // Mémoriser le mix pour ne pas perdre la sélection
       saveLabMix({
         mains: forcedMains ?? selectedIngredients,
@@ -506,15 +506,15 @@ const FysLab: PageComponent = () => {
       setShowOnboardingForAnalysis(true);
       return;
     }
-    // Si le profil est encore en chargement, on attend qu'il soit prêt
-    if (user.role === UserRole.CUSTOMER && profileLoading) {
+    // Si le profil n'a pas encore été chargé, on attend qu'il soit prêt
+    if (user.role === UserRole.CUSTOMER && !profileFetched) {
       // Sauvegarder le mix et réessayer quand le profil sera chargé
       saveLabMix({
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
         name: cocktailName,
       });
-      return; // Le useEffect sur profileLoading reprendra l'action
+      return; // Le useEffect sur profileFetched reprendra l'action
     }
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);

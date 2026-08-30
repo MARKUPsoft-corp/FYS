@@ -25,18 +25,10 @@ export function LabHeader({ activeTab, onTabChange, compact }: Props) {
   const { user } = useAuthStore();
 
   function handleBack() {
-    // history.length === 1 : l'utilisateur a ouvert le Lab directement
-    // (QR code, lien externe, onglet vierge) — pas de page pr\u00e9c\u00e9dente.
-    // history.length > 1 : il vient d'une navigation interne → on revient en arri\u00e8re.
-    if (window.history.length > 1) {
-      navigate(-1);
+    if (user) {
+      navigate('/board');
     } else {
-      // Arriv\u00e9 directement (QR code, lien partag\u00e9, onglet vierge)
-      if (user) {
-        navigate('/board');
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     }
   }
 

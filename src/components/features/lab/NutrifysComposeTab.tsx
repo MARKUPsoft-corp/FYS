@@ -11,9 +11,10 @@ import {
   Edit2,
   Check,
   X,
+  ChevronLeft,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'rasengan';
+import { useSearchParams, useNavigate } from 'rasengan';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { CocktailProposalCard } from '@/components/features/lab/CocktailProposalCard';
@@ -426,7 +427,25 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
 
   const user = useAuthStore((s) => s.user);
   const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const promptSentRef = useRef(false);
+
+  const stickySentinelRef = useRef<HTMLDivElement>(null);
+  const [isStuck, setIsStuck] = useState(false);
+
+  useEffect(() => {
+    const el = stickySentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Sur mobile, quand on scrolle et que le sentinel passe au-dessus du viewport, top est < 0
+        setIsStuck(entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
@@ -618,18 +637,50 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
         {/* Desktop : sticky plein écran dès que le haut de la box atteint le viewport */}
         <div className="flex-1 min-w-0 w-full lg:sticky lg:sticky-top-safe lg:self-start lg:z-30 lg:h-[calc(100dvh-var(--sat)-var(--sab))]">
           <div className="flex flex-col relative lg:h-full lg:overflow-hidden">
+            
+            {/* Sentinel element to detect when the header sticks on mobile */}
+            <div ref={stickySentinelRef} className="absolute w-full h-[1px] -top-[1px] pointer-events-none" />
 
-            <div className="sticky top-0 z-40 -mx-4 px-4 lg:-mx-16 lg:px-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                  <Sparkles className="size-4 text-[#E0982E]" />
+            <div className={cn(
+              "sticky top-0 z-40 -mx-4 px-4 lg:-mx-16 lg:px-16 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3 mb-3 bg-background/70 backdrop-blur-[48px] saturate-[180%] border-b border-white/40 dark:border-white/10 transition-all duration-500",
+              isStuck ? "shadow-sm" : ""
+            )}>
+              <div className="flex items-center w-full">
+                
+                {/* Back Button Container */}
+                <div className={cn(
+                  "flex items-center transition-all duration-500 overflow-hidden shrink-0",
+                  isStuck ? "w-11 opacity-100" : "w-0 opacity-0"
+                )}>
+                  <button
+                    onClick={() => { if (user) navigate('/board'); else navigate('/'); }}
+                    className="flex items-center justify-center w-9 h-9 rounded-full bg-background/40 border border-border/50 hover:bg-background/60 transition-colors shrink-0"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </button>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[#E0982E] text-[10px] font-bold uppercase tracking-widest">NutriFYS</p>
-                  <p className="text-foreground text-sm font-semibold truncate">{sessions.find(s => s.id === currentSessionId)?.title || t('nutrifys.newConversation')}</p>
+
+                {/* Title Group (animates from flex-none/start to flex-1/center) */}
+                <div className={cn(
+                  "flex items-center gap-3 transition-all duration-500",
+                  isStuck ? "flex-1 justify-center" : "flex-none justify-start"
+                )}>
+                  <div className={cn(
+                    "rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0 transition-all duration-500",
+                    isStuck ? "size-8" : "size-10"
+                  )}>
+                    <Sparkles className={cn("text-[#E0982E] transition-all duration-500", isStuck ? "size-3.5" : "size-4")} />
+                  </div>
+                  <div className={cn("min-w-0 transition-all duration-500", isStuck ? "text-center" : "text-left")}>
+                    <p className={cn("text-[#E0982E] font-bold uppercase tracking-widest transition-all duration-500", isStuck ? "text-[9px]" : "text-[10px]")}>NutriFYS</p>
+                    <p className="text-foreground text-sm font-semibold truncate max-w-[120px] sm:max-w-[200px] lg:max-w-[300px]">
+                      {sessions.find(s => s.id === currentSessionId)?.title || t('nutrifys.newConversation')}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
+
+                {/* Right Buttons */}
+                <div className="ml-auto flex items-center gap-2 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -784,6 +835,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                 </Sheet>
               </div>
             </div>
+          </div>
 
             <div id="chat-scroll-container" ref={scrollRef} className="flex-1 min-h-0 lg:overflow-y-auto lg:overscroll-contain px-2 lg:px-4 py-5 space-y-5">
               {messages.map((msg) => (

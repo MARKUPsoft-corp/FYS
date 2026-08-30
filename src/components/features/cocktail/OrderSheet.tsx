@@ -30,8 +30,9 @@ import { analyzeCocktail } from '@/services/ai';
 import { buildFruitVisuals, pickCocktailCoverUrl } from '@/components/features/cocktail/CocktailBanner';
 import { CameroonMap } from '@/components/features/cocktail/CameroonMap';
 import { useAuthStore } from '@/stores/auth';
-import { useProfileStore } from '@/stores/profile';
+import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { trackEvent } from '@/lib/analytics';
+import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
 
 type Tab = 'order' | 'nutrition';
 
@@ -55,7 +56,7 @@ type Props = {
 export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, onOrderSuccess, promoCode }: Props) {
   const { t } = useTranslation();
   const { user: storeUser } = useAuthStore();
-  const { profile } = useProfileStore();
+  const { profile, fetched: profileFetched, fetch: fetchProfile, save: saveProfile } = useProfileStore();
   const contentRef = useRef<HTMLDivElement>(null);
 
   const user = externalUser || storeUser;
@@ -67,8 +68,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const [quantity1L, setQuantity1L] = useState(0);
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'momo'>('momo');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'momo'>('cod');
   const [waitingForPayment, setWaitingForPayment] = useState(false);
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [actionToResume, setActionToResume] = useState<'analyze' | 'order' | null>(null);
 
   const [customName, setCustomName] = useState(cocktail?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -175,6 +179,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
 
   async function handleAnalyze() {
     if (!cocktail) return;
+    if (user && profileFetched && !isProfileComplete(profile)) {
+      setActionToResume('analyze');
+      setShowOnboarding(true);
+      return;
+    }
     setAnalyzing(true);
     try {
       const result = await runAnalysis();
@@ -190,6 +199,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   async function handleOrder() {
     if (!pricing || totalBottles === 0) return;
     if (!cocktail || !user) return;
+    if (user && profileFetched && !isProfileComplete(profile)) {
+      setActionToResume('order');
+      setShowOnboarding(true);
+      return;
+    }
     setOrdering(true);
     try {
       let analysisResult: AIAnalysis | null = null;
@@ -882,9 +896,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('momo')}
+                    disabled
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all h-[90px]",
+                      "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all h-[90px] opacity-50 cursor-not-allowed",
                       paymentMethod === 'momo'
                         ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-sm"
                         : "border-border/60 bg-card hover:border-border"
@@ -892,7 +906,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   >
                     <Smartphone className={cn("size-6", paymentMethod === 'momo' ? "text-amber-500" : "text-muted-foreground")} />
                     <span className={cn("text-xs font-bold", paymentMethod === 'momo' ? "text-amber-700 dark:text-amber-500" : "text-muted-foreground")}>
-                      Mobile Money
+                      Mobile Money (Bientôt)
                     </span>
                     {paymentMethod === 'momo' && detectOperator(phone) === null && phone.length > 8 && (
                       <span className="text-[9px] text-red-500 font-semibold absolute bottom-1">Numéro invalide</span>
@@ -1010,6 +1024,27 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           </>
         )}
       </SheetContent>
+
+      {/* Modale d'Onboarding Santé si nécessaire */}
+      {user && (
+        <OnboardingModal
+          open={showOnboarding}
+          onSkip={() => setShowOnboarding(false)}
+          onComplete={async (data) => {
+            if (!user) return;
+            await saveProfile(user.uid, data);
+            await fetchProfile(user.uid);
+            setShowOnboarding(false);
+            // Reprendre l'action
+            if (actionToResume === 'analyze') {
+              setTimeout(() => handleAnalyze(), 200);
+            } else if (actionToResume === 'order') {
+              setTimeout(() => handleOrder(), 200);
+            }
+            setActionToResume(null);
+          }}
+        />
+      )}
     </Sheet>
   );
 }
