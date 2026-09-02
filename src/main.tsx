@@ -17,11 +17,20 @@ function ThemeWatcher() {
 
   useEffect(() => {
     const root = document.documentElement;
+    let themeMeta = document.querySelector('meta[name="theme-color"]');
+    
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.setAttribute('name', 'theme-color');
+      document.head.appendChild(themeMeta);
+    }
 
     if (actualTheme === 'dark') {
       root.classList.add('dark');
+      themeMeta.setAttribute('content', '#1A1F1B');
     } else {
       root.classList.remove('dark');
+      themeMeta.setAttribute('content', '#FDFBF7');
     }
   }, [actualTheme]);
 
