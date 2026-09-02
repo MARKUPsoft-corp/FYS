@@ -93,6 +93,14 @@ export async function getLandingImagesSettings(): Promise<LandingImagesSettings>
     step1: data.step1 ?? DEFAULT_LANDING_IMAGES.step1,
     step2: data.step2 ?? DEFAULT_LANDING_IMAGES.step2,
     step3: data.step3 ?? DEFAULT_LANDING_IMAGES.step3,
+    creation1Image: data.creation1Image ?? DEFAULT_LANDING_IMAGES.creation1Image,
+    creation1Label: data.creation1Label ?? DEFAULT_LANDING_IMAGES.creation1Label,
+    creation2Image: data.creation2Image ?? DEFAULT_LANDING_IMAGES.creation2Image,
+    creation2Label: data.creation2Label ?? DEFAULT_LANDING_IMAGES.creation2Label,
+    creation3Image: data.creation3Image ?? DEFAULT_LANDING_IMAGES.creation3Image,
+    creation3Label: data.creation3Label ?? DEFAULT_LANDING_IMAGES.creation3Label,
+    creation4Image: data.creation4Image ?? DEFAULT_LANDING_IMAGES.creation4Image,
+    creation4Label: data.creation4Label ?? DEFAULT_LANDING_IMAGES.creation4Label,
   };
 }
 

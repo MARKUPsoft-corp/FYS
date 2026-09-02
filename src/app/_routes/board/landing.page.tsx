@@ -4,6 +4,7 @@ import { Loader2, Save, ImagePlus } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getLandingImagesSettings, updateLandingImagesSettings } from '@/services/settings';
 import { uploadLandingImage } from '@/services/storage';
@@ -20,6 +21,10 @@ const IMAGE_FIELDS = [
   { key: 'step1', label: 'Processus 01', description: 'Choisissez vos fruits' },
   { key: 'step2', label: 'Processus 02', description: 'Validation nutritionnelle' },
   { key: 'step3', label: 'Processus 03', description: 'Dégustez' },
+  { key: 'creation1Image', label: 'Création 1', description: 'Section "Nos créations"', labelKey: 'creation1Label' },
+  { key: 'creation2Image', label: 'Création 2', description: 'Section "Nos créations"', labelKey: 'creation2Label' },
+  { key: 'creation3Image', label: 'Création 3', description: 'Section "Nos créations"', labelKey: 'creation3Label' },
+  { key: 'creation4Image', label: 'Création 4', description: 'Section "Nos créations"', labelKey: 'creation4Label' },
 ] as const;
 
 const LandingAdmin: PageComponent = () => {
@@ -108,7 +113,7 @@ const LandingAdmin: PageComponent = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
-          {IMAGE_FIELDS.map(({ key, label, description }) => (
+          {IMAGE_FIELDS.map(({ key, label, description, labelKey }) => (
             <div
               key={key}
               className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden flex flex-col"
@@ -141,6 +146,17 @@ const LandingAdmin: PageComponent = () => {
                     }}
                   />
                 </label>
+                {labelKey && (
+                  <div className="mt-2 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Nom affiché</Label>
+                    <Input
+                      value={(images[labelKey as keyof LandingImagesSettings] as string) || ''}
+                      onChange={(e) => setImages(prev => ({ ...prev, [labelKey]: e.target.value }))}
+                      className="h-9 text-sm"
+                      placeholder="Ex: Boost Énergie"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}

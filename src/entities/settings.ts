@@ -62,6 +62,14 @@ export interface LandingImagesSettings {
   step1: string;
   step2: string;
   step3: string;
+  creation1Image: string;
+  creation1Label: string;
+  creation2Image: string;
+  creation2Label: string;
+  creation3Image: string;
+  creation3Label: string;
+  creation4Image: string;
+  creation4Label: string;
   updatedAt?: Timestamp;
 }
 
@@ -76,6 +84,14 @@ export const DEFAULT_LANDING_IMAGES: LandingImagesSettings = {
   step1: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?q=80&w=800&auto=format&fit=crop',
   step2: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop',
   step3: 'https://images.unsplash.com/photo-1570696516188-ade861b84a49?q=80&w=800&auto=format&fit=crop',
+  creation1Image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=500&auto=format&fit=crop',
+  creation1Label: 'Boost Énergie',
+  creation2Image: 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=500&auto=format&fit=crop',
+  creation2Label: 'Détox Verte',
+  creation3Image: 'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=500&auto=format&fit=crop',
+  creation3Label: 'Immunité Plus',
+  creation4Image: 'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=500&auto=format&fit=crop',
+  creation4Label: 'Tropical Sunset',
 };
 
 /** Slide de la hero page d'accueil client */

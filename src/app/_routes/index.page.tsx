@@ -527,10 +527,10 @@ const RootIndex: PageComponent = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[
-              { src: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=500&auto=format&fit=crop', label: 'Boost Énergie' },
-              { src: 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=500&auto=format&fit=crop', label: 'Détox Verte' },
-              { src: 'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=500&auto=format&fit=crop', label: 'Immunité Plus' },
-              { src: 'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=500&auto=format&fit=crop', label: 'Tropical Sunset' },
+              { src: landingImages.creation1Image, label: landingImages.creation1Label },
+              { src: landingImages.creation2Image, label: landingImages.creation2Label },
+              { src: landingImages.creation3Image, label: landingImages.creation3Label },
+              { src: landingImages.creation4Image, label: landingImages.creation4Label },
             ].map((item, i) => (
               <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[3/4] cursor-pointer border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
                 <img src={item.src} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
