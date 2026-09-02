@@ -1,11 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /board/orders
-Disallow: /board/profile
-Disallow: /board/users
-Disallow: /board/fruits
-Disallow: /board/categories
-Disallow: /board/pricing
-Disallow: /board/hero
+Disallow: /board/
+Disallow: /auth/
 
 Sitemap: https://fys-app.com/sitemap.xml

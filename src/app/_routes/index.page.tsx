@@ -35,7 +35,7 @@ const RootIndex: PageComponent = () => {
   // Suivi de la section active
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['features', 'how-it-works', 'nutrifys'];
+      const sections = ['features', 'how-it-works', 'nutrifys', 'about'];
       let current = 'home';
       for (const section of sections) {
         const el = document.getElementById(section);
@@ -79,6 +79,36 @@ const RootIndex: PageComponent = () => {
 
     return () => observer.disconnect();
   }, []);
+
+  // Animation générique au défilement (Scroll Reveal)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-pop-in-cute');
+            entry.target.classList.remove('opacity-0');
+            // Optionnel : ne jouer l'animation qu'une seule fois
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    
+    // On observe un léger délai après le montage initial pour s'assurer que le DOM est prêt
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('.scroll-animate').forEach((el) => {
+        observer.observe(el);
+      });
+    }, 100);
+    
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeout);
+    };
+  }, [fruitsLoading]); // On relance quand les fruits ont fini de charger
+
 
   const { data: landingImages = DEFAULT_LANDING_IMAGES } = useQuery({
     queryKey: ['landing-images'],
@@ -128,6 +158,7 @@ const RootIndex: PageComponent = () => {
             <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
             <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Comment ça marche</a>
             <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
+            <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>À propos</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -184,6 +215,12 @@ const RootIndex: PageComponent = () => {
                         L'assistant NutriFYS
                       </a>
                     </SheetClose>
+                    
+                    <SheetClose asChild>
+                      <a href="#about" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'about' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        À propos de nous
+                      </a>
+                    </SheetClose>
                   </div>
                   
                   <div className="mt-auto flex flex-col gap-4 pb-8">
@@ -228,30 +265,30 @@ const RootIndex: PageComponent = () => {
 
         <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
           <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
-            <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
               Le Premier Bar à Jus <br className="hidden md:block"/>
               Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
             </h1>
 
-            <p className="text-sm font-bold uppercase tracking-wider text-secondary">
+            <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
               Votre santé mérite du sur-mesure
             </p>
 
-            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
+            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
               Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4">
+            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
               <Link
                 to="/lab"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
               >
                 Composez mon jus 100% naturel
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/lab?tab=nutrifys"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm"
+                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
               >
                 <Sparkles className="w-4 h-4 text-secondary" />
                 Discuter avec l'assistant
@@ -261,7 +298,7 @@ const RootIndex: PageComponent = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer z-20" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-0 animate-fade-in hover:opacity-100 transition-opacity cursor-pointer z-20" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} style={{ animationDelay: '800ms' }}>
           <Mouse className="w-5 h-5 text-foreground animate-bounce" />
           <ChevronDown className="w-4 h-4 text-foreground/70 -mt-2 animate-pulse" />
         </div>
@@ -276,7 +313,7 @@ const RootIndex: PageComponent = () => {
             { value: '100%', label: 'Naturel et frais', icon: ShieldCheck, color: '#F2694A' },
             { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: 'Recettes créées', icon: Users, color: '#AECBB2' },
           ].map((stat, i) => (
-            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
                 <stat.icon className="w-6 h-6" />
               </div>
@@ -409,7 +446,7 @@ const RootIndex: PageComponent = () => {
       <section id="features" className="py-12 md:py-20 px-5 md:px-8 bg-[#3F6D4E]/[0.08] dark:bg-[#3F6D4E]/15 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Deux façons de <span style={{ color: '#F2694A' }}>créer</span>
             </h2>
@@ -420,7 +457,7 @@ const RootIndex: PageComponent = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Card 1 — User Compose */}
-            <Link to="/lab" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+            <Link to="/lab" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
               <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
                   src={landingImages.featureCatalog || 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop'}
@@ -444,7 +481,7 @@ const RootIndex: PageComponent = () => {
             </Link>
 
             {/* Card 2 — NutriFYS Compose */}
-            <Link to="/lab?tab=nutrifys" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+            <Link to="/lab?tab=nutrifys" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0" style={{ animationDelay: '200ms' }}>
               <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
                   src={landingImages.featureNutrify || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop'}
@@ -479,7 +516,7 @@ const RootIndex: PageComponent = () => {
       <section className="py-16 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Nos <span style={{ color: '#3F6D4E' }}>créations</span>
             </h2>
@@ -495,7 +532,7 @@ const RootIndex: PageComponent = () => {
               { src: 'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=500&auto=format&fit=crop', label: 'Immunité Plus' },
               { src: 'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=500&auto=format&fit=crop', label: 'Tropical Sunset' },
             ].map((item, i) => (
-              <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[3/4] cursor-pointer border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500">
+              <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[3/4] cursor-pointer border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
                 <img src={item.src} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/90 via-[#1F3A28]/20 to-transparent group-hover:from-[#1F3A28] transition-colors" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
@@ -521,7 +558,7 @@ const RootIndex: PageComponent = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
               {/* Visual */}
-              <div className="order-2 lg:order-1 relative group">
+              <div className="order-2 lg:order-1 relative group scroll-animate opacity-0" style={{ animationDelay: '200ms' }}>
                 <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:bg-primary/30 transition-colors duration-700" />
                 <img
                   src={landingImages.nutrifysAssistant}
@@ -531,7 +568,7 @@ const RootIndex: PageComponent = () => {
               </div>
 
               {/* Content */}
-              <div className="order-1 lg:order-2 space-y-8">
+              <div className="order-1 lg:order-2 space-y-8 scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: '#F2694A20', color: '#F2694A' }}>
                   <Sparkles className="w-3.5 h-3.5" />
                   Assistant Nutritionniste
@@ -585,7 +622,7 @@ const RootIndex: PageComponent = () => {
       <section className="py-12 md:py-20 px-5 md:px-8 bg-[#3F6D4E]/[0.08] dark:bg-[#3F6D4E]/15 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Fruits & <span className="text-primary">Suppléments</span>
             </h2>
@@ -600,13 +637,14 @@ const RootIndex: PageComponent = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 lg:gap-6 pb-8">
-              {fruits.map((fruit) => {
+              {fruits.map((fruit, i) => {
                 const unavailable = !isUsableFruit(fruit);
                 return (
                   <div
                     key={fruit.id}
                     onClick={() => setSelectedFruit(fruit)}
-                    className="relative bg-card/40 hover:bg-card/60 w-full p-2.5 rounded-[1.5rem] border border-border/40 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:-translate-y-1"
+                    className="relative bg-card/40 hover:bg-card/60 w-full p-2.5 rounded-[1.5rem] border border-border/40 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:-translate-y-1 scroll-animate opacity-0"
+                    style={{ animationDelay: `${Math.min(i * 50, 500)}ms` }}
                   >
                     <div className="w-full aspect-square rounded-[1.25rem] overflow-hidden mb-3 relative bg-muted">
                       {unavailable && (
@@ -637,10 +675,105 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
 
+      {/* ━━━ ABOUT US (L'ÉQUIPE) ━━━ */}
+      <section id="about" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-background">
+        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        
+        {/* Subtle glow behind the whole section */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10 flex flex-col items-center">
+          
+          {/* Main Section Title */}
+          <div className="w-full text-center mb-12 md:mb-20 scroll-animate opacity-0" style={{ animationDelay: '50ms' }}>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              À propos de <span className="text-primary relative inline-block">
+                nous
+                <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary/40" viewBox="0 0 100 20" preserveAspectRatio="none">
+                  <path d="M0,10 Q50,20 100,10" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+              </span>
+            </h2>
+          </div>
+
+          {/* Founders Visuals (Top) */}
+          <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-stretch gap-6 md:gap-12 mb-16 md:mb-24">
+            
+            {/* Claudia (First) */}
+            <div className="relative group w-[90vw] sm:w-full max-w-[340px] scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
+              <div className="absolute inset-0 bg-secondary/15 rounded-[2.5rem] md:rounded-[3rem] blur-2xl group-hover:bg-secondary/30 transition-colors duration-700" />
+              <div className="relative aspect-[4/5] rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-border/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] transition-shadow duration-700">
+                <img src="/claudia.jpg" alt="Claudia NGASSA TAPAH" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/95 via-[#1F3A28]/50 to-transparent" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2.5rem] md:rounded-[3rem] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform group-hover:-translate-y-2 transition-transform duration-700 flex flex-col justify-end h-full">
+                  <div className="mt-auto">
+                    <div className="inline-block px-3 py-1 mb-3 rounded-full bg-secondary/20 backdrop-blur-md border border-secondary/30 text-secondary text-[10px] sm:text-xs font-extrabold uppercase tracking-widest">
+                      Co-fondatrice, Ops
+                    </div>
+                    <h3 className="text-3xl sm:text-4xl font-extrabold text-white font-display leading-[1.1] mb-1 drop-shadow-md">Claudia<br/>Ngassa</h3>
+                    <p className="text-secondary/90 font-bold text-[11px] sm:text-xs mb-3 italic">Master 2 en Data Science et Intelligence Artificielle</p>
+                    <p className="text-white/85 text-xs sm:text-sm font-medium leading-relaxed">
+                      Le cœur opérationnel, garante de l'excellence, de la qualité et de la logistique de chaque jus pressé.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Emmanuel (Second, staggered on desktop) */}
+            <div className="relative group w-[90vw] sm:w-full max-w-[340px] mt-2 md:mt-20 scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
+              <div className="absolute inset-0 bg-primary/15 rounded-[2.5rem] md:rounded-[3rem] blur-2xl group-hover:bg-primary/30 transition-colors duration-700" />
+              <div className="relative aspect-[4/5] rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-border/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] transition-shadow duration-700">
+                <img src="/Emmanuel.jpg" alt="Emmanuel YAKAM TCHAMEGNI" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/95 via-[#1F3A28]/50 to-transparent" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2.5rem] md:rounded-[3rem] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform group-hover:-translate-y-2 transition-transform duration-700 flex flex-col justify-end h-full">
+                  <div className="mt-auto">
+                    <div className="inline-block px-3 py-1 mb-3 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30 text-primary-foreground text-[10px] sm:text-xs font-extrabold uppercase tracking-widest">
+                      Co-fondateur, Tech
+                    </div>
+                    <h3 className="text-3xl sm:text-4xl font-extrabold text-white font-display leading-[1.1] mb-1 drop-shadow-md">Emmanuel<br/>Yakam</h3>
+                    <p className="text-primary-foreground/90 font-bold text-[11px] sm:text-xs mb-3 italic">Master 2 en Cryptographie et Sécurité Informatique</p>
+                    <p className="text-white/85 text-xs sm:text-sm font-medium leading-relaxed">
+                      L'architecte technique derrière l'IA NutriFYS et le développement de notre plateforme numérique.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Description (Bottom) */}
+          <div className="max-w-4xl text-center space-y-8 md:space-y-10 scroll-animate opacity-0 px-2" style={{ animationDelay: '400ms' }}>
+            <div className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ background: '#3F6D4E15', color: '#3F6D4E' }}>
+              <Heart className="w-4 h-4" />
+              L'Histoire de FYS
+            </div>
+            
+            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] md:leading-[1.05]" style={{ fontFamily: 'var(--font-display)' }}>
+              Né à <span className="text-primary brightness-110">Yaoundé</span>,<br className="hidden sm:block"/>pensé pour vous.
+            </h2>
+            
+            <div className="space-y-6 md:space-y-8 relative px-4 md:px-12 bg-card/30 backdrop-blur-sm border border-border/30 p-8 md:p-10 rounded-[2rem] shadow-sm">
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground leading-relaxed font-medium">
+                FYS (For Your Self) est une startup FoodTech camerounaise née d'une vision forte : <strong className="text-foreground font-extrabold">allier la richesse inexploitée de notre terroir à la puissance de l'intelligence artificielle.</strong>
+              </p>
+              <div className="w-12 md:w-16 h-1 bg-primary/30 rounded-full mx-auto" />
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground/80 leading-relaxed font-medium">
+                Animés par le "patriotisme numérique", nous avons créé NutriFYS, un assistant nutritionnel personnel capable de valider rigoureusement chaque cocktail pour respecter votre profil de santé unique. Plus qu'un jus, c'est une promesse de confiance.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ━━━ CTA FINAL ━━━ */}
       <section className="py-24 px-5 md:px-8 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10">
+        <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10 scroll-animate opacity-0">
           
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
           
@@ -690,11 +823,17 @@ const RootIndex: PageComponent = () => {
           <div className="lg:col-span-4 space-y-6 lg:ml-auto">
             <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Contact & Aide</h4>
             <ul className="text-sm md:text-base text-muted-foreground space-y-4">
-              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
-                <Phone className="w-4 h-4 text-primary" /> WhatsApp : +237 6 00 00 00 00
+              <li className="flex flex-col gap-1.5 hover:text-foreground transition-colors cursor-pointer">
+                <div className="flex items-center gap-3 font-bold text-foreground/90">
+                  <Phone className="w-4 h-4 text-primary" /> Contacts WhatsApp / Appel
+                </div>
+                <div className="pl-7 space-y-1">
+                  <div>+237 691 91 32 07</div>
+                  <div>+237 675 10 88 76</div>
+                </div>
               </li>
-              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
-                <Mail className="w-4 h-4 text-primary" /> contact@fys.cm
+              <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer pt-2">
+                <Mail className="w-4 h-4 text-primary" /> fyscameroun@gmail.com
               </li>
               <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
                 <MapPin className="w-4 h-4 text-primary" /> Yaoundé, Cameroun
