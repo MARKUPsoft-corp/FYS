@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { Outlet, LayoutComponent, useNavigate } from 'rasengan';
 import { useAuthStore } from '@/stores/auth';
+import { useQuery } from '@tanstack/react-query';
+import { getLandingImagesSettings } from '@/services/settings';
+import { DEFAULT_LANDING_IMAGES } from '@/entities';
 
 const AuthLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
@@ -14,11 +17,16 @@ const AuthLayout: LayoutComponent = () => {
     }
   }, [user, loading]);
 
+  const { data: landingImages = DEFAULT_LANDING_IMAGES } = useQuery({
+    queryKey: ['landing-images'],
+    queryFn: getLandingImagesSettings,
+  });
+
   return (
     <div 
       className="min-h-dvh flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        backgroundImage: "url('/login-bg.jpg')",
+        backgroundImage: `url('${landingImages.loginBackground}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}

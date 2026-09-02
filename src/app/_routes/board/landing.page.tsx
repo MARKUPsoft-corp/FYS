@@ -23,8 +23,8 @@ const IMAGE_FIELDS = [
   { key: 'step3', label: 'Processus 03', description: 'Dégustez' },
   { key: 'creation1Image', label: 'Création 1', description: 'Section "Nos créations"', labelKey: 'creation1Label' },
   { key: 'creation2Image', label: 'Création 2', description: 'Section "Nos créations"', labelKey: 'creation2Label' },
-  { key: 'creation3Image', label: 'Création 3', description: 'Section "Nos créations"', labelKey: 'creation3Label' },
   { key: 'creation4Image', label: 'Création 4', description: 'Section "Nos créations"', labelKey: 'creation4Label' },
+  { key: 'loginBackground', label: 'Arrière-plan Connexion', description: 'Image de la page /auth/login' },
 ] as const;
 
 const LandingAdmin: PageComponent = () => {

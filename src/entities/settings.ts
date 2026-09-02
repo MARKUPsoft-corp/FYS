@@ -70,6 +70,7 @@ export interface LandingImagesSettings {
   creation3Label: string;
   creation4Image: string;
   creation4Label: string;
+  loginBackground: string;
   updatedAt?: Timestamp;
 }
 
@@ -92,6 +93,7 @@ export const DEFAULT_LANDING_IMAGES: LandingImagesSettings = {
   creation3Label: 'Immunité Plus',
   creation4Image: 'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=500&auto=format&fit=crop',
   creation4Label: 'Tropical Sunset',
+  loginBackground: '/login-bg.jpg',
 };
 
 /** Slide de la hero page d'accueil client */

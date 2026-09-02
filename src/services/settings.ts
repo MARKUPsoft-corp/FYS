@@ -101,6 +101,7 @@ export async function getLandingImagesSettings(): Promise<LandingImagesSettings>
     creation3Label: data.creation3Label ?? DEFAULT_LANDING_IMAGES.creation3Label,
     creation4Image: data.creation4Image ?? DEFAULT_LANDING_IMAGES.creation4Image,
     creation4Label: data.creation4Label ?? DEFAULT_LANDING_IMAGES.creation4Label,
+    loginBackground: data.loginBackground ?? DEFAULT_LANDING_IMAGES.loginBackground,
   };
 }
 
