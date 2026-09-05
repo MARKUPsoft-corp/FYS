@@ -12,6 +12,7 @@ import { OrderStatus } from '@/entities';
 import type { Order } from '@/entities';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { AdminPushPanel } from '@/components/features/admin/PushNotificationPanel';
+import { LaunchNoticeCard } from '@/components/features/admin/LaunchNoticeCard';
 
 type Props = { name: string };
 
@@ -324,28 +325,34 @@ export function AdminHome({ name }: Props) {
           </div>
         </div>
 
-        {/* QUICK ACTIONS */}
-        <div className="space-y-4 min-w-0">
-           <h3 className="font-display font-bold text-xl text-foreground mb-2">{t('home.admin.quickActions')}</h3>
-           {quickActions.map((a) => {
-            const Icon = a.icon;
-            return (
-              <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow min-w-0 overflow-hidden">
-                <div className="flex gap-4 min-w-0">
-                  <div className={`size-12 rounded-[1rem] ${a.iconBg} border border-border/50 flex items-center justify-center shrink-0`}>
-                    <Icon className={`size-5 ${a.iconColor}`} />
+        {/* QUICK ACTIONS & NOTICES */}
+        <div className="space-y-6 min-w-0">
+          <LaunchNoticeCard />
+
+          <div>
+            <h3 className="font-display font-bold text-xl text-foreground mb-3">{t('home.admin.quickActions')}</h3>
+            <div className="space-y-4">
+              {quickActions.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow min-w-0 overflow-hidden">
+                    <div className="flex gap-4 min-w-0">
+                      <div className={`size-12 rounded-[1rem] ${a.iconBg} border border-border/50 flex items-center justify-center shrink-0`}>
+                        <Icon className={`size-5 ${a.iconColor}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-foreground text-lg">{a.label}</h4>
+                        <p className="text-sm font-medium text-muted-foreground leading-snug mt-1 mb-4">{a.description}</p>
+                        <Link to={a.path} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 transition-colors">
+                          {a.cta} <ArrowRight className="size-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-foreground text-lg">{a.label}</h4>
-                    <p className="text-sm font-medium text-muted-foreground leading-snug mt-1 mb-4">{a.description}</p>
-                    <Link to={a.path} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 transition-colors">
-                      {a.cta} <ArrowRight className="size-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
           
           <div className="pt-2">
             <AdminPushPanel />

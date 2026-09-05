@@ -1,7 +1,7 @@
 import { useTranslation, Trans } from 'react-i18next';
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
-  MapPin, Phone, MessageSquare, TimerOff, Smartphone, Banknote,
+  MapPin, Phone, MessageSquare, TimerOff, Smartphone, Banknote, Clock,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -54,7 +54,7 @@ type Props = {
 };
 
 export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, onOrderSuccess, promoCode }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user: storeUser } = useAuthStore();
   const { profile, fetched: profileFetched, fetch: fetchProfile, save: saveProfile } = useProfileStore();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -92,6 +92,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
     queryKey: ['pricing-settings'],
     queryFn: getPricingSettings,
   });
+
+  const isNoticeActive = pricing ? pricing.launchNoticeActive !== false : true;
+  const launchNoticeContent = (i18n.language.startsWith('en') ? pricing?.launchNoticeTextEn : pricing?.launchNoticeText)
+    || pricing?.launchNoticeText
+    || t('orders.launchDeliveryNotice');
 
   const fruitVisuals = cocktail ? buildFruitVisuals(cocktail.ingredients, fruits) : [];
   const fruitImageUrls = fruitVisuals
@@ -569,6 +574,23 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
 
               {/* Cameroon Map Section */}
               <div className="px-6 py-6 space-y-5 pb-24">
+                {/* ── Avis Délai de Livraison Mois de Démarrage ── */}
+                {isNoticeActive && (
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-4 flex items-start gap-3.5 text-amber-950 dark:text-amber-100 shadow-xs animate-pop-in-cute">
+                    <div className="size-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 text-amber-700 dark:text-amber-400">
+                      <Clock className="size-4" />
+                    </div>
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                        {t('orders.launchDeliveryNoticeTitle')}
+                      </p>
+                      <p className="text-sm font-semibold leading-snug">
+                        {launchNoticeContent}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <h4 className="font-display font-bold text-xl text-foreground">
                     {t('orders.originTitle')}
@@ -824,9 +846,15 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
 
               {/* Informations de livraison */}
               <div className="space-y-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  {t('orders.delivery')}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {t('orders.delivery')}
+                  </p>
+                  <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                    <Clock className="size-3" />
+                    {t('orders.deliveryDelayBadge')}
+                  </span>
+                </div>
                 <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">

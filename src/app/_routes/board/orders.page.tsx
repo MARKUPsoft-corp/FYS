@@ -32,6 +32,7 @@ import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam'
 import { downloadSvgAsPng } from '@/lib/download';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { getPricingSettings } from '@/services/settings';
 
 // ── Status display config ─────────────────────────────────────────────────────
 
@@ -339,6 +340,16 @@ function ClientOrderSheet({
     staleTime: 5 * 60_000,
   });
 
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
+  });
+
+  const isNoticeActive = pricing ? pricing.launchNoticeActive !== false : true;
+  const launchNoticeContent = (i18n.language.startsWith('en') ? pricing?.launchNoticeTextEn : pricing?.launchNoticeText)
+    || pricing?.launchNoticeText
+    || t('orders.launchDeliveryNotice');
+
   if (!order) return null;
 
   const stepIndex = TIMELINE_STEPS.indexOf(order.status);
@@ -510,8 +521,22 @@ function ClientOrderSheet({
           {/* Informations de Livraison */}
           {order.deliveryDetails && (
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.deliveryAddress')}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.deliveryAddress')}</p>
+                {isNoticeActive && (
+                  <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                    <Clock className="size-3" />
+                    {t('orders.deliveryDelayBadge')}
+                  </span>
+                )}
+              </div>
               <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
+                {isNoticeActive && !isCancelled && order.status !== OrderStatus.DELIVERED && (
+                  <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-pop-in-cute">
+                    <Clock className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <span>{launchNoticeContent}</span>
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
                   <div>

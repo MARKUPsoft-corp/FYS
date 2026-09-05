@@ -13,6 +13,7 @@ import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useUserOrders } from '@/hooks/useOrders';
 import { CocktailBanner } from '@/components/features/cocktail/CocktailBanner';
 import { getSessions } from '@/services/chat';
+import { getPricingSettings } from '@/services/settings';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -25,7 +26,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string;
 };
 
 export function CustomerHome(_props: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { profile, fetch: fetchProfile, loading: profileLoading } = useProfileStore();
@@ -36,6 +37,16 @@ export function CustomerHome(_props: Props) {
     queryFn: () => getSessions(user!.uid),
     enabled: !!user?.uid,
   });
+
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
+  });
+
+  const isNoticeActive = pricing ? pricing.launchNoticeActive !== false : true;
+  const launchNoticeContent = (i18n.language.startsWith('en') ? pricing?.launchNoticeTextEn : pricing?.launchNoticeText)
+    || pricing?.launchNoticeText
+    || t('orders.launchDeliveryNotice');
 
   // Computations for real stats
   const uniqueCocktailsCreated = new Set(orders.map(o => o.cocktailId)).size;
@@ -97,9 +108,17 @@ export function CustomerHome(_props: Props) {
           />
           
           <div className="relative z-10 w-full max-w-2xl space-y-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-               <span className="text-xl">👋</span> 
-               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Bonjour, {firstName}</span>
+            <div className="flex flex-col items-center justify-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👋</span> 
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Bonjour, {firstName}</span>
+              </div>
+              {isNoticeActive && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-semibold animate-pop-in-cute">
+                  <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>{launchNoticeContent}</span>
+                </div>
+              )}
             </div>
             
             {profileLoading ? (

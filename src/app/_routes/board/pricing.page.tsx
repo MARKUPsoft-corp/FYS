@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker } from 'lucide-react';
+import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker, Clock } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadSvgAsPng } from '@/lib/download';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getPricingSettings, updatePricingSettings } from '@/services/settings';
-import { BOTTLE_VOLUME_LABELS } from '@/entities';
+import { BOTTLE_VOLUME_LABELS, DEFAULT_PRICING } from '@/entities';
 
 const Pricing: PageComponent = () => {
   const { t } = useTranslation();
@@ -38,6 +38,9 @@ const Pricing: PageComponent = () => {
   const [promoReorderExpires, setPromoReorderExpires] = useState('');
   const [maxMainFruits, setMaxMainFruits] = useState('5');
   const [maxSupplements, setMaxSupplements] = useState('3');
+  const [launchNoticeActive, setLaunchNoticeActive] = useState(true);
+  const [launchNoticeText, setLaunchNoticeText] = useState('');
+  const [launchNoticeTextEn, setLaunchNoticeTextEn] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -62,7 +65,14 @@ const Pricing: PageComponent = () => {
     );
     setMaxMainFruits(String(pricing.maxMainFruits ?? 5));
     setMaxSupplements(String(pricing.maxSupplements ?? 3));
+    setLaunchNoticeActive(pricing.launchNoticeActive !== false);
+    setTextOrDefault(pricing.launchNoticeText, DEFAULT_PRICING.launchNoticeText || '', setLaunchNoticeText);
+    setTextOrDefault(pricing.launchNoticeTextEn, DEFAULT_PRICING.launchNoticeTextEn || '', setLaunchNoticeTextEn);
   }, [pricing]);
+
+  function setTextOrDefault(val: string | undefined, defaultVal: string, setter: (v: string) => void) {
+    setter(val !== undefined ? val : defaultVal);
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +100,9 @@ const Pricing: PageComponent = () => {
         promoReorderExpiresAt: reorderExpAt,
         maxMainFruits: Number(maxMainFruits) || 5,
         maxSupplements: Number(maxSupplements) || 3,
+        launchNoticeActive,
+        launchNoticeText: launchNoticeText.trim(),
+        launchNoticeTextEn: launchNoticeTextEn.trim(),
       });
       queryClient.invalidateQueries({ queryKey: ['pricing-settings'] });
       setSaved(true);
@@ -434,6 +447,93 @@ const Pricing: PageComponent = () => {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Annonce de lancement & Délai de livraison ── */}
+          <div className="flex items-start gap-4 pb-6 pt-6 border-b border-border/40">
+            <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Clock className="size-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-lg text-foreground">
+                {t('launchNotice.cardTitle')}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('launchNotice.description')}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Toggle switch */}
+            <button
+              type="button"
+              onClick={() => setLaunchNoticeActive((v) => !v)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all border ${
+                launchNoticeActive
+                  ? 'bg-amber-500/10 border-amber-500/30'
+                  : 'bg-muted/60 border-border/40'
+              }`}
+            >
+              <span className={`text-sm font-semibold flex items-center gap-2 ${
+                launchNoticeActive ? 'text-amber-900 dark:text-amber-200' : 'text-muted-foreground'
+              }`}>
+                {launchNoticeActive ? (
+                  <><CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" /> {t('launchNotice.activeStatus')}</>
+                ) : (
+                  <><XCircle className="size-4" /> {t('launchNotice.inactiveStatus')}</>
+                )}
+              </span>
+              {launchNoticeActive ? (
+                <ToggleRight className="size-6 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <ToggleLeft className="size-6 text-muted-foreground" />
+              )}
+            </button>
+
+            {/* Inputs */}
+            <div className="grid sm:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="pricing-launch-notice-fr" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  {t('launchNotice.frenchTextLabel')} 🇨🇲 / 🇫🇷
+                </Label>
+                <textarea
+                  id="pricing-launch-notice-fr"
+                  rows={2}
+                  value={launchNoticeText}
+                  onChange={(e) => setLaunchNoticeText(e.target.value)}
+                  placeholder="Ex: Pour le mois de démarrage, les livraisons se feront après 24h."
+                  className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pricing-launch-notice-en" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  {t('launchNotice.englishTextLabel')} 🇬🇧
+                </Label>
+                <textarea
+                  id="pricing-launch-notice-en"
+                  rows={2}
+                  value={launchNoticeTextEn}
+                  onChange={(e) => setLaunchNoticeTextEn(e.target.value)}
+                  placeholder="Ex: For the launch month, deliveries will be made after 24h."
+                  className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 flex items-start gap-2.5 text-xs text-amber-950 dark:text-amber-100">
+              <Clock className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <span className="font-bold text-[10px] uppercase tracking-wider text-amber-800 dark:text-amber-300 block">
+                  Aperçu :
+                </span>
+                <p className="font-semibold leading-snug">
+                  {launchNoticeText || DEFAULT_PRICING.launchNoticeText}
+                </p>
               </div>
             </div>
           </div>

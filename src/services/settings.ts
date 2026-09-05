@@ -30,6 +30,9 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
     maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
     maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
+    launchNoticeActive: data.launchNoticeActive ?? DEFAULT_PRICING.launchNoticeActive ?? true,
+    launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
+    launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
     ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
   };
 }
@@ -51,6 +54,37 @@ export async function updatePricingSettings(
       promoReorderExpiresAt: data.promoReorderExpiresAt ?? null,
       maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
       maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
+      launchNoticeActive: data.launchNoticeActive ?? true,
+      launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
+      launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function toggleLaunchNotice(active: boolean): Promise<void> {
+  await setDoc(
+    doc(db, COLLECTIONS.SETTINGS, PRICING_DOC_ID),
+    {
+      launchNoticeActive: active,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function updateLaunchNotice(
+  active: boolean,
+  text: string,
+  textEn?: string,
+): Promise<void> {
+  await setDoc(
+    doc(db, COLLECTIONS.SETTINGS, PRICING_DOC_ID),
+    {
+      launchNoticeActive: active,
+      launchNoticeText: text,
+      ...(textEn !== undefined ? { launchNoticeTextEn: textEn } : {}),
       updatedAt: serverTimestamp(),
     },
     { merge: true },

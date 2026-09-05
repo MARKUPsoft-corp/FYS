@@ -35,6 +35,12 @@ export interface PricingSettings {
   maxMainFruits?: number;
   /** Limite max de suppléments dans le lab */
   maxSupplements?: number;
+  /** Annonce de délai de livraison (mois de démarrage) activée ou non */
+  launchNoticeActive?: boolean;
+  /** Texte personnalisé de l'annonce (français) */
+  launchNoticeText?: string;
+  /** Texte personnalisé de l'annonce (anglais) */
+  launchNoticeTextEn?: string;
   updatedAt?: Timestamp;
 }
 
@@ -45,6 +51,9 @@ export const DEFAULT_PRICING: PricingSettings = {
   deliveryFee: 500,
   maxMainFruits: 5,
   maxSupplements: 3,
+  launchNoticeActive: true,
+  launchNoticeText: 'Pour le mois de démarrage, les livraisons se feront après 24h.',
+  launchNoticeTextEn: 'For the launch month, deliveries will be made after 24h.',
 };
 
 export const PRICING_DOC_ID = 'pricing';

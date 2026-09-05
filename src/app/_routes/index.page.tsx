@@ -1,6 +1,6 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
 import { useEffect, useState, useRef } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin } from 'lucide-react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useQuery } from '@tanstack/react-query';
-import { getLandingImagesSettings } from '@/services/settings';
+import { getLandingImagesSettings, getPricingSettings } from '@/services/settings';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
 
 /* ─────────────────────────────────────────────
@@ -25,7 +25,7 @@ const RootIndex: PageComponent = () => {
   const navigate = useNavigate();
   const { actualTheme, setTheme } = useTheme();
   const { fruits, isLoading: fruitsLoading } = useFruitsRealtime();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [activeProcessStep, setActiveProcessStep] = useState(0);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
@@ -114,6 +114,16 @@ const RootIndex: PageComponent = () => {
     queryKey: ['landing-images'],
     queryFn: getLandingImagesSettings,
   });
+
+  const { data: pricing } = useQuery({
+    queryKey: ['pricing-settings'],
+    queryFn: getPricingSettings,
+  });
+
+  const isNoticeActive = pricing ? pricing.launchNoticeActive !== false : true;
+  const launchNoticeContent = (i18n.language.startsWith('en') ? pricing?.launchNoticeTextEn : pricing?.launchNoticeText)
+    || pricing?.launchNoticeText
+    || t('landing.launchDeliveryNotice', 'Pour le mois de démarrage, les livraisons se feront après 24h');
 
   // Écoute en temps réel des recettes créées
   useEffect(() => {
@@ -265,6 +275,15 @@ const RootIndex: PageComponent = () => {
 
         <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
           <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
+            {/* Launch delivery notice pill */}
+            {isNoticeActive && (
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
+                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{launchNoticeContent}</span>
+              </div>
+            )}
+
             <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
               Le Premier Bar à Jus <br className="hidden md:block"/>
               Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
@@ -358,7 +377,9 @@ const RootIndex: PageComponent = () => {
               {
                 step: '03',
                 title: 'Dégustez',
-                desc: 'Commandez votre cocktail et recevez-le frais, pressé avec amour par notre équipe à Yaoundé.',
+                desc: isNoticeActive
+                  ? `${t('landing.step3DescBase', 'Commandez votre cocktail et recevez-le frais, pressé avec amour par notre équipe à Yaoundé.')} ${launchNoticeContent}`
+                  : t('landing.step3DescBase', 'Commandez votre cocktail et recevez-le frais, pressé avec amour par notre équipe à Yaoundé.'),
                 color: '#E0982E',
                 img: landingImages.step3,
               },
