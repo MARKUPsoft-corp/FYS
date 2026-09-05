@@ -52,6 +52,8 @@ export interface Order {
     coordinates?: { lat: number; lng: number };
   };
   aiAnalysisSnapshot?: AIAnalysis;
+  /** Option sucre (false ou undefined = 100% naturel sans sucre) */
+  hasAddedSugar?: boolean;
   /** Image figée à la commande (catalogue ou fruit principal / collage source) */
   cocktailImageSnapshot?: string;
   /** Photos fruits figées pour collage si pas d'image cocktail */

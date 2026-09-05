@@ -22,6 +22,7 @@ type Props = {
   onNameChange: (name: string) => void;
   selectedFruits: Fruit[];
   selectedSupplements: Fruit[];
+  hasAddedSugar?: boolean;
   analysis: AIAnalysis | null;
   saving: boolean;
   onSave: () => void;
@@ -34,6 +35,7 @@ export function SaveCocktailDialog({
   onNameChange,
   selectedFruits,
   selectedSupplements,
+  hasAddedSugar = false,
   analysis,
   saving,
   onSave,
@@ -98,6 +100,15 @@ export function SaveCocktailDialog({
                   {f.name}
                 </span>
               ))}
+              {hasAddedSugar ? (
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                  🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                  🌿 {t('orders.sugarFreeBadge', 'Sans sucre ajouté')}
+                </span>
+              )}
             </div>
           </div>
         )}

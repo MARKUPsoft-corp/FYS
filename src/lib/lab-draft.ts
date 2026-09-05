@@ -7,6 +7,7 @@ export type LabDraft = {
   mains: [string, number][];
   supps: [string, number][];
   name: string;
+  hasAddedSugar?: boolean;
 };
 
 export function saveLabDraft(draft: LabDraft): void {
@@ -31,6 +32,7 @@ export function loadLabDraft(): LabDraft | null {
         (e): e is [string, number] => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'number',
       ),
       name: typeof parsed.name === 'string' ? parsed.name : '',
+      hasAddedSugar: typeof parsed.hasAddedSugar === 'boolean' ? parsed.hasAddedSugar : false,
     };
   } catch {
     return null;

@@ -2,7 +2,8 @@ import type { Fruit, HealthProfile, AIAnalysis } from '@/entities';
 import i18n from '@/i18n';
 import { analyzeWithClaude } from './ai.claude';
 import { analyzeWithGemini, chatWithGemini } from './ai.gemini';
-import type { ChatHistoryMessage, ChatAIResponse } from './ai.shared';
+import type { ChatHistoryMessage, ChatAIResponse, AnalysisOptions } from './ai.shared';
+export type { AnalysisOptions };
 
 type AIProvider = 'gemini' | 'claude';
 
@@ -12,11 +13,12 @@ const provider: AIProvider =
 export async function analyzeCocktail(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  options?: AnalysisOptions,
 ): Promise<AIAnalysis> {
   if (provider === 'claude') {
-    return analyzeWithClaude(ingredients, profile);
+    return analyzeWithClaude(ingredients, profile, options);
   }
-  return analyzeWithGemini(ingredients, profile);
+  return analyzeWithGemini(ingredients, profile, options);
 }
 
 export async function chatCocktail(

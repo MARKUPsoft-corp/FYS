@@ -68,6 +68,8 @@ export interface Cocktail {
   totalPrice: number;     // basePrice + sum(ingredients[].priceSnapshot)
   aiAnalysis?: AIAnalysis; // absent tant que l'IA n'a pas encore analysé
   parentCocktailId?: string; // présent si ce cocktail est un clone d'un cocktail du catalogue
+  /** Option d'ajout de sucre (false ou undefined = 100% naturel sans sucre) */
+  hasAddedSugar?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

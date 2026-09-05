@@ -128,10 +128,15 @@ ${COCKTAIL_BALANCE.dimensions.map((d) => `  • ${d}`).join('\n')}
 
 // ── Prompt builder (shared between providers) ─────────────────────────────────
 
+export interface AnalysisOptions {
+  hasAddedSugar?: boolean;
+}
+
 export function buildAnalysisPrompt(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
   lang?: string,
+  options?: AnalysisOptions,
 ): string {
   const isEn = (lang ?? (i18n.language?.startsWith('en') ? 'en' : 'fr')) === 'en';
 
@@ -164,6 +169,31 @@ export function buildAnalysisPrompt(
 
   const knowledgeContext = buildKnowledgeContext(ingredients, profile, isEn ? 'en' : 'fr');
 
+  const hasAddedSugar = options?.hasAddedSugar ?? false;
+  const sugarSectionEn = hasAddedSugar
+    ? `ADDED SUGAR STATUS: The user explicitly requested to ADD SUGAR to this drink.
+SUGAR IMPACT RULES:
+- This cocktail contains added simple/refined sugar.
+- You MUST penalize the overall health score (reduce score by 12 to 20 points compared to an unsweetened mix).
+- In nutritionalProfile.naturalSugars, reflect the higher sugar and caloric density.
+- In "notes" and "advice", explicitly state that added sugar elevates the glycemic load and calories.
+- CRITICAL PRECAUTION: If the health profile includes diabetes, prediabetes, or weight loss goals, the verdict MUST be "caution" or "not_recommended", with an explicit warning and a suggestion to sweeten naturally (e.g., with sweet ripe mango, banana, or pure local honey).`
+    : `ADDED SUGAR STATUS: 100% RAW & NATURAL — ZERO ADDED SUGAR.
+- This cocktail has 0g of added sugar, retaining only natural fruit fructose bound with fibers.
+- Strongly praise this pure composition in the health score and advice (optimal metabolic response, no artificial insulin spike).`;
+
+  const sugarSectionFr = hasAddedSugar
+    ? `STATUT SUCRE AJOUTÉ : L'utilisateur a explicitement demandé d'AJOUTER DU SUCRE dans sa boisson.
+RÈGLES D'IMPACT DU SUCRE AJOUTÉ :
+- Cette boisson contient du sucre ajouté.
+- Tu DOIS impérativement pénaliser le score santé global (déduis entre 12 et 20 points par rapport à un mélange 100% naturel sans sucre).
+- Dans profilNutritionnel.sucresNaturels, intègre cet apport supplémentaire en sucres et calories.
+- Dans "notes" et "conseil", mentionne clairement que le sucre ajouté augmente l'indice glycémique et l'apport calorique global.
+- CONTRE-INDICATION CRITIQUE : Si le profil santé mentionne du diabète, du prédiabète ou un objectif de perte de poids, le verdict DOIT être "caution" ou "not_recommended", avec un avertissement explicite et un conseil bienveillant pour sucrer naturellement (ex : mangue mûre, banane douce ou miel pur local).`
+    : `STATUT SUCRE AJOUTÉ : 100% BRUT & NATUREL — AUCUN SUCRE AJOUTÉ.
+- La boisson ne contient strictement aucun sucre raffiné ajouté (0g de sucre ajouté, uniquement le fructose naturel et les fibres des fruits).
+- Valorise cette pureté totale dans le score santé et dans les conseils (réponse métabolique saine, absence de pic glycémique artificiel).`;
+
   if (isEn) {
     return `You are NutriFYS, the nutritional assistant of FYS (healthy fruit cocktails). Analyze this mix.
 
@@ -171,6 +201,8 @@ INGREDIENTS:
 ${fruitLines}
 
 ${profileSection}
+
+${sugarSectionEn}
 
 FYS NUTRITIONIST KNOWLEDGE BASE:
 ${knowledgeContext}
@@ -242,6 +274,8 @@ INGRÉDIENTS:
 ${fruitLines}
 
 ${profileSection}
+
+${sugarSectionFr}
 
 BASE DE CONNAISSANCES NUTRITIONNISTE FYS:
 ${knowledgeContext}

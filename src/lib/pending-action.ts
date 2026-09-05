@@ -12,6 +12,7 @@ export type LabMixSnapshot = {
   mains: Map<string, number>;
   supps: Map<string, number>;
   name: string;
+  hasAddedSugar?: boolean;
 };
 
 // ── Action ─────────────────────────────────────────────────────────────────
@@ -56,6 +57,7 @@ export function saveLabMix(snapshot: LabMixSnapshot): void {
         mains: [...snapshot.mains.entries()],
         supps: [...snapshot.supps.entries()],
         name: snapshot.name,
+        hasAddedSugar: snapshot.hasAddedSugar ?? false,
         at: Date.now(),
       }),
     );
@@ -73,6 +75,7 @@ export function loadLabMix(): LabMixSnapshot | null {
       mains: [string, number][];
       supps: [string, number][];
       name: string;
+      hasAddedSugar?: boolean;
       at: number;
     };
     if (Date.now() - parsed.at > TTL_MS) return null;
@@ -80,6 +83,7 @@ export function loadLabMix(): LabMixSnapshot | null {
       mains: new Map(parsed.mains),
       supps: new Map(parsed.supps),
       name: parsed.name ?? '',
+      hasAddedSugar: parsed.hasAddedSugar ?? false,
     };
   } catch {
     return null;

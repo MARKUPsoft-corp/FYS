@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Fruit, HealthProfile, AIAnalysis } from '@/entities';
-import { buildAnalysisPrompt, parseAnalysisResponse } from './ai.shared';
+import { buildAnalysisPrompt, parseAnalysisResponse, type AnalysisOptions } from './ai.shared';
 
 const client = new Anthropic({
   apiKey: import.meta.env.RASENGAN_ANTHROPIC_API_KEY as string,
@@ -10,8 +10,9 @@ const client = new Anthropic({
 export async function analyzeWithClaude(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  options?: AnalysisOptions,
 ): Promise<AIAnalysis> {
-  const prompt = buildAnalysisPrompt(ingredients, profile);
+  const prompt = buildAnalysisPrompt(ingredients, profile, undefined, options);
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',

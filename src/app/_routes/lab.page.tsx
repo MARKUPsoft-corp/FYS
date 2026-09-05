@@ -67,6 +67,7 @@ const FysLab: PageComponent = () => {
 
   const [selectedIngredients, setSelectedIngredients] = useState<Map<string, number>>(new Map());
   const [selectedSupplements, setSelectedSupplements] = useState<Map<string, number>>(new Map());
+  const [hasAddedSugar, setHasAddedSugar] = useState(false);
   const [cocktailName, setCocktailName] = useState('');
   const nameTouchedRef = useRef(false);
   const pendingRestoredRef = useRef(false);
@@ -109,6 +110,9 @@ const FysLab: PageComponent = () => {
       }
       setSelectedIngredients(mains);
       setSelectedSupplements(supps);
+      if (loadedCocktail.hasAddedSugar !== undefined) {
+        setHasAddedSugar(loadedCocktail.hasAddedSugar);
+      }
       setCocktailName(loadedCocktail.name);
       nameTouchedRef.current = true;
       if (loadedCocktail.aiAnalysis) {
@@ -180,6 +184,9 @@ const FysLab: PageComponent = () => {
     if (mix) {
       setSelectedIngredients(mix.mains);
       setSelectedSupplements(mix.supps);
+      if (mix.hasAddedSugar !== undefined) {
+        setHasAddedSugar(mix.hasAddedSugar);
+      }
       if (mix.name) {
         setCocktailName(mix.name);
         nameTouchedRef.current = true;
@@ -188,7 +195,7 @@ const FysLab: PageComponent = () => {
     }
 
     if (action === 'analyze' && mix) {
-      setTimeout(() => handleAnalyze(mix.mains, mix.supps), 150);
+      setTimeout(() => handleAnalyze(mix.mains, mix.supps, mix.hasAddedSugar), 150);
     } else if (action === 'order' && mix) {
       setTimeout(() => pushHistoryParam(setSearchParams, 'sheet', 'order'), 150);
     } else if (action === 'save' && mix) {
@@ -456,6 +463,11 @@ const FysLab: PageComponent = () => {
     }
   }
 
+  function handleToggleSugar(hasSugar: boolean) {
+    setHasAddedSugar(hasSugar);
+    setAnalysis(null);
+  }
+
   function openOrderSheet() {
     // Commander nécessite une connexion
     if (!user) {
@@ -463,6 +475,7 @@ const FysLab: PageComponent = () => {
         mains: selectedIngredients,
         supps: selectedSupplements,
         name: cocktailName,
+        hasAddedSugar,
       });
       requireAuth('order');
       return;
@@ -481,13 +494,19 @@ const FysLab: PageComponent = () => {
     }
   }
 
-  async function handleAnalyze(forcedMains?: Map<string, number>, forcedSupps?: Map<string, number>) {
+  async function handleAnalyze(
+    forcedMains?: Map<string, number>,
+    forcedSupps?: Map<string, number>,
+    forcedSugar?: boolean,
+  ) {
+    const sugarOption = forcedSugar !== undefined ? forcedSugar : hasAddedSugar;
     // L'analyse NutriFYS nécessite une connexion (profil santé)
     if (!user) {
       saveLabMix({
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
         name: cocktailName,
+        hasAddedSugar: sugarOption,
       });
       requireAuth('analyze');
       return;
@@ -502,6 +521,7 @@ const FysLab: PageComponent = () => {
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
         name: cocktailName,
+        hasAddedSugar: sugarOption,
       });
       setShowOnboardingForAnalysis(true);
       return;
@@ -513,6 +533,7 @@ const FysLab: PageComponent = () => {
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
         name: cocktailName,
+        hasAddedSugar: sugarOption,
       });
       return; // Le useEffect sur profileFetched reprendra l'action
     }
@@ -530,7 +551,7 @@ const FysLab: PageComponent = () => {
         fruit: fruits.find((f) => f.id === fruitId)!,
         grams,
       })).filter((i) => i.fruit);
-      const result = await analyzeCocktail(ingredients, profile);
+      const result = await analyzeCocktail(ingredients, profile, { hasAddedSugar: sugarOption });
       setAnalysis(result);
       trackEvent('generate_custom_mix', {
         item_count: ingredients.length,
@@ -574,9 +595,10 @@ const FysLab: PageComponent = () => {
       ingredients,
       basePrice: base,
       totalPrice: defaultBottleTotal,
+      hasAddedSugar,
       ...(analysis ? { aiAnalysis: analysis } : {}),
     } as Cocktail;
-  }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing]);
+  }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing, hasAddedSugar]);
 
   async function handleSave() {
     if (!user) {
@@ -584,6 +606,7 @@ const FysLab: PageComponent = () => {
         mains: selectedIngredients,
         supps: selectedSupplements,
         name: cocktailName,
+        hasAddedSugar,
       });
       requireAuth('save');
       return;
@@ -602,11 +625,13 @@ const FysLab: PageComponent = () => {
         ingredients,
         basePrice: base,
         totalPrice: defaultBottleTotal,
+        hasAddedSugar,
         ...(analysis ? { aiAnalysis: analysis } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
       setSelectedIngredients(new Map());
       setSelectedSupplements(new Map());
+      setHasAddedSugar(false);
       setCocktailName('');
       nameTouchedRef.current = false;
       setAnalysis(null);
@@ -623,6 +648,7 @@ const FysLab: PageComponent = () => {
     queryClient.invalidateQueries({ queryKey: ['user-cocktails'] });
     setSelectedIngredients(new Map());
     setSelectedSupplements(new Map());
+    setHasAddedSugar(false);
     setCocktailName('');
     nameTouchedRef.current = false;
     setAnalysis(null);
@@ -631,6 +657,7 @@ const FysLab: PageComponent = () => {
   }
 
   function handleAnalyzeFromProposal(proposal: CocktailProposal) {
+    setHasAddedSugar(false);
     // Filtre de sécurité : ne garde que les fruits actifs et non incompatibles entre eux
     const next = new Map<string, number>();
     for (const id of proposal.fruitIds.slice(0, maxMainFruits)) {
@@ -715,6 +742,8 @@ const FysLab: PageComponent = () => {
               loadingAI={loadingAI}
               maxMainFruits={maxMainFruits}
               maxSupplements={maxSupplements}
+              hasAddedSugar={hasAddedSugar}
+              onToggleSugar={handleToggleSugar}
             />
           )}
 
@@ -735,6 +764,7 @@ const FysLab: PageComponent = () => {
           onNameChange={setCocktailNameFromUser}
           selectedFruits={fruits.filter((f) => selectedIngredients.has(f.id))}
           selectedSupplements={fruits.filter((f) => selectedSupplements.has(f.id))}
+          hasAddedSugar={hasAddedSugar}
           analysis={analysis}
           saving={saving}
           onSave={() => handleSave()}

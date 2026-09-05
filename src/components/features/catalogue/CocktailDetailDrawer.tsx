@@ -102,7 +102,20 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
 
           {/* Ingredients — noms seulement, pas de prix */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">{t('catalogue.composition')}</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">{t('catalogue.composition')}</h3>
+              {cocktail.hasAddedSugar !== undefined && (
+                cocktail.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                    🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                  </span>
+                )
+              )}
+            </div>
             <Separator />
             {cocktail.ingredients.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('cocktail.noIngredients')}</p>

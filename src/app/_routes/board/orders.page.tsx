@@ -161,6 +161,17 @@ function OrderCard({
             <Clock className="size-3" />
             {formatDate(order.createdAt as unknown as { seconds: number })}
           </p>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {order.hasAddedSugar ? (
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+              </span>
+            )}
+          </div>
         </div>
         <StatusBadge status={order.status} />
       </div>
@@ -212,6 +223,7 @@ function CocktailInfoBlock({
   orderFruitImages,
   clientName,
   cocktailNameFallback,
+  hasAddedSugar,
 }: {
   cocktail: Cocktail | null | undefined;
   loading: boolean;
@@ -219,6 +231,7 @@ function CocktailInfoBlock({
   orderFruitImages?: string[];
   clientName?: string;
   cocktailNameFallback?: string;
+  hasAddedSugar?: boolean;
 }) {
   const { t } = useTranslation();
   const { data: fruits = [] } = useQuery({
@@ -251,6 +264,7 @@ function CocktailInfoBlock({
   const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
   const name = cocktail?.name ?? cocktailNameFallback ?? 'Cocktail';
   const fruitNames = cocktail?.ingredients.map((i) => i.fruitName) ?? [];
+  const sugarVal = hasAddedSugar !== undefined ? hasAddedSugar : (cocktail?.hasAddedSugar ?? false);
 
   return (
     <div className="space-y-3">
@@ -263,11 +277,22 @@ function CocktailInfoBlock({
             fruits={fruitVisuals}
             fruitNames={fruitNames}
             badge={
-              vcfg ? (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm ${vcfg.chip}`}>
-                  {vcfg.emoji} {getVerdictLabel(analysis!.verdict, t)}
-                </span>
-              ) : undefined
+              <div className="flex flex-col items-end gap-1.5">
+                {sugarVal ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md bg-amber-500 text-white border border-amber-400">
+                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md bg-emerald-600 text-white border border-emerald-500">
+                    🌿 {t('orders.sugarFreeBadge', 'Sans sucre')}
+                  </span>
+                )}
+                {vcfg && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm ${vcfg.chip}`}>
+                    {vcfg.emoji} {getVerdictLabel(analysis!.verdict, t)}
+                  </span>
+                )}
+              </div>
             }
           />
 
@@ -276,6 +301,22 @@ function CocktailInfoBlock({
             {cocktail.description && (
               <p className="text-[13px] text-muted-foreground leading-relaxed">{cocktail.description}</p>
             )}
+
+            {/* Formulation cuisine / atelier */}
+            <div className="p-3 rounded-xl border flex items-center justify-between gap-2 bg-muted/40">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                {t('lab.sugarOption.title', 'Formulation')}
+              </span>
+              {sugarVal ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                  🍯 {t('orders.sugarAddedBadge', 'Avec sucre ajouté')}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                  🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                </span>
+              )}
+            </div>
 
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
@@ -371,10 +412,19 @@ function ClientOrderSheet({
 
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
           <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <p className="text-[13px] text-muted-foreground">
               {t('orders.orderFrom', { date: formatDate(order.createdAt as unknown as { seconds: number }) })}
             </p>
+            {order.hasAddedSugar ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+              </span>
+            )}
             {order.aiAnalysisSnapshot && (
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
                 {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
@@ -451,6 +501,7 @@ function ClientOrderSheet({
             orderFruitImages={order.ingredientImageSnapshots}
             clientName={order.userNameSnapshot}
             cocktailNameFallback={order.cocktailNameSnapshot}
+            hasAddedSugar={order.hasAddedSugar}
           />
 
           {/* Status actuel */}
@@ -751,10 +802,19 @@ function AdminOrderSheet({
             <div className="flex items-start justify-between gap-2">
             <div>
               <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-[13px] text-muted-foreground">
                   {formatDate(order.createdAt as unknown as { seconds: number })}
                 </p>
+                {order.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                    🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                  </span>
+                )}
                 {order.aiAnalysisSnapshot && (
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
                 {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
@@ -833,6 +893,7 @@ function AdminOrderSheet({
             orderFruitImages={order.ingredientImageSnapshots}
             clientName={order.userNameSnapshot}
             cocktailNameFallback={order.cocktailNameSnapshot}
+            hasAddedSugar={order.hasAddedSugar}
           />
 
           {/* Contact client */}

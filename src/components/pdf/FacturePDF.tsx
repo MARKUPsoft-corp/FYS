@@ -193,6 +193,16 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
                <Text style={{ width: 80 }}></Text>
             </View>
           )}
+
+          {/* Option Sucre */}
+          <View style={s.row}>
+             <Text style={[s.label, { flex: 2, fontSize: 8, fontStyle: 'italic' }]}>
+                {order.hasAddedSugar ? 'Option : Avec sucre ajouté' : 'Option : 100% Naturel (Sans sucre ajouté)'}
+             </Text>
+             <Text style={{ width: 30 }}></Text>
+             <Text style={{ width: 70 }}></Text>
+             <Text style={{ width: 80 }}></Text>
+          </View>
         </View>
 
         {/* ── Totaux ─────────────────────────────────────────────────── */}

@@ -10,7 +10,8 @@ import {
   type ChatAIResponse,
   buildSupplementPrompt,
   parseSupplementResponse,
-  type AIRecommendation
+  type AIRecommendation,
+  type AnalysisOptions,
 } from './ai.shared';
 const genai = new GoogleGenerativeAI(
   import.meta.env.RASENGAN_GEMINI_API_KEY as string,
@@ -28,9 +29,10 @@ const model = genai.getGenerativeModel({
 export async function analyzeWithGemini(
   ingredients: { fruit: Fruit; grams: number }[],
   profile: HealthProfile | null,
+  options?: AnalysisOptions,
 ): Promise<AIAnalysis> {
   const lang = i18n.language?.startsWith('en') ? 'en' : 'fr';
-  const prompt = buildAnalysisPrompt(ingredients, profile, lang);
+  const prompt = buildAnalysisPrompt(ingredients, profile, lang, options);
   const result = await model.generateContent(prompt);
   const raw = result.response.text();
   return parseAnalysisResponse(raw);

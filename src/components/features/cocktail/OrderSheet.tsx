@@ -449,6 +449,17 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
               <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
                 {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
               </p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {cocktail.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    🌿 {t('orders.sugarFreeBadge', 'Sans sucre ajouté')}
+                  </span>
+                )}
+              </div>
             </div>
             {hasAnalysis && verdictCfg && (
               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 mt-0.5 ${verdictCfg.chip}`}>

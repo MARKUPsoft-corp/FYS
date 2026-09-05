@@ -390,6 +390,8 @@ type Props = {
   loadingAI: boolean;
   maxMainFruits: number;
   maxSupplements: number;
+  hasAddedSugar?: boolean;
+  onToggleSugar?: (hasSugar: boolean) => void;
 };
 
 export function ComposeTab({
@@ -414,6 +416,8 @@ export function ComposeTab({
   loadingAI,
   maxMainFruits,
   maxSupplements,
+  hasAddedSugar = false,
+  onToggleSugar,
 }: Props) {
   const { t } = useTranslation();
   // Étape 1 : uniquement les fruits principaux. Un fruit qui n'est QUE
@@ -619,6 +623,8 @@ export function ComposeTab({
               loadingAI={loadingAI}
               maxSupplements={maxSupplements}
               incompatibleIds={incompatibleIds}
+              hasAddedSugar={hasAddedSugar}
+              onToggleSugar={onToggleSugar}
             />
           </>
         )}

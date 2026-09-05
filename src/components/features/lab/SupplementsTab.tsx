@@ -4,6 +4,7 @@ import type { Fruit } from '@/entities';
 import { isUsableFruit, isUsableAsSupplement } from '@/entities';
 import type { AIRecommendation } from '@/services/ai.shared';
 import { cn } from '@/lib/utils';
+import { SugarOptionBanner } from './SugarOptionBanner';
 
 type Props = {
   selectedFruits: Fruit[];
@@ -15,6 +16,8 @@ type Props = {
   loadingAI?: boolean;
   maxSupplements: number;
   incompatibleIds: Set<string>;
+  hasAddedSugar?: boolean;
+  onToggleSugar?: (hasSugar: boolean) => void;
 };
 
 function ItemTile({
@@ -117,6 +120,8 @@ export function SupplementsTab({
   loadingAI,
   maxSupplements,
   incompatibleIds,
+  hasAddedSugar = false,
+  onToggleSugar,
 }: Props) {
   const { t } = useTranslation();
   // Calculé ici même depuis le catalogue complet : un supplément indisponible
@@ -157,6 +162,14 @@ export function SupplementsTab({
 
   return (
     <div className="space-y-6">
+      {/* ── Option Sucre : Carte Bannière ultra-visible au-dessus des suppléments ── */}
+      {onToggleSugar && (
+        <SugarOptionBanner
+          hasAddedSugar={hasAddedSugar}
+          onChange={onToggleSugar}
+        />
+      )}
+
       <section>
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
           {t('lab.selectedFruits')}
