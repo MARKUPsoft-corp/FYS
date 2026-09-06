@@ -133,11 +133,14 @@ export async function createOrder(
     link: `/board/orders?order=${ref.id}`,
   }).catch(console.error);
 
-  // Send push notification to all admins
+  // Send push notification to all admins (skipInApp: true car notifyAdmins a déjà créé la notif in-app)
   sendPushNotification({
     title: orderTitle,
     body: orderBody,
     url: `/board/orders?order=${ref.id}`,
+    audience: 'admins',
+    tag: `order-new-${ref.id}`,
+    skipInApp: true,
   }).catch(console.error);
 
   // Notify customer in-app
@@ -267,6 +270,8 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
       title: pushTitle,
       body: updateBody,
       url: `/board/orders?order=${orderId}`,
+      tag: `order-update-${orderId}`,
+      skipInApp: true,
     });
   }
 }
@@ -304,6 +309,8 @@ export async function cancelOrder(orderId: string): Promise<void> {
       title: canceledTitle,
       body: customerCancelBody,
       url: `/board/orders?order=${orderId}`,
+      tag: `order-cancel-${orderId}`,
+      skipInApp: true,
     });
   }
 }

@@ -62,17 +62,46 @@ export function NotificationBell() {
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showToast, setShowToast] = useState<{ notif: AppNotification } | null>(null);
-  const toastedIds = useRef<Set<string>>(new Set());
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const toastedIds = useRef<Set<string>>(new Set());
+  const lastToastRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+  const triggerToast = (notif: AppNotification) => {
+    const now = Date.now();
+    const key = `${notif.title}::${notif.message}`;
+    // Éviter de répéter le son et le toast si déclenché à moins de 3 secondes d'intervalle
+    if (lastToastRef.current.key === key && now - lastToastRef.current.time < 3000) {
+      return;
+    }
+    lastToastRef.current = { key, time: now };
+    playNotificationSound();
+    setShowToast({ notif });
+    setTimeout(() => setShowToast(null), 5000);
+  };
 
   useEffect(() => {
     if (!user) return;
 
     // Écouteur Firestore temps-réel de la collection 'notifications'
     const unsubscribe = subscribeToNotifications(user.uid, (data) => {
-      setNotifications(data);
-      if (data.length > 0) {
-        const unreadNew = data.find(n => !n.isRead && !toastedIds.current.has(n.id));
+      // Déduplication : filtrer les doublons créés dans la même fenêtre temporelle (titre + message identiques)
+      const uniqueData: AppNotification[] = [];
+      const seenKeys = new Set<string>();
+      for (const item of data) {
+        const timeBucket = item.createdAt && (item.createdAt as any).seconds
+          ? Math.floor((item.createdAt as any).seconds / 10)
+          : 0;
+        const dedupKey = `${item.title}::${item.message}::${timeBucket}`;
+        if (!seenKeys.has(dedupKey)) {
+          seenKeys.add(dedupKey);
+          uniqueData.push(item);
+        }
+      }
+
+      setNotifications(uniqueData);
+
+      if (uniqueData.length > 0) {
+        const unreadNew = uniqueData.find(n => !n.isRead && !toastedIds.current.has(n.id));
         if (unreadNew) {
           toastedIds.current.add(unreadNew.id);
           const now = Date.now();
@@ -80,9 +109,7 @@ export function NotificationBell() {
             ? (unreadNew.createdAt as any).seconds * 1000 
             : now;
           if (now - createdMs < 10000) {
-            playNotificationSound();
-            setShowToast({ notif: unreadNew });
-            setTimeout(() => setShowToast(null), 5000);
+            triggerToast(unreadNew);
           }
         }
       }
@@ -92,19 +119,15 @@ export function NotificationBell() {
     const handleForegroundNotif = (e: Event) => {
       const customEvent = e as CustomEvent<{ title: string; body: string; url?: string }>;
       const { title, body, url } = customEvent.detail;
-      playNotificationSound();
-      setShowToast({
-        notif: {
-          id: `fg-${Date.now()}`,
-          userId: user.uid,
-          title,
-          message: body,
-          link: url || '/',
-          isRead: false,
-          createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any,
-        },
+      triggerToast({
+        id: `fg-${Date.now()}`,
+        userId: user.uid,
+        title,
+        message: body,
+        link: url || '/',
+        isRead: false,
+        createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any,
       });
-      setTimeout(() => setShowToast(null), 6000);
     };
 
     window.addEventListener('fys:foreground-notification', handleForegroundNotif);

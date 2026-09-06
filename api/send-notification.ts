@@ -27,12 +27,14 @@ interface SendPayload {
   url?: string;
   targetUid?: string;
   audience?: 'all' | 'admins' | 'user';
+  tag?: string;
+  skipInApp?: boolean;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { title, body, url, targetUid, audience = 'all' } = req.body as SendPayload;
+  const { title, body, url, targetUid, audience = 'all', tag, skipInApp = false } = req.body as SendPayload;
 
   if (!title || !body) {
     return res.status(400).json({ error: 'Title and body are required' });
@@ -71,8 +73,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── 2. Enregistrer dans la collection Firestore "notifications" ───────────
-    // C'est ce qui permet au volet / sidebar (la cloche) d'afficher ces notifications
-    if (targetUids.length > 0) {
+    // C'est ce qui permet au volet / sidebar (la cloche) d'afficher ces notifications.
+    // Si l'appelant a déjà créé l'entrée in-app (ex: createOrder, proposeCocktail), skipInApp évite les doublons.
+    if (!skipInApp && targetUids.length > 0) {
       const now = new Date();
       // Le batch Firestore supporte jusqu'à 500 opérations
       const chunks = [];
@@ -131,13 +134,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({
         sent: 0,
         failed: 0,
-        inAppSaved: targetUids.length,
-        message: 'Notifications enregistrées dans la sidebar, mais aucun appareil push abonné trouvé.',
+        inAppSaved: skipInApp ? 0 : targetUids.length,
+        message: 'Notifications traitées avec succès.',
       });
     }
 
     // ── 4. Envoyer les pushs FCM aux appareils ────────────────────────────────
     const targetLink = url || '/';
+    const notificationTag = tag || `fys-${Date.now()}`;
     const messagePayload = {
       notification: {
         title: title.trim(),
@@ -153,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: body.trim(),
           icon: '/icons/icon-192.png',
           badge: '/icons/icon-192.png',
-          tag: `fys-${Date.now()}`,
+          tag: notificationTag,
           vibrate: [200, 100, 200],
           requireInteraction: true,
         },
@@ -166,6 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body: body.trim(),
         click_action: targetLink,
         url: targetLink,
+        tag: notificationTag,
       },
       tokens,
     };

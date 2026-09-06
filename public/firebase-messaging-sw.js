@@ -27,14 +27,19 @@ self.addEventListener('activate', (event) => {
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);
 
+  // Si le message contient déjà un bloc 'notification', le SDK Firebase WebPush
+  // l'affiche déjà automatiquement dans l'OS. Ré-appeler showNotification créerait un doublon.
+  if (payload.notification) {
+    console.log('[firebase-messaging-sw.js] Notification payload automatically displayed by FCM SDK');
+    return;
+  }
+
   const title =
-    payload.notification?.title ||
     payload.webpush?.notification?.title ||
     payload.data?.title ||
     'FYS — Fresh Your Style';
 
   const body =
-    payload.notification?.body ||
     payload.webpush?.notification?.body ||
     payload.data?.body ||
     '';
@@ -53,7 +58,7 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/icons/icon-192.png',
     vibrate: [200, 100, 200],
     tag,
-    renotify: true,
+    renotify: false,
     requireInteraction: true,
     data: {
       url,
@@ -64,61 +69,7 @@ messaging.onBackgroundMessage((payload) => {
     ]
   };
 
-  // TOUJOURS afficher la notification système dans l'OS quand l'app est fermée
   return self.registration.showNotification(title, notificationOptions);
-});
-
-// ── Écouteur natif de secours (garantit la réception même si le SDK Firebase n'a pas intercepté) ──
-self.addEventListener('push', (event) => {
-  console.log('[firebase-messaging-sw.js] Native push event received:', event);
-
-  let rawData = null;
-  try {
-    rawData = event.data ? event.data.json() : null;
-  } catch (e) {
-    try {
-      rawData = { data: { title: event.data.text() } };
-    } catch {}
-  }
-
-  if (rawData) {
-    const title =
-      rawData.notification?.title ||
-      rawData.data?.title ||
-      'FYS — Fresh Your Style';
-
-    const body =
-      rawData.notification?.body ||
-      rawData.data?.body ||
-      '';
-
-    const url =
-      rawData.data?.click_action ||
-      rawData.data?.url ||
-      rawData.fcmOptions?.link ||
-      '/';
-
-    const tag = rawData.data?.tag || `fys-${Date.now()}`;
-
-    event.waitUntil(
-      self.registration.showNotification(title, {
-        body,
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag,
-        renotify: true,
-        requireInteraction: true,
-        data: {
-          url,
-          timestamp: Date.now(),
-        },
-        actions: [
-          { action: 'open', title: 'Voir' }
-        ]
-      })
-    );
-  }
 });
 
 self.addEventListener('notificationclick', (event) => {

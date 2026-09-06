@@ -158,6 +158,8 @@ export async function toggleCocktailPublic(id: string, isPublic: boolean): Promi
         title: i18n.t('notifications.newRecipe'),
         body: i18n.t('notifications.newRecipeBody', { name: cocktail.name }),
         url: `/board/cocktails?cocktail=${id}`,
+        tag: `cocktail-new-${id}`,
+        skipInApp: true,
       });
     }
   }

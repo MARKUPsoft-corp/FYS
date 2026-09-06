@@ -174,6 +174,8 @@ export async function sendPushNotification(payload: {
   url?: string;
   targetUid?: string;
   audience?: 'all' | 'admins' | 'user';
+  tag?: string;
+  skipInApp?: boolean;
 }): Promise<void> {
   try {
     const res = await fetch('/api/send-notification', {
