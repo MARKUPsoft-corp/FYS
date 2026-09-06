@@ -19,6 +19,9 @@ export async function getOrRegisterServiceWorker(): Promise<ServiceWorkerRegistr
   let reg = await navigator.serviceWorker.getRegistration();
   if (!reg) {
     reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+  } else {
+    // Forcer la mise à jour du Service Worker dès l'ouverture de l'application
+    reg.update().catch(() => {});
   }
   await navigator.serviceWorker.ready;
   return reg;

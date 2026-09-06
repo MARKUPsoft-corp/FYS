@@ -27,19 +27,14 @@ self.addEventListener('activate', (event) => {
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);
 
-  // Si le message contient déjà un bloc 'notification', le SDK Firebase WebPush
-  // l'affiche déjà automatiquement dans l'OS. Ré-appeler showNotification créerait un doublon.
-  if (payload.notification) {
-    console.log('[firebase-messaging-sw.js] Notification payload automatically displayed by FCM SDK');
-    return;
-  }
-
   const title =
+    payload.notification?.title ||
     payload.webpush?.notification?.title ||
     payload.data?.title ||
     'FYS — Fresh Your Style';
 
   const body =
+    payload.notification?.body ||
     payload.webpush?.notification?.body ||
     payload.data?.body ||
     '';

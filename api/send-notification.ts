@@ -147,6 +147,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: title.trim(),
         body: body.trim(),
       },
+      android: {
+        priority: 'high' as const,
+      },
       webpush: {
         headers: {
           Urgency: 'high',
