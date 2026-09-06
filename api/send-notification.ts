@@ -149,10 +149,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           TTL: '86400',
         },
         notification: {
+          title: title.trim(),
+          body: body.trim(),
           icon: '/icons/icon-192.png',
           badge: '/icons/icon-192.png',
           tag: `fys-${Date.now()}`,
           vibrate: [200, 100, 200],
+          requireInteraction: true,
         },
         fcmOptions: {
           link: targetLink,

@@ -12,22 +12,38 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// ── Affichage de la notification en arrière-plan (App fermée ou onglet inactif) ──
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);
 
-  const title = payload.notification?.title || payload.data?.title || 'FYS — Fresh Your Style';
-  const body = payload.notification?.body || payload.data?.body || '';
-  const url = payload.data?.click_action || payload.data?.url || payload.fcmOptions?.link || '/';
+  const title =
+    payload.notification?.title ||
+    payload.webpush?.notification?.title ||
+    payload.data?.title ||
+    'FYS — Fresh Your Style';
 
-  // Si le SDK Firebase ne l'a pas déjà affiché automatiquement via le payload notification,
-  // ou pour garantir un affichage riche et cohérent dans la barre de notifications de l'OS :
+  const body =
+    payload.notification?.body ||
+    payload.webpush?.notification?.body ||
+    payload.data?.body ||
+    '';
+
+  const url =
+    payload.data?.click_action ||
+    payload.data?.url ||
+    payload.fcmOptions?.link ||
+    '/';
+
+  const tag = payload.data?.tag || payload.webpush?.notification?.tag || `fys-${Date.now()}`;
+
   const notificationOptions = {
     body,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     vibrate: [200, 100, 200],
-    tag: payload.data?.tag || `fys-notif-${Date.now()}`,
+    tag,
     renotify: true,
+    requireInteraction: true,
     data: {
       url,
       timestamp: Date.now(),
@@ -37,9 +53,60 @@ messaging.onBackgroundMessage((payload) => {
     ]
   };
 
-  // Only display manually if notification wasn't auto-handled by SDK
-  if (!payload.notification) {
-    return self.registration.showNotification(title, notificationOptions);
+  // TOUJOURS afficher la notification système dans l'OS quand l'app est fermée
+  return self.registration.showNotification(title, notificationOptions);
+});
+
+// ── Écouteur natif de secours (garantit la réception même si le SDK Firebase n'a pas intercepté) ──
+self.addEventListener('push', (event) => {
+  console.log('[firebase-messaging-sw.js] Native push event received:', event);
+
+  let rawData = null;
+  try {
+    rawData = event.data ? event.data.json() : null;
+  } catch (e) {
+    try {
+      rawData = { data: { title: event.data.text() } };
+    } catch {}
+  }
+
+  if (rawData) {
+    const title =
+      rawData.notification?.title ||
+      rawData.data?.title ||
+      'FYS — Fresh Your Style';
+
+    const body =
+      rawData.notification?.body ||
+      rawData.data?.body ||
+      '';
+
+    const url =
+      rawData.data?.click_action ||
+      rawData.data?.url ||
+      rawData.fcmOptions?.link ||
+      '/';
+
+    const tag = rawData.data?.tag || `fys-${Date.now()}`;
+
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag,
+        renotify: true,
+        requireInteraction: true,
+        data: {
+          url,
+          timestamp: Date.now(),
+        },
+        actions: [
+          { action: 'open', title: 'Voir' }
+        ]
+      })
+    );
   }
 });
 
