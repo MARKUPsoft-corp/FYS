@@ -208,43 +208,55 @@ export function AdminHome({ name }: Props) {
         })}
       </div>
 
-      {/* ── CHARTS & STATUS ── */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      {/* ── 2. CHARTS & PERFORMANCE FINANCIÈRE ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* BIG REVENUE METRIC */}
-        <div className="lg:col-span-1 bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 flex flex-col justify-center relative overflow-hidden group min-w-0">
+        <div className="lg:col-span-4 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 flex flex-col justify-between relative overflow-hidden group min-w-0">
           <div className="absolute right-0 bottom-0 size-48 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="size-12 rounded-[1rem] bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-               <TrendingUp className="size-6 text-emerald-500" strokeWidth={2.5} />
+          <div>
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="size-12 rounded-[1.2rem] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center shrink-0">
+                 <TrendingUp className="size-6 text-emerald-500" strokeWidth={2.5} />
+              </div>
+              <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d&apos;Affaires</p>
             </div>
-            <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d&apos;Affaires</p>
+            <div className="relative z-10 min-w-0">
+              {isLoading ? (
+                <Loader2 className="size-8 text-muted-foreground animate-spin" />
+              ) : (
+                <p className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl text-foreground break-words">
+                  {(stats?.totalRevenue ?? 0).toLocaleString()}{' '}
+                  <span className="text-xl md:text-2xl text-muted-foreground font-medium">XAF</span>
+                </p>
+              )}
+            </div>
           </div>
-          <div className="relative z-10 min-w-0">
-            {isLoading ? (
-              <Loader2 className="size-8 text-muted-foreground animate-spin" />
-            ) : (
-              <p className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl text-foreground break-words">
-                {(stats?.totalRevenue ?? 0).toLocaleString()}{' '}
-                <span className="text-xl md:text-2xl text-muted-foreground font-medium">XAF</span>
-              </p>
-            )}
-            <p className="text-sm text-emerald-600 font-medium mt-3 bg-emerald-50 inline-flex px-3 py-1 rounded-full border border-emerald-100">
+
+          <div className="relative z-10 mt-6 pt-4 border-t border-border/30 flex items-center justify-between">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800">
                {t('home.admin.recentFilter')}
-            </p>
+            </span>
+            <span className="text-xs text-muted-foreground font-medium">Revenus cumulés</span>
           </div>
         </div>
 
         {/* ORDERS BY STATUS */}
-        <div className="lg:col-span-2 bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden">
-           <h3 className="font-display font-bold text-xl text-foreground mb-6">{t('home.admin.chartTitle')}</h3>
+        <div className="lg:col-span-8 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden flex flex-col justify-between">
+           <div className="flex items-center justify-between gap-4 mb-6">
+             <h3 className="font-display font-bold text-xl text-foreground">{t('home.admin.chartTitle')}</h3>
+             <span className="text-xs font-semibold px-3 py-1 rounded-full bg-muted text-muted-foreground border border-border/40">
+               Total : {stats?.ordersCount ?? 0}
+             </span>
+           </div>
+           
            <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="size-8 text-muted-foreground animate-spin" />
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
+              <div className="grid sm:grid-cols-2 gap-3.5">
                  {STATUS_ORDER.map((status) => {
                   const cfg = STATUS_CONFIG[status];
                   const count = stats?.ordersByStatus?.[status] ?? 0;
@@ -253,22 +265,22 @@ export function AdminHome({ name }: Props) {
                   if (count === 0 && total > 0) return null;
                   
                   return (
-                    <div key={status} className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/30 min-w-0">
-                      <div className="size-10 rounded-xl bg-background border flex items-center justify-center shrink-0 shadow-sm">
-                         <cfg.icon className="size-5 text-muted-foreground drop-shadow-sm" />
+                    <div key={status} className="flex items-center gap-3 bg-muted/20 hover:bg-muted/40 transition-colors p-3.5 rounded-2xl border border-border/30 min-w-0">
+                      <div className="size-10 rounded-xl bg-background border flex items-center justify-center shrink-0 shadow-xs">
+                         <cfg.icon className="size-5 text-muted-foreground drop-shadow-xs" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
                           <span className="text-sm font-semibold text-foreground truncate">{cfg.label}</span>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                           <div className={`h-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
+                           <div className={`h-full ${cfg.dot} transition-all duration-500`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                          <span className="block text-lg font-bold text-foreground leading-none">{count}</span>
-                         <span className="text-xs font-semibold text-muted-foreground">{pct}%</span>
+                         <span className="text-[11px] font-semibold text-muted-foreground">{pct}%</span>
                       </div>
                     </div>
                   );
@@ -284,82 +296,101 @@ export function AdminHome({ name }: Props) {
         </div>
       </div>
 
-      {/* ── BOTTOM SECTION: RECENT ACTIVITY & QUICK ACTIONS ── */}
-      <div className="grid lg:grid-cols-3 gap-6 items-start">
-        
-        {/* RECENT ORDERS LIST */}
-        <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-5 md:p-8 min-w-0 overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
-             <div className="min-w-0">
-               <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.recentActivity')}</h3>
-               <p className="text-muted-foreground font-medium mt-1 text-sm">{t('home.admin.recentActivitySub')}</p>
-             </div>
-             <Button asChild size="sm" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors shrink-0 self-start sm:self-auto">
-                <Link to="/board/orders" className="inline-flex items-center gap-1.5">
-                  Voir tout <ArrowRight className="size-4" />
-                </Link>
-             </Button>
-          </div>
-
-          <div className="min-w-0">
-             {isLoading ? (
-               <div className="flex items-center justify-center py-12">
-                 <Loader2 className="size-8 text-muted-foreground animate-spin" />
-               </div>
-             ) : stats?.recentOrders?.length ? (
-               <div className="space-y-2">
-                 {stats.recentOrders.map((order) => (
-                   <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3 border border-border/30 min-w-0 overflow-hidden">
-                     <RecentOrderRow order={order} />
-                   </div>
-                 ))}
-               </div>
-             ) : (
-               <div className="flex flex-col items-center justify-center py-16 gap-4 text-center bg-muted/20 rounded-3xl border border-dashed border-border/60">
-                 <div className="size-16 rounded-full bg-background border flex items-center justify-center shadow-sm">
-                   <AlertCircle className="size-6 text-muted-foreground" />
-                 </div>
-                 <p className="text-base font-semibold text-muted-foreground">Aucune commande pour le moment.</p>
-               </div>
-             )}
-          </div>
+      {/* ── 3. ACTIONS RAPIDES & CATALOGUE (GRILLE HORIZONTALE PLEINE LARGEUR) ── */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.quickActions')}</h3>
+          <p className="text-muted-foreground font-medium text-sm mt-0.5">Accédez rapidement à la gestion de vos stocks, images, prix et paiements.</p>
         </div>
 
-        {/* QUICK ACTIONS & NOTICES */}
-        <div className="space-y-6 min-w-0">
-          <LaunchNoticeCard />
-
-          <div>
-            <h3 className="font-display font-bold text-xl text-foreground mb-3">{t('home.admin.quickActions')}</h3>
-            <div className="space-y-4">
-              {quickActions.map((a) => {
-                const Icon = a.icon;
-                return (
-                  <div key={a.label} className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm group hover:shadow-md transition-shadow min-w-0 overflow-hidden">
-                    <div className="flex gap-4 min-w-0">
-                      <div className={`size-12 rounded-[1rem] ${a.iconBg} border border-border/50 flex items-center justify-center shrink-0`}>
-                        <Icon className={`size-5 ${a.iconColor}`} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-foreground text-lg">{a.label}</h4>
-                        <p className="text-sm font-medium text-muted-foreground leading-snug mt-1 mb-4">{a.description}</p>
-                        <Link to={a.path} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 transition-colors">
-                          {a.cta} <ArrowRight className="size-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
-                        </Link>
-                      </div>
-                    </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link
+                key={a.label}
+                to={a.path}
+                className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group min-w-0 relative overflow-hidden"
+              >
+                <div className="space-y-3">
+                  <div className={`size-12 rounded-[1.2rem] ${a.iconBg} border border-border/50 flex items-center justify-center transition-transform group-hover:scale-105 duration-200`}>
+                    <Icon className={`size-6 ${a.iconColor}`} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          <div className="pt-2">
-            <AdminPushPanel />
-          </div>
+                  <div>
+                    <h4 className="font-bold text-foreground text-base group-hover:text-primary transition-colors flex items-center gap-1.5">
+                      {a.label}
+                    </h4>
+                    <p className="text-xs font-medium text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                      {a.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-4 mt-auto flex items-center text-xs font-bold text-primary group-hover:text-primary/80">
+                  <span>{a.cta}</span>
+                  <ArrowRight className="size-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 4. ACTIVITÉ RÉCENTE (COMMANDES EN PLEINE LARGEUR) ── */}
+      <div className="bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
+           <div className="min-w-0">
+             <div className="flex items-center gap-2.5">
+               <div className="size-9 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+                 <ShoppingBag className="size-5" />
+               </div>
+               <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.recentActivity')}</h3>
+             </div>
+             <p className="text-muted-foreground font-medium mt-1 text-sm">{t('home.admin.recentActivitySub')}</p>
+           </div>
+           <Button asChild size="sm" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors shrink-0 self-start sm:self-auto">
+              <Link to="/board/orders" className="inline-flex items-center gap-1.5">
+                Voir tout <ArrowRight className="size-4" />
+              </Link>
+           </Button>
         </div>
 
+        <div className="min-w-0">
+           {isLoading ? (
+             <div className="flex items-center justify-center py-12">
+               <Loader2 className="size-8 text-muted-foreground animate-spin" />
+             </div>
+           ) : stats?.recentOrders?.length ? (
+             <div className="space-y-2.5">
+               {stats.recentOrders.map((order) => (
+                 <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3.5 border border-border/30 min-w-0 overflow-hidden">
+                   <RecentOrderRow order={order} />
+                 </div>
+               ))}
+             </div>
+           ) : (
+             <div className="flex flex-col items-center justify-center py-16 gap-4 text-center bg-muted/20 rounded-3xl border border-dashed border-border/60">
+               <div className="size-16 rounded-full bg-background border flex items-center justify-center shadow-sm">
+                 <AlertCircle className="size-6 text-muted-foreground" />
+               </div>
+               <p className="text-base font-semibold text-muted-foreground">Aucune commande pour le moment.</p>
+             </div>
+           )}
+        </div>
       </div>
+
+      {/* ── 5. COMMUNICATION & OUTILS D'ADMINISTRATION (CÔTE À CÔTE SUR PC) ── */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">Communication & Diffusion</h3>
+          <p className="text-muted-foreground font-medium text-sm mt-0.5">Gérez le bandeau d&apos;information aux clients et diffusez des notifications push en temps réel.</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <LaunchNoticeCard />
+          <AdminPushPanel />
+        </div>
+      </div>
+
       </div>
     </BoardPageShell>
   );

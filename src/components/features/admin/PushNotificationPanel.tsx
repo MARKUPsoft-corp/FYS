@@ -48,16 +48,17 @@ export function AdminPushPanel() {
   }
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-5 space-y-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Bell className="size-4 text-primary" />
+    <div className="bg-card border border-border/40 rounded-[2rem] p-5 md:p-6 space-y-4 shadow-sm h-full flex flex-col justify-between">
+      <div>
+        <div className="flex items-center gap-3.5 mb-4">
+          <div className="size-12 rounded-[1.2rem] bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <Bell className="size-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-lg text-foreground leading-snug">{t('pushNotifications.sendTitle')}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('pushNotifications.sendSubtitle')}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-display font-bold text-base text-foreground">{t('pushNotifications.sendTitle')}</h3>
-          <p className="text-[11px] text-muted-foreground">{t('pushNotifications.sendSubtitle')}</p>
-        </div>
-      </div>
 
       <div className="space-y-3.5">
         {/* Sélecteur de Destinataires (Audience) */}
@@ -151,6 +152,7 @@ export function AdminPushPanel() {
           />
         </div>
       </div>
+    </div>
 
       <Button
         onClick={send}
