@@ -214,8 +214,18 @@ export function PushOptInButton({ uid }: { uid: string }) {
     if (!('Notification' in window)) { setPermission('unsupported'); return; }
     setPermission(Notification.permission);
     if (Notification.permission === 'granted') {
-      import('@/services/push').then((mod) => {
-        mod.isPushSubscribed(uid).then(setSubscribed);
+      import('@/services/push').then(async (mod) => {
+        const isSub = await mod.isPushSubscribed(uid);
+        if (isSub) {
+          setSubscribed(true);
+        } else {
+          // Auto-synchronisation : si la permission a été accordée à l'ouverture,
+          // on enregistre le token automatiquement pour que l'utilisateur n'ait pas à recliquer manuellement !
+          const res = await mod.subscribeToPush(uid);
+          if (res === 'granted') {
+            setSubscribed(true);
+          }
+        }
       });
     }
   }, [uid]);
