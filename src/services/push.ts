@@ -18,8 +18,7 @@ export async function getOrRegisterServiceWorker(): Promise<ServiceWorkerRegistr
   }
   let reg = await navigator.serviceWorker.getRegistration();
   if (!reg) {
-    const swPath = import.meta.env.DEV ? '/firebase-messaging-sw.js' : '/sw.js';
-    reg = await navigator.serviceWorker.register(swPath, { scope: '/' });
+    reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
   }
   await navigator.serviceWorker.ready;
   return reg;

@@ -12,6 +12,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Forcer la prise de contrôle immédiate du Service Worker sans attendre la fermeture de tous les onglets
+self.addEventListener('install', () => {
+  console.log('[firebase-messaging-sw.js] Service Worker installed');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[firebase-messaging-sw.js] Service Worker activated');
+  event.waitUntil(self.clients.claim());
+});
+
 // ── Affichage de la notification en arrière-plan (App fermée ou onglet inactif) ──
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);

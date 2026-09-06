@@ -44,9 +44,8 @@ const isSecureEnvironment =
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator && isSecureEnvironment) {
   window.addEventListener('load', () => {
-    const swPath = import.meta.env.DEV ? '/firebase-messaging-sw.js' : '/sw.js';
     navigator.serviceWorker
-      .register(swPath, { scope: '/' })
+      .register('/firebase-messaging-sw.js', { scope: '/' })
       .then((reg) => {
         // Auto-update: when a new SW is waiting, activate it immediately
         reg.addEventListener('updatefound', () => {
@@ -61,10 +60,6 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && isSecureEnv
         });
       })
       .catch((err) => {
-        // En cas d'échec sur /sw.js, tenter /firebase-messaging-sw.js
-        if (swPath !== '/firebase-messaging-sw.js') {
-          navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).catch(() => {});
-        }
         if ((err as DOMException)?.name !== 'SecurityError') {
           console.warn('[FYS] Service Worker registration failed:', err);
         }
