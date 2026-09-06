@@ -10,12 +10,13 @@ const API_URL = '/api/send-notification';
 
 export function AdminPushPanel() {
   const { t } = useTranslation();
+  const [audience, setAudience] = useState<'all' | 'admins' | 'user'>('all');
   const [title, setTitle] = useState('FYS — Nouvelle info 🌿');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('/');
   const [targetUid, setTargetUid] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
-  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [result, setResult] = useState<{ sent: number; failed: number; inAppSaved?: number; message?: string } | null>(null);
 
   const secret = import.meta.env.VITE_NOTIFY_SECRET as string;
 
@@ -32,11 +33,12 @@ export function AdminPushPanel() {
           title: title.trim(),
           body: body.trim(),
           url: url.trim() || '/',
-          targetUid: targetUid.trim() || undefined,
+          audience,
+          targetUid: audience === 'user' ? targetUid.trim() || undefined : undefined,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'envoi');
       setResult(data);
       setStatus('ok');
     } catch (err) {
@@ -57,7 +59,65 @@ export function AdminPushPanel() {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3.5">
+        {/* Sélecteur de Destinataires (Audience) */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-foreground">{t('pushNotifications.audienceLabel', 'Destinataires')}</Label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setAudience('all')}
+              className={cn(
+                'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer',
+                audience === 'all'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-muted/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/70'
+              )}
+            >
+              {t('pushNotifications.audienceAll', 'Tous')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudience('admins')}
+              className={cn(
+                'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer',
+                audience === 'admins'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-muted/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/70'
+              )}
+            >
+              {t('pushNotifications.audienceAdmins', 'Admins')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudience('user')}
+              className={cn(
+                'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer',
+                audience === 'user'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-muted/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/70'
+              )}
+            >
+              {t('pushNotifications.audienceUser', 'Utilisateur')}
+            </button>
+          </div>
+        </div>
+
+        {/* Champ UID si utilisateur spécifique */}
+        {audience === 'user' && (
+          <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Label className="text-xs font-semibold">{t('pushNotifications.uidLabel')}</Label>
+            <Input
+              value={targetUid}
+              onChange={(e) => setTargetUid(e.target.value)}
+              placeholder={t('pushNotifications.uidPlaceholder')}
+              className="h-9 text-sm"
+              required
+            />
+          </div>
+        )}
+
+        {/* Titre */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold">{t('pushNotifications.titleLabel')}</Label>
           <Input
@@ -67,6 +127,8 @@ export function AdminPushPanel() {
             className="h-9 text-sm"
           />
         </div>
+
+        {/* Message */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold">{t('pushNotifications.messageLabel')}</Label>
           <textarea
@@ -77,49 +139,60 @@ export function AdminPushPanel() {
             className="w-full resize-none text-sm bg-muted/40 border border-border/60 rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">{t('pushNotifications.urlLabel')}</Label>
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={t('pushNotifications.urlPlaceholder')}
-              className="h-9 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">{t('pushNotifications.uidLabel')}</Label>
-            <Input
-              value={targetUid}
-              onChange={(e) => setTargetUid(e.target.value)}
-              placeholder={t('pushNotifications.uidPlaceholder')}
-              className="h-9 text-sm"
-            />
-          </div>
+
+        {/* URL destination */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">{t('pushNotifications.urlLabel')}</Label>
+          <Input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder={t('pushNotifications.urlPlaceholder')}
+            className="h-9 text-sm"
+          />
         </div>
       </div>
 
       <Button
         onClick={send}
-        disabled={!body.trim() || status === 'sending'}
-        className="w-full h-10 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl shadow-[0_4px_14px_rgba(63,109,78,0.25)]"
+        disabled={!body.trim() || (audience === 'user' && !targetUid.trim()) || status === 'sending'}
+        className="w-full h-10 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl shadow-[0_4px_14px_rgba(63,109,78,0.25)] cursor-pointer"
       >
         {status === 'sending' ? (
           <><Loader2 className="size-4 animate-spin" /> {t('pushNotifications.sending')}</>
         ) : (
-          <><Send className="size-4" /> {targetUid ? t('pushNotifications.sendToUser') : t('pushNotifications.sendToAll')}</>
+          <><Send className="size-4" /> {
+            audience === 'user'
+              ? t('pushNotifications.sendToUser')
+              : audience === 'admins'
+              ? t('pushNotifications.sendToAdmins')
+              : t('pushNotifications.sendToAll')
+          }</>
         )}
       </Button>
 
       {status === 'ok' && result && (
-        <div className="flex items-center gap-2 p-3 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
-          <CheckCircle className="size-4 shrink-0" />
-          {result.sent} {t('pushNotifications.sent', { count: result.sent })}
-          {result.failed > 0 && ` · ${result.failed} ${t('pushNotifications.failed', { count: result.failed })}`}
+        <div className="flex flex-col gap-1.5 p-3 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 shrink-0 text-emerald-600" />
+            <span className="font-bold">
+              {result.sent} {t('pushNotifications.sent', { count: result.sent })}
+              {result.failed > 0 && ` · ${result.failed} ${t('pushNotifications.failed', { count: result.failed })}`}
+            </span>
+          </div>
+          {typeof result.inAppSaved === 'number' && (
+            <span className="text-[11px] text-emerald-600/90 pl-6">
+              ✓ {result.inAppSaved} {t('pushNotifications.inAppSaved', 'enregistrée(s) dans la barre/volet')}
+            </span>
+          )}
+          {result.message && (
+            <span className="text-[11px] text-muted-foreground pl-6 mt-0.5">
+              ℹ {result.message}
+            </span>
+          )}
         </div>
       )}
       {status === 'error' && (
-        <div className="flex items-center gap-2 p-3 rounded-xl text-sm font-medium bg-destructive/10 text-destructive border border-destructive/20">
+        <div className="flex items-center gap-2 p-3 rounded-xl text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
           <AlertTriangle className="size-4 shrink-0" />
           {t('pushNotifications.errorTitle')}
         </div>

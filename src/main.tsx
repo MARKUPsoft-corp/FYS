@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
 import { useAudioStore } from '@/stores/audio';
+import { PWAInstallBadge } from '@/components/features/pwa/PWAInstallBadge';
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ export default function App({ Component, children }: AppProps) {
         <ThemeWatcher />
         <TooltipProvider delayDuration={200}>
           <Component>{children}</Component>
+          <PWAInstallBadge />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

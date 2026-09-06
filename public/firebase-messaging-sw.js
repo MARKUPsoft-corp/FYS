@@ -15,24 +15,54 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message received:', payload);
 
-  // If the server didn't provide a 'notification' object (data-only payload), we manually show it.
-  // Otherwise, Firebase SDK will automatically show it!
-  if (!payload.notification) {
-    const title = payload.data?.title ?? 'FYS';
-    const body  = payload.data?.body  ?? '';
-    const url   = payload.data?.click_action ?? '/';
+  const title = payload.notification?.title || payload.data?.title || 'FYS — Fresh Your Style';
+  const body = payload.notification?.body || payload.data?.body || '';
+  const url = payload.data?.click_action || payload.data?.url || payload.fcmOptions?.link || '/';
 
-    self.registration.showNotification(title, {
-      body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: { url },
-    });
+  // Si le SDK Firebase ne l'a pas déjà affiché automatiquement via le payload notification,
+  // ou pour garantir un affichage riche et cohérent dans la barre de notifications de l'OS :
+  const notificationOptions = {
+    body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    vibrate: [200, 100, 200],
+    tag: payload.data?.tag || `fys-notif-${Date.now()}`,
+    renotify: true,
+    data: {
+      url,
+      timestamp: Date.now(),
+    },
+    actions: [
+      { action: 'open', title: 'Voir' }
+    ]
+  };
+
+  // Only display manually if notification wasn't auto-handled by SDK
+  if (!payload.notification) {
+    return self.registration.showNotification(title, notificationOptions);
   }
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url ?? '/';
-  event.waitUntil(clients.openWindow(url));
+
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Si une fenêtre de l'application est déjà ouverte, lui donner le focus et naviguer
+      for (const client of windowClients) {
+        if ('focus' in client) {
+          if (client.url && 'navigate' in client) {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      // Sinon, ouvrir une nouvelle fenêtre
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });

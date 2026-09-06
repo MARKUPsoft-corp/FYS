@@ -17,6 +17,7 @@ static
 # Cache
 .vite
 .rasengan
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

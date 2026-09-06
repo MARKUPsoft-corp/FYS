@@ -2,13 +2,22 @@ import { renderApp } from 'rasengan/client';
 import App from './main';
 import AppRouter from '@/app/app.router';
 import { auth } from '@/lib/firebase';
-import { subscribeToPush } from '@/services/push';
+import { subscribeToPush, setupForegroundNotifications } from '@/services/push';
 
 renderApp(App, AppRouter, { reactStrictMode: true });
 
-// Auto-request notification permission when user is authenticated
+// Auto-request notification permission and setup foreground listener when user is authenticated
+let cleanupForeground: (() => void) | null = null;
+
 auth.onAuthStateChanged(async (user) => {
-  if (user && 'Notification' in window) {
+  if (cleanupForeground) {
+    cleanupForeground();
+    cleanupForeground = null;
+  }
+
+  if (user && typeof window !== 'undefined' && 'Notification' in window) {
+    cleanupForeground = setupForegroundNotifications();
+
     // Only ask if permission hasn't been decided yet
     if (Notification.permission === 'default') {
       try {
@@ -27,15 +36,17 @@ auth.onAuthStateChanged(async (user) => {
 // Register service worker — runs after the app shell is mounted
 // Les service workers n'existent qu'en contexte sécurisé (HTTPS ou localhost)
 const isSecureEnvironment =
+  typeof window !== 'undefined' &&
   window.isSecureContext &&
   (location.protocol === 'https:' ||
     location.hostname === 'localhost' ||
     location.hostname === '127.0.0.1');
 
-if ('serviceWorker' in navigator && isSecureEnvironment) {
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && isSecureEnvironment) {
   window.addEventListener('load', () => {
+    const swPath = import.meta.env.DEV ? '/firebase-messaging-sw.js' : '/sw.js';
     navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
+      .register(swPath, { scope: '/' })
       .then((reg) => {
         // Auto-update: when a new SW is waiting, activate it immediately
         reg.addEventListener('updatefound', () => {
@@ -50,9 +61,10 @@ if ('serviceWorker' in navigator && isSecureEnvironment) {
         });
       })
       .catch((err) => {
-        // SW registration failure is non-fatal — app still works online.
-        // "The operation is insecure" survient hors contexte sécurisé (ou
-        // via des extensions qui modifient l'environnement) : silencieux.
+        // En cas d'échec sur /sw.js, tenter /firebase-messaging-sw.js
+        if (swPath !== '/firebase-messaging-sw.js') {
+          navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).catch(() => {});
+        }
         if ((err as DOMException)?.name !== 'SecurityError') {
           console.warn('[FYS] Service Worker registration failed:', err);
         }

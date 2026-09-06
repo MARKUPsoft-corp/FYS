@@ -43,6 +43,18 @@ const playNotificationSound = () => {
   }
 };
 
+function formatNotifTime(createdAt: any): string {
+  if (!createdAt) return '';
+  const seconds = typeof createdAt?.seconds === 'number' ? createdAt.seconds : null;
+  const date = seconds ? new Date(seconds * 1000) : createdAt instanceof Date ? createdAt : new Date(createdAt);
+  if (isNaN(date.getTime())) return '';
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diffSec < 60) return 'À l\'instant';
+  if (diffSec < 3600) return `Il y a ${Math.floor(diffSec / 60)} min`;
+  if (diffSec < 86400) return `Il y a ${Math.floor(diffSec / 3600)} h`;
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
 export function NotificationBell() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -55,6 +67,8 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Écouteur Firestore temps-réel de la collection 'notifications'
     const unsubscribe = subscribeToNotifications(user.uid, (data) => {
       setNotifications(data);
       if (data.length > 0) {
@@ -73,7 +87,32 @@ export function NotificationBell() {
         }
       }
     });
-    return () => unsubscribe();
+
+    // Écouteur des notifications push reçues au PREMIER PLAN (FCM onMessage)
+    const handleForegroundNotif = (e: Event) => {
+      const customEvent = e as CustomEvent<{ title: string; body: string; url?: string }>;
+      const { title, body, url } = customEvent.detail;
+      playNotificationSound();
+      setShowToast({
+        notif: {
+          id: `fg-${Date.now()}`,
+          userId: user.uid,
+          title,
+          message: body,
+          link: url || '/',
+          isRead: false,
+          createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any,
+        },
+      });
+      setTimeout(() => setShowToast(null), 6000);
+    };
+
+    window.addEventListener('fys:foreground-notification', handleForegroundNotif);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('fys:foreground-notification', handleForegroundNotif);
+    };
   }, [user]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -165,6 +204,11 @@ export function NotificationBell() {
                   <span className={cn('text-[12px] leading-relaxed cursor-pointer pr-6', !n.isRead ? 'text-muted-foreground' : 'text-muted-foreground/60')} onClick={() => handleNotifClick(n)}>
                     {n.message}
                   </span>
+                  {n.createdAt && (
+                    <span className="text-[10px] text-muted-foreground/50 font-medium">
+                      {formatNotifTime(n.createdAt)}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {
