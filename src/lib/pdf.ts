@@ -23,8 +23,9 @@ export async function downloadVectorFacture(order: Order, ingredientsStr?: strin
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { FacturePDF } = await import('@/components/pdf/FacturePDF');
+    const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logos/fys_logo.png` : undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(FacturePDF, { order, ingredientsStr }) as any).toBlob();
+    const blob = await pdf(React.createElement(FacturePDF, { order, ingredientsStr, logoUrl }) as any).toBlob();
     triggerDownload(blob, `Facture_${order.id.slice(0, 8)}.pdf`);
   } catch (err) {
     console.error('Failed to generate vector PDF (Facture):', err);
@@ -36,8 +37,9 @@ export async function downloadThermalFacture(order: Order, ingredientsStr?: stri
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { FactureThermiquePDF } = await import('@/components/pdf/FactureThermiquePDF');
+    const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logos/fys_logo.png` : undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(FactureThermiquePDF, { order, ingredientsStr }) as any).toBlob();
+    const blob = await pdf(React.createElement(FactureThermiquePDF, { order, ingredientsStr, logoUrl }) as any).toBlob();
     triggerDownload(blob, `Ticket_58mm_${order.id.slice(0, 8)}.pdf`);
   } catch (err) {
     console.error('Failed to generate thermal PDF (Facture):', err);
@@ -150,8 +152,9 @@ export function printThermalReceipt(order: Order, ingredientsStr?: string): void
       </head>
       <body>
         <div class="center">
-          <div class="brand">FYS.</div>
-          <div class="tagline">FRESH JUICES & COCKTAILS</div>
+          <img src="/logos/fys_logo.png" alt="FYS" style="height: 38px; width: auto; max-width: 85px; object-fit: contain; margin: 0 auto 3px auto; display: block;" />
+          <div class="brand">FYS</div>
+          <div class="tagline">« Tu sais ce que tu bois »</div>
         </div>
         <div class="dashed"></div>
         <div class="row"><span>TICKET N°</span><span class="bold">#${order.id.toUpperCase().slice(0, 8)}</span></div>
@@ -182,6 +185,7 @@ export function printThermalReceipt(order: Order, ingredientsStr?: string): void
         <div class="footer">
           <div>Merci pour votre confiance !</div>
           <div class="bold" style="margin-top: 2px;">Buvez frais, vivez FYS 🌱</div>
+          <div style="font-size: 8.5px; margin-top: 3px; font-weight: bold; letter-spacing: 0.5px;">fys-app.com</div>
         </div>
       </body>
     </html>

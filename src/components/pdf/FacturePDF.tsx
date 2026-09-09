@@ -1,5 +1,5 @@
 import i18n from '@/i18n';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Order } from '@/entities/order';
 import { OrderStatus } from '@/entities/order';
 
@@ -77,9 +77,10 @@ const s = StyleSheet.create({
 interface Props {
   order: Order;
   ingredientsStr?: string;
+  logoUrl?: string;
 }
 
-export function FacturePDF({ order, ingredientsStr }: Props) {
+export function FacturePDF({ order, ingredientsStr, logoUrl }: Props) {
   const statusCfg = STATUS_COLOR[order.status];
   const statusLabel = getStatusLabel(order.status);
   const createdDate = order.createdAt?.toDate?.();
@@ -97,9 +98,12 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
-          <View>
-            <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
-            <Text style={s.tagline}>{i18n.t('pdf.tagline')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {logoUrl && <Image src={logoUrl} style={{ width: 44, height: 44, objectFit: 'contain' }} />}
+            <View>
+              <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
+              <Text style={s.tagline}>« Tu sais ce que tu bois »</Text>
+            </View>
           </View>
           <View style={s.meta}>
             <Text style={s.metaTitle}>{i18n.t('pdf.invoiceTitle').toUpperCase()}</Text>
@@ -234,7 +238,7 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <View style={s.footer}>
-          <Text style={s.footerText}>{i18n.t('pdf.footerHealth')}</Text>
+          <Text style={s.footerText}>fys-app.com • {i18n.t('pdf.footerHealth')}</Text>
           <Text style={s.footerText}>{i18n.t('pdf.footerThanks')}</Text>
         </View>
       </Page>

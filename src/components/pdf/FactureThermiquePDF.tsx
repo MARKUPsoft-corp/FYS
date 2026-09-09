@@ -1,5 +1,5 @@
 import i18n from '@/i18n';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Order } from '@/entities/order';
 import { OrderStatus } from '@/entities/order';
 
@@ -20,7 +20,7 @@ function getStatusLabel(status: OrderStatus): string {
  * 1 point = 1/72 inch. Largeur 58mm = ~164 points.
  */
 export function calculateTicketHeight(order: Order, ingredientsStr?: string): number {
-  let h = 250; // en-tête, métadonnées, totaux, pied de page
+  let h = 295; // logo, en-tête, slogan, métadonnées, totaux, pied de page
   const lineCount = order.orderLines?.length || 1;
   h += lineCount * 26;
   if (ingredientsStr) h += 20;
@@ -28,7 +28,7 @@ export function calculateTicketHeight(order: Order, ingredientsStr?: string): nu
   if (order.discountAmount && order.discountAmount > 0) h += 16;
   if (order.deliveryDetails?.district) h += 16;
   if (order.deliveryDetails?.instructions) h += 20;
-  return Math.max(320, Math.ceil(h));
+  return Math.max(360, Math.ceil(h));
 }
 
 const s = StyleSheet.create({
@@ -45,18 +45,25 @@ const s = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
   },
+  logo: {
+    width: 48,
+    height: 34,
+    objectFit: 'contain',
+    alignSelf: 'center',
+    marginBottom: 2,
+  },
   brand: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 1,
     textAlign: 'center',
   },
   tagline: {
-    fontSize: 6,
-    fontFamily: 'Helvetica',
+    fontSize: 6.5,
+    fontFamily: 'Helvetica-Oblique',
     textAlign: 'center',
-    marginTop: 2,
-    letterSpacing: 0.5,
+    marginTop: 1.5,
+    letterSpacing: 0.2,
   },
   dividerDashed: {
     borderBottomWidth: 1,
@@ -201,9 +208,10 @@ const s = StyleSheet.create({
 interface Props {
   order: Order;
   ingredientsStr?: string;
+  logoUrl?: string;
 }
 
-export function FactureThermiquePDF({ order, ingredientsStr }: Props) {
+export function FactureThermiquePDF({ order, ingredientsStr, logoUrl }: Props) {
   const statusLabel = getStatusLabel(order.status);
   const createdDate = order.createdAt?.toDate?.();
   const dateStr = createdDate
@@ -227,8 +235,9 @@ export function FactureThermiquePDF({ order, ingredientsStr }: Props) {
       <Page size={[164, pageHeight]} style={s.page}>
         {/* ── Brand Header ────────────────────────────────────────── */}
         <View style={s.center}>
-          <Text style={s.brand}>FYS.</Text>
-          <Text style={s.tagline}>FRESH JUICES & COCKTAILS</Text>
+          {logoUrl && <Image src={logoUrl} style={s.logo} />}
+          <Text style={s.brand}>FYS</Text>
+          <Text style={s.tagline}>« Tu sais ce que tu bois »</Text>
         </View>
 
         <View style={s.dividerDashed} />
@@ -353,8 +362,8 @@ export function FactureThermiquePDF({ order, ingredientsStr }: Props) {
         <View style={s.footer}>
           <Text style={s.footerTextBold}>Merci pour votre confiance !</Text>
           <Text style={s.footerText}>Buvez frais, vivez FYS</Text>
-          <Text style={[s.footerText, { marginTop: 2, fontSize: 5 }]}>
-            *** www.fys-juices.com ***
+          <Text style={[s.footerText, { marginTop: 3, fontSize: 6, fontFamily: 'Helvetica-Bold' }]}>
+            *** fys-app.com ***
           </Text>
         </View>
       </Page>
