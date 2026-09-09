@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation, Trash2,
+  CalendarDays, Search, Navigation, Trash2, Printer,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
@@ -21,6 +21,7 @@ import { VERDICT_CONFIG, getVerdictLabel, NutritionalView } from '@/components/f
 import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
 import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
 import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
+import { InvoiceFormatDialog } from '@/components/features/admin/InvoiceFormatDialog';
 import {
   PeriodCalendar,
   formatPeriodLabel,
@@ -756,7 +757,7 @@ function AdminOrderSheet({
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'order' | 'nutrition'>('order');
   const [downloadingNutrition, setDownloadingNutrition] = useState(false);
-  const [downloadingFacture, setDownloadingFacture] = useState(false);
+  const [showInvoiceFormatModal, setShowInvoiceFormatModal] = useState(false);
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
@@ -1160,20 +1161,10 @@ function AdminOrderSheet({
           <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
             <Button
               variant="outline"
-              className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
-              disabled={downloadingFacture}
-              onClick={async () => {
-                setDownloadingFacture(true);
-                const ingStr = cocktail?.ingredients?.map(i => i.fruitName).join(' · ');
-                await downloadVectorFacture(order, ingStr);
-                setDownloadingFacture(false);
-              }}
+              className="w-full h-12 rounded-2xl font-bold gap-2 hover:border-primary/50 text-foreground"
+              onClick={() => setShowInvoiceFormatModal(true)}
             >
-              {downloadingFacture ? (
-                <><Loader2 className="size-4 animate-spin px-0 mx-0 text-primary" /> {t('common.generating')}</>
-              ) : (
-                <><Download className="size-4 text-primary" /> {t('orders.downloadInvoice')}</>
-              )}
+              <Printer className="size-4 text-primary" /> {t('orders.downloadInvoice')}
             </Button>
           </div>
         </div>
@@ -1208,6 +1199,14 @@ function AdminOrderSheet({
             }
           </Button>
         </div>
+
+        {/* Modal de sélection de format de facture (Standard A4 ou Ticket Thermique 58mm) */}
+        <InvoiceFormatDialog
+          open={showInvoiceFormatModal}
+          onOpenChange={setShowInvoiceFormatModal}
+          order={order}
+          ingredientsStr={cocktail?.ingredients?.map(i => i.fruitName).join(' · ')}
+        />
       </SheetContent>
     </Sheet>
   );
