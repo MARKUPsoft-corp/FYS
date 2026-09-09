@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation, Trash2, Printer,
+  CalendarDays, Search, Navigation, Trash2, Printer, Plus, Minus,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
@@ -20,7 +20,13 @@ import { useOrders, useOrder } from '@/hooks/useOrders';
 import { VERDICT_CONFIG, getVerdictLabel, NutritionalView } from '@/components/features/cocktail/NutritionalView';
 import { CocktailLabelExport } from '@/components/features/cocktail/CocktailLabelExport';
 import { buildFruitVisuals } from '@/components/features/cocktail/CocktailBanner';
-import { downloadVectorFacture, downloadVectorNutrition } from '@/lib/pdf';
+import {
+  downloadVectorFacture,
+  downloadVectorNutrition,
+  printThermalQrStickers,
+  downloadThermalQrPdf,
+} from '@/lib/pdf';
+
 import { InvoiceFormatDialog } from '@/components/features/admin/InvoiceFormatDialog';
 import {
   PeriodCalendar,
@@ -759,11 +765,22 @@ function AdminOrderSheet({
   const [downloadingNutrition, setDownloadingNutrition] = useState(false);
   const [showInvoiceFormatModal, setShowInvoiceFormatModal] = useState(false);
   const [origin, setOrigin] = useState('');
+  const [qrStickerCount, setQrStickerCount] = useState<number>(1);
+  const [downloadingQrPdf, setDownloadingQrPdf] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
     if (open) setActiveTab('order');
   }, [open]);
+
+  useEffect(() => {
+    if (order) {
+      const count = order.orderLines?.length
+        ? order.orderLines.reduce((sum, line) => sum + line.quantity, 0)
+        : (order.quantity || 1);
+      setQrStickerCount(count);
+    }
+  }, [order?.id, order?.orderLines, order?.quantity]);
 
   const { data: cocktail, isLoading: cocktailLoading } = useQuery({
     queryKey: ['cocktail', order?.cocktailId],
@@ -774,7 +791,16 @@ function AdminOrderSheet({
 
   if (!order) return null;
 
+  const totalBottles = order.orderLines?.length
+    ? order.orderLines.reduce((sum, line) => sum + line.quantity, 0)
+    : (order.quantity || 1);
+
+  const bottleSummary = order.orderLines?.length
+    ? order.orderLines.map((l) => `${l.quantity}× ${l.bottleSizeLabel || 'bouteille'}`).join(' · ')
+    : `${order.quantity || 1}× ${order.bottleSizeLabel || 'bouteille'}`;
+
   const isCancelled = order.status === OrderStatus.CANCELLED;
+
   const isDelivered = order.status === OrderStatus.DELIVERED;
   const currentIndex = ADMIN_STATUS_FLOW.indexOf(order.status);
 
@@ -1007,39 +1033,159 @@ function AdminOrderSheet({
             </div>
           </div>
 
-          {/* QR Code pour l'étiquette */}
+          {/* QR Code pour l'étiquette - Option B (Sticker seul calibré 38x38mm pour l'encadré de la bouteille) */}
           <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              QR Code Étiquette (Fidélité)
-            </p>
-            <div className="rounded-2xl border border-border/60 bg-card p-5 flex flex-col items-center justify-center gap-4 text-center">
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-border/40 min-h-[160px] flex items-center justify-center">
-                {origin ? (
-                  <QRCodeSVG
-                    id={`qr-reorder-${order.id}`}
-                    value={`${origin}/lab?load=${order.cocktailId}&promo=REORDER`}
-                    size={160}
-                    level="M"
-                    includeMargin={true}
-                  />
-                ) : (
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                )}
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Sticker QR Bouteille (Option B)
+              </p>
+              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                Format 38×38 mm
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4">
+              {/* Simulation visuelle de l'encadré de la bouteille (SCANNEZ-MOI avec repères d'angles) */}
+              <div className="relative mx-auto bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm w-full max-w-[240px]">
+                {/* Repères d'angles de l'étiquette SCANNEZ-MOI */}
+                <span className="absolute top-1 left-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┌</span>
+                <span className="absolute top-1 right-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┐</span>
+                <span className="absolute bottom-1 left-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">└</span>
+                <span className="absolute bottom-1 right-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┘</span>
+
+                <div className="text-[10px] font-black uppercase tracking-wider text-zinc-700 dark:text-zinc-200 mb-1.5 flex items-center gap-1">
+                  <span>SCANNEZ-MOI</span>
+                </div>
+
+                <div className="bg-white p-2 rounded-lg border border-border/40 shadow-xs flex items-center justify-center">
+                  {origin ? (
+                    <QRCodeSVG
+                      id={`qr-reorder-${order.id}`}
+                      value={`${origin}/lab?load=${order.cocktailId}&promo=REORDER`}
+                      size={140}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  ) : (
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+
+                <span className="text-[9px] text-muted-foreground text-center mt-2 font-medium">
+                  Calibré pour l'encadré 1L & 0.5L
+                </span>
               </div>
-              <div className="w-full max-w-[140px] mx-auto">
+
+              {/* Résumé des bouteilles et sélecteur de quantité */}
+              <div className="bg-muted/60 rounded-xl p-3 border border-border/40 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Commande ({totalBottles} btl) :</span>
+                  <span className="font-bold text-foreground truncate max-w-[190px]">{bottleSummary}</span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                  <span className="text-[12px] font-semibold text-foreground">Nombre de stickers :</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setQrStickerCount((prev) => Math.max(1, prev - 1))}
+                      disabled={qrStickerCount <= 1}
+                      className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
+                      title="Diminuer"
+                    >
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span className="w-8 text-center font-bold text-[13px] font-mono">
+                      {qrStickerCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQrStickerCount((prev) => Math.min(50, prev + 1))}
+                      disabled={qrStickerCount >= 50}
+                      className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
+                      title="Augmenter"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                    {qrStickerCount !== totalBottles && (
+                      <button
+                        type="button"
+                        onClick={() => setQrStickerCount(totalBottles)}
+                        className="text-[10px] text-primary hover:underline ml-1 font-semibold"
+                        title="Rétablir à la quantité de la commande"
+                      >
+                        Reset ({totalBottles})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions d'impression et de téléchargement */}
+              <div className="space-y-2">
+                {/* Bouton principal : Imprimer directement sur mini-imprimante thermique */}
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 text-[12px] h-8"
-                  onClick={() => downloadSvgAsPng(`qr-reorder-${order.id}`, `qr-fys-${order.cocktailNameSnapshot.replace(/\s+/g, '-')}.png`)}
+                  type="button"
+                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-sm transition-all"
+                  onClick={() => printThermalQrStickers(`qr-reorder-${order.id}`, qrStickerCount)}
                 >
-                  <Download className="size-3" /> Télécharger PNG
+                  <Printer className="size-4" />
+                  Imprimer stickers ({qrStickerCount}x · 58mm)
                 </Button>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Rouleau 58mm · Sticker 38×38mm centré avec traits de découpe
+                </p>
+
+                {/* Boutons secondaires : PDF thermique 58mm & PNG HD */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl text-[11px] font-semibold gap-1.5"
+                    disabled={downloadingQrPdf}
+                    onClick={async () => {
+                      setDownloadingQrPdf(true);
+                      try {
+                        await downloadThermalQrPdf(`qr-reorder-${order.id}`, order, qrStickerCount);
+                      } finally {
+                        setDownloadingQrPdf(false);
+                      }
+                    }}
+                  >
+                    {downloadingQrPdf ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Download className="size-3.5" />
+                    )}
+                    PDF 58mm ({qrStickerCount}x)
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl text-[11px] font-semibold gap-1.5"
+                    onClick={() =>
+                      downloadSvgAsPng(
+                        `qr-reorder-${order.id}`,
+                        `qr-bouteille-${order.cocktailNameSnapshot.replace(/\s+/g, '-')}-x${qrStickerCount}.png`,
+                      )
+                    }
+                  >
+                    <Download className="size-3.5" />
+                    PNG HD (38mm)
+                  </Button>
+                </div>
               </div>
-              <div>
-                <p className="text-[13px] font-bold text-foreground mt-2">Retrouver ce mélange</p>
-                <p className="text-[11px] text-muted-foreground mt-1 max-w-[200px] mx-auto">
-                  Imprimez ce QR Code sur la bouteille pour que le client recommande avec réduction.
+
+              {/* Explication fidélité client */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 text-left">
+                <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                  <span>✨</span> Réduction fidélité 6% incluse
+                </p>
+                <p className="text-[10.5px] text-muted-foreground mt-0.5 leading-relaxed">
+                  Le scan ouvre la composition exacte dans le Lab et applique automatiquement 6% de remise sur le prochain achat.
                 </p>
               </div>
             </div>

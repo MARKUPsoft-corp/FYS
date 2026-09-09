@@ -228,3 +228,183 @@ export async function downloadVectorNutrition(analysis: AIAnalysis, cocktailName
     console.error('Failed to generate vector PDF (Nutrition):', err);
   }
 }
+
+/**
+ * Converts an in-DOM SVG element into a clean, high-resolution PNG data URL.
+ */
+export function getSvgDataUrl(svgId: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const svg = document.getElementById(svgId);
+    if (!svg) {
+      reject(new Error(`Élément SVG #${svgId} introuvable`));
+      return;
+    }
+
+    let svgData = new XMLSerializer().serializeToString(svg);
+    if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
+      svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      // 4x upscale for ultra-sharp thermal & PDF rendering
+      const scale = 4;
+      const baseWidth = svg.clientWidth || 160;
+      const baseHeight = svg.clientHeight || 160;
+      canvas.width = baseWidth * scale;
+      canvas.height = baseHeight * scale;
+
+      if (ctx) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        reject(new Error('Canvas 2D context non disponible'));
+      }
+    };
+
+    img.onerror = (e) => reject(e);
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  });
+}
+
+/**
+ * Direct thermal printer (58mm) trigger for Option B bottle QR stickers.
+ * Calibrated to ~38mm x 38mm centered on 58mm roll with cut guides.
+ */
+export function printThermalQrStickers(svgId: string, count: number = 1): void {
+  const svg = document.getElementById(svgId);
+  if (!svg) {
+    console.error(`Élément SVG #${svgId} introuvable`);
+    return;
+  }
+
+  let svgData = new XMLSerializer().serializeToString(svg);
+  if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  // Remove fixed width/height so CSS controls it
+  const cleanSvg = svgData
+    .replace(/\s(width|height)="[^"]*"/g, '')
+    .replace('<svg', '<svg style="width: 38mm; height: 38mm; display: block; margin: 0 auto;"');
+
+  const stickersHtml = Array.from({ length: count })
+    .map(
+      (_, i) => `
+      <div class="sticker">
+        <div class="qr-box">
+          ${cleanSvg}
+        </div>
+      </div>
+      ${i < count - 1 ? '<div class="cut-guide">✂ - - - - - - - - - - - - - - - ✂</div>' : ''}
+    `,
+    )
+    .join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Stickers QR Bouteille (${count}x)</title>
+        <style>
+          @page {
+            size: 58mm auto;
+            margin: 0;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            width: 58mm;
+            max-width: 58mm;
+            margin: 0 auto;
+            background: #fff;
+            color: #000;
+            padding: 3mm 0;
+            font-family: 'Courier New', Courier, monospace;
+          }
+          .sticker {
+            width: 58mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2mm 0;
+            page-break-inside: avoid;
+          }
+          .qr-box {
+            width: 38mm;
+            height: 38mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          .cut-guide {
+            width: 50mm;
+            margin: 3mm auto;
+            text-align: center;
+            font-size: 8px;
+            color: #444;
+            letter-spacing: 1px;
+            user-select: none;
+            page-break-inside: avoid;
+          }
+        </style>
+      </head>
+      <body>
+        ${stickersHtml}
+      </body>
+    </html>
+  `;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) return;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow?.focus();
+  setTimeout(() => {
+    iframe.contentWindow?.print();
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    }, 1500);
+  }, 350);
+}
+
+/**
+ * Generates and downloads a vector-sharp 58mm PDF for Option B QR stickers.
+ */
+export async function downloadThermalQrPdf(svgId: string, order: Order, count: number = 1): Promise<void> {
+  try {
+    const qrDataUrl = await getSvgDataUrl(svgId);
+    const { pdf } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { StickersQrThermiquePDF } = await import('@/components/pdf/StickersQrThermiquePDF');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blob = await pdf(React.createElement(StickersQrThermiquePDF, { qrDataUrl, count }) as any).toBlob();
+    const cleanName = order.cocktailNameSnapshot ? order.cocktailNameSnapshot.replace(/\s+/g, '-').slice(0, 20) : 'cocktail';
+    triggerDownload(blob, `Stickers_QR_58mm_${cleanName}_x${count}.pdf`);
+  } catch (err) {
+    console.error('Failed to generate thermal QR sticker PDF:', err);
+  }
+}
+
