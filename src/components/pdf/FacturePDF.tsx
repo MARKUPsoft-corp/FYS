@@ -98,12 +98,9 @@ export function FacturePDF({ order, ingredientsStr, logoUrl }: Props) {
 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {logoUrl && <Image src={logoUrl} style={{ width: 44, height: 44, objectFit: 'contain' }} />}
-            <View>
-              <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
-              <Text style={s.tagline}>« Tu sais ce que tu bois »</Text>
-            </View>
+          <View>
+            <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
+            <Text style={s.tagline}>For YourSelf</Text>
           </View>
           <View style={s.meta}>
             <Text style={s.metaTitle}>{i18n.t('pdf.invoiceTitle').toUpperCase()}</Text>
@@ -238,8 +235,8 @@ export function FacturePDF({ order, ingredientsStr, logoUrl }: Props) {
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <View style={s.footer}>
-          <Text style={s.footerText}>fys-app.com • {i18n.t('pdf.footerHealth')}</Text>
-          <Text style={s.footerText}>{i18n.t('pdf.footerThanks')}</Text>
+          <Text style={s.footerText}>« Tu sais ce que tu bois » • fys-app.com</Text>
+          <Text style={s.footerText}>Merci de votre confiance !</Text>
         </View>
       </Page>
     </Document>

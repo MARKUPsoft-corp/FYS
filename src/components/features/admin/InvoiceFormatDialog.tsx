@@ -136,8 +136,8 @@ export function InvoiceFormatDialog({
           {/* Option 2: Format Ticket Thermique (58mm) */}
           <div className="group border border-primary/40 bg-primary/[0.03] hover:bg-primary/[0.06] rounded-2xl p-4 transition-all duration-200 flex flex-col gap-3 shadow-xs">
             <div className="flex items-start gap-3">
-              <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 p-1">
-                <img src="/logos/fys_logo.png" alt="FYS Logo" className="size-8 object-contain" />
+              <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                <Printer className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -147,7 +147,7 @@ export function InvoiceFormatDialog({
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Ticket de caisse avec logo FYS, slogan <em>« Tu sais ce que tu bois »</em> et adresse <em>fys-app.com</em>, calibré pour rouleaux 57/58mm.
+                  Format ticket de caisse avec en-tête FYS (For YourSelf) et slogan <em>« Tu sais ce que tu bois »</em>, calibré pour rouleaux 57/58mm.
                 </p>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import i18n from '@/i18n';
-import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import type { Order } from '@/entities/order';
 import { OrderStatus } from '@/entities/order';
 
@@ -20,7 +20,7 @@ function getStatusLabel(status: OrderStatus): string {
  * 1 point = 1/72 inch. Largeur 58mm = ~164 points.
  */
 export function calculateTicketHeight(order: Order, ingredientsStr?: string): number {
-  let h = 295; // logo, en-tête, slogan, métadonnées, totaux, pied de page
+  let h = 250; // en-tête, slogan, métadonnées, totaux, pied de page
   const lineCount = order.orderLines?.length || 1;
   h += lineCount * 26;
   if (ingredientsStr) h += 20;
@@ -28,7 +28,7 @@ export function calculateTicketHeight(order: Order, ingredientsStr?: string): nu
   if (order.discountAmount && order.discountAmount > 0) h += 16;
   if (order.deliveryDetails?.district) h += 16;
   if (order.deliveryDetails?.instructions) h += 20;
-  return Math.max(360, Math.ceil(h));
+  return Math.max(320, Math.ceil(h));
 }
 
 const s = StyleSheet.create({
@@ -45,25 +45,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
   },
-  logo: {
-    width: 48,
-    height: 34,
-    objectFit: 'contain',
-    alignSelf: 'center',
-    marginBottom: 2,
-  },
   brand: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textAlign: 'center',
   },
   tagline: {
-    fontSize: 6.5,
-    fontFamily: 'Helvetica-Oblique',
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
-    marginTop: 1.5,
-    letterSpacing: 0.2,
+    marginTop: 1,
+    letterSpacing: 0.5,
   },
   dividerDashed: {
     borderBottomWidth: 1,
@@ -189,29 +182,34 @@ const s = StyleSheet.create({
   footer: {
     alignItems: 'center',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
-  footerText: {
-    fontSize: 6,
-    fontFamily: 'Helvetica',
-    textAlign: 'center',
-    marginBottom: 1.5,
-  },
-  footerTextBold: {
-    fontSize: 6.5,
+  footerThanks: {
+    fontSize: 7.5,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
     marginBottom: 2,
+  },
+  footerSlogan: {
+    fontSize: 7.5,
+    fontFamily: 'Helvetica-Oblique',
+    textAlign: 'center',
+    marginBottom: 3,
+  },
+  footerUrl: {
+    fontSize: 6,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 });
 
 interface Props {
   order: Order;
   ingredientsStr?: string;
-  logoUrl?: string;
 }
 
-export function FactureThermiquePDF({ order, ingredientsStr, logoUrl }: Props) {
+export function FactureThermiquePDF({ order, ingredientsStr }: Props) {
   const statusLabel = getStatusLabel(order.status);
   const createdDate = order.createdAt?.toDate?.();
   const dateStr = createdDate
@@ -235,9 +233,8 @@ export function FactureThermiquePDF({ order, ingredientsStr, logoUrl }: Props) {
       <Page size={[164, pageHeight]} style={s.page}>
         {/* ── Brand Header ────────────────────────────────────────── */}
         <View style={s.center}>
-          {logoUrl && <Image src={logoUrl} style={s.logo} />}
           <Text style={s.brand}>FYS</Text>
-          <Text style={s.tagline}>« Tu sais ce que tu bois »</Text>
+          <Text style={s.tagline}>For YourSelf</Text>
         </View>
 
         <View style={s.dividerDashed} />
@@ -360,11 +357,9 @@ export function FactureThermiquePDF({ order, ingredientsStr, logoUrl }: Props) {
 
         {/* ── Footer ─────────────────────────────────────────────── */}
         <View style={s.footer}>
-          <Text style={s.footerTextBold}>Merci pour votre confiance !</Text>
-          <Text style={s.footerText}>Buvez frais, vivez FYS</Text>
-          <Text style={[s.footerText, { marginTop: 3, fontSize: 6, fontFamily: 'Helvetica-Bold' }]}>
-            *** fys-app.com ***
-          </Text>
+          <Text style={s.footerThanks}>Merci de votre confiance !</Text>
+          <Text style={s.footerSlogan}>« Tu sais ce que tu bois »</Text>
+          <Text style={s.footerUrl}>fys-app.com</Text>
         </View>
       </Page>
     </Document>

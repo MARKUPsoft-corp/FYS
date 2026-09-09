@@ -23,9 +23,8 @@ export async function downloadVectorFacture(order: Order, ingredientsStr?: strin
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { FacturePDF } = await import('@/components/pdf/FacturePDF');
-    const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logos/fys_logo.png` : undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(FacturePDF, { order, ingredientsStr, logoUrl }) as any).toBlob();
+    const blob = await pdf(React.createElement(FacturePDF, { order, ingredientsStr }) as any).toBlob();
     triggerDownload(blob, `Facture_${order.id.slice(0, 8)}.pdf`);
   } catch (err) {
     console.error('Failed to generate vector PDF (Facture):', err);
@@ -37,9 +36,8 @@ export async function downloadThermalFacture(order: Order, ingredientsStr?: stri
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { FactureThermiquePDF } = await import('@/components/pdf/FactureThermiquePDF');
-    const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logos/fys_logo.png` : undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = await pdf(React.createElement(FactureThermiquePDF, { order, ingredientsStr, logoUrl }) as any).toBlob();
+    const blob = await pdf(React.createElement(FactureThermiquePDF, { order, ingredientsStr }) as any).toBlob();
     triggerDownload(blob, `Ticket_58mm_${order.id.slice(0, 8)}.pdf`);
   } catch (err) {
     console.error('Failed to generate thermal PDF (Facture):', err);
@@ -139,22 +137,21 @@ export function printThermalReceipt(order: Order, ingredientsStr?: string): void
             background: #fff;
           }
           .center { text-align: center; }
-          .brand { font-size: 16px; font-weight: bold; letter-spacing: 1px; }
-          .tagline { font-size: 8px; text-transform: uppercase; margin-bottom: 4px; }
+          .brand { font-size: 18px; font-weight: bold; letter-spacing: 1.5px; }
+          .tagline { font-size: 9.5px; font-weight: bold; margin-top: 1px; margin-bottom: 4px; }
           .dashed { border-top: 1px dashed #000; margin: 4px 0; }
           .solid { border-top: 1px solid #000; margin: 4px 0; }
           .double { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 4px 0; margin: 4px 0; }
           .row { display: flex; justify-content: space-between; margin-bottom: 2px; }
           .bold { font-weight: bold; }
           .grand-total { font-size: 12px; font-weight: bold; }
-          .footer { font-size: 8px; text-align: center; margin-top: 6px; }
+          .footer { font-size: 8px; text-align: center; margin-top: 8px; }
         </style>
       </head>
       <body>
         <div class="center">
-          <img src="/logos/fys_logo.png" alt="FYS" style="height: 38px; width: auto; max-width: 85px; object-fit: contain; margin: 0 auto 3px auto; display: block;" />
           <div class="brand">FYS</div>
-          <div class="tagline">« Tu sais ce que tu bois »</div>
+          <div class="tagline">For YourSelf</div>
         </div>
         <div class="dashed"></div>
         <div class="row"><span>TICKET N°</span><span class="bold">#${order.id.toUpperCase().slice(0, 8)}</span></div>
@@ -183,9 +180,9 @@ export function printThermalReceipt(order: Order, ingredientsStr?: string): void
           </div>
         </div>
         <div class="footer">
-          <div>Merci pour votre confiance !</div>
-          <div class="bold" style="margin-top: 2px;">Buvez frais, vivez FYS 🌱</div>
-          <div style="font-size: 8.5px; margin-top: 3px; font-weight: bold; letter-spacing: 0.5px;">fys-app.com</div>
+          <div class="bold" style="font-size: 8.5px;">Merci de votre confiance !</div>
+          <div style="margin-top: 2px; font-style: italic; font-size: 9.5px; font-weight: bold;">« Tu sais ce que tu bois »</div>
+          <div style="font-size: 7.5px; margin-top: 4px; font-weight: bold; letter-spacing: 0.5px;">fys-app.com</div>
         </div>
       </body>
     </html>
