@@ -33,6 +33,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { trackEvent } from '@/lib/analytics';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
+import { getStoredPromoCode, setStoredPromoCode, clearStoredPromoCode, validatePromoCode } from '@/utils/promo';
 
 type Tab = 'order' | 'nutrition';
 
@@ -82,6 +83,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const [phone, setPhone] = useState(user?.phone || '');
   const [instructions, setInstructions] = useState('');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>();
+  const [activePromoCode, setActivePromoCode] = useState<string | undefined>(() => {
+    return promoCode ? promoCode.trim().toUpperCase() : (getStoredPromoCode() || undefined);
+  });
 
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
@@ -122,6 +126,24 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
     }
   }, [open, cocktail?.id]);
 
+  useEffect(() => {
+    if (promoCode) {
+      const clean = promoCode.trim().toUpperCase();
+      setActivePromoCode(clean);
+      setStoredPromoCode(clean);
+    } else {
+      setActivePromoCode(getStoredPromoCode() || undefined);
+    }
+
+    const handlePromoUpdated = (e: Event) => {
+      const custom = e as CustomEvent<{ code: string | null }>;
+      setActivePromoCode(custom.detail?.code ? custom.detail.code.trim().toUpperCase() : undefined);
+    };
+
+    window.addEventListener('fys:promo-updated', handlePromoUpdated);
+    return () => window.removeEventListener('fys:promo-updated', handlePromoUpdated);
+  }, [promoCode, open]);
+
   if (!cocktail || !user) return null;
 
   const isOwner = cocktail.createdBy === user.uid;
@@ -147,23 +169,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const subtotal = subtotal500 + subtotal1L;
   const totalBottles = quantity500ml + quantity1L;
 
-  const isFlyer = promoCode?.toUpperCase() === 'FLYER';
-  const isReorder = promoCode?.toUpperCase() === 'REORDER';
-
-  // Vérifie si une promo est actuellement valide (active + non expirée)
-  function isPromoValid(active?: boolean, expiresAt?: { toDate: () => Date } | null): boolean {
-    if (!active) return false;
-    if (!expiresAt) return true; // Pas de date = valide indéfiniment
-    return expiresAt.toDate() > new Date();
-  }
-
-  const flyerValid = isFlyer && isPromoValid(pricing?.promoFlyerActive, pricing?.promoFlyerExpiresAt);
-  const reorderValid = isReorder && isPromoValid(pricing?.promoReorderActive, pricing?.promoReorderExpiresAt);
-
-  const discountAmount = totalBottles > 0 && pricing
-    ? (flyerValid ? pricing.promoFlyerDiscount
-       : reorderValid ? pricing.promoReorderDiscount
-       : 0) || 0
+  const promoValidation = validatePromoCode(activePromoCode, pricing);
+  const discountAmount = totalBottles > 0 && promoValidation?.isValid
+    ? promoValidation.discountAmount
     : 0;
 
   const total = Math.max(0, subtotal + deliveryFee - discountAmount);
@@ -284,7 +292,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             cocktailImageSnapshot: coverUrl,
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
             discountAmount,
-            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
+            promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
           },
         );
       } else if (!isOwnerCheck && !isDraftCheck) {
@@ -302,7 +310,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
               (ing) => fruits.find((f: Fruit) => f.id === ing.fruitId)?.imageUrl ?? '',
             ),
             discountAmount,
-            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
+            promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
           },
         );
       } else {
@@ -316,7 +324,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             cocktailImageSnapshot: coverUrl ?? cocktail.imageUrl,
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
             discountAmount,
-            promoCodeApplied: discountAmount > 0 ? promoCode : undefined,
+            promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
           },
         );
       }
@@ -363,6 +371,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
         }
       }
 
+      // Vider le code promo stocké pour éviter qu'il ne soit réutilisé indéfiniment
+      clearStoredPromoCode();
       setOrdered(true);
     } catch (error) {
       console.error('[OrderSheet] Error creating order:', error);
@@ -664,18 +674,23 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
           <>
             <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
               {/* Bannière promo active ou expirée */}
-              {(isFlyer || isReorder) && pricing && (
-                flyerValid || reorderValid ? (
+              {activePromoCode && pricing && (
+                promoValidation?.isValid ? (
                   <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl p-3.5 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                     <div className="p-2 bg-amber-500/20 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-500 shrink-0 mt-0.5">
                       <Sparkles className="size-4" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-amber-700 dark:text-amber-500">
-                        Lien promotionnel activé
-                      </h4>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-amber-700 dark:text-amber-500">
+                          Lien promotionnel activé
+                        </h4>
+                        <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded-md">
+                          {activePromoCode}
+                        </span>
+                      </div>
                       <p className="text-[12px] text-amber-700/80 dark:text-amber-500/80 mt-1 leading-relaxed">
-                        Vous bénéficiez d'une réduction de <strong className="font-bold">{(flyerValid ? pricing.promoFlyerDiscount : pricing.promoReorderDiscount)?.toLocaleString()} XAF</strong> sur votre commande grâce à votre {isFlyer ? 'flyer' : "code d'étiquette"}. La réduction sera déduite du montant total.
+                        Vous bénéficiez d'une réduction de <strong className="font-bold">{promoValidation.discountAmount.toLocaleString()} XAF</strong> sur votre commande grâce à votre lien promotionnel. La réduction sera automatiquement déduite du montant total.
                       </p>
                     </div>
                   </div>
@@ -684,12 +699,12 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     <div className="p-2 bg-red-500/10 rounded-lg text-red-500 shrink-0 mt-0.5">
                       <TimerOff className="size-4" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-bold text-red-600 dark:text-red-400">
-                        Lien promotionnel expiré
+                        Lien promotionnel inactif ou expiré
                       </h4>
                       <p className="text-[12px] text-red-600/80 dark:text-red-400/80 mt-1 leading-relaxed">
-                        Ce lien promotionnel n'est plus actif. Votre commande sera traitée au tarif normal.
+                        {promoValidation?.description || "Ce lien promotionnel n'est plus actif. Votre commande sera traitée au tarif normal."}
                       </p>
                     </div>
                   </div>
@@ -1004,7 +1019,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 {totalBottles > 0 && discountAmount > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] font-bold text-amber-600 flex items-center gap-1.5">
-                      <Sparkles className="size-3.5" /> Lien de réduction utilisé ({isFlyer ? 'Flyer' : 'Étiquette'})
+                      <Sparkles className="size-3.5" /> Réduction appliquée {activePromoCode ? `(${activePromoCode})` : ''}
                     </span>
                     <span className="text-[13px] font-bold text-amber-600">
                       -{discountAmount.toLocaleString()} XAF

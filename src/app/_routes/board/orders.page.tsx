@@ -673,6 +673,16 @@ function ClientOrderSheet({
                   {order.deliveryFee.toLocaleString()} XAF
                 </span>
               </div>
+              {!!order.discountAmount && order.discountAmount > 0 && (
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <Sparkles className="size-3.5" /> Réduction appliquée {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}
+                  </span>
+                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400">
+                    -{order.discountAmount.toLocaleString()} XAF
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
                 <span className="text-[14px] font-bold text-foreground">{t('orders.total')}</span>
                 <span className="text-[16px] font-bold text-primary tabular-nums">
@@ -1128,6 +1138,16 @@ function AdminOrderSheet({
                   {order.deliveryFee.toLocaleString()} XAF
                 </span>
               </div>
+              {!!order.discountAmount && order.discountAmount > 0 && (
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <Sparkles className="size-3.5" /> Réduction appliquée {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}
+                  </span>
+                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400">
+                    -{order.discountAmount.toLocaleString()} XAF
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
                 <span className="text-[14px] font-bold text-foreground">{t('orders.total')}</span>
                 <span className="text-[16px] font-bold text-primary tabular-nums">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker, Clock } from 'lucide-react';
+import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker, Clock, Copy, Check, Share2, ExternalLink, Sparkles, Globe } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadSvgAsPng } from '@/lib/download';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getPricingSettings, updatePricingSettings } from '@/services/settings';
 import { BOTTLE_VOLUME_LABELS, DEFAULT_PRICING } from '@/entities';
+import { generatePublicPromoUrl } from '@/utils/promo';
 
 const Pricing: PageComponent = () => {
   const { t } = useTranslation();
@@ -33,6 +34,9 @@ const Pricing: PageComponent = () => {
   const [promoFlyer, setPromoFlyer] = useState('');
   const [promoFlyerActive, setPromoFlyerActive] = useState(false);
   const [promoFlyerExpires, setPromoFlyerExpires] = useState(''); // ISO date string YYYY-MM-DD
+  const [promoPublicCode, setPromoPublicCode] = useState('FLYER');
+  const [promoPublicTarget, setPromoPublicTarget] = useState('/lab');
+  const [copiedLink, setCopiedLink] = useState(false);
   const [promoReorder, setPromoReorder] = useState('');
   const [promoReorderActive, setPromoReorderActive] = useState(false);
   const [promoReorderExpires, setPromoReorderExpires] = useState('');
@@ -56,6 +60,8 @@ const Pricing: PageComponent = () => {
         ? pricing.promoFlyerExpiresAt.toDate().toISOString().split('T')[0]
         : ''
     );
+    setPromoPublicCode(pricing.promoPublicCode || 'FLYER');
+    setPromoPublicTarget(pricing.promoPublicTarget || '/lab');
     setPromoReorder(String(pricing.promoReorderDiscount ?? 0));
     setPromoReorderActive(pricing.promoReorderActive ?? false);
     setPromoReorderExpires(
@@ -73,6 +79,24 @@ const Pricing: PageComponent = () => {
   function setTextOrDefault(val: string | undefined, defaultVal: string, setter: (v: string) => void) {
     setter(val !== undefined ? val : defaultVal);
   }
+
+  const cleanPromoCode = (promoPublicCode || 'FLYER').trim().toUpperCase();
+  const generatedPublicUrl = origin ? generatePublicPromoUrl(origin, promoPublicTarget, cleanPromoCode) : '';
+  const isFlyerExpired = promoFlyerExpires ? new Date(promoFlyerExpires + 'T23:59:59').getTime() < Date.now() : false;
+
+  const handleCopyLink = () => {
+    if (!generatedPublicUrl) return;
+    navigator.clipboard.writeText(generatedPublicUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!generatedPublicUrl) return;
+    const discountText = promoFlyer ? `${Number(promoFlyer).toLocaleString()} XAF` : 'une réduction';
+    const message = `🌟 Offre Spéciale FYS ! Profitez de ${discountText} de réduction sur votre première commande de jus 100% naturels et personnalisés en utilisant ce lien : ${generatedPublicUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +119,8 @@ const Pricing: PageComponent = () => {
         promoFlyerDiscount: Number(promoFlyer) || 0,
         promoFlyerActive,
         promoFlyerExpiresAt: flyerExpAt,
+        promoPublicCode: cleanPromoCode,
+        promoPublicTarget,
         promoReorderDiscount: Number(promoReorder) || 0,
         promoReorderActive,
         promoReorderExpiresAt: reorderExpAt,
@@ -259,24 +285,74 @@ const Pricing: PageComponent = () => {
             </div>
           </div>
 
+          {/* ── Section Promotions & Liens Publics ── */}
           <div className="flex items-start gap-4 pb-6 pt-6 border-b border-border/40">
             <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Tag className="size-5 text-amber-500" />
+              <Sparkles className="size-5 text-amber-500" />
             </div>
             <div className="flex-1">
-              <h3 className="font-display font-bold text-lg text-foreground">Réductions QR Codes</h3>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="font-display font-bold text-lg text-foreground">Promotions & Liens de Réduction</h3>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                  promoFlyerActive && !isFlyerExpired
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    : isFlyerExpired
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                    : 'bg-muted/60 border-border/40 text-muted-foreground'
+                }`}>
+                  {promoFlyerActive && !isFlyerExpired ? '● Lien Public Actif' : isFlyerExpired ? '● Lien Expiré' : '○ Inactif'}
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Configurez les montants de réduction fixes offerts aux clients.
+                Générez un lien partageable (WhatsApp, réseaux sociaux) et un QR code synchronisés pour offrir une réduction à vos clients.
               </p>
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-6">
-            {/* ── QR Flyer ── */}
-            <div className="space-y-4">
+          {/* ── Carte 1 : Lien Public de Réduction & Flyer d'Acquisition ── */}
+          <div className="rounded-2xl border border-border/60 bg-muted/10 p-5 md:p-6 space-y-6">
+            {/* Entête de carte avec Toggle d'activation */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
+              <div>
+                <h4 className="font-display font-bold text-base text-foreground flex items-center gap-2">
+                  <Share2 className="size-4 text-primary" />
+                  Lien Public de Réduction & Flyer d'Acquisition
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Les utilisateurs arrivant sur le site via ce lien ou ce QR code reçoivent automatiquement la réduction.
+                </p>
+              </div>
+
+              {/* Bouton Toggle Actif/Inactif */}
+              <button
+                type="button"
+                onClick={() => setPromoFlyerActive((v) => !v)}
+                className={`flex items-center justify-between sm:justify-center gap-3 px-4 py-2.5 rounded-xl transition-all border shrink-0 ${
+                  promoFlyerActive
+                    ? 'bg-primary/10 border-primary/30 text-primary font-semibold'
+                    : 'bg-muted/60 border-border/40 text-muted-foreground font-medium'
+                }`}
+              >
+                <span className="text-xs flex items-center gap-1.5">
+                  {promoFlyerActive ? (
+                    <><CheckCircle2 className="size-4 text-primary" /> Lien Activé</>
+                  ) : (
+                    <><XCircle className="size-4" /> Lien Désactivé</>
+                  )}
+                </span>
+                {promoFlyerActive ? (
+                  <ToggleRight className="size-5 text-primary" />
+                ) : (
+                  <ToggleLeft className="size-5 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+
+            {/* Formulaire des paramètres du lien */}
+            <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="promo-flyer" className="text-sm font-semibold">
-                  QR Flyer (Acquisition)
+                <Label htmlFor="promo-flyer" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Montant de la réduction
                 </Label>
                 <div className="relative">
                   <Input
@@ -287,102 +363,209 @@ const Pricing: PageComponent = () => {
                     value={promoFlyer}
                     onChange={(e) => setPromoFlyer(e.target.value)}
                     className="h-11 rounded-xl pr-14"
+                    placeholder="Ex: 500"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                     XAF
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">Montant déduit pour un nouveau scan</p>
+                <p className="text-[11px] text-muted-foreground">Déduit automatiquement du total de la commande.</p>
               </div>
 
-              {/* Contrôles d'activation */}
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-3">
-                {/* Toggle actif/inactif */}
-                <button
-                  type="button"
-                  onClick={() => setPromoFlyerActive((v) => !v)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                    promoFlyerActive
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'bg-muted/60 border border-border/40'
-                  }`}
-                >
-                  <span className={`text-sm font-semibold flex items-center gap-1.5 ${
-                    promoFlyerActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
-                    {promoFlyerActive
-                      ? <><CheckCircle2 className="size-4" /> Promo activée</>
-                      : <><XCircle className="size-4" /> Promo désactivée</>
-                    }
-                  </span>
-                  {promoFlyerActive
-                    ? <ToggleRight className="size-6 text-primary" />
-                    : <ToggleLeft className="size-6 text-muted-foreground" />
-                  }
-                </button>
-
-                {/* Date d'expiration */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+              <div className="space-y-2">
+                <Label htmlFor="promo-flyer-expires" className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
                     <CalendarClock className="size-3.5 text-amber-500" />
-                    Expire le (optionnel)
-                  </label>
-                  <Input
-                    type="date"
-                    value={promoFlyerExpires}
-                    onChange={(e) => setPromoFlyerExpires(e.target.value)}
-                    className="h-9 rounded-lg text-sm"
-                  />
+                    Date d'expiration (optionnel)
+                  </span>
                   {promoFlyerExpires && (
                     <button
                       type="button"
                       onClick={() => setPromoFlyerExpires('')}
-                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline normal-case"
                     >
-                      Retirer la date d'expiration
+                      Retirer
                     </button>
                   )}
-                </div>
+                </Label>
+                <Input
+                  id="promo-flyer-expires"
+                  type="date"
+                  value={promoFlyerExpires}
+                  onChange={(e) => setPromoFlyerExpires(e.target.value)}
+                  className="h-11 rounded-xl text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {promoFlyerExpires
+                    ? (isFlyerExpired ? '⚠️ Cette date est dépassée : le lien est expiré.' : 'Valide jusqu\'à 23h59 à cette date.')
+                    : 'Sans date d\'expiration : actif indéfiniment tant que le toggle est activé.'}
+                </p>
               </div>
 
-              {/* Générateur QR Flyer intégré */}
-              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex flex-col items-center justify-center gap-3 text-center">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                  QR Code à Imprimer
-                </p>
-                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-border/40 min-h-[160px] flex items-center justify-center">
-                  {origin ? (
-                    <QRCodeSVG
-                      id="qr-flyer-svg"
-                      value={`${origin}/lab?promo=FLYER`}
-                      size={160}
-                      level="M"
-                      includeMargin={true}
-                    />
-                  ) : (
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="promo-public-code" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Code Promo dans le lien (Slug)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="promo-public-code"
+                    type="text"
+                    value={promoPublicCode}
+                    onChange={(e) => setPromoPublicCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
+                    className="h-11 rounded-xl uppercase font-mono"
+                    placeholder="FLYER"
+                  />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full max-w-[150px] mt-2 gap-2 text-[12px] h-8"
-                  type="button"
-                  onClick={() => downloadSvgAsPng('qr-flyer-svg', 'qr-flyer-fys.png')}
+                <p className="text-[11px] text-muted-foreground">Ex: FLYER, PROMO, BIENVENUE, ETE2026</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promo-public-target" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Page de destination du lien
+                </Label>
+                <select
+                  id="promo-public-target"
+                  value={promoPublicTarget}
+                  onChange={(e) => setPromoPublicTarget(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
                 >
-                  <Download className="size-3" /> PNG
-                </Button>
-                <p className="text-[10px] text-muted-foreground max-w-[150px] mt-1">
-                  À envoyer à votre imprimeur.
-                </p>
+                  <option value="/lab">FYS Lab (/lab) — Composer directement un jus</option>
+                  <option value="/">Accueil (/) — Découvrir la marque & navigation</option>
+                  <option value="/board/catalogue">Catalogue (/board/catalogue) — Recettes signatures</option>
+                </select>
+                <p className="text-[11px] text-muted-foreground">Où le visiteur atterrit en cliquant sur le lien.</p>
               </div>
             </div>
 
-            {/* ── QR Étiquette ── */}
-            <div className="space-y-4">
+            {/* ── Box Lien Partageable & Actions ── */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <Label className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Globe className="size-3.5 text-primary" />
+                  Lien public prêt à partager
+                </Label>
+                <span className="text-[11px] text-muted-foreground">
+                  Partageable sur WhatsApp, Instagram, SMS, etc.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-background border border-border/80 rounded-xl px-3.5 py-2.5 text-xs font-mono text-foreground truncate select-all">
+                  {generatedPublicUrl || 'Génération de l\'URL…'}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  variant={copiedLink ? "default" : "outline"}
+                  className="h-10 px-3.5 rounded-xl gap-1.5 text-xs shrink-0 transition-all font-semibold"
+                >
+                  {copiedLink ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+                  {copiedLink ? 'Copié !' : 'Copier le lien'}
+                </Button>
+              </div>
+
+              {/* Boutons d'actions rapides */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleShareWhatsApp}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 text-xs h-9 px-3.5 shadow-xs font-semibold"
+                >
+                  <Share2 className="size-3.5" /> Partager sur WhatsApp
+                </Button>
+                <a
+                  href={generatedPublicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground px-3.5 py-2 rounded-xl border border-border/80 hover:bg-background/80 transition-colors h-9"
+                >
+                  <ExternalLink className="size-3.5 text-muted-foreground" /> Tester le lien
+                </a>
+              </div>
+            </div>
+
+            {/* ── QR Code Physique Correspondant ── */}
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+              <div className="bg-white p-2.5 rounded-xl shadow-xs border border-border/40 shrink-0">
+                {origin ? (
+                  <QRCodeSVG
+                    id="qr-flyer-svg"
+                    value={generatedPublicUrl || `${origin}/lab?promo=FLYER`}
+                    size={120}
+                    level="M"
+                    includeMargin={true}
+                  />
+                ) : (
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              <div className="space-y-2 flex-1">
+                <div>
+                  <h5 className="text-sm font-bold text-foreground">QR Code Flyer Synchronisé</h5>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Ce QR code encode exactement le même lien public. Vos clients bénéficient de la même réduction, qu'ils scannent ce QR code sur un flyer papier ou cliquent sur le lien WhatsApp !
+                  </p>
+                </div>
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs h-8 rounded-xl font-semibold"
+                    type="button"
+                    onClick={() => downloadSvgAsPng('qr-flyer-svg', `qr-${cleanPromoCode.toLowerCase()}-fys.png`)}
+                  >
+                    <Download className="size-3.5" /> Télécharger PNG (pour flyer / affiche)
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Carte 2 : QR Étiquette (Fidélité / Re-commande) ── */}
+          <div className="rounded-2xl border border-border/60 bg-muted/10 p-5 md:p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border/40">
+              <div>
+                <h4 className="font-display font-bold text-base text-foreground flex items-center gap-2">
+                  <Tag className="size-4 text-amber-500" />
+                  QR Étiquette de Bouteille (Fidélité & Re-commande)
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Code automatiquement imprimé sur chaque étiquette de bouteille pour inciter les clients à recommander leur mix préféré.
+                </p>
+              </div>
+
+              {/* Bouton Toggle Reorder */}
+              <button
+                type="button"
+                onClick={() => setPromoReorderActive((v) => !v)}
+                className={`flex items-center justify-between sm:justify-center gap-3 px-4 py-2.5 rounded-xl transition-all border shrink-0 ${
+                  promoReorderActive
+                    ? 'bg-primary/10 border-primary/30 text-primary font-semibold'
+                    : 'bg-muted/60 border-border/40 text-muted-foreground font-medium'
+                }`}
+              >
+                <span className="text-xs flex items-center gap-1.5">
+                  {promoReorderActive ? (
+                    <><CheckCircle2 className="size-4 text-primary" /> Promo Fidélité Activée</>
+                  ) : (
+                    <><XCircle className="size-4" /> Promo Fidélité Désactivée</>
+                  )}
+                </span>
+                {promoReorderActive ? (
+                  <ToggleRight className="size-5 text-primary" />
+                ) : (
+                  <ToggleLeft className="size-5 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="promo-reorder" className="text-sm font-semibold">
-                  QR Étiquette (Fidélité)
+                <Label htmlFor="promo-reorder" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Montant de la réduction fidélité
                 </Label>
                 <div className="relative">
                   <Input
@@ -398,55 +581,37 @@ const Pricing: PageComponent = () => {
                     XAF
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">Montant déduit pour une re-commande</p>
+                <p className="text-[11px] text-muted-foreground">Montant déduit lors d'un scan du QR de la bouteille ({origin}/lab?load=...&promo=REORDER).</p>
               </div>
 
-              {/* Contrôles d'activation */}
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setPromoReorderActive((v) => !v)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                    promoReorderActive
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'bg-muted/60 border border-border/40'
-                  }`}
-                >
-                  <span className={`text-sm font-semibold flex items-center gap-1.5 ${
-                    promoReorderActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
-                    {promoReorderActive
-                      ? <><CheckCircle2 className="size-4" /> Promo activée</>
-                      : <><XCircle className="size-4" /> Promo désactivée</>
-                    }
-                  </span>
-                  {promoReorderActive
-                    ? <ToggleRight className="size-6 text-primary" />
-                    : <ToggleLeft className="size-6 text-muted-foreground" />
-                  }
-                </button>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
+              <div className="space-y-2">
+                <Label htmlFor="promo-reorder-expires" className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
                     <CalendarClock className="size-3.5 text-amber-500" />
-                    Expire le (optionnel)
-                  </label>
-                  <Input
-                    type="date"
-                    value={promoReorderExpires}
-                    onChange={(e) => setPromoReorderExpires(e.target.value)}
-                    className="h-9 rounded-lg text-sm"
-                  />
+                    Date d'expiration (optionnel)
+                  </span>
                   {promoReorderExpires && (
                     <button
                       type="button"
                       onClick={() => setPromoReorderExpires('')}
-                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline normal-case"
                     >
-                      Retirer la date d'expiration
+                      Retirer
                     </button>
                   )}
-                </div>
+                </Label>
+                <Input
+                  id="promo-reorder-expires"
+                  type="date"
+                  value={promoReorderExpires}
+                  onChange={(e) => setPromoReorderExpires(e.target.value)}
+                  className="h-11 rounded-xl text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {promoReorderExpires
+                    ? 'Valide jusqu\'à cette date.'
+                    : 'Sans date d\'expiration : toujours actif pour les clients fidèles.'}
+                </p>
               </div>
             </div>
           </div>

@@ -212,10 +212,20 @@ export function FacturePDF({ order, ingredientsStr }: Props) {
             <Text style={s.label}>{i18n.t('pdf.subtotal')}</Text>
             <Text style={s.value}>{subtotal.toLocaleString()} XAF</Text>
           </View>
-          <View style={s.rowLast}>
+          <View style={order.discountAmount && order.discountAmount > 0 ? s.row : s.rowLast}>
             <Text style={s.label}>{i18n.t('pdf.delivery')}</Text>
             <Text style={s.value}>{order.deliveryFee.toLocaleString()} XAF</Text>
           </View>
+          {!!order.discountAmount && order.discountAmount > 0 && (
+            <View style={s.rowLast}>
+              <Text style={[s.label, { color: '#B45309', fontWeight: 600 }]}>
+                Réduction {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}
+              </Text>
+              <Text style={[s.value, { color: '#B45309', fontWeight: 700 }]}>
+                -{order.discountAmount.toLocaleString()} XAF
+              </Text>
+            </View>
+          )}
         </View>
         <View style={s.totalRow}>
           <Text style={s.totalLabel}>{i18n.t('orders.total').toUpperCase()}</Text>

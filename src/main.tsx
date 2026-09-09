@@ -10,6 +10,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
 import { useAudioStore } from '@/stores/audio';
 import { PWAInstallBadge } from '@/components/features/pwa/PWAInstallBadge';
+import { PromoNotification } from '@/components/common/PromoNotification';
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ export default function App({ Component, children }: AppProps) {
         <TooltipProvider delayDuration={200}>
           <Component>{children}</Component>
           <PWAInstallBadge />
+          <PromoNotification />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

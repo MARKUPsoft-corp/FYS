@@ -22,10 +22,14 @@ export interface PricingSettings {
   bottle1LBase: number;
   deliveryFee: number;
   promoFlyerDiscount?: number;
-  /** Promo Flyer activée ou non par l'admin */
+  /** Promo Flyer / Lien public activée ou non par l'admin */
   promoFlyerActive?: boolean;
-  /** Date d'expiration du QR Flyer (null = pas d'expiration) */
+  /** Date d'expiration du QR Flyer / Lien public (null = pas d'expiration) */
   promoFlyerExpiresAt?: Timestamp | null;
+  /** Code promo personnalisé pour le lien public (défaut: 'FLYER') */
+  promoPublicCode?: string;
+  /** Page cible par défaut du lien public ('/' | '/lab' | '/board/catalogue') */
+  promoPublicTarget?: string;
   promoReorderDiscount?: number;
   /** Promo Étiquette activée ou non par l'admin */
   promoReorderActive?: boolean;
@@ -49,6 +53,12 @@ export const DEFAULT_PRICING: PricingSettings = {
   bottle500mlBase: 1500,
   bottle1LBase: 2500,
   deliveryFee: 500,
+  promoFlyerDiscount: 500,
+  promoFlyerActive: false,
+  promoPublicCode: 'FLYER',
+  promoPublicTarget: '/lab',
+  promoReorderDiscount: 500,
+  promoReorderActive: false,
   maxMainFruits: 5,
   maxSupplements: 3,
   launchNoticeActive: true,
