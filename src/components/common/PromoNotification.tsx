@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Sparkles, X, ArrowRight, TimerOff } from 'lucide-react';
+import { Sparkles, X, TimerOff } from 'lucide-react';
 import { getPricingSettings } from '@/services/settings';
-import { capturePromoCodeFromUrl, getStoredPromoCode, validatePromoCode } from '@/utils/promo';
+import { capturePromoCodeFromUrl, validatePromoCode } from '@/utils/promo';
 
 export function PromoNotification() {
   const [mounted, setMounted] = useState(false);
@@ -17,7 +17,15 @@ export function PromoNotification() {
 
   useEffect(() => {
     setMounted(true);
-    // 1. Détecte si un code promo est présent dans l'URL
+
+    // Purge systématique de l'ancien localStorage
+    try {
+      localStorage.removeItem('fys_promo_code');
+    } catch {
+      // Ignore
+    }
+
+    // 1. Détecte si un code promo est présent dans l'URL d'arrivée (?promo=... ou ?code=...)
     const fromUrl = capturePromoCodeFromUrl();
     if (fromUrl) {
       setPromoCode(fromUrl);
@@ -25,21 +33,15 @@ export function PromoNotification() {
       return;
     }
 
-    // 2. Sinon, récupère le code mémorisé dans la session
-    const stored = getStoredPromoCode();
-    if (stored) {
-      // Vérifie si l'utilisateur l'a déjà fermé dans cette session
-      const isDismissed = sessionStorage.getItem(`fys_promo_dismissed_${stored}`);
-      if (!isDismissed) {
-        setPromoCode(stored);
-      }
-    }
+    // Si l'utilisateur entre dans l'app sans lien promotionnel, on n'affiche PAS de bannière.
+    // La réduction reste active en session (sessionStorage) pour les commandes en cours de session.
 
-    // 3. Écoute les mises à jour dynamiques du code promo
+    // 2. Écoute les mises à jour dynamiques du code promo (ex: QR code scanné ou code saisi)
     const handleUpdate = (e: Event) => {
       const custom = e as CustomEvent<{ code: string | null }>;
       if (custom.detail?.code) {
         setPromoCode(custom.detail.code);
+        setJustCaptured(true);
         setDismissed(false);
       } else {
         setPromoCode(null);

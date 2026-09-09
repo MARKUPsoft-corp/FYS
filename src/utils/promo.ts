@@ -3,12 +3,18 @@ import type { PricingSettings } from '@/entities/settings';
 export const PROMO_STORAGE_KEY = 'fys_promo_code';
 
 /**
- * Récupère le code promo actif enregistré dans la session ou le stockage local.
+ * Récupère le code promo actif enregistré dans la session (sessionStorage).
+ * Nettoie systématiquement toute trace résiduelle dans le localStorage
+ * pour garantir qu'en quittant l'application, aucun code ne persiste.
  */
 export function getStoredPromoCode(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    const code = sessionStorage.getItem(PROMO_STORAGE_KEY) || localStorage.getItem(PROMO_STORAGE_KEY);
+    // Purge préventive de l'ancien localStorage
+    if (localStorage.getItem(PROMO_STORAGE_KEY)) {
+      localStorage.removeItem(PROMO_STORAGE_KEY);
+    }
+    const code = sessionStorage.getItem(PROMO_STORAGE_KEY);
     return code ? code.trim().toUpperCase() : null;
   } catch {
     return null;
@@ -16,15 +22,16 @@ export function getStoredPromoCode(): string | null {
 }
 
 /**
- * Enregistre un code promo dans la session et le stockage local,
- * et émet un événement 'fys:promo-updated' pour que tous les composants soient synchronisés.
+ * Enregistre un code promo UNIQUEMENT dans la session (sessionStorage)
+ * et s'assure que le localStorage ne contient rien.
+ * Émet un événement 'fys:promo-updated' pour synchroniser les composants ouverts.
  */
 export function setStoredPromoCode(code: string): void {
   if (typeof window === 'undefined' || !code) return;
   const cleanCode = code.trim().toUpperCase();
   try {
     sessionStorage.setItem(PROMO_STORAGE_KEY, cleanCode);
-    localStorage.setItem(PROMO_STORAGE_KEY, cleanCode);
+    localStorage.removeItem(PROMO_STORAGE_KEY);
     window.dispatchEvent(new CustomEvent('fys:promo-updated', { detail: { code: cleanCode } }));
   } catch {
     // Ignore les restrictions de stockage (navigation privée)
@@ -32,7 +39,7 @@ export function setStoredPromoCode(code: string): void {
 }
 
 /**
- * Efface le code promo stocké (ex: après utilisation ou expiration).
+ * Efface le code promo stocké de la session et du localStorage.
  */
 export function clearStoredPromoCode(): void {
   if (typeof window === 'undefined') return;
