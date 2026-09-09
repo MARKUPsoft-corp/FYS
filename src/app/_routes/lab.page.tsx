@@ -372,34 +372,9 @@ const FysLab: PageComponent = () => {
 
       const result = await recommendSupplements(ingredients, profile, compatibleSupplements);
       setAiRecommendation(result);
+      // NutriFYS propose ses suggestions et son explication, mais NE pré-sélectionne
+      // plus automatiquement de supplément : l'utilisateur décide de son propre chef.
 
-      // Pré-sélectionner uniquement les suggestions NutriFYS non incompatibles (remplace l'ancienne sélection)
-      setSelectedSupplements(() => {
-        const next = new Map<string, number>();
-        let selectedCount = 0;
-        for (const id of result.recommendedIds) {
-          if (selectedCount >= maxSupplements) break;
-          if (!mains.has(id)) {
-            // Vérifier l'incompatibilité avec les fruits principaux
-            const newSupp = fruits.find((f) => f.id === id);
-            let isConflicting = false;
-            if (newSupp) {
-              for (const [mid] of mains) {
-                const mainFruit = fruits.find((f) => f.id === mid);
-                if (mainFruit && areFruitsIncompatible(mainFruit, newSupp)) {
-                  isConflicting = true;
-                  break;
-                }
-              }
-            }
-            if (!isConflicting) {
-              next.set(id, 20);
-              selectedCount++;
-            }
-          }
-        }
-        return next;
-      });
     } catch (err) {
       console.error(err);
       setAiRecommendation(null);

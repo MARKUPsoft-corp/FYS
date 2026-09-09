@@ -232,18 +232,38 @@ export function SupplementsTab({
         )}
       </section>
 
-      {!loadingAI && highlighted && selectedSupplementIds.includes(highlighted.id) && aiRecommendation?.why && (
-        <div className="bg-[#E0982E]/10 border border-[#E0982E]/30 rounded-2xl p-4 flex gap-3">
-          <div className="size-9 rounded-xl bg-[#E0982E]/15 flex items-center justify-center shrink-0">
+      {!loadingAI && highlighted && aiRecommendation?.why && (
+        <div className="bg-[#E0982E]/10 border border-[#E0982E]/30 rounded-2xl p-4 flex gap-3 items-start">
+          <div className="size-9 rounded-xl bg-[#E0982E]/15 flex items-center justify-center shrink-0 mt-0.5">
             <Lightbulb className="size-4 text-[#E0982E]" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-foreground mb-1">
-              {t('lab.whySupplement', { name: highlighted.name.toLowerCase() })}
-            </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+              <p className="text-sm font-bold text-foreground">
+                {t('lab.whySupplement', { name: highlighted.name.toLowerCase() })}
+              </p>
+              {selectedSupplementIds.includes(highlighted.id) ? (
+                <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/30 px-2.5 py-0.5 rounded-full">
+                  ✓ {t('lab.selected', 'Sélectionné')}
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold bg-[#E0982E]/15 text-[#E0982E] border border-[#E0982E]/30 px-2.5 py-0.5 rounded-full">
+                  {t('lab.aiSuggestion', 'Suggestion NutriFYS')}
+                </span>
+              )}
+            </div>
             <p className="text-[12px] text-muted-foreground font-medium leading-relaxed">
               {aiRecommendation.why}
             </p>
+            {!selectedSupplementIds.includes(highlighted.id) && !atMaxSupplements && (
+              <button
+                type="button"
+                onClick={() => onToggleSupplement(highlighted.id)}
+                className="mt-2.5 text-[11px] font-bold text-primary hover:underline flex items-center gap-1 transition-colors"
+              >
+                + {t('lab.addSupplementPrompt', { name: highlighted.name, defaultValue: `Ajouter ${highlighted.name} à mon cocktail` })}
+              </button>
+            )}
           </div>
         </div>
       )}

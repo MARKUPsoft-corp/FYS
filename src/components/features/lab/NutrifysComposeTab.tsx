@@ -119,13 +119,10 @@ function ProposalMessageBubble({
           .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
           .slice(0, maxMainFruits),
   );
-  const [supplementIds, setSupplementIds] = useState(() =>
-    fruitsCatalog.length === 0
-      ? message.proposal.supplementIds.slice(0, maxSupplements)
-      : message.proposal.supplementIds
-          .filter((id) => fruitsCatalog.some((f) => f.id === id && isUsableFruit(f)))
-          .slice(0, maxSupplements),
-  );
+  // Les suppléments proposés ne doivent jamais être pré-sélectionnés automatiquement :
+  // l'utilisateur choisit de son propre chef s'il souhaite les ajouter.
+  const [supplementIds, setSupplementIds] = useState<string[]>([]);
+
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [cardVisible, setCardVisible] = useState(!isNew);
 

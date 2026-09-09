@@ -170,6 +170,8 @@ export default {
     maxSupplementsReachedDesc: 'Limit reached — remove a supplement to add another one.',
     maxFruitsReachedDesc: 'Limit reached — remove a fruit to add another one.',
     whySupplement: 'Why {{name}}?',
+    aiSuggestion: 'NutriFYS suggestion',
+    addSupplementPrompt: 'Add {{name}} to my cocktail',
     sugarOption: {
       eyebrow: 'Preparation',
       title: 'Added sugar?',
