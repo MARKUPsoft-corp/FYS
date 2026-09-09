@@ -51,6 +51,7 @@ export default {
     delete: 'Delete',
     edit: 'Edit',
     create: 'Create',
+    add: 'Add',
     search: 'Search',
     loading: 'Loading…',
     noResults: 'No results.',
@@ -674,8 +675,14 @@ export default {
     goalsTitle: 'Your Health Goals',
     goalsSubtitle: 'We personalize your mixes based on what you want to achieve.',
     goalsNone: 'No specific goal',
-    customPlaceholder: 'Other… (press Enter)',
+    customPlaceholder: 'Other… (e.g. ulcer, asthma, gastritis)',
+    customConditionsPlaceholder: 'Other condition… (e.g. ulcer, asthma, gastritis)',
+    customAllergiesPlaceholder: 'Other allergy… (e.g. mango, peach, kiwi)',
+    customGoalsPlaceholder: 'Other goal… (e.g. focus, vitality)',
+    customAddedTitle: 'Your custom additions:',
+    customHelper: 'Type your condition if not listed above, then continue.',
   },
+
   language: {
     switchTo: 'English',
     label: 'Language',

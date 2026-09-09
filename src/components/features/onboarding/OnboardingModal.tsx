@@ -8,40 +8,62 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 // ── Chip selector ─────────────────────────────────────────────────────────────
 
 function ChipSelector({
-  chips, noneLabel, selected, onChange,
+  chips,
+  noneLabel,
+  selected,
+  onChange,
+  customInput,
+  onCustomInputChange,
+  placeholder,
 }: {
   chips: readonly string[];
   noneLabel: string;
   selected: string[];
   onChange: (v: string[]) => void;
+  customInput: string;
+  onCustomInputChange: (v: string) => void;
+  placeholder?: string;
 }) {
   const { t } = useTranslation();
-  const [custom, setCustom] = useState('');
 
   function toggle(value: string) {
     if (value === noneLabel) {
+      onCustomInputChange('');
       onChange(selected.includes(noneLabel) ? [] : [noneLabel]);
       return;
     }
-    const without = selected.filter((s) => s !== noneLabel);
-    if (without.includes(value)) {
-      onChange(without.filter((s) => s !== value));
+    const withoutNone = selected.filter((s) => s !== noneLabel);
+    if (withoutNone.includes(value)) {
+      onChange(withoutNone.filter((s) => s !== value));
     } else {
-      onChange([...without, value]);
+      onChange([...withoutNone, value]);
     }
   }
 
   function addCustom() {
-    const t = custom.trim();
-    if (!t || selected.includes(t)) { setCustom(''); return; }
-    onChange([...selected.filter((s) => s !== noneLabel), t]);
-    setCustom('');
+    const raw = customInput.trim();
+    if (!raw) return;
+    const items = raw
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (items.length === 0) return;
+    const withoutNone = selected.filter((s) => s !== noneLabel);
+    const updated = Array.from(new Set([...withoutNone, ...items]));
+    onChange(updated);
+    onCustomInputChange('');
+  }
+
+  function removeCustom(value: string) {
+    onChange(selected.filter((s) => s !== value));
   }
 
   const customValues = selected.filter((s) => !chips.includes(s) && s !== noneLabel);
 
   return (
     <div className="space-y-4">
+      {/* Puces prédéfinies */}
       <div className="flex flex-wrap gap-2">
         {chips.map((chip) => {
           const active = selected.includes(chip);
@@ -50,59 +72,106 @@ function ChipSelector({
               key={chip}
               type="button"
               onClick={() => toggle(chip)}
-              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200 ${
+              className={cn(
+                'relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200 active:scale-95',
                 active
                   ? 'bg-primary border-primary text-white scale-105 shadow-md'
-                  : 'bg-card border-border text-foreground hover:border-primary/50'
-              }`}
+                  : 'bg-card border-border text-foreground hover:border-primary/50',
+              )}
             >
               {active && <Check className="size-3.5 shrink-0" />}
               {chip}
             </button>
           );
         })}
+      </div>
 
-        {/* Custom values added by the user */}
-        {customValues.map((v) => (
-          <button
-            key={v}
+      {/* Tags personnalisés saisis par l'utilisateur */}
+      {customValues.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            {t('onboarding.customAddedTitle', 'Vos ajouts personnalisés :')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {customValues.map((v) => (
+              <span
+                key={v}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold border-2 bg-primary/10 border-primary text-primary shadow-xs animate-in fade-in zoom-in-95 duration-150"
+              >
+                <Check className="size-3.5 shrink-0" />
+                <span>{v}</span>
+                <button
+                  type="button"
+                  onClick={() => removeCustom(v)}
+                  className="size-4 ml-0.5 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  title={t('common.delete', 'Supprimer')}
+                >
+                  <X className="size-3 text-primary/80 hover:text-primary" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Champ de saisie libre avec bouton Ajouter bien visible */}
+      <div className="space-y-1.5 pt-1">
+        <div className="flex gap-2">
+          <Input
+            value={customInput}
+            onChange={(e) => onCustomInputChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+            onBlur={() => {
+              // Auto-commit on blur si l'utilisateur quitte le champ
+              if (customInput.trim()) {
+                addCustom();
+              }
+            }}
+            placeholder={placeholder || t('onboarding.customPlaceholder')}
+            className="h-11 text-sm rounded-xl border-border bg-background shadow-xs focus-visible:ring-primary/20"
+          />
+          <Button
             type="button"
-            onClick={() => toggle(v)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 bg-secondary border-secondary text-secondary-foreground scale-105 shadow-md transition-all"
+            variant={customInput.trim() ? 'default' : 'outline'}
+            className={cn(
+              'h-11 px-4 rounded-xl font-bold shrink-0 gap-1.5 transition-all',
+              customInput.trim()
+                ? 'bg-primary hover:bg-primary/90 text-white shadow-sm'
+                : 'text-muted-foreground border-border hover:text-foreground',
+            )}
+            onClick={addCustom}
+            disabled={!customInput.trim()}
           >
-            <Check className="size-3.5 shrink-0" />
-            {v}
-          </button>
-        ))}
+            <Plus className="size-4" />
+            <span className="text-xs">{t('common.add', 'Ajouter')}</span>
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground px-1">
+          {t('onboarding.customHelper', 'Saisissez votre situation si elle n\'apparaît pas dans la liste ci-dessus, puis continuez.')}
+        </p>
       </div>
 
-      {/* Free text input */}
-      <div className="flex gap-2">
-        <Input
-          value={custom}
-          onChange={(e) => setCustom(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustom())}
-          placeholder={t('onboarding.customPlaceholder')}
-          className="h-9 text-sm rounded-full border-dashed"
-        />
-        <Button type="button" variant="outline" size="icon" className="size-9 rounded-full shrink-0" onClick={addCustom}>
-          <Plus className="size-4" />
-        </Button>
+      {/* Option exclusive "Aucune" */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => toggle(noneLabel)}
+          className={cn(
+            'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border-2 border-dashed transition-all active:scale-98',
+            selected.includes(noneLabel)
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground',
+          )}
+        >
+          {selected.includes(noneLabel) && <Check className="size-4" />}
+          {noneLabel}
+        </button>
       </div>
-
-      {/* None option */}
-      <button
-        type="button"
-        onClick={() => toggle(noneLabel)}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-medium border-2 border-dashed transition-all ${
-          selected.includes(noneLabel)
-            ? 'border-muted-foreground bg-muted text-foreground'
-            : 'border-border text-muted-foreground hover:border-muted-foreground'
-        }`}
-      >
-        {selected.includes(noneLabel) && <Check className="size-4" />}
-        {noneLabel}
-      </button>
     </div>
   );
 }
@@ -145,8 +214,15 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [goals, setGoals] = useState<string[]>([]);
 
+  // Saisie en cours dans l'input pour chaque étape
+  const [customCondition, setCustomCondition] = useState('');
+  const [customAllergy, setCustomAllergy] = useState('');
+  const [customGoal, setCustomGoal] = useState('');
+
   const values = [conditions, allergies, goals];
   const setters = [setConditions, setAllergies, setGoals];
+  const customInputs = [customCondition, customAllergy, customGoal];
+  const setCustomInputs = [setCustomCondition, setCustomAllergy, setCustomGoal];
 
   const STEPS = [
     {
@@ -155,6 +231,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       title: t('onboarding.conditionsTitle'),
       subtitle: t('onboarding.conditionsSubtitle'),
       none: t('onboarding.conditionsNone'),
+      placeholder: t('onboarding.customConditionsPlaceholder', 'Autre condition… (ex: gastrite, ulcère, asthme)'),
       chips: [
         'Diabète de type 2', 'Hypertension', 'Maladie cardiovasculaire',
         'Grossesse', 'Insuffisance rénale', 'Problèmes thyroïdiens',
@@ -167,6 +244,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       title: t('onboarding.allergiesTitle'),
       subtitle: t('onboarding.allergiesSubtitle'),
       none: t('profile.noAllergies'),
+      placeholder: t('onboarding.customAllergiesPlaceholder', 'Autre allergie… (ex: mangue, pêche, kiwi)'),
       chips: [
         'Kiwi', 'Fraise', 'Ananas', 'Arachides',
         'Noix de coco', 'Agrumes', 'Gluten', 'Soja', 'Lactose',
@@ -178,6 +256,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       title: t('onboarding.goalsTitle'),
       subtitle: t('onboarding.goalsSubtitle'),
       none: t('onboarding.goalsNone'),
+      placeholder: t('onboarding.customGoalsPlaceholder', 'Autre objectif… (ex: concentration, vitalité)'),
       chips: [
         'Perdre du poids', 'Booster mon énergie', 'Mieux digérer',
         'Renforcer l\'immunité', 'Santé cardiaque', 'Récupération sportive',
@@ -188,7 +267,31 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
-  const canContinue = values[step].length > 0;
+  const currentCustom = customInputs[step];
+
+  // L'utilisateur peut continuer s'il a sélectionné au moins un élément
+  // OU s'il a saisi du texte dans le champ de condition personnalisée !
+  const canContinue = values[step].length > 0 || currentCustom.trim().length > 0;
+
+  function commitStepCustom(stepIndex: number, currentList: string[]): string[] {
+    const raw = customInputs[stepIndex].trim();
+    if (!raw) return currentList;
+
+    const items = raw
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (items.length === 0) return currentList;
+
+    const noneLabel = STEPS[stepIndex].none;
+    const withoutNone = currentList.filter((s) => s !== noneLabel);
+    const updated = Array.from(new Set([...withoutNone, ...items]));
+
+    setters[stepIndex](updated);
+    setCustomInputs[stepIndex]('');
+    return updated;
+  }
 
   function navigate(nextStep: number, dir: 'forward' | 'back') {
     if (animating) return;
@@ -200,12 +303,27 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
     }, 220);
   }
 
-  async function handleFinish() {
-    setSaving(true);
-    try {
-      await onComplete({ healthConditions: conditions, allergies, goals });
-    } finally {
-      setSaving(false);
+  async function handleNextOrFinish() {
+    // Valide et intègre automatiquement toute saisie personnalisée en attente
+    const updatedCurrentStepValues = commitStepCustom(step, values[step]);
+
+    if (isLast) {
+      setSaving(true);
+      try {
+        const finalConditions = step === 0 ? updatedCurrentStepValues : commitStepCustom(0, conditions);
+        const finalAllergies = step === 1 ? updatedCurrentStepValues : commitStepCustom(1, allergies);
+        const finalGoals = step === 2 ? updatedCurrentStepValues : commitStepCustom(2, goals);
+
+        await onComplete({
+          healthConditions: finalConditions.length ? finalConditions : [STEPS[0].none],
+          allergies: finalAllergies.length ? finalAllergies : [STEPS[1].none],
+          goals: finalGoals.length ? finalGoals : [STEPS[2].none],
+        });
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      navigate(step + 1, 'forward');
     }
   }
 
@@ -268,6 +386,9 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
               noneLabel={current.none}
               selected={values[step]}
               onChange={setters[step]}
+              customInput={currentCustom}
+              onCustomInputChange={setCustomInputs[step]}
+              placeholder={current.placeholder}
             />
           </div>
         </div>
@@ -288,7 +409,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
             )}
 
             <Button
-              onClick={isLast ? handleFinish : () => navigate(step + 1, 'forward')}
+              onClick={handleNextOrFinish}
               disabled={!canContinue || saving}
               size="lg"
               className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
@@ -306,4 +427,5 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
     </Sheet>
   );
 }
+
 

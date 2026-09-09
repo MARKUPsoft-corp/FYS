@@ -51,7 +51,9 @@ export default {
     delete: 'Supprimer',
     edit: 'Modifier',
     create: 'Créer',
+    add: 'Ajouter',
     search: 'Rechercher',
+
     loading: 'Chargement…',
     noResults: 'Aucun résultat.',
     confirm: 'Confirmer',
@@ -674,8 +676,14 @@ export default {
     goalsTitle: 'Tes objectifs santé',
     goalsSubtitle: 'On personnalise tes mélanges selon ce que tu veux atteindre.',
     goalsNone: 'Aucun objectif spécifique',
-    customPlaceholder: 'Autre… (appuie sur Entrée)',
+    customPlaceholder: 'Autre… (ex: gastrite, ulcère, asthme)',
+    customConditionsPlaceholder: 'Autre condition… (ex: gastrite, ulcère, asthme)',
+    customAllergiesPlaceholder: 'Autre allergie… (ex: mangue, pêche, kiwi)',
+    customGoalsPlaceholder: 'Autre objectif… (ex: concentration, vitalité)',
+    customAddedTitle: 'Vos ajouts personnalisés :',
+    customHelper: 'Saisissez votre situation si elle n\'apparaît pas dans la liste ci-dessus, puis continuez.',
   },
+
   language: {
     switchTo: 'Français',
     label: 'Langue',
