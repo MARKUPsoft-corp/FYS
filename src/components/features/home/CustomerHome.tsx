@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
-import { isUsableFruit, OrderStatus, type Fruit } from '@/entities';
+import { isUsableFruit, OrderStatus, partitionCocktailIngredients, type Fruit } from '@/entities';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useUserOrders } from '@/hooks/useOrders';
@@ -395,9 +395,26 @@ export function CustomerHome(_props: Props) {
                           <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 truncate flex items-center gap-1.5">
                             <Clock className="size-3" /> {orderDate}
                           </p>
-                          <h4 className="font-extrabold font-display text-base sm:text-lg md:text-xl text-foreground tracking-tight truncate leading-tight mb-3">
+                          <h4 className="font-extrabold font-display text-base sm:text-lg md:text-xl text-foreground tracking-tight truncate leading-tight mb-1">
                             {order.cocktailNameSnapshot}
                           </h4>
+                          {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
+                            const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot, storeFruits);
+                            return (
+                              <div className="text-[11px] text-muted-foreground truncate mb-2 flex items-center gap-1.5 flex-wrap">
+                                {mainFruits.length > 0 && (
+                                  <span className="font-medium text-foreground/80">
+                                    🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                                  </span>
+                                )}
+                                {supplements.length > 0 && (
+                                  <span className="text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-0.5 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 text-[10px]">
+                                    🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         
                         <div className="space-y-3">

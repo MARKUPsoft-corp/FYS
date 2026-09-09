@@ -1,7 +1,9 @@
 import { Eye, EyeOff, ImageOff, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CocktailType, type Cocktail } from '@/entities';
+import { CocktailType, partitionCocktailIngredients, type Cocktail } from '@/entities';
+import { useQuery } from '@tanstack/react-query';
+import { getFruits } from '@/services/fruit';
 
 type Props = {
   cocktails: Cocktail[];
@@ -16,6 +18,11 @@ const TYPE_VARIANT: Record<CocktailType, 'default' | 'secondary'> = {
 };
 
 export function CocktailTable({ cocktails, onEdit, onDelete, onToggleActive }: Props) {
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    staleTime: 5 * 60_000,
+  });
   if (cocktails.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-10">
@@ -72,9 +79,27 @@ export function CocktailTable({ cocktails, onEdit, onDelete, onToggleActive }: P
 
               {/* Ingredients */}
               <td className="px-4 py-3 hidden lg:table-cell">
-                <p className="text-muted-foreground line-clamp-1">
-                  {cocktail.ingredients.map((i) => i.fruitName).join(', ') || '—'}
-                </p>
+                {(() => {
+                  const { mainFruits, supplements } = partitionCocktailIngredients(cocktail.ingredients, fruits);
+                  return (
+                    <div className="text-xs line-clamp-2 space-y-0.5">
+                      {mainFruits.length > 0 && (
+                        <p className="text-foreground/90 font-medium">
+                          🍓 {mainFruits.map((i) => i.fruitName).join(', ')}
+                        </p>
+                      )}
+                      {supplements.length > 0 && (
+                        <p className="text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1">
+                          <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/15 border border-amber-500/25">
+                            Supplément
+                          </span>
+                          {supplements.map((i) => i.fruitName).join(', ')}
+                        </p>
+                      )}
+                      {!mainFruits.length && !supplements.length && <span className="text-muted-foreground">—</span>}
+                    </div>
+                  );
+                })()}
               </td>
 
               {/* Price */}

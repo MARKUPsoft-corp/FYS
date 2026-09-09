@@ -9,10 +9,11 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { UserRole, OrderStatus } from '@/entities';
+import { UserRole, OrderStatus, partitionCocktailIngredients } from '@/entities';
 import type { User as UserType, Order, Cocktail } from '@/entities';
 import { getProfile } from '@/services/profile';
 import { getUserCocktails } from '@/services/cocktail';
+import { getFruits } from '@/services/fruit';
 import { isProfileComplete } from '@/stores/profile';
 
 type Tab = 'overview' | 'health' | 'orders' | 'cocktails';
@@ -119,6 +120,23 @@ function OrderRow({ order }: { order: Order }) {
           {order.totalPrice.toLocaleString()} XAF
         </span>
       </div>
+      {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
+        const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot);
+        return (
+          <div className="text-[11px] text-muted-foreground space-y-0.5 pt-1 border-t border-border/30">
+            {mainFruits.length > 0 && (
+              <p className="truncate">
+                <span className="font-semibold text-foreground/80">🍓 Fruits :</span> {mainFruits.map((i) => i.fruitName).join(', ')}
+              </p>
+            )}
+            {supplements.length > 0 && (
+              <p className="truncate text-amber-700 dark:text-amber-400 font-medium">
+                <span className="font-semibold">🌿 Suppléments :</span> {supplements.map((i) => i.fruitName).join(', ')}
+              </p>
+            )}
+          </div>
+        );
+      })()}
       {order.deliveryDetails && (
         <p className="text-[11px] text-muted-foreground truncate">
           📍 {order.deliveryDetails.district} · {order.deliveryDetails.phone}
@@ -131,14 +149,24 @@ function OrderRow({ order }: { order: Order }) {
 function CocktailRow({ cocktail }: { cocktail: Cocktail }) {
   const { t } = useTranslation();
   const verdict = cocktail.aiAnalysis?.verdict;
+  const { mainFruits, supplements } = partitionCocktailIngredients(cocktail.ingredients);
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold text-foreground truncate">{cocktail.name}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-            {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
-          </p>
+          <div className="text-[11px] text-muted-foreground mt-0.5 space-y-0.5">
+            {mainFruits.length > 0 && (
+              <p className="truncate">
+                <span className="font-semibold text-foreground/80">🍓 Fruits :</span> {mainFruits.map((i) => i.fruitName).join(', ')}
+              </p>
+            )}
+            {supplements.length > 0 && (
+              <p className="truncate text-amber-700 dark:text-amber-400 font-medium">
+                <span className="font-semibold">🌿 Suppléments :</span> {supplements.map((i) => i.fruitName).join(', ')}
+              </p>
+            )}
+          </div>
         </div>
         {cocktail.isPublic ? (
           <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] font-bold">

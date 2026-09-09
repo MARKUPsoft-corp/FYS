@@ -10,7 +10,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { AIVerdict, type Cocktail } from '@/entities';
+import { AIVerdict, partitionCocktailIngredients, type Cocktail } from '@/entities';
+import { useQuery } from '@tanstack/react-query';
+import { getFruits } from '@/services/fruit';
 
 type Props = {
   cocktail: Cocktail | null;
@@ -27,6 +29,12 @@ const VERDICT_CONFIG: Record<AIVerdict, { label: string; variant: 'success' | 'w
 
 export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
   const { t } = useTranslation();
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    staleTime: 5 * 60_000,
+  });
+
   if (!cocktail) return null;
 
   const verdict = cocktail.aiAnalysis
@@ -119,11 +127,58 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
             <Separator />
             {cocktail.ingredients.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('cocktail.noIngredients')}</p>
-            ) : (
-              <p className="text-sm text-foreground font-medium leading-relaxed">
-                {cocktail.ingredients.map((ing) => ing.fruitName).join(' · ')}
-              </p>
-            )}
+            ) : (() => {
+              const { mainFruits, supplements } = partitionCocktailIngredients(cocktail.ingredients, fruits);
+              return (
+                <div className="space-y-3 pt-1">
+                  {mainFruits.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        🍓 {t('orders.mainFruits', 'Fruits de base')} ({mainFruits.length})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mainFruits.map((ing) => (
+                          <span
+                            key={ing.fruitId}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-900 dark:text-emerald-300 border border-emerald-500/25 text-[12px] font-semibold"
+                          >
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            {ing.fruitName}
+                            {ing.quantityGrams ? (
+                              <span className="text-[10px] opacity-75 font-normal">({ing.quantityGrams}g)</span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {supplements.length > 0 && (
+                    <div className="pt-2 border-t border-border/40">
+                      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        🌿 {t('orders.supplements', 'Suppléments & Boosters')} ({supplements.length})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {supplements.map((ing) => (
+                          <span
+                            key={ing.fruitId}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/35 text-[12px] font-semibold"
+                          >
+                            <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            {ing.fruitName}
+                            {ing.quantityGrams ? (
+                              <span className="text-[10px] opacity-80 font-bold">({ing.quantityGrams}g)</span>
+                            ) : null}
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold bg-amber-500/20 px-1 py-0.2 rounded text-amber-800 dark:text-amber-300">
+                              {t('orders.supplementBadge', 'Supplément')}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Prix opaque — le détail est révélé à la commande via les contenants */}

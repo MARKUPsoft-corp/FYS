@@ -97,6 +97,7 @@ export async function createOrder(
     ...(user.phone ? { userPhoneSnapshot: user.phone } : {}),
     cocktailId: cocktail.id,
     cocktailNameSnapshot: cocktail.name,
+    cocktailIngredientsSnapshot: cocktail.ingredients ?? [],
     hasAddedSugar: cocktail.hasAddedSugar ?? false,
     orderLines: orderLinesWithLabels,
     deliveryFee,

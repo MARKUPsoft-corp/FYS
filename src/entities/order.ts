@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import type { AIAnalysis } from './cocktail';
+import type { AIAnalysis, CocktailIngredient } from './cocktail';
 import type { BottleSize } from './settings';
 
 export enum OrderStatus {
@@ -29,6 +29,8 @@ export interface Order {
   userPhoneSnapshot?: string;
   cocktailId: string;
   cocktailNameSnapshot: string;
+  /** Ingrédients figés à la commande avec grammage et rôles (fruits vs suppléments) */
+  cocktailIngredientsSnapshot?: CocktailIngredient[];
   
   /** Lignes de commande (500ml + 1L possibles dans la même commande) */
   orderLines: OrderLine[];

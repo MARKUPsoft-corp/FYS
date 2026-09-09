@@ -245,6 +245,7 @@ export function CocktailFormDrawer({
       fruitName: fruit.name,
       quantityGrams: parseFloat(r.quantityGrams) || 0,
       priceSnapshot: fruit.price ?? 0,
+      role: fruit?.isSupplement ? 'supplement' : 'fruit',
     };
   });
 

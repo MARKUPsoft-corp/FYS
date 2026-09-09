@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import type { Fruit } from './fruit';
 
 export enum CocktailType {
   CATALOG = 'catalog', // créé par un admin, visible publiquement
@@ -72,4 +73,82 @@ export interface Cocktail {
   hasAddedSugar?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+// ── Ingrédients Helpers (Fruits principaux vs Suppléments) ───────────────────
+
+/**
+ * Détermine si un ingrédient est un supplément (vs fruit principal de base).
+ * 1. Priorité absolue : rôle explicite (`ing.role === 'supplement'`).
+ * 2. Fallback rétrocompatible : si le rôle n'est pas défini (ex: cocktails historiques),
+ *    vérifie la configuration du fruit (`isSupplement`, catégorie d'herbes/suppléments, ou grammage $\le 30$g).
+ */
+export function isIngredientSupplement(
+  ing: CocktailIngredient,
+  fruits?: Fruit[]
+): boolean {
+  if (ing.role === 'supplement') return true;
+  if (ing.role === 'fruit') return false;
+
+  if (fruits?.length) {
+    const fruit = fruits.find((f) => f.id === ing.fruitId);
+    if (fruit) {
+      if (fruit.isSupplement === true) return true;
+      if (fruit.isMainFruit === false && fruit.categoryIds?.includes('supplement_herbe')) return true;
+    }
+  }
+
+  // Seuil usuel pour les épices / herbes / boosters FYS
+  return ing.quantityGrams > 0 && ing.quantityGrams <= 30;
+}
+
+/**
+ * Sépare une liste d'ingrédients en fruits principaux et suppléments/boosters.
+ */
+export function partitionCocktailIngredients(
+  ingredients: CocktailIngredient[] = [],
+  fruits?: Fruit[]
+): {
+  mainFruits: CocktailIngredient[];
+  supplements: CocktailIngredient[];
+} {
+  const mainFruits: CocktailIngredient[] = [];
+  const supplements: CocktailIngredient[] = [];
+
+  for (const ing of ingredients) {
+    if (isIngredientSupplement(ing, fruits)) {
+      supplements.push(ing);
+    } else {
+      mainFruits.push(ing);
+    }
+  }
+
+  return { mainFruits, supplements };
+}
+
+/**
+ * Formate un résumé texte clair différenciant les fruits principaux et les suppléments.
+ * - 'separated' : "Fruits : Mangue, Ananas · Supplément(s) : Gingembre"
+ * - 'ticket' : "Fruits : Mangue, Ananas\nSupplément(s) : Gingembre"
+ * - 'inline' (défaut) : "Mangue, Ananas (+ Gingembre)"
+ */
+export function formatIngredientsSummary(
+  ingredients: CocktailIngredient[] = [],
+  fruits?: Fruit[],
+  options?: { format?: 'inline' | 'separated' | 'ticket' }
+): string {
+  const { mainFruits, supplements } = partitionCocktailIngredients(ingredients, fruits);
+  const mainStr = mainFruits.map((i) => i.fruitName).join(', ');
+  const suppStr = supplements.map((i) => i.fruitName).join(', ');
+
+  if (!supplements.length) return mainStr;
+  if (!mainFruits.length) return suppStr;
+
+  if (options?.format === 'separated') {
+    return `${mainStr} · Supplément(s) : ${suppStr}`;
+  }
+  if (options?.format === 'ticket') {
+    return `${mainStr}\nSupplément(s) : ${suppStr}`;
+  }
+  return `${mainStr} (+ ${suppStr})`;
 }

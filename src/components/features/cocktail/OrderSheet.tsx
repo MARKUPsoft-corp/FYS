@@ -16,6 +16,7 @@ import {
   BOTTLE_LABELS,
   getBottleBasePrice,
   pricePerBottle,
+  partitionCocktailIngredients,
   type BottleSize,
   type Cocktail,
   type AIAnalysis,
@@ -456,9 +457,26 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   cocktail.name
                 )}
               </SheetTitle>
-              <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-                {cocktail.ingredients.map((i) => i.fruitName).join(' · ')}
-              </p>
+              {cocktail && (() => {
+                const { mainFruits, supplements } = partitionCocktailIngredients(cocktail.ingredients, fruits);
+                return (
+                  <div className="text-[12px] mt-1 space-y-0.5">
+                    {mainFruits.length > 0 && (
+                      <p className="text-muted-foreground font-medium truncate">
+                        🍓 {mainFruits.map((i) => i.fruitName).join(' · ')}
+                      </p>
+                    )}
+                    {supplements.length > 0 && (
+                      <p className="text-amber-700 dark:text-amber-400 font-semibold truncate flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 shrink-0">
+                          🌿 {t('orders.supplementBadge', 'Supplément')}
+                        </span>
+                        <span className="truncate">{supplements.map((i) => i.fruitName).join(' · ')}</span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {cocktail.hasAddedSugar ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">

@@ -10,8 +10,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
-import { UserRole, OrderStatus } from '@/entities';
-import type { Order, Cocktail } from '@/entities';
+import { UserRole, OrderStatus, partitionCocktailIngredients, formatIngredientsSummary } from '@/entities';
+import type { Order, Cocktail, CocktailIngredient, Fruit } from '@/entities';
 import { getCocktailById } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
 import { updateOrderStatus, cancelOrder, deleteOrderCompletely } from '@/services/order';
@@ -179,6 +179,23 @@ function OrderCard({
               </span>
             )}
           </div>
+          {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
+            const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot);
+            return (
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
+                {mainFruits.length > 0 && (
+                  <span className="text-muted-foreground font-medium flex items-center gap-1">
+                    🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                  </span>
+                )}
+                {supplements.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
+                    🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
         <StatusBadge status={order.status} />
       </div>
@@ -231,6 +248,8 @@ function CocktailInfoBlock({
   clientName,
   cocktailNameFallback,
   hasAddedSugar,
+  ingredientsSnapshot,
+  orderAnalysisSnapshot,
 }: {
   cocktail: Cocktail | null | undefined;
   loading: boolean;
@@ -239,6 +258,9 @@ function CocktailInfoBlock({
   clientName?: string;
   cocktailNameFallback?: string;
   hasAddedSugar?: boolean;
+  ingredientsSnapshot?: CocktailIngredient[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  orderAnalysisSnapshot?: any;
 }) {
   const { t } = useTranslation();
   const { data: fruits = [] } = useQuery({
@@ -247,15 +269,27 @@ function CocktailInfoBlock({
     staleTime: 5 * 60_000,
   });
 
+  const effectiveIngredients = useMemo(() => {
+    if (ingredientsSnapshot && ingredientsSnapshot.length > 0) {
+      return ingredientsSnapshot;
+    }
+    return cocktail?.ingredients ?? [];
+  }, [ingredientsSnapshot, cocktail?.ingredients]);
+
+  const { mainFruits, supplements } = useMemo(
+    () => partitionCocktailIngredients(effectiveIngredients, fruits),
+    [effectiveIngredients, fruits]
+  );
+
   const fruitVisuals = useMemo(() => {
-    if (cocktail?.ingredients?.length) {
-      return buildFruitVisuals(cocktail.ingredients, fruits, orderFruitImages);
+    if (effectiveIngredients.length) {
+      return buildFruitVisuals(effectiveIngredients, fruits, orderFruitImages);
     }
     if (orderFruitImages?.length) {
       return orderFruitImages.map((url) => ({ imageUrl: url || null }));
     }
     return [];
-  }, [orderFruitImages, cocktail, fruits]);
+  }, [orderFruitImages, effectiveIngredients, fruits]);
 
   if (loading) {
     return (
@@ -265,12 +299,12 @@ function CocktailInfoBlock({
       </div>
     );
   }
-  if (!cocktail && !orderImageUrl && !fruitVisuals.length && !cocktailNameFallback) return null;
+  if (!cocktail && !effectiveIngredients.length && !orderImageUrl && !fruitVisuals.length && !cocktailNameFallback) return null;
 
-  const analysis = cocktail?.aiAnalysis;
+  const analysis = cocktail?.aiAnalysis ?? orderAnalysisSnapshot;
   const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
   const name = cocktail?.name ?? cocktailNameFallback ?? 'Cocktail';
-  const fruitNames = cocktail?.ingredients.map((i) => i.fruitName) ?? [];
+  const fruitNames = effectiveIngredients.map((i) => i.fruitName);
   const sugarVal = hasAddedSugar !== undefined ? hasAddedSugar : (cocktail?.hasAddedSugar ?? false);
 
   return (
@@ -303,9 +337,9 @@ function CocktailInfoBlock({
             }
           />
 
-        {cocktail && (
+        {(cocktail || effectiveIngredients.length > 0) && (
           <div className="px-4 py-3.5 space-y-3">
-            {cocktail.description && (
+            {cocktail?.description && (
               <p className="text-[13px] text-muted-foreground leading-relaxed">{cocktail.description}</p>
             )}
 
@@ -325,21 +359,69 @@ function CocktailInfoBlock({
               )}
             </div>
 
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                {t('orders.ingredients')}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {cocktail.ingredients.map((ing) => (
-                  <span
-                    key={ing.fruitId}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/40 text-accent-foreground text-[12px] font-semibold"
-                  >
-                    {ing.fruitName}
-                  </span>
-                ))}
+            {/* Ingrédients : distinction nette Fruits de base vs Suppléments */}
+            {effectiveIngredients.length > 0 && (
+              <div className="space-y-3 pt-1">
+                {/* 🍓 Fruits de base */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <span>🍓</span> {t('orders.mainFruits', 'Fruits de base')}
+                      <span className="text-[10px] font-semibold opacity-75">({mainFruits.length})</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {mainFruits.map((ing) => (
+                      <span
+                        key={ing.fruitId}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-900 dark:text-emerald-300 border border-emerald-500/25 text-[12px] font-semibold"
+                      >
+                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                        {ing.fruitName}
+                        {ing.quantityGrams ? (
+                          <span className="text-[10px] font-mono opacity-75 font-normal">({ing.quantityGrams}g)</span>
+                        ) : null}
+                      </span>
+                    ))}
+                    {mainFruits.length === 0 && (
+                      <span className="text-xs text-muted-foreground italic">—</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 🌿 Suppléments & Boosters */}
+                {supplements.length > 0 && (
+                  <div className="pt-2.5 border-t border-border/40">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🌿</span> {t('orders.supplements', 'Suppléments & Boosters')}
+                        <span className="text-[10px] font-semibold opacity-75">({supplements.length})</span>
+                      </p>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                        {t('orders.supplementBadge', 'Supplément')}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {supplements.map((ing) => (
+                        <span
+                          key={ing.fruitId}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/35 text-[12px] font-semibold shadow-xs"
+                        >
+                          <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          {ing.fruitName}
+                          {ing.quantityGrams ? (
+                            <span className="text-[10px] font-mono opacity-80 font-bold">({ing.quantityGrams}g)</span>
+                          ) : null}
+                          <span className="text-[9px] uppercase tracking-wider font-extrabold bg-amber-500/20 px-1 py-0.2 rounded text-amber-800 dark:text-amber-300">
+                            {t('orders.supplementBadge', 'Supplément')}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {analysis && vcfg && (
               <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${vcfg.bg} ${vcfg.border}`}>
@@ -385,6 +467,12 @@ function ClientOrderSheet({
     queryKey: ['cocktail', order?.cocktailId],
     queryFn: () => getCocktailById(order!.cocktailId),
     enabled: !!order,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
     staleTime: 5 * 60_000,
   });
 
@@ -483,7 +571,8 @@ function ClientOrderSheet({
                 disabled={downloadingNutrition}
                 onClick={async () => {
                    setDownloadingNutrition(true);
-                   const ingStr = cocktail?.ingredients?.map((i) => i.fruitName).join(' · ');
+                   const ingList = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                   const ingStr = formatIngredientsSummary(ingList, fruits, { format: 'inline' });
                    await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
                    setDownloadingNutrition(false);
                 }}
@@ -509,6 +598,8 @@ function ClientOrderSheet({
             clientName={order.userNameSnapshot}
             cocktailNameFallback={order.cocktailNameSnapshot}
             hasAddedSugar={order.hasAddedSugar}
+            ingredientsSnapshot={order.cocktailIngredientsSnapshot}
+            orderAnalysisSnapshot={order.aiAnalysisSnapshot}
           />
 
           {/* Status actuel */}
@@ -630,6 +721,30 @@ function ClientOrderSheet({
                 <span className="text-[13px] text-muted-foreground">Cocktail</span>
                 <span className="text-[13px] font-semibold text-foreground">{order.cocktailNameSnapshot}</span>
               </div>
+              {(() => {
+                const ings = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                if (!ings.length) return null;
+                const { mainFruits, supplements } = partitionCocktailIngredients(ings, fruits);
+                return (
+                  <div className="px-4 py-3 space-y-1.5 bg-muted/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      {t('orders.ingredients', 'Composition')}
+                    </span>
+                    {mainFruits.length > 0 && (
+                      <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
+                        <span className="text-muted-foreground shrink-0">🍓 {t('orders.mainFruits', 'Fruits')} :</span>
+                        <span>{mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
+                      </p>
+                    )}
+                    {supplements.length > 0 && (
+                      <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
+                        <span className="font-semibold shrink-0">🌿 {t('orders.supplements', 'Suppléments')} :</span>
+                        <span>{supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
               {order.orderLines?.length ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
@@ -706,7 +821,8 @@ function ClientOrderSheet({
               disabled={downloadingFacture}
               onClick={async () => {
                 setDownloadingFacture(true);
-                const ingStr = cocktail?.ingredients?.map(i => i.fruitName).join(' · ');
+                const ingList = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                const ingStr = formatIngredientsSummary(ingList, fruits, { format: 'separated' });
                 await downloadVectorFacture(order, ingStr);
                 setDownloadingFacture(false);
               }}
@@ -786,6 +902,12 @@ function AdminOrderSheet({
     queryKey: ['cocktail', order?.cocktailId],
     queryFn: () => getCocktailById(order!.cocktailId),
     enabled: !!order,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
     staleTime: 5 * 60_000,
   });
 
@@ -905,7 +1027,8 @@ function AdminOrderSheet({
                 disabled={downloadingNutrition}
                 onClick={async () => {
                    setDownloadingNutrition(true);
-                   const ingStr = cocktail?.ingredients?.map((i) => i.fruitName).join(' · ');
+                   const ingList = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                   const ingStr = formatIngredientsSummary(ingList, fruits, { format: 'inline' });
                    await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
                    setDownloadingNutrition(false);
                 }}
@@ -931,6 +1054,8 @@ function AdminOrderSheet({
             clientName={order.userNameSnapshot}
             cocktailNameFallback={order.cocktailNameSnapshot}
             hasAddedSugar={order.hasAddedSugar}
+            ingredientsSnapshot={order.cocktailIngredientsSnapshot}
+            orderAnalysisSnapshot={order.aiAnalysisSnapshot}
           />
 
           {/* Contact client */}
@@ -1351,7 +1476,7 @@ function AdminOrderSheet({
           open={showInvoiceFormatModal}
           onOpenChange={setShowInvoiceFormatModal}
           order={order}
-          ingredientsStr={cocktail?.ingredients?.map(i => i.fruitName).join(' · ')}
+          ingredientsStr={formatIngredientsSummary(order.cocktailIngredientsSnapshot || cocktail?.ingredients || [], fruits, { format: 'separated' })}
         />
       </SheetContent>
     </Sheet>

@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Cocktail } from '@/entities';
+import { partitionCocktailIngredients, type Cocktail, type Fruit } from '@/entities';
 import { getFruits } from '@/services/fruit';
 import {
   CocktailBanner,
@@ -19,8 +19,12 @@ import {
 
 // ── Ingredient summary helper ─────────────────────────────────────────────────
 
-export function ingredientSummary(cocktail: Cocktail): string {
-  return cocktail.ingredients.map((i) => i.fruitName).join(' · ');
+export function ingredientSummary(cocktail: Cocktail, fruits?: Fruit[]): string {
+  const { mainFruits, supplements } = partitionCocktailIngredients(cocktail.ingredients, fruits);
+  const mainStr = mainFruits.map((i) => i.fruitName).join(' · ');
+  if (!supplements.length) return mainStr;
+  const suppStr = supplements.map((i) => i.fruitName).join(' · ');
+  return mainStr ? `${mainStr} (+ ${suppStr})` : suppStr;
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
@@ -37,15 +41,15 @@ type Props = {
 
 export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, onDelete }: Props) {
   const { t } = useTranslation();
-  const summary = ingredientSummary(cocktail);
   const useCollage = shouldUseFruitCollage(cocktail);
 
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
     staleTime: 5 * 60_000,
-    enabled: useCollage,
   });
+
+  const summary = ingredientSummary(cocktail, fruits);
 
   const fruitVisuals = buildFruitVisuals(cocktail.ingredients, fruits);
 
