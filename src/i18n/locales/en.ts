@@ -12,6 +12,8 @@ export default {
     pricing: 'Pricing',
     hero: 'Hero',
     users: 'Users',
+    payments: 'Payments',
+    management: 'FYS Management',
   },
   auth: {
     login: {

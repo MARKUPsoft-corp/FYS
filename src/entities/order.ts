@@ -21,6 +21,26 @@ export interface OrderLine {
   lineTotal: number;
 }
 
+/** Dépense individuelle enregistrée pour une commande */
+export interface OrderExpenseItem {
+  id: string;
+  label: string;
+  type: 'fruit' | 'supplement' | 'packaging' | 'other';
+  quantity?: number;
+  unit?: string;
+  cost: number; // en XAF
+}
+
+/** Bilan des dépenses réelles et rentabilité de la commande */
+export interface OrderExpenses {
+  items: OrderExpenseItem[];
+  totalExpenses: number; // Somme des coûts en XAF
+  netProfit: number; // totalPrice - totalExpenses
+  marginPercentage: number; // (netProfit / totalPrice) * 100
+  updatedAt?: Timestamp;
+  updatedBy?: string;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -60,6 +80,9 @@ export interface Order {
   cocktailImageSnapshot?: string;
   /** Photos fruits figées pour collage si pas d'image cocktail */
   ingredientImageSnapshots?: string[];
+  /** Dépenses réelles et bénéfice calculé pour la commande */
+  expenses?: OrderExpenses;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+

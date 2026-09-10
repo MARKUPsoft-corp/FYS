@@ -12,6 +12,8 @@ export default {
     pricing: 'Tarifs',
     hero: 'Hero',
     users: 'Utilisateurs',
+    payments: 'Paiements',
+    management: 'FYS Management',
   },
   auth: {
     login: {

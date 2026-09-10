@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogIn, LogOut, ShoppingBag, Wallet, Image, LayoutTemplate } from 'lucide-react';
+import { LogIn, LogOut, ShoppingBag, Wallet, Image, CircleDollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
@@ -116,17 +116,17 @@ export function Topbar() {
           {user?.role === UserRole.ADMIN && (
             <>
               <Link
-                to="/board/landing"
+                to="/board/management"
                 className={cn(
                   'relative flex items-center justify-center size-10 rounded-xl transition-all',
-                  location.pathname.startsWith('/board/landing')
+                  location.pathname.startsWith('/board/management')
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
                 )}
-                aria-label="Images Publiques"
-                title="Images Publiques"
+                aria-label="FYS Management"
+                title="FYS Management"
               >
-                <LayoutTemplate className="size-5" />
+                <CircleDollarSign className="size-5" />
               </Link>
               <Link
                 to="/board/pricing"

@@ -3,7 +3,7 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle, Wallet, CreditCard, LayoutTemplate
+  XCircle, AlertCircle, Wallet, CreditCard, LayoutTemplate, CircleDollarSign
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,15 @@ export function AdminHome({ name }: Props) {
       iconColor: 'text-orange-500',
       path: '/board/fruits',
       cta: t('fruits.addFruit'),
+    },
+    {
+      label: 'FYS Management',
+      description: 'Suivi des dépenses réelles par commande, coûts et bénéfices nets.',
+      icon: CircleDollarSign,
+      iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
+      iconColor: 'text-emerald-600',
+      path: '/board/management',
+      cta: 'Gérer la rentabilité',
     },
     {
       label: 'Images Publiques',
@@ -303,7 +312,7 @@ export function AdminHome({ name }: Props) {
           <p className="text-muted-foreground font-medium text-sm mt-0.5">Accédez rapidement à la gestion de vos stocks, images, prix et paiements.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {quickActions.map((a) => {
             const Icon = a.icon;
             return (

@@ -30,6 +30,8 @@ const Pricing: PageComponent = () => {
 
   const [bottle500, setBottle500] = useState('');
   const [bottle1L, setBottle1L] = useState('');
+  const [bottleCost500, setBottleCost500] = useState('250');
+  const [bottleCost1L, setBottleCost1L] = useState('450');
   const [delivery, setDelivery] = useState('');
   const [promoFlyer, setPromoFlyer] = useState('');
   const [promoFlyerActive, setPromoFlyerActive] = useState(false);
@@ -52,6 +54,8 @@ const Pricing: PageComponent = () => {
     if (!pricing) return;
     setBottle500(String(pricing.bottle500mlBase));
     setBottle1L(String(pricing.bottle1LBase));
+    setBottleCost500(String(pricing.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml ?? 250));
+    setBottleCost1L(String(pricing.defaultBottleCost1L ?? DEFAULT_PRICING.defaultBottleCost1L ?? 450));
     setDelivery(String(pricing.deliveryFee));
     setPromoFlyer(String(pricing.promoFlyerDiscount ?? 0));
     setPromoFlyerActive(pricing.promoFlyerActive ?? false);
@@ -115,6 +119,8 @@ const Pricing: PageComponent = () => {
       await updatePricingSettings({
         bottle500mlBase: Number(bottle500) || 0,
         bottle1LBase: Number(bottle1L) || 0,
+        defaultBottleCost500ml: Number(bottleCost500) || 0,
+        defaultBottleCost1L: Number(bottleCost1L) || 0,
         deliveryFee: Number(delivery) || 0,
         promoFlyerDiscount: Number(promoFlyer) || 0,
         promoFlyerActive,
@@ -233,6 +239,62 @@ const Pricing: PageComponent = () => {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                 XAF
               </span>
+            </div>
+          </div>
+
+          {/* ── Coûts de Revient Bouteilles (FYS Management) ── */}
+          <div className="pt-4 pb-2 border-t border-border/30 space-y-4">
+            <div>
+              <h4 className="text-sm font-bold text-foreground">
+                Coûts d&apos;achat des bouteilles vides avec étiquette (FYS Management)
+              </h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Ces montants de base sont automatiquement pré-remplis pour chaque commande dans l&apos;espace FYS Management pour déduire les coûts du conditionnement.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="bottle-cost-500" className="text-sm font-semibold">
+                  Coût Bouteille vide 500ml + étiquette
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="bottle-cost-500"
+                    type="number"
+                    min={0}
+                    step={25}
+                    value={bottleCost500}
+                    onChange={(e) => setBottleCost500(e.target.value)}
+                    className="h-11 rounded-xl pr-14"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                    XAF
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Coût unitaire d&apos;approvisionnement (défaut : 250 XAF)</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bottle-cost-1l" className="text-sm font-semibold">
+                  Coût Bouteille vide 1L + étiquette
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="bottle-cost-1l"
+                    type="number"
+                    min={0}
+                    step={25}
+                    value={bottleCost1L}
+                    onChange={(e) => setBottleCost1L(e.target.value)}
+                    className="h-11 rounded-xl pr-14"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                    XAF
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Coût unitaire d&apos;approvisionnement (défaut : 450 XAF)</p>
+              </div>
             </div>
           </div>
 

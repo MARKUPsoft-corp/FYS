@@ -12,6 +12,7 @@ import {
   type BottleSize,
   type Cocktail,
   type Order,
+  type OrderExpenses,
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
@@ -320,4 +321,17 @@ export async function deleteOrderCompletely(orderId: string): Promise<void> {
   const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
   await deleteDoc(orderRef);
 }
+
+/** Enregistre ou met à jour les dépenses réelles et le bénéfice pour une commande */
+export async function updateOrderExpenses(
+  orderId: string,
+  expenses: OrderExpenses,
+): Promise<void> {
+  const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
+  await updateDoc(orderRef, {
+    expenses,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 

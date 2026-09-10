@@ -11,6 +11,7 @@ import {
   Wallet,
   Image,
   CreditCard,
+  CircleDollarSign,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -156,6 +157,16 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.payments',
     path: '/board/payments',
     icon: CreditCard,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: false,
+  },
+  {
+    key: 'management',
+    label: 'FYS Management',
+    labelKey: 'nav.management',
+    path: '/board/management',
+    icon: CircleDollarSign,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
     showInDesktopNav: false,

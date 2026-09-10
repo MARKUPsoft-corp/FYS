@@ -45,6 +45,10 @@ export interface PricingSettings {
   launchNoticeText?: string;
   /** Texte personnalisé de l'annonce (anglais) */
   launchNoticeTextEn?: string;
+  /** Coût d'achat de base de la bouteille vide avec étiquette (500ml) */
+  defaultBottleCost500ml?: number;
+  /** Coût d'achat de base de la bouteille vide avec étiquette (1L) */
+  defaultBottleCost1L?: number;
   updatedAt?: Timestamp;
 }
 
@@ -64,6 +68,8 @@ export const DEFAULT_PRICING: PricingSettings = {
   launchNoticeActive: true,
   launchNoticeText: 'Pour le mois de démarrage, les livraisons se feront après 24h.',
   launchNoticeTextEn: 'For the launch month, deliveries will be made after 24h.',
+  defaultBottleCost500ml: 250,
+  defaultBottleCost1L: 450,
 };
 
 export const PRICING_DOC_ID = 'pricing';
@@ -211,3 +217,15 @@ export function pricePerBottle(
 ): number {
   return getBottleBasePrice(settings, size) + sumIngredientPrices(ingredients);
 }
+
+/** Coût d'achat de base de la bouteille vide avec étiquette */
+export function getDefaultBottleCost(
+  settings?: PricingSettings | null,
+  size: BottleSize = '500ml',
+): number {
+  if (size === '1L') {
+    return settings?.defaultBottleCost1L ?? DEFAULT_PRICING.defaultBottleCost1L ?? 450;
+  }
+  return settings?.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml ?? 250;
+}
+
