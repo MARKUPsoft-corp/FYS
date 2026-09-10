@@ -28,8 +28,10 @@ import {
   type PricingSettings,
   getDefaultBottleCost,
 } from '@/entities/settings';
-import { isIngredientSupplement } from '@/entities/cocktail';
+import { isIngredientSupplement, type CocktailIngredient } from '@/entities/cocktail';
 import { updateOrderExpenses } from '@/services/order';
+import { useQuery } from '@tanstack/react-query';
+import { getCocktailById } from '@/services/cocktail';
 
 interface OrderExpensesDialogProps {
   open: boolean;
@@ -59,26 +61,80 @@ export function OrderExpensesDialog({
     return map;
   }, [fruits]);
 
+  // Fetch cocktail document as fallback if order has cocktailId
+  const { data: fetchedCocktail, isLoading: cocktailLoading } = useQuery({
+    queryKey: ['cocktail', order?.cocktailId],
+    queryFn: () => (order?.cocktailId ? getCocktailById(order.cocktailId) : null),
+    enabled: !!order?.cocktailId && open,
+    staleTime: 5 * 60_000,
+  });
+
+  // Resolve ingredients with 3-tier fallback (Snapshot -> Document -> Name Matching)
+  const effectiveIngredients = useMemo((): CocktailIngredient[] => {
+    if (!order) return [];
+
+    // Tier 1: Snapshot directly on order
+    if (order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0) {
+      return order.cocktailIngredientsSnapshot;
+    }
+
+    // Tier 2: Fetched cocktail document
+    if (fetchedCocktail?.ingredients && fetchedCocktail.ingredients.length > 0) {
+      return fetchedCocktail.ingredients;
+    }
+
+    // Tier 3: Parse from cocktail name using fruits database
+    if (order.cocktailNameSnapshot && fruits.length > 0) {
+      const nameLower = order.cocktailNameSnapshot.toLowerCase();
+      const matched: CocktailIngredient[] = [];
+      const seenIds = new Set<string>();
+
+      // Sort fruits by name length descending so multi-word names match first
+      const sortedFruits = [...fruits].sort((a, b) => b.name.length - a.name.length);
+
+      for (const fruit of sortedFruits) {
+        if (!fruit.name || fruit.name.trim().length < 2) continue;
+        const fruitLower = fruit.name.toLowerCase().trim();
+        const regex = new RegExp(`(^|[^a-zA-ZÀ-ÿ])${fruitLower}([^a-zA-ZÀ-ÿ]|$)`, 'i');
+        if (regex.test(nameLower) || nameLower.includes(fruitLower)) {
+          if (!seenIds.has(fruit.id)) {
+            seenIds.add(fruit.id);
+            const isSupp = fruit.isSupplement === true || fruit.categoryIds?.includes('supplement_herbe');
+            matched.push({
+              fruitId: fruit.id,
+              fruitName: fruit.name,
+              quantityGrams: isSupp ? 25 : 150,
+              priceSnapshot: fruit.price || 0,
+              role: isSupp ? 'supplement' : 'fruit',
+            });
+          }
+        }
+      }
+
+      if (matched.length > 0) {
+        return matched;
+      }
+    }
+
+    return [];
+  }, [order, fetchedCocktail, fruits]);
+
   // Generate initial default pre-filled items for this order
   const generateDefaultItems = (): OrderExpenseItem[] => {
     if (!order) return [];
     const result: OrderExpenseItem[] = [];
 
     // 1. Ingredients (Fruits & Supplements)
-    const ingredients =
-      order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0
-        ? order.cocktailIngredientsSnapshot
-        : [];
-
-    ingredients.forEach((ing, index) => {
+    effectiveIngredients.forEach((ing, index) => {
       const fruit = fruitMap.get(ing.fruitId);
-      const name = fruit?.name || ing.fruitId || `Ingrédient ${index + 1}`;
+      const name = ing.fruitName || fruit?.name || ing.fruitId || `Ingrédient ${index + 1}`;
       const isSupp = isIngredientSupplement(ing, fruits);
+      const qty = ing.quantityGrams || (isSupp ? 25 : 150);
       result.push({
         id: `ing-${ing.fruitId || index}-${Date.now()}`,
-        label: `${name} (${ing.quantityGrams || 0}g)`,
+        label: `${name} (${qty}g)`,
         type: isSupp ? 'supplement' : 'fruit',
-        quantity: ing.quantityGrams,
+        quantity: qty,
         unit: 'g',
         cost: 0,
       });
@@ -91,7 +147,7 @@ export function OrderExpensesDialog({
         const qty = line.quantity || 1;
         result.push({
           id: `bottle-${line.bottleSize}-${idx}-${Date.now()}`,
-          label: `Bouteille vide ${line.bottleSize} + étiquette`,
+          label: `Bouteille vide ${line.bottleSize} + étiquette (×${qty})`,
           type: 'packaging',
           quantity: qty,
           unit: 'bouteille',
@@ -105,7 +161,7 @@ export function OrderExpensesDialog({
       const unitCost = getDefaultBottleCost(pricingSettings, size);
       result.push({
         id: `bottle-${size}-${Date.now()}`,
-        label: `Bouteille vide ${size} + étiquette`,
+        label: `Bouteille vide ${size} + étiquette (×${qty})`,
         type: 'packaging',
         quantity: qty,
         unit: 'bouteille',
@@ -119,15 +175,26 @@ export function OrderExpensesDialog({
   // Sync state when order changes or dialog opens
   useEffect(() => {
     if (!order || !open) return;
+    if (cocktailLoading) return; // Wait for cocktail doc query if running
 
     if (order.expenses?.items && order.expenses.items.length > 0) {
-      // Load saved expenses
-      setItems(order.expenses.items.map((it) => ({ ...it })));
+      const hasFruitItem = order.expenses.items.some(
+        (it) => it.type === 'fruit' || it.type === 'supplement'
+      );
+      if (hasFruitItem) {
+        setItems(order.expenses.items.map((it) => ({ ...it })));
+      } else {
+        // Saved previously without fruits! Merge detected fruits with existing saved items
+        const defaultFruits = generateDefaultItems().filter(
+          (it) => it.type === 'fruit' || it.type === 'supplement'
+        );
+        setItems([...defaultFruits, ...order.expenses.items.map((it) => ({ ...it }))]);
+      }
     } else {
       // Auto-prefill
       setItems(generateDefaultItems());
     }
-  }, [order?.id, open]);
+  }, [order?.id, open, cocktailLoading, effectiveIngredients]);
 
   // Live financial metrics
   const totalExpenses = useMemo(() => {
@@ -160,6 +227,21 @@ export function OrderExpensesDialog({
       cost: 0,
     };
     setItems((prev) => [...prev, newItem]);
+  };
+
+  const handleAddFruitById = (fruitId: string) => {
+    const fruit = fruitMap.get(fruitId);
+    if (!fruit) return;
+    const isSupp = fruit.isSupplement === true || fruit.categoryIds?.includes('supplement_herbe');
+    const newItem: OrderExpenseItem = {
+      id: `fruit-manual-${fruit.id}-${Date.now()}`,
+      label: `${fruit.name} (${isSupp ? 25 : 150}g)`,
+      type: isSupp ? 'supplement' : 'fruit',
+      quantity: isSupp ? 25 : 150,
+      unit: 'g',
+      cost: 0,
+    };
+    setItems((prev) => [newItem, ...prev]);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -399,16 +481,25 @@ export function OrderExpensesDialog({
 
             {/* Quick add action buttons */}
             <div className="flex items-center gap-2 pt-1 flex-wrap">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleAddItem('other')}
-                className="rounded-full h-8 text-xs font-semibold gap-1.5 border-dashed border-border/70 hover:border-primary hover:text-primary"
-              >
-                <Plus className="size-3.5" />
-                <span>Ajouter un frais annexe</span>
-              </Button>
+              <div className="relative">
+                <select
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    handleAddFruitById(e.target.value);
+                    e.target.value = '';
+                  }}
+                  defaultValue=""
+                  className="h-8 px-3 rounded-full text-xs font-semibold border border-dashed border-border/70 bg-background text-foreground hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors cursor-pointer focus:outline-hidden"
+                >
+                  <option value="" disabled>+ Ajouter un fruit du catalogue...</option>
+                  {fruits.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.isSupplement ? '🌿' : '🍓'} {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Button
                 type="button"
                 variant="outline"
@@ -418,6 +509,17 @@ export function OrderExpensesDialog({
               >
                 <Plus className="size-3.5" />
                 <span>Ajouter bouteille / étiquette</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleAddItem('other')}
+                className="rounded-full h-8 text-xs font-semibold gap-1.5 border-dashed border-border/70 hover:border-primary hover:text-primary"
+              >
+                <Plus className="size-3.5" />
+                <span>Ajouter un frais annexe</span>
               </Button>
             </div>
           </div>
