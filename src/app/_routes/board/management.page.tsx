@@ -27,7 +27,7 @@ import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { subscribeToAllOrders } from '@/services/order';
 import { getFruits } from '@/services/fruit';
 import { getPricingSettings } from '@/services/settings';
-import type { Order, OrderStatus } from '@/entities/order';
+import { OrderStatus, type Order } from '@/entities/order';
 import { OrderExpensesDialog } from '@/components/features/management/OrderExpensesDialog';
 import { formatIngredientsSummary } from '@/entities/cocktail';
 import { cn } from '@/lib/utils';
@@ -79,20 +79,25 @@ const ManagementPage: PageComponent = () => {
     return () => unsubscribe();
   }, []);
 
+  // Seules les commandes livrées apparaissent dans FYS Management
+  const deliveredOrders = useMemo(() => {
+    return orders.filter((o) => o.status === OrderStatus.DELIVERED);
+  }, [orders]);
+
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
-    return orders.find((o) => o.id === selectedOrderId) ?? null;
-  }, [selectedOrderId, orders]);
+    return deliveredOrders.find((o) => o.id === selectedOrderId) ?? null;
+  }, [selectedOrderId, deliveredOrders]);
 
-  // Global KPI Calculations
+  // Global KPI Calculations (sur les commandes livrées uniquement)
   const globalKpis = useMemo(() => {
-    const totalOrdersCount = orders.length;
+    const totalOrdersCount = deliveredOrders.length;
     let totalRevenue = 0;
     let totalExpenses = 0;
     let totalNetProfit = 0;
     let filledOrdersCount = 0;
 
-    orders.forEach((o) => {
+    deliveredOrders.forEach((o) => {
       totalRevenue += o.totalPrice ?? 0;
       if (o.expenses && typeof o.expenses.totalExpenses === 'number') {
         filledOrdersCount += 1;
@@ -117,11 +122,11 @@ const ManagementPage: PageComponent = () => {
       completionRate,
       overallMargin,
     };
-  }, [orders]);
+  }, [deliveredOrders]);
 
-  // Filtering & Sorting
+  // Filtering & Sorting (sur les commandes livrées uniquement)
   const filteredOrders = useMemo(() => {
-    return orders
+    return deliveredOrders
       .filter((order) => {
         // Tab filter
         const isFilled = Boolean(order.expenses && typeof order.expenses.totalExpenses === 'number');
@@ -161,7 +166,7 @@ const ManagementPage: PageComponent = () => {
         }
         return sortAsc ? diff : -diff;
       });
-  }, [orders, activeTab, searchQuery, sortField, sortAsc]);
+  }, [deliveredOrders, activeTab, searchQuery, sortField, sortAsc]);
 
   const handleOpenOrder = (orderId: string) => {
     setSelectedOrderId(orderId);
@@ -175,7 +180,7 @@ const ManagementPage: PageComponent = () => {
       titleHighlight="Management"
       sectionBefore="Suivi des"
       sectionHighlight="Coûts & Bénéfices"
-      subtitle="Calculez au centime près les dépenses réelles par commande (ingrédients, bouteilles vides avec étiquettes, frais annexes) et la marge nette dégagée."
+      subtitle="Calculez au centime près les dépenses réelles par commande livrée (ingrédients, bouteilles vides avec étiquettes, frais annexes) et la marge nette dégagée."
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
     >
       <div className="space-y-8 max-w-7xl mx-auto w-full pb-16">
@@ -199,7 +204,7 @@ const ManagementPage: PageComponent = () => {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-xs text-muted-foreground font-medium">
-              <span>{globalKpis.totalOrdersCount} commandes totales</span>
+              <span>{globalKpis.totalOrdersCount} commandes livrées</span>
               <span className="font-semibold text-foreground">Encaissé</span>
             </div>
           </div>
@@ -322,7 +327,7 @@ const ManagementPage: PageComponent = () => {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                Toutes ({orders.length})
+                Toutes ({deliveredOrders.length})
               </button>
               <button
                 type="button"
@@ -402,9 +407,15 @@ const ManagementPage: PageComponent = () => {
             <div className="size-16 rounded-full bg-muted/30 border border-border/50 flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="size-7 text-muted-foreground" />
             </div>
-            <h3 className="font-display font-bold text-lg text-foreground">Aucune commande trouvée</h3>
+            <h3 className="font-display font-bold text-lg text-foreground">
+              {deliveredOrders.length === 0
+                ? 'Aucune commande livrée pour le moment'
+                : 'Aucune commande trouvée'}
+            </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
-              Aucune commande ne correspond aux filtres ou à votre recherche actuelle.
+              {deliveredOrders.length === 0
+                ? 'Seuls les cocktails livrés apparaissent dans FYS Management pour le suivi de la rentabilité.'
+                : 'Aucune commande livrée ne correspond aux filtres ou à votre recherche actuelle.'}
             </p>
           </div>
         ) : (
