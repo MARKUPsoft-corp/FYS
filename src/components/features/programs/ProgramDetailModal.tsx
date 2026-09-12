@@ -19,14 +19,19 @@ import {
   Shield,
   Sun,
   Coffee,
-  ChevronDown,
-  ChevronUp,
   MessageCircle,
   AlertCircle,
   Loader2,
+  Check,
+  X,
+  ArrowRight,
+  ChevronRight,
+  ShieldCheck,
+  Apple,
 } from 'lucide-react';
 import {
   type Program,
+  type ProgramDayItem,
   PROGRAM_TIMING_LABELS,
   type ProgramTiming,
 } from '@/entities';
@@ -47,16 +52,14 @@ const GOAL_ICONS: Record<string, any> = {
   digestion: HeartPulse,
   energy: Flame,
   weight_loss: Flame,
-  wellness: Sparkles,
+  glow: Sparkles,
 };
 
-const TIMING_ICONS: Record<ProgramTiming, any> = {
-  morning_fasting: Sun,
-  mid_morning: Coffee,
-  lunch_substitute: Droplets,
-  afternoon_boost: Flame,
-  dinner_light: Clock,
-  before_bed: Clock,
+const TIMING_ICONS: Record<string, any> = {
+  morning_empty_stomach: Sun,
+  morning: Coffee,
+  afternoon: Flame,
+  evening: Clock,
 };
 
 export function ProgramDetailModal({
@@ -69,299 +72,332 @@ export function ProgramDetailModal({
   activeProgramTitle,
 }: Props) {
   const [startingToday, setStartingToday] = useState(true);
-  const [expandedDay, setExpandedDay] = useState<number | null>(1);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
 
   if (!program) return null;
 
   const GoalIcon = GOAL_ICONS[program.goal] || Sparkles;
+  const currentDayItem = program.days[selectedDayIndex] || program.days[0];
+  const TimingIcon = TIMING_ICONS[currentDayItem.timing] || Clock;
+  const timingLabel = currentDayItem.timingLabel || PROGRAM_TIMING_LABELS[currentDayItem.timing] || 'Au réveil';
 
   const handleEnrollClick = async () => {
     await onEnroll(program, startingToday);
   };
 
+  const packPrice = program.bundlePrice || program.price;
   const whatsappMessage = encodeURIComponent(
-    `Bonjour FYS ! Je souhaite commander le pack pour le programme "${program.title}" (${program.durationDays} jours, ${program.bundlePrice?.toLocaleString() ?? 5000} XAF). Pouvez-vous m'aider pour la livraison ?`
+    `Bonjour FYS ! Je souhaite commander la cure complète "${program.title}" (${program.durationDays} jours, ${packPrice.toLocaleString()} XAF). Pouvez-vous organiser ma livraison ?`
   );
-  const whatsappUrl = `https://wa.me/237699000000?text=${whatsappMessage}`; // Can be customized or synced with settings
+  const whatsappUrl = `https://wa.me/237699000000?text=${whatsappMessage}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border border-border/80 shadow-2xl rounded-2xl bg-background/95 backdrop-blur-md">
-        {/* Header Hero Banner */}
-        <div className="relative p-6 bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-primary/5 border-b border-border/60">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-              <GoalIcon className="w-3.5 h-3.5" />
-              {program.goal.toUpperCase()}
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary border border-primary/30">
-              <Calendar className="w-3.5 h-3.5" />
-              {program.durationDays} jours
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border/60">
-              Difficulté : {program.difficulty}
-            </span>
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border border-emerald-500/20 shadow-2xl rounded-3xl bg-background/98 backdrop-blur-xl overflow-x-hidden">
+        {/* ── Top Hero Visual Banner ── */}
+        <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-muted">
+          <img
+            src={program.imageUrl}
+            alt={program.title}
+            className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-1000 ease-out"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/30" />
+
+          {/* Floating Badges */}
+          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/90 text-white backdrop-blur-md shadow-lg border border-emerald-400/40">
+                <GoalIcon className="w-3.5 h-3.5" />
+                {program.goalLabel || program.goal}
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 dark:bg-black/80 text-foreground backdrop-blur-md shadow-sm border border-border/40">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                {program.durationDays} jours
+              </span>
+              {program.badge && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-md">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {program.badge}
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="size-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-colors"
+            >
+              <X className="size-5" />
+            </button>
           </div>
 
-          <DialogHeader className="text-left space-y-1">
-            <DialogTitle className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <span>{program.title}</span>
-            </DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground">
+          {/* Banner Title */}
+          <div className="absolute bottom-4 left-5 right-5 z-10 space-y-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground">
+              {program.title}
+            </h2>
+            <p className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 max-w-xl">
               {program.subtitle}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Pricing Pack Highlight */}
-          {program.bundlePrice && (
-            <div className="mt-4 flex items-center justify-between p-3.5 rounded-xl bg-background/80 border border-emerald-500/30 shadow-xs">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
-                  Pack Cure Complète ({program.durationDays} bouteilles fraîches)
-                </p>
-                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                  {program.bundlePrice.toLocaleString()} XAF
-                </p>
-              </div>
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Commander le pack
-              </a>
-            </div>
-          )}
+            </p>
+          </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-6 space-y-6">
+        {/* ── Modal Content Body ── */}
+        <div className="p-5 sm:p-7 space-y-7">
+          {/* Key Value Props Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-muted/40 border border-border/60 text-center">
+            <div>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Flacons</p>
+              <p className="text-base font-black text-foreground mt-0.5">{program.durationDays}x {program.bottleSize}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Pressage</p>
+              <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">100% à froid</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Sucre / Eau</p>
+              <p className="text-base font-black text-foreground mt-0.5">0% Ajouté</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Pack complet</p>
+              <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{packPrice.toLocaleString()} XAF</p>
+            </div>
+          </div>
+
           {/* Description & Benefits */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              À propos de la cure
-            </h3>
-            <p className="text-sm text-foreground/90 leading-relaxed">
+          <div className="space-y-3">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {program.description}
             </p>
-
             {program.benefits && program.benefits.length > 0 && (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {program.benefits.map((benefit, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                {program.benefits.map((b, bi) => (
                   <div
-                    key={i}
-                    className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/40 border border-border/40 text-xs text-foreground/90"
+                    key={bi}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 text-xs font-medium text-foreground"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>{benefit}</span>
+                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{b}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Day by Day Plan */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <span>Programme jour par jour ({program.days.length} étapes)</span>
+          {/* ── Interactive Day-by-Day Juice Explorer ── */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <Sparkles className="size-4 text-emerald-500" />
+                Déroulé des jus de votre cure
               </h3>
-              <span className="text-xs text-muted-foreground">
-                Cliquez sur un jour pour déplier
+              <span className="text-xs font-medium text-muted-foreground">
+                Jour {selectedDayIndex + 1} sur {program.days.length}
               </span>
             </div>
 
-            <div className="space-y-3">
-              {program.days.map((day) => {
-                const isExpanded = expandedDay === day.day;
-                const TimingIcon = TIMING_ICONS[day.timing] || Clock;
-                const timingLabel = PROGRAM_TIMING_LABELS[day.timing] || day.timing;
-
+            {/* Day Selector Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {program.days.map((dayItem, index) => {
+                const isSelected = selectedDayIndex === index;
+                const dNum = dayItem.dayNumber || dayItem.day || index + 1;
                 return (
-                  <div
-                    key={day.day}
-                    className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-                      isExpanded
-                        ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10 shadow-xs'
-                        : 'border-border/60 bg-card/60 hover:border-border'
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setSelectedDayIndex(index)}
+                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white shadow-lg scale-102 ring-2 ring-emerald-400/50'
+                        : 'bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:border-emerald-500/40'
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setExpandedDay(isExpanded ? null : day.day)}
-                      className="w-full text-left p-3.5 flex items-center justify-between gap-3 focus:outline-hidden"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
-                            isExpanded
-                              ? 'bg-emerald-600 text-white shadow-xs'
-                              : 'bg-muted text-foreground'
-                          }`}
-                        >
-                          J{day.day}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            <span>{day.title}</span>
-                            <span className="text-xs font-normal text-muted-foreground">
-                              • {day.focus}
-                            </span>
-                          </div>
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
-                            <TimingIcon className="w-3 h-3" />
-                            <span>{day.juiceName}</span>
-                            <span className="text-muted-foreground">({day.bottleSize})</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-muted-foreground">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border/40 text-xs">
-                        {/* Recipe Ingredients */}
-                        <div>
-                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                            Ingrédients de la potion :
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {day.fruits.map((f, fi) => (
-                              <span
-                                key={fi}
-                                className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium border border-emerald-500/20"
-                              >
-                                {f}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Timing & Instructions */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground">
-                          <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/40">
-                            <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span><strong>Moment :</strong> {timingLabel}</span>
-                          </div>
-                          {day.instructions && (
-                            <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/40">
-                              <Droplets className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span>{day.instructions}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* NutriFYS Tip */}
-                        {day.nutrifysAdvice && (
-                          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex items-start gap-2">
-                            <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                            <div>
-                              <strong className="font-semibold block text-[11px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                                Conseil NutriFYS
-                              </strong>
-                              <p className="text-xs leading-relaxed mt-0.5">
-                                {day.nutrifysAdvice}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
+                      J{dNum}
+                    </span>
+                    <span>{dayItem.cocktailName || dayItem.juiceName}</span>
+                  </button>
                 );
               })}
             </div>
+
+            {/* Featured Juice Card for Selected Day */}
+            {currentDayItem && (
+              <div className="rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-card to-emerald-500/5 overflow-hidden shadow-lg transition-all duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-5">
+                  {/* Juice Photo */}
+                  <div className="md:col-span-2 relative min-h-[220px] md:min-h-full overflow-hidden bg-muted">
+                    <img
+                      src={currentDayItem.cocktailImage || currentDayItem.imageUrl || program.imageUrl}
+                      alt={currentDayItem.cocktailName || currentDayItem.juiceName}
+                      className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                        {currentDayItem.focus || 'Prescription quotidienne'}
+                      </span>
+                      <p className="text-base font-black leading-snug mt-1">
+                        {currentDayItem.cocktailName || currentDayItem.juiceName}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Juice Details */}
+                  <div className="md:col-span-3 p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                          <TimingIcon className="size-3.5" />
+                          {timingLabel}
+                        </span>
+                        <span className="text-xs font-bold text-muted-foreground">
+                          Flacon de 500ml
+                        </span>
+                      </div>
+
+                      {currentDayItem.tasteProfile && (
+                        <p className="text-xs italic text-muted-foreground bg-muted/30 p-2.5 rounded-xl border border-border/40">
+                          « {currentDayItem.tasteProfile} »
+                        </p>
+                      )}
+
+                      {/* Ingredients Chips */}
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">
+                          Fruits & plantes bio pressés :
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(currentDayItem.fruitNames || currentDayItem.fruits || []).map((f, fi) => (
+                            <span
+                              key={fi}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border border-emerald-500/20 shadow-2xs"
+                            >
+                              <Leaf className="size-3 text-emerald-600" />
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* NutriFYS Advice Box */}
+                      {(currentDayItem.advice || currentDayItem.nutrifysAdvice) && (
+                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-950 dark:text-amber-200 space-y-1">
+                          <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-bold text-xs">
+                            <Sparkles className="size-3.5 text-amber-500" />
+                            <span>Conseil NutriFYS pour ce jour</span>
+                          </div>
+                          <p className="text-xs leading-relaxed">
+                            {currentDayItem.advice || currentDayItem.nutrifysAdvice}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Active Program Conflict Warning */}
+          {/* Active Program Alert if already enrolled in another */}
           {hasActiveProgram && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex items-start gap-2.5 text-xs">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3 text-xs">
+              <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <strong>Tu as déjà un programme en cours :</strong> "{activeProgramTitle}".
-                <p className="mt-0.5 text-muted-foreground">
-                  Tu peux continuer à suivre ta cure actuelle dans ton espace, ou la terminer pour en démarrer une autre.
+                <strong>Vous suivez actuellement :</strong> « {activeProgramTitle} ».
+                <p className="text-muted-foreground mt-0.5">
+                  Pour préserver l'efficacité biologique de votre organisme, nous vous conseillons de terminer votre cure actuelle avant d'en entamer une nouvelle.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Starting Day Selection */}
+          {/* Starting Day Selector */}
           {!hasActiveProgram && (
-            <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
-                Quand souhaites-tu débuter ?
+            <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/60 space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                Quand souhaitez-vous commencer votre cure ?
               </span>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setStartingToday(true)}
-                  className={`p-3 rounded-xl text-left border text-xs font-medium transition-all ${
+                  className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     startingToday
-                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 shadow-xs'
+                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 shadow-sm ring-1 ring-emerald-500'
                       : 'border-border/60 bg-background text-muted-foreground hover:border-border'
                   }`}
                 >
                   <span className="block font-bold text-sm text-foreground mb-0.5">
                     Aujourd'hui
                   </span>
-                  Le Jour 1 commence immédiatement
+                  Le Jour 1 démarre immédiatement
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setStartingToday(false)}
-                  className={`p-3 rounded-xl text-left border text-xs font-medium transition-all ${
+                  className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     !startingToday
-                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 shadow-xs'
+                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 shadow-sm ring-1 ring-emerald-500'
                       : 'border-border/60 bg-background text-muted-foreground hover:border-border'
                   }`}
                 >
                   <span className="block font-bold text-sm text-foreground mb-0.5">
                     Demain matin
                   </span>
-                  Départ frais dès le réveil
+                  Départ parfait dès le réveil
                 </button>
               </div>
             </div>
           )}
+
+          {/* Pack WhatsApp Order CTA Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600/10 via-teal-600/10 to-transparent border border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-foreground">
+                Besoin de vous faire livrer les jus frais à domicile ?
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Commandez le pack de {program.durationDays} jus en une seule fois auprès de notre atelier.
+              </p>
+            </div>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              <MessageCircle className="size-4" />
+              Commander le pack ({packPrice.toLocaleString()} XAF)
+            </a>
+          </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 bg-muted/30 border-t border-border/60 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={onClose} disabled={isEnrolling} className="text-xs">
+        {/* ── Footer Actions ── */}
+        <div className="p-5 bg-card border-t border-border/60 flex items-center justify-between gap-3">
+          <Button variant="ghost" onClick={onClose} disabled={isEnrolling} className="text-xs cursor-pointer">
             Fermer
           </Button>
 
-          <div className="flex items-center gap-2">
-            {!hasActiveProgram && (
-              <Button
-                onClick={handleEnrollClick}
-                disabled={isEnrolling}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 shadow-xs"
-              >
-                {isEnrolling ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                    Inscription...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                    Démarrer ce programme
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          {!hasActiveProgram && (
+            <Button
+              onClick={handleEnrollClick}
+              disabled={isEnrolling}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs h-11 px-7 rounded-xl shadow-lg transition-all active:scale-98 cursor-pointer"
+            >
+              {isEnrolling ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Inscription en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-4 mr-2" />
+                  Démarrer ce programme ({program.durationDays} jours)
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -150,23 +150,34 @@ export async function checkinProgramDay(
   notes?: string
 ): Promise<void> {
   const ref = doc(db, COLLECTIONS.USER_PROGRAMS, userProgram.id);
-  const existingCheckin = userProgram.checkins.find((c) => c.day === dayNumber);
+  const existingCheckin = userProgram.checkins.find(
+    (c) => (c.dayNumber || c.day) === dayNumber
+  );
 
   let newCheckins: UserProgramCheckin[];
   const todayIso = new Date().toISOString();
 
   if (existingCheckin) {
     newCheckins = userProgram.checkins.map((c) =>
-      c.day === dayNumber
-        ? { ...c, completedAt: todayIso, notes: notes ?? c.notes }
+      (c.dayNumber || c.day) === dayNumber
+        ? {
+            ...c,
+            dayNumber,
+            day: dayNumber,
+            completedAt: todayIso,
+            note: notes ?? c.note ?? c.notes,
+            notes: notes ?? c.notes ?? c.note,
+          }
         : c
     );
   } else {
     newCheckins = [
       ...userProgram.checkins,
       {
+        dayNumber,
         day: dayNumber,
         completedAt: todayIso,
+        note: notes,
         notes,
       },
     ];

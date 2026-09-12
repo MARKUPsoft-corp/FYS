@@ -206,61 +206,97 @@ export function CustomerHome(_props: Props) {
           </div>
         </div>
 
-        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER ── */}
+        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (ULTRA APPÉTISSANT & ANIMÉ) ── */}
         {activeProgram ? (
-          <div className="rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 border border-emerald-400/30">
-            <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="relative z-10 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/30">
-                  <CalendarCheck className="size-3.5 text-amber-300" />
-                  Cure en cours
-                </span>
-                <span className="text-xs text-emerald-100 font-semibold">
-                  Jour {activeProgram.currentDay} sur {activeProgram.durationDays}
-                </span>
-              </div>
-              <h3 className="text-2xl font-black">{activeProgram.programTitle}</h3>
-              <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl">
-                {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Continuez votre routine bien-être aujourd'hui !
-              </p>
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-emerald-500/40 text-white group">
+            {/* Background photo with subtle zoom */}
+            <div className="absolute inset-0 bg-muted">
+              <img
+                src={activeProgram.programSnapshot?.imageUrl || "https://images.unsplash.com/photo-1622597467836-f3885f2011ea?auto=format&fit=crop&w=1200&q=80"}
+                alt={activeProgram.programTitle}
+                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-black/60" />
             </div>
-            <div className="relative z-10 shrink-0">
-              <Link to="/board/programs">
-                <Button className="rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 font-bold text-xs h-11 px-6 shadow-md transition-all">
-                  Suivre ma cure & jus du jour
-                  <ArrowRight className="size-4 ml-1.5" />
-                </Button>
-              </Link>
+
+            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-md border border-emerald-400/40 animate-pulse">
+                    <CalendarCheck className="size-3.5" />
+                    Cure active en cours
+                  </span>
+                  <span className="text-xs text-emerald-200 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                    Jour {activeProgram.currentDay} sur {activeProgram.durationDays}
+                  </span>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-black font-display text-white leading-tight">
+                  {activeProgram.programTitle}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+                  {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Votre jus frais du jour vous attend !
+                </p>
+              </div>
+
+              <div className="relative z-10 shrink-0">
+                <Link to="/board/programs">
+                  <Button className="rounded-2xl bg-white text-emerald-900 hover:bg-emerald-50 font-extrabold text-xs sm:text-sm h-12 px-7 shadow-xl transition-all active:scale-98 cursor-pointer">
+                    Consulter ma prescription & valider mon jus
+                    <ArrowRight className="size-4 ml-2 text-emerald-700" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-primary/10 border border-emerald-500/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="size-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
-                <CalendarCheck className="size-7" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
-                    Nouveau • FYS Program
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-emerald-500/30 text-white group cursor-pointer">
+            {/* Appetizing fresh cold-pressed background photography */}
+            <div className="absolute inset-0 bg-muted">
+              <img
+                src="https://images.unsplash.com/photo-1622597467836-f3885f2011ea?auto=format&fit=crop&w=1200&q=80"
+                alt="Cures FYS Program"
+                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-emerald-950/85 to-black/60" />
+            </div>
+
+            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-md">
+                    <Sparkles className="size-3.5 text-amber-300" />
+                    NOUVEAU • FYS PROGRAM
+                  </span>
+                  <span className="text-xs text-emerald-200 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                    Cures 3 à 7 jours
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                  Suivez une cure détox ou vitalité jour par jour
+
+                <h3 className="text-2xl sm:text-3xl font-black font-display text-white leading-tight">
+                  Détox, Vitalité & Ventre Plat : Votre Cure de Jus Vivants
                 </h3>
-                <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
-                  Des programmes structurés sur 3 à 7 jours avec des jus frais prescrits chaque jour par nos nutritionnistes pour purifier votre organisme et faire le plein d'énergie.
+
+                <p className="text-xs sm:text-sm text-emerald-100/85 max-w-xl leading-relaxed">
+                  Des protocoles jour par jour formulés avec nos nutritionnistes. 100% purs jus bruts pressés à froid le matin même, zéro eau, zéro conservateur.
                 </p>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-emerald-200 font-semibold">
+                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🌿 100% Pressé à froid</span>
+                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🚚 Livré frais chaque matin</span>
+                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🧠 Suivi quotidien NutriFYS</span>
+                </div>
               </div>
-            </div>
-            <div className="shrink-0">
-              <Link to="/board/programs">
-                <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-11 px-6 shadow-xs">
-                  Découvrir les programmes
-                  <ArrowRight className="size-4 ml-1.5" />
-                </Button>
-              </Link>
+
+              <div className="relative z-10 shrink-0">
+                <Link to="/board/programs">
+                  <Button className="rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs sm:text-sm h-12 px-7 shadow-lg shadow-emerald-500/25 transition-all active:scale-98 cursor-pointer">
+                    Découvrir les cures
+                    <ArrowRight className="size-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         )}
