@@ -29,6 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ProgramJuiceOrderSheet } from '@/components/features/programs/ProgramJuiceOrderSheet';
 import {
   type UserProgram,
   type ProgramDayItem,
@@ -63,6 +64,7 @@ export function ActiveProgramCoach({
   const navigate = useNavigate();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedDayView, setSelectedDayView] = useState<number | null>(null);
+  const [isJuiceOrderOpen, setIsJuiceOrderOpen] = useState(false);
 
   const totalDays = userProgram.durationDays;
   const completedCheckins = userProgram.checkins || [];
@@ -94,10 +96,8 @@ export function ActiveProgramCoach({
     ? todayItem.timingLabel || PROGRAM_TIMING_LABELS[todayItem.timing] || 'Au réveil'
     : '';
 
-  const handleOrderJuice = (day: ProgramDayItem) => {
-    const fruits = day.fruitNames || day.fruits || [];
-    const prompt = `Je suis le programme ${userProgram.programTitle}, jour ${day.dayNumber || day.day}. Prépare-moi la recette "${day.cocktailName || day.juiceName}" avec ${fruits.join(', ')}.`;
-    navigate(`/lab?tab=nutrifys&prompt=${encodeURIComponent(prompt)}`);
+  const handleOrderJuice = (_day: ProgramDayItem) => {
+    setIsJuiceOrderOpen(true);
   };
 
   return (
@@ -406,13 +406,11 @@ export function ActiveProgramCoach({
                   </div>
 
                   <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => handleOrderJuice(todayItem)}
-                    className="w-full sm:w-auto text-xs font-bold h-9 border-primary/30 hover:bg-primary/10 text-foreground cursor-pointer"
+                    className="w-full sm:w-auto text-xs font-bold h-9.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
                   >
-                    <ShoppingBag className="size-3.5 mr-1.5 text-primary" />
-                    Commander ce jus
+                    <ShoppingBag className="size-3.5" />
+                    <span>Commander ce jus</span>
                   </Button>
                 </div>
 
@@ -456,6 +454,30 @@ export function ActiveProgramCoach({
                     </p>
                   </div>
                 )}
+
+                {/* Highlighted Order Callout Banner */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-primary/10 border border-primary/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 sm:size-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+                      <ShoppingBag className="size-4 sm:size-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-foreground">
+                        Commander ce jus pour votre cure
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Flacon 500ml pressé à froid · Regroupé dans votre commande de cure
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleOrderJuice(todayItem)}
+                    className="w-full sm:w-auto h-9 sm:h-9.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-xs hover:shadow transition-all shrink-0 cursor-pointer"
+                  >
+                    <ShoppingBag className="size-3.5 mr-1.5" />
+                    Commander (Jour {displayedDayNum})
+                  </Button>
+                </div>
               </div>
 
               {/* Check-in Action Bar */}
@@ -639,6 +661,16 @@ export function ActiveProgramCoach({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sheet de commande progressive de jus */}
+      {todayItem && (
+        <ProgramJuiceOrderSheet
+          userProgram={userProgram}
+          dayItem={todayItem}
+          open={isJuiceOrderOpen}
+          onOpenChange={setIsJuiceOrderOpen}
+        />
+      )}
     </div>
   );
 }

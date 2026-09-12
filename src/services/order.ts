@@ -15,6 +15,10 @@ import {
   type OrderLine,
   type OrderExpenses,
   type Program,
+  type ProgramJuiceOrderItem,
+  type UserProgram,
+  type ProgramDayItem,
+  PROGRAM_TIMING_LABELS,
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
@@ -261,6 +265,275 @@ export async function createProgramOrder(
   }).catch(console.error);
 
   return ref.id;
+}
+
+/**
+ * Recherche une commande de programme active (non terminée/non annulée) pour un utilisateur et une cure donnés.
+ */
+export async function getActiveProgramOrder(
+  userId: string,
+  programId: string,
+  userProgramId?: string
+): Promise<Order | null> {
+  const q = query(
+    collection(db, COLLECTIONS.ORDERS),
+    where('userId', '==', userId),
+    where('type', '==', 'program'),
+    where('programId', '==', programId)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+
+  const orders = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Order))
+    .filter((o) => o.status !== OrderStatus.CANCELLED && o.status !== OrderStatus.DELIVERED);
+
+  if (!orders.length) return null;
+
+  // Si on a un userProgramId, on privilégie la commande qui correspond exactement à cette instance
+  if (userProgramId) {
+    const exact = orders.find((o) => o.userProgramId === userProgramId);
+    if (exact) return exact;
+  }
+
+  // Sinon la plus récente
+  return orders.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  })[0];
+}
+
+/**
+ * Commande un jus individuel d'un programme.
+ * Si une commande de ce programme existe déjà (en cours), le jus s'ajoute ou s'incrémente dans celle-ci.
+ * Sinon, une nouvelle commande de programme est initiée avec ce jus comme première ligne.
+ */
+export async function orderProgramJuice(
+  user: UserInfo,
+  userProgram: UserProgram,
+  dayItem: ProgramDayItem,
+  deliveryDetails?: { district: string; phone: string; instructions: string; coordinates?: { lat: number; lng: number } },
+  deliveryFee: number = 1000,
+): Promise<{ orderId: string; isNewOrder: boolean; updatedJuiceCount: number; juiceName: string }> {
+  const dayNumber = dayItem.dayNumber || dayItem.day;
+  const juiceName = dayItem.cocktailName || dayItem.juiceName || `Jus Jour ${dayNumber}`;
+  const timingLabel = dayItem.timingLabel || PROGRAM_TIMING_LABELS[dayItem.timing] || 'Au réveil';
+  const fruitNames = dayItem.fruitNames || dayItem.fruits || [];
+
+  // Calcul du prix unitaire du flacon (500ml)
+  const duration = userProgram.durationDays || userProgram.programSnapshot?.durationDays || 3;
+  const bottlesTotal = userProgram.programSnapshot?.bottlesTotal || duration;
+  const programPrice = userProgram.programSnapshot?.price || 0;
+  const pricePerBottle = programPrice > 0 ? Math.round(programPrice / bottlesTotal) : 2500;
+
+  const existingOrder = await getActiveProgramOrder(user.uid, userProgram.programId, userProgram.id);
+
+  if (existingOrder) {
+    // ── CAS 1 : Une commande ouverte existe déjà pour ce programme ──
+    // On regroupe / incrémente le jus dans cette commande existante
+    const currentJuiceItems: ProgramJuiceOrderItem[] = existingOrder.programJuiceItems || [];
+    const existingIndex = currentJuiceItems.findIndex(
+      (it) => it.dayNumber === dayNumber && it.juiceName.toLowerCase() === juiceName.toLowerCase()
+    );
+
+    let updatedJuiceItems: ProgramJuiceOrderItem[];
+    if (existingIndex >= 0) {
+      updatedJuiceItems = currentJuiceItems.map((item, idx) => {
+        if (idx === existingIndex) {
+          const newQty = item.quantity + 1;
+          return {
+            ...item,
+            quantity: newQty,
+            totalPrice: newQty * item.pricePerBottle,
+            orderedAt: new Date().toISOString(),
+          };
+        }
+        return item;
+      });
+    } else {
+      const newItem: ProgramJuiceOrderItem = {
+        id: `${dayNumber}-${Date.now()}`,
+        dayNumber,
+        juiceName,
+        timingLabel,
+        fruitNames,
+        quantity: 1,
+        bottleSize: '500ml',
+        pricePerBottle,
+        totalPrice: pricePerBottle,
+        orderedAt: new Date().toISOString(),
+      };
+      updatedJuiceItems = [...currentJuiceItems, newItem];
+    }
+
+    const totalJuiceBottles = updatedJuiceItems.reduce((acc, it) => acc + it.quantity, 0);
+    const juicesSubtotal = updatedJuiceItems.reduce((acc, it) => acc + it.totalPrice, 0);
+    const fee = existingOrder.deliveryFee ?? deliveryFee;
+    const newTotalPrice = juicesSubtotal + fee;
+
+    const updatedOrderLines: OrderLine[] = [
+      {
+        bottleSize: '500ml',
+        bottleSizeLabel: '500ml',
+        quantity: totalJuiceBottles,
+        bottleBasePriceSnapshot: pricePerBottle,
+        pricePerBottle,
+        lineTotal: juicesSubtotal,
+      },
+    ];
+
+    const orderRef = doc(db, COLLECTIONS.ORDERS, existingOrder.id);
+    await updateDoc(orderRef, {
+      programJuiceItems: updatedJuiceItems,
+      orderLines: updatedOrderLines,
+      totalPrice: newTotalPrice,
+      programBottlesTotal: totalJuiceBottles,
+      cocktailNameSnapshot: `Cure ${userProgram.programTitle} (${totalJuiceBottles} jus)`,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Notifications
+    const orderTitle = 'Jus ajouté à la cure !';
+    const orderBody = `${user.name} a ajouté le jus Jour ${dayNumber} (« ${juiceName} ») à sa commande de cure "${userProgram.programTitle}" (${totalJuiceBottles} flacons au total).`;
+    const customerBody = `Le jus Jour ${dayNumber} (« ${juiceName} ») a été ajouté à votre commande de cure "${userProgram.programTitle}".`;
+
+    notifyAdmins({
+      title: orderTitle,
+      message: orderBody,
+      link: `/board/orders?tab=programs&order=${existingOrder.id}`,
+    }).catch(console.error);
+
+    sendPushNotification({
+      title: orderTitle,
+      body: orderBody,
+      url: `/board/orders?tab=programs&order=${existingOrder.id}`,
+      audience: 'admins',
+      tag: `order-update-${existingOrder.id}`,
+      skipInApp: true,
+    }).catch(console.error);
+
+    createNotification({
+      userId: user.uid,
+      title: 'Jus ajouté à votre commande de cure !',
+      message: customerBody,
+      link: `/board/orders?tab=programs&order=${existingOrder.id}`,
+    }).catch(console.error);
+
+    return {
+      orderId: existingOrder.id,
+      isNewOrder: false,
+      updatedJuiceCount: totalJuiceBottles,
+      juiceName,
+    };
+  } else {
+    // ── CAS 2 : Pas encore de commande ouverte pour cette cure ──
+    // On initialise la commande de cure avec ce premier jus
+    if (deliveryDetails && !deliveryDetails.district.trim()) {
+      throw new Error('Le quartier de livraison est requis pour initialiser la commande.');
+    }
+
+    const cleanedDeliveryDetails = deliveryDetails ? {
+      district: deliveryDetails.district,
+      phone: deliveryDetails.phone,
+      instructions: deliveryDetails.instructions,
+      ...(deliveryDetails.coordinates?.lat != null && deliveryDetails.coordinates?.lng != null
+        ? { coordinates: { lat: deliveryDetails.coordinates.lat, lng: deliveryDetails.coordinates.lng } }
+        : {}
+      ),
+    } : undefined;
+
+    const newItem: ProgramJuiceOrderItem = {
+      id: `${dayNumber}-${Date.now()}`,
+      dayNumber,
+      juiceName,
+      timingLabel,
+      fruitNames,
+      quantity: 1,
+      bottleSize: '500ml',
+      pricePerBottle,
+      totalPrice: pricePerBottle,
+      orderedAt: new Date().toISOString(),
+    };
+
+    const initialOrderLines: OrderLine[] = [
+      {
+        bottleSize: '500ml',
+        bottleSizeLabel: '500ml',
+        quantity: 1,
+        bottleBasePriceSnapshot: pricePerBottle,
+        pricePerBottle,
+        lineTotal: pricePerBottle,
+      },
+    ];
+
+    const ref = doc(collection(db, COLLECTIONS.ORDERS));
+    const newOrder: Omit<Order, 'createdAt' | 'updatedAt'> = {
+      id: ref.id,
+      type: 'program',
+      userId: user.uid,
+      userNameSnapshot: user.name,
+      userEmailSnapshot: user.email,
+      ...(user.phone ? { userPhoneSnapshot: user.phone } : {}),
+      cocktailId: userProgram.programId,
+      cocktailNameSnapshot: `Cure ${userProgram.programTitle} - Jus Jour ${dayNumber}`,
+      programId: userProgram.programId,
+      programTitleSnapshot: userProgram.programTitle,
+      programGoal: userProgram.programGoal,
+      programDurationDays: userProgram.durationDays,
+      programBottlesTotal: 1,
+      userProgramId: userProgram.id,
+      startingDate: userProgram.startDate,
+      hasAddedSugar: false,
+      programJuiceItems: [newItem],
+      orderLines: initialOrderLines,
+      deliveryFee,
+      totalPrice: pricePerBottle + deliveryFee,
+      status: OrderStatus.PENDING,
+      ...(cleanedDeliveryDetails ? { deliveryDetails: cleanedDeliveryDetails } : {}),
+      ...(userProgram.programSnapshot?.imageUrl ? { cocktailImageSnapshot: userProgram.programSnapshot.imageUrl } : {}),
+    };
+
+    await setDoc(ref, {
+      ...newOrder,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    const orderTitle = 'Nouvelle commande de jus de cure !';
+    const receivedTitle = 'Commande de cure reçue !';
+    const orderBody = `${user.name} a commandé le jus Jour ${dayNumber} (« ${juiceName} ») pour sa cure "${userProgram.programTitle}".`;
+    const customerBody = `Votre commande pour le jus Jour ${dayNumber} (« ${juiceName} ») de votre cure "${userProgram.programTitle}" a bien été enregistrée.`;
+
+    notifyAdmins({
+      title: orderTitle,
+      message: orderBody,
+      link: `/board/orders?tab=programs&order=${ref.id}`,
+    }).catch(console.error);
+
+    sendPushNotification({
+      title: orderTitle,
+      body: orderBody,
+      url: `/board/orders?tab=programs&order=${ref.id}`,
+      audience: 'admins',
+      tag: `order-new-${ref.id}`,
+      skipInApp: true,
+    }).catch(console.error);
+
+    createNotification({
+      userId: user.uid,
+      title: receivedTitle,
+      message: customerBody,
+      link: `/board/orders?tab=programs&order=${ref.id}`,
+    }).catch(console.error);
+
+    return {
+      orderId: ref.id,
+      isNewOrder: true,
+      updatedJuiceCount: 1,
+      juiceName,
+    };
+  }
 }
 
 function mapOrderSnapshot(snapshot: QuerySnapshot): Order[] {

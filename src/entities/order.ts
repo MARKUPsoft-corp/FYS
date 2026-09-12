@@ -31,6 +31,20 @@ export interface OrderExpenseItem {
   cost: number; // en XAF
 }
 
+/** Jus individuel commandé dans le cadre d'un programme de cure */
+export interface ProgramJuiceOrderItem {
+  id: string;
+  dayNumber: number;
+  juiceName: string;
+  timingLabel?: string;
+  fruitNames?: string[];
+  quantity: number;
+  bottleSize: BottleSize;
+  pricePerBottle: number;
+  totalPrice: number;
+  orderedAt: string; // ISO string
+}
+
 /** Bilan des dépenses réelles et rentabilité de la commande */
 export interface OrderExpenses {
   items: OrderExpenseItem[];
@@ -86,6 +100,8 @@ export interface Order {
   programBottlesTotal?: number;
   userProgramId?: string;
   startingDate?: string;
+  /** Jus individuels commandés pour cette cure (regroupés au fur et à mesure) */
+  programJuiceItems?: ProgramJuiceOrderItem[];
 
   /** Image figée à la commande (catalogue ou fruit principal / collage source) */
   cocktailImageSnapshot?: string;

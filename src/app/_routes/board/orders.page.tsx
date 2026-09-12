@@ -232,7 +232,13 @@ function OrderCard({
       <p className="text-sm text-muted-foreground">
         {isProgram ? (
           <span>
-            Pack cure complète · {order.programBottlesTotal || order.quantity} flacons frais inclus
+            {order.programJuiceItems && order.programJuiceItems.length > 0 ? (
+              <>
+                Cure FYS · {order.programJuiceItems.reduce((acc, j) => acc + j.quantity, 0)} flacon(s) commandé(s) ({order.programJuiceItems.length} jus)
+              </>
+            ) : (
+              <>Pack cure complète · {order.programBottlesTotal || order.quantity} flacons frais inclus</>
+            )}
           </span>
         ) : order.orderLines?.length ? (
           order.orderLines.map((line, i) => (
@@ -282,6 +288,11 @@ function ProgramInfoBlock({
   isAdmin?: boolean;
 }) {
   const navigate = useNavigate();
+  const hasJuiceItems = !!(order.programJuiceItems && order.programJuiceItems.length > 0);
+  const totalJuicesCount = hasJuiceItems
+    ? order.programJuiceItems!.reduce((acc, j) => acc + j.quantity, 0)
+    : (order.programBottlesTotal || order.quantity);
+
   return (
     <div className="space-y-3">
       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -301,8 +312,8 @@ function ProgramInfoBlock({
             <span className="text-xs font-bold text-foreground block">
               {order.programDurationDays || 7} jours
             </span>
-            <span className="text-[11px] text-muted-foreground block">
-              {order.programBottlesTotal || order.quantity} flacons
+            <span className="text-[11px] text-muted-foreground block font-medium">
+              {totalJuicesCount} flacon{totalJuicesCount > 1 ? 's' : ''} {hasJuiceItems ? 'commandé(s)' : 'inclus'}
             </span>
           </div>
         </div>
@@ -317,6 +328,63 @@ function ProgramInfoBlock({
             <p className="font-bold text-foreground mt-0.5">{order.startingDate || 'Immédiat'}</p>
           </div>
         </div>
+
+        {/* Liste des jus commandés pour ce programme */}
+        {hasJuiceItems && (
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <ShoppingBag className="size-3.5 text-primary" />
+                Jus commandés ({order.programJuiceItems!.length})
+              </p>
+              <span className="text-[11px] font-bold text-primary">
+                {totalJuicesCount} flacon{totalJuicesCount > 1 ? 's' : ''} au total
+              </span>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {order.programJuiceItems!.map((item, idx) => (
+                <div
+                  key={item.id || idx}
+                  className="p-2.5 rounded-xl bg-background/90 border border-border/60 flex items-start justify-between gap-2.5 text-xs shadow-xs"
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-[10px]">
+                        Jour {item.dayNumber}
+                      </span>
+                      <span className="font-bold text-foreground truncate">
+                        {item.juiceName}
+                      </span>
+                      {item.timingLabel && (
+                        <span className="text-[10px] text-muted-foreground">
+                          · {item.timingLabel}
+                        </span>
+                      )}
+                    </div>
+                    {item.fruitNames && item.fruitNames.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {item.fruitNames.join(', ')}
+                      </p>
+                    )}
+                    {item.orderedAt && (
+                      <p className="text-[9px] text-muted-foreground">
+                        Ajouté le {new Date(item.orderedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-bold text-foreground block">
+                      {item.totalPrice.toLocaleString()} XAF
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {item.quantity} × {item.pricePerBottle.toLocaleString()} XAF
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isAdmin ? (
           <Button
@@ -840,9 +908,40 @@ function ClientOrderSheet({
               {order.type === 'program' ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Pack cure</span>
-                    <span className="text-[13px] font-semibold text-primary">{order.programDurationDays || 7} jours ({order.programBottlesTotal || order.quantity} flacons)</span>
+                    <span className="text-[13px] text-muted-foreground">Type de commande</span>
+                    <span className="text-[13px] font-semibold text-primary">
+                      {order.programJuiceItems?.length
+                        ? `Cure FYS · Commandes de jus (${order.programJuiceItems.length} référence${order.programJuiceItems.length > 1 ? 's' : ''})`
+                        : `Pack cure complète (${order.programDurationDays || 7} jours)`}
+                    </span>
                   </div>
+                  {order.programJuiceItems && order.programJuiceItems.length > 0 ? (
+                    <>
+                      <div className="px-4 py-2 bg-muted/30 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Détail des flacons commandés
+                      </div>
+                      {order.programJuiceItems.map((j, idx) => (
+                        <div key={j.id || idx} className="flex items-center justify-between px-4 py-3">
+                          <div className="text-left space-y-0.5">
+                            <p className="text-[13px] font-semibold text-foreground">
+                              Jour {j.dayNumber} : {j.juiceName}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {j.quantity} × {j.pricePerBottle.toLocaleString()} XAF ({j.bottleSize || '500ml'}) {j.timingLabel ? `· ${j.timingLabel}` : ''}
+                            </p>
+                          </div>
+                          <span className="text-[13px] font-semibold text-foreground">
+                            {j.totalPrice.toLocaleString()} XAF
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">Pack cure</span>
+                      <span className="text-[13px] font-semibold text-primary">{order.programDurationDays || 7} jours ({order.programBottlesTotal || order.quantity} flacons)</span>
+                    </div>
+                  )}
                   {order.startingDate && (
                     <div className="flex items-center justify-between px-4 py-3">
                       <span className="text-[13px] text-muted-foreground">Date de début</span>
@@ -1507,12 +1606,39 @@ function AdminOrderSheet({
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] text-muted-foreground">Type de commande</span>
-                    <span className="text-[13px] font-semibold text-primary">Cure FYS Programme ({order.programDurationDays || 7} jours)</span>
+                    <span className="text-[13px] font-semibold text-primary">
+                      {order.programJuiceItems?.length
+                        ? `Cure FYS · Commandes progressives (${order.programJuiceItems.length} jus)`
+                        : `Cure FYS Programme (${order.programDurationDays || 7} jours)`}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Flacons inclus</span>
-                    <span className="text-[13px] font-semibold text-foreground">{order.programBottlesTotal || order.quantity} flacons</span>
-                  </div>
+                  {order.programJuiceItems && order.programJuiceItems.length > 0 ? (
+                    <>
+                      <div className="px-4 py-2 bg-muted/30 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Flacons commandés pour cette cure
+                      </div>
+                      {order.programJuiceItems.map((j, idx) => (
+                        <div key={j.id || idx} className="flex items-center justify-between px-4 py-3">
+                          <div className="text-left space-y-0.5">
+                            <p className="text-[13px] font-semibold text-foreground">
+                              Jour {j.dayNumber} : {j.juiceName}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {j.quantity} × {j.pricePerBottle.toLocaleString()} XAF ({j.bottleSize || '500ml'}) {j.timingLabel ? `· ${j.timingLabel}` : ''}
+                            </p>
+                          </div>
+                          <span className="text-[13px] font-semibold text-foreground">
+                            {j.totalPrice.toLocaleString()} XAF
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">Flacons inclus</span>
+                      <span className="text-[13px] font-semibold text-foreground">{order.programBottlesTotal || order.quantity} flacons</span>
+                    </div>
+                  )}
                   {order.startingDate && (
                     <div className="flex items-center justify-between px-4 py-3">
                       <span className="text-[13px] text-muted-foreground">Date de début</span>
@@ -1520,7 +1646,9 @@ function AdminOrderSheet({
                     </div>
                   )}
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Prix pack cure</span>
+                    <span className="text-[13px] text-muted-foreground">
+                      {order.programJuiceItems?.length ? 'Total jus commandés' : 'Prix pack cure'}
+                    </span>
                     <span className="text-[13px] font-semibold text-foreground">
                       {(order.totalPrice - (order.deliveryFee || 0) + (order.discountAmount || 0)).toLocaleString()} XAF
                     </span>
