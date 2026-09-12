@@ -5,13 +5,14 @@ type Props = {
   titleBefore: string;
   titleHighlight: string;
   titleAfter?: string;
-  sectionBefore: string;
-  sectionHighlight: string;
-  subtitle: string;
+  sectionBefore?: string;
+  sectionHighlight?: string;
+  subtitle?: string;
   imageUrl: string;
   imagePosition?: string;
   heroExtra?: ReactNode;
   actions?: ReactNode;
+  subHeader?: ReactNode;
   children?: ReactNode;
 };
 
@@ -31,12 +32,17 @@ export function BoardPageShell({
   imagePosition = 'center',
   heroExtra,
   actions,
+  subHeader,
   children,
 }: Props) {
+  const hasSectionHeader = Boolean(sectionBefore || sectionHighlight || subtitle);
+
   return (
     <div className="min-h-dvh bg-background pb-4">
       <div
-        className="relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 mb-12 overflow-hidden"
+        className={`relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 overflow-hidden ${
+          subHeader ? 'mb-0' : 'mb-8 sm:mb-12'
+        }`}
         style={{
           backgroundImage: `url('${imageUrl}')`,
           backgroundSize: 'cover',
@@ -59,18 +65,24 @@ export function BoardPageShell({
         </div>
       </div>
 
-      <div className="px-1 sm:px-3 md:px-4 space-y-8">
+      {subHeader}
+
+      <div className={`px-1 sm:px-3 md:px-4 space-y-8 ${subHeader ? 'mt-6 sm:mt-8' : ''}`}>
         {actions}
 
-        <div className="text-center">
-          <h3 className="font-display font-bold text-xl sm:text-3xl">
-            <span className="text-foreground">{sectionBefore} </span>
-            <span className="text-primary">{sectionHighlight}</span>
-          </h3>
-          <p className="text-muted-foreground mt-2 font-medium text-sm max-w-lg mx-auto">
-            {subtitle}
-          </p>
-        </div>
+        {hasSectionHeader && (
+          <div className="text-center">
+            <h3 className="font-display font-bold text-xl sm:text-3xl">
+              {sectionBefore && <span className="text-foreground">{sectionBefore} </span>}
+              {sectionHighlight && <span className="text-primary">{sectionHighlight}</span>}
+            </h3>
+            {subtitle && (
+              <p className="text-muted-foreground mt-2 font-medium text-sm max-w-lg mx-auto">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
 
         {children}
       </div>

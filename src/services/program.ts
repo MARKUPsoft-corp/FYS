@@ -236,6 +236,38 @@ export function subscribeToUserSavedPrograms(
 }
 
 /**
+ * Subscribe to all completed or past programs of a user.
+ */
+export function subscribeToUserPastPrograms(
+  userId: string,
+  callback: (pastPrograms: UserProgram[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.USER_PROGRAMS),
+    where('userId', '==', userId),
+    where('status', 'in', ['completed', 'cancelled', 'paused'])
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list: UserProgram[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as UserProgram);
+      });
+      list.sort(
+        (a, b) => new Date(b.endDate || b.createdAt).getTime() - new Date(a.endDate || a.createdAt).getTime()
+      );
+      callback(list);
+    },
+    (err) => {
+      console.error('[ProgramService] Error listening to user past programs:', err);
+      callback([]);
+    }
+  );
+}
+
+/**
  * Activate a saved program for a user. Pauses any currently active program.
  */
 export async function activateUserSavedProgram(
