@@ -102,30 +102,184 @@ export function ActiveProgramCoach({
 
   return (
     <div className="space-y-8">
-      {/* Top Hero Card With FYS Brand Colors & Clean Structure */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white p-3.5 sm:p-10 shadow-xl border border-primary/30">
-        {/* Subtle radial glows */}
-        <div className="absolute -right-16 -top-16 size-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -bottom-16 size-56 rounded-full bg-secondary/15 blur-3xl pointer-events-none" />
+      {/* Top Hero Card With Animated SVGs & Clean Background */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-card/95 dark:bg-card/90 backdrop-blur-xl border border-border/80 text-foreground p-4 sm:p-10 shadow-sm transition-all">
+        {/* Animated Background SVGs (FYS Freshness & Botanical Motifs) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+          <style>{`
+            @keyframes fysFloatA {
+              0%, 100% { transform: translateY(0px) rotate(0deg); }
+              50% { transform: translateY(-12px) rotate(6deg); }
+            }
+            @keyframes fysFloatB {
+              0%, 100% { transform: translateY(0px) rotate(0deg); }
+              50% { transform: translateY(-14px) rotate(-8deg); }
+            }
+            @keyframes fysFloatC {
+              0%, 100% { transform: translateY(0px) rotate(0deg); }
+              50% { transform: translateY(-9px) rotate(5deg); }
+            }
+            @keyframes fysSway {
+              0%, 100% { transform: translateX(0px) rotate(0deg); }
+              50% { transform: translateX(10px) rotate(-10deg); }
+            }
+            @keyframes fysTwinkle {
+              0%, 100% { transform: scale(0.85); opacity: 0.25; }
+              50% { transform: scale(1.18); opacity: 0.85; }
+            }
+            @keyframes fysCitrusSpinSlow {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+            @keyframes fysPulseSoft {
+              0%, 100% { transform: scale(1); opacity: 0.15; }
+              50% { transform: scale(1.08); opacity: 0.35; }
+            }
+            .fys-svg-float-a { animation: fysFloatA 6s ease-in-out infinite; }
+            .fys-svg-float-b { animation: fysFloatB 7.5s ease-in-out infinite 1s; }
+            .fys-svg-float-c { animation: fysFloatC 5.5s ease-in-out infinite 2s; }
+            .fys-svg-sway { animation: fysSway 8s ease-in-out infinite 0.5s; }
+            .fys-svg-twinkle-1 { animation: fysTwinkle 3.5s ease-in-out infinite; }
+            .fys-svg-twinkle-2 { animation: fysTwinkle 4.5s ease-in-out infinite 1.8s; }
+            .fys-svg-spin { animation: fysCitrusSpinSlow 50s linear infinite; }
+            .fys-svg-spin-rev { animation: fysCitrusSpinSlow 65s linear infinite reverse; }
+            .fys-svg-pulse { animation: fysPulseSoft 5s ease-in-out infinite; }
+          `}</style>
+
+          {/* Ambient soft glow spots */}
+          <div className="absolute -right-12 -top-12 size-72 rounded-full bg-primary/10 dark:bg-primary/15 blur-3xl pointer-events-none fys-svg-pulse" />
+          <div className="absolute left-1/4 -bottom-16 size-64 rounded-full bg-secondary/10 dark:bg-secondary/15 blur-3xl pointer-events-none fys-svg-pulse" style={{ animationDelay: '2.5s' }} />
+
+          {/* 1. Large Citrus Slice Wheel - Top Right */}
+          <div className="absolute -top-10 -right-8 w-44 h-44 sm:w-56 sm:h-56 text-primary/15 dark:text-primary/20 fys-svg-spin">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-full h-full">
+              <circle cx="50" cy="50" r="46" strokeWidth="1.8" strokeDasharray="3 3" />
+              <circle cx="50" cy="50" r="41" strokeWidth="1.2" />
+              <circle cx="50" cy="50" r="9" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08" />
+              <line x1="50" y1="12" x2="50" y2="41" />
+              <line x1="50" y1="59" x2="50" y2="88" />
+              <line x1="12" y1="50" x2="41" y2="50" />
+              <line x1="59" y1="50" x2="88" y2="50" />
+              <line x1="23" y1="23" x2="43" y2="43" />
+              <line x1="57" y1="57" x2="77" y2="77" />
+              <line x1="77" y1="23" x2="57" y2="43" />
+              <line x1="43" y1="57" x2="23" y2="77" />
+              <path d="M50 20 C46 27 46 34 50 38 C54 34 54 27 50 20 Z" fill="currentColor" fillOpacity="0.12" />
+              <path d="M50 80 C46 73 46 66 50 62 C54 66 54 73 50 80 Z" fill="currentColor" fillOpacity="0.12" />
+              <path d="M20 50 C27 46 34 46 38 50 C34 54 27 54 20 50 Z" fill="currentColor" fillOpacity="0.12" />
+              <path d="M80 50 C73 46 66 46 62 50 C66 54 73 54 80 50 Z" fill="currentColor" fillOpacity="0.12" />
+            </svg>
+          </div>
+
+          {/* 2. Secondary Citrus Outline - Bottom Left */}
+          <div className="absolute -bottom-14 -left-12 w-40 h-40 sm:w-48 sm:h-48 text-secondary/15 dark:text-secondary/20 fys-svg-spin-rev">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.3" className="w-full h-full">
+              <circle cx="50" cy="50" r="45" strokeWidth="1.8" />
+              <circle cx="50" cy="50" r="38" strokeDasharray="4 2" />
+              <circle cx="50" cy="50" r="8" fill="currentColor" fillOpacity="0.1" />
+              <line x1="50" y1="14" x2="50" y2="42" />
+              <line x1="50" y1="58" x2="50" y2="86" />
+              <line x1="14" y1="50" x2="42" y2="50" />
+              <line x1="58" y1="50" x2="86" y2="50" />
+              <line x1="24" y1="24" x2="44" y2="44" />
+              <line x1="56" y1="56" x2="76" y2="76" />
+              <line x1="76" y1="24" x2="56" y2="44" />
+              <line x1="44" y1="56" x2="24" y2="76" />
+            </svg>
+          </div>
+
+          {/* 3. Floating Leaf #1 - Top Left */}
+          <div className="absolute top-5 left-10 sm:left-24 w-8 h-8 text-primary/35 dark:text-primary/45 fys-svg-float-a">
+            <svg viewBox="0 0 24 24" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M12 2C6.5 2 2 6.5 2 12c0 5 4 8.5 9 8.5.5-2 1-4.5 3-6.5s4.5-2.5 6.5-3c0-5-3.5-9-8.5-9z" />
+              <path d="M12 2c0 7-3 12-8 15" strokeLinecap="round" />
+              <path d="M8 8c1.5 1 3 1.5 4 1" strokeLinecap="round" />
+              <path d="M6 13c2 .5 3.5 0 4-1" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* 4. Floating Leaf #2 - Near Center Top */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-6 h-6 text-accent/50 dark:text-accent/40 fys-svg-float-b">
+            <svg viewBox="0 0 24 24" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M21 3c-4.5.5-9 3-12 7-2 2.5-2.5 5.5-2 8.5 3 .5 6 0 8.5-2 4-3 6.5-7.5 7-12 0-.5-.5-1-1-1.5z" />
+              <path d="M7 18.5c2.5-2.5 6.5-5.5 11.5-6.5" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* 5. Floating Leaf #3 - Bottom Right */}
+          <div className="absolute bottom-6 right-1/4 w-7 h-7 text-primary/30 dark:text-primary/40 fys-svg-sway">
+            <svg viewBox="0 0 24 24" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M20.5 3.5c-4.5 0-9.5 3-12 7-1.5 2.5-1.5 5.5-1 8 2.5.5 5.5.5 8-1 4-2.5 7-7.5 7-12 0-.7-.3-1.3-1-1.7-.3-.2-.7-.3-1-.3z" />
+              <path d="M7.5 18.5c3-3 7.5-6 13-7" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* 6. Juice Droplet #1 - Left side */}
+          <div className="absolute top-20 left-4 sm:left-12 w-5 h-6 text-secondary/40 dark:text-secondary/50 fys-svg-float-c">
+            <svg viewBox="0 0 24 28" fill="currentColor" fillOpacity="0.22" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M12 2 C12 2 4 12 4 18 C4 22.4 7.6 26 12 26 C16.4 26 20 22.4 20 18 C20 12 12 2 12 2 Z" />
+              <circle cx="9" cy="17" r="1.5" fill="currentColor" fillOpacity="0.6" stroke="none" />
+            </svg>
+          </div>
+
+          {/* 7. Juice Droplet #2 - Lower Center */}
+          <div className="absolute bottom-12 left-1/3 w-4 h-5 text-primary/35 dark:text-primary/45 fys-svg-float-a" style={{ animationDelay: '1.2s' }}>
+            <svg viewBox="0 0 24 28" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M12 2 C12 2 4 12 4 18 C4 22.4 7.6 26 12 26 C16.4 26 20 22.4 20 18 C20 12 12 2 12 2 Z" />
+              <circle cx="9" cy="17" r="1.2" fill="currentColor" fillOpacity="0.5" stroke="none" />
+            </svg>
+          </div>
+
+          {/* 8. Juice Droplet #3 - Right near metrics */}
+          <div className="absolute top-12 right-2 sm:right-1/3 w-4.5 h-5.5 text-secondary/35 dark:text-secondary/45 fys-svg-float-b" style={{ animationDelay: '2.2s' }}>
+            <svg viewBox="0 0 24 28" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+              <path d="M12 2 C12 2 4 12 4 18 C4 22.4 7.6 26 12 26 C16.4 26 20 22.4 20 18 C20 12 12 2 12 2 Z" />
+            </svg>
+          </div>
+
+          {/* 9. Vitality Stars - Sparkles */}
+          <div className="absolute top-10 left-1/3 w-4 h-4 text-secondary/50 dark:text-secondary/60 fys-svg-twinkle-1">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+              <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+            </svg>
+          </div>
+
+          <div className="absolute bottom-16 right-16 w-3.5 h-3.5 text-primary/45 dark:text-primary/55 fys-svg-twinkle-2">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+              <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+            </svg>
+          </div>
+
+          <div className="absolute top-24 right-10 w-3 h-3 text-secondary/45 dark:text-secondary/55 fys-svg-twinkle-1" style={{ animationDelay: '2s' }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+              <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
+            </svg>
+          </div>
+
+          {/* 10. Small floating bubbles / micronutrient dots */}
+          <div className="absolute top-1/2 left-16 size-2 rounded-full bg-secondary/30 fys-svg-float-b" />
+          <div className="absolute top-1/3 right-1/4 size-2.5 rounded-full bg-primary/25 fys-svg-float-a" />
+          <div className="absolute bottom-10 left-2/3 size-2 rounded-full bg-accent/35 fys-svg-float-c" />
+        </div>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-white/15 backdrop-blur-md text-white border border-white/20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-secondary/10 text-secondary border border-secondary/25 shadow-xs">
                 <Sparkles className="size-3.5 text-secondary animate-pulse" />
                 Votre Cure en cours
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-primary/40 text-white border border-primary/40">
-                <Calendar className="size-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-primary/10 text-primary border border-primary/25 shadow-xs">
+                <Calendar className="size-3.5 text-primary" />
                 Jour {activeDay} sur {totalDays}
               </span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl font-bold font-display tracking-tight text-white">
+            <h2 className="text-2xl sm:text-4xl font-bold font-display tracking-tight text-foreground">
               {userProgram.programTitle}
             </h2>
 
-            <p className="text-white/80 text-xs sm:text-base leading-relaxed">
+            <p className="text-muted-foreground text-xs sm:text-base leading-relaxed">
               {isProgramCompleted
                 ? 'Félicitations ! Vous avez accompli avec succès l’intégralité de votre cure.'
                 : 'Chaque gorgée apporte des enzymes vivantes et des micronutriments protecteurs à votre organisme.'}
@@ -133,23 +287,23 @@ export function ActiveProgramCoach({
           </div>
 
           {/* Metric Badges */}
-          <div className="w-full sm:w-auto shrink-0 flex items-center justify-around sm:justify-start gap-4 sm:gap-6 bg-black/30 backdrop-blur-md p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-white/15">
+          <div className="w-full sm:w-auto shrink-0 flex items-center justify-around sm:justify-start gap-4 sm:gap-6 bg-card/70 dark:bg-card/50 backdrop-blur-md p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-border/70 shadow-xs">
             <div className="text-center">
-              <div className="text-3xl sm:text-5xl font-bold text-white font-display">
+              <div className="text-3xl sm:text-5xl font-bold text-foreground font-display">
                 {percentComplete}%
               </div>
-              <div className="text-[10px] sm:text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
+              <div className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
                 Progression
               </div>
             </div>
 
-            <div className="h-10 sm:h-12 w-px bg-white/20" />
+            <div className="h-10 sm:h-12 w-px bg-border/70" />
 
             <div className="text-center">
               <div className="text-2xl sm:text-4xl font-bold text-secondary font-display">
                 {completedCount}/{totalDays}
               </div>
-              <div className="text-[10px] sm:text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
+              <div className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
                 Jus Validés
               </div>
             </div>
@@ -157,14 +311,14 @@ export function ActiveProgramCoach({
         </div>
 
         {/* Progress Bar */}
-        <div className="relative z-10 mt-8 pt-6 border-t border-white/15 space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-white/80">
+        <div className="relative z-10 mt-8 pt-6 border-t border-border/60 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
             <span>Début : {new Date(userProgram.startDate).toLocaleDateString('fr-FR')}</span>
             <span>Fin prévue : {new Date(userProgram.endDate).toLocaleDateString('fr-FR')}</span>
           </div>
-          <div className="w-full h-3 rounded-full bg-white/15 overflow-hidden p-0.5 border border-white/10">
+          <div className="w-full h-3 rounded-full bg-muted/60 dark:bg-muted/40 overflow-hidden p-0.5 border border-border/50">
             <div
-              className="h-full bg-gradient-to-r from-secondary to-primary rounded-full transition-all duration-700 ease-out shadow-xs"
+              className="h-full bg-gradient-to-r from-primary via-accent to-secondary rounded-full transition-all duration-700 ease-out shadow-xs"
               style={{ width: `${percentComplete}%` }}
             />
           </div>
