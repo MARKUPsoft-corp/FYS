@@ -145,6 +145,125 @@ export async function enrollUserInProgram(
 }
 
 /**
+ * Save a custom generated program for a user without activating it immediately.
+ */
+export async function saveUserCustomProgram(
+  userId: string,
+  user: { name: string; email: string; phone?: string },
+  program: Program
+): Promise<string> {
+  const newDocRef = doc(collection(db, COLLECTIONS.USER_PROGRAMS));
+  const newProgramData: Omit<UserProgram, 'id'> = {
+    userId,
+    userName: user.name,
+    userEmail: user.email,
+    userPhone: user.phone,
+    programId: program.id,
+    programTitle: program.title,
+    programSlug: program.slug,
+    programGoal: program.goal,
+    durationDays: program.durationDays,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    currentDay: 1,
+    status: 'saved',
+    checkins: [],
+    programSnapshot: program,
+    createdAt: new Date().toISOString(),
+  };
+
+  await setDoc(newDocRef, {
+    ...newProgramData,
+    _serverTimestamp: serverTimestamp(),
+  });
+
+  return newDocRef.id;
+}
+
+/**
+ * Subscribe to all saved programs of a user.
+ */
+export function subscribeToUserSavedPrograms(
+  userId: string,
+  callback: (savedPrograms: UserProgram[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.USER_PROGRAMS),
+    where('userId', '==', userId),
+    where('status', '==', 'saved')
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list: UserProgram[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as UserProgram);
+      });
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      callback(list);
+    },
+    (err) => {
+      console.error('[ProgramService] Error listening to user saved programs:', err);
+      callback([]);
+    }
+  );
+}
+
+/**
+ * Activate a saved program for a user. Pauses any currently active program.
+ */
+export async function activateUserSavedProgram(
+  userProgramId: string,
+  userId: string,
+  startingToday: boolean = true
+): Promise<void> {
+  // 1. Pause any currently active program for this user
+  const activeQ = query(
+    collection(db, COLLECTIONS.USER_PROGRAMS),
+    where('userId', '==', userId),
+    where('status', '==', 'active')
+  );
+  const activeSnap = await getDocs(activeQ);
+  for (const activeDoc of activeSnap.docs) {
+    if (activeDoc.id !== userProgramId) {
+      await updateDoc(doc(db, COLLECTIONS.USER_PROGRAMS, activeDoc.id), {
+        status: 'paused',
+      });
+    }
+  }
+
+  // 2. Activate this program with fresh start date
+  const now = new Date();
+  const targetDoc = doc(db, COLLECTIONS.USER_PROGRAMS, userProgramId);
+  const snap = await getDoc(targetDoc);
+  if (!snap.exists()) return;
+  const data = snap.data() as UserProgram;
+  const duration = data.durationDays || 3;
+  const startDate = startingToday ? now : new Date(now.getTime() + 86400000);
+  const endDate = new Date(startDate.getTime() + (duration - 1) * 86400000);
+
+  await updateDoc(targetDoc, {
+    status: 'active',
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    currentDay: 1,
+    checkins: [],
+    lastCheckinDate: null,
+  });
+}
+
+/**
+ * Delete a user program document.
+ */
+export async function deleteUserProgram(userProgramId: string): Promise<void> {
+  const ref = doc(db, COLLECTIONS.USER_PROGRAMS, userProgramId);
+  await deleteDoc(ref);
+}
+
+/**
  * Daily check-in for a program.
  */
 export async function checkinProgramDay(

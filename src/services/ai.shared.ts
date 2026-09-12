@@ -906,37 +906,37 @@ RÈGLES CLINIQUES ET DE SÉCURITÉ ABSOLUES (CRITIQUE) :
 4. HYPERTENSION : Privilégie les fruits riches en potassium et vasodilatateurs naturels (betterave, concombre).
 5. ZÉRO ÉMOJI : N'utilise AUCUN émoji dans aucun texte. Emploie un style professionnel, élégant, médical et bienveillant.
 6. COMPOSITION DE CHAQUE JOUR : Chaque jour propose 1 flacon de 500ml composé de 2 à 4 fruits choisis STRICTEMENT dans la liste des fruits disponibles.
-7. PROGRESSION DE LA CURE : Organise une vraie logique clinique sur les ${durationDays} jours (ex: J1 réveil digestif & hydratation cellulaire, J2 drainage hépatique & rénal, J3 consolidation & vitalité...).
+8. SOBRIÉTÉ ET CONCISION (TRÈS IMPORTANT) : Fais des textes courts, clairs et aérés. Ne fais JAMAIS de longs pavés médicaux indigestes. Le client doit comprendre en 5 secondes.
 
 FORMAT DE RÉPONSE ATTENDU (UNIQUEMENT DU JSON STRICT, PAS DE TEXTE AUTOUR) :
 {
-  "title": "Nom inspirant de la cure (ex: Cure Métabolique Concombre & Chlorophylle)",
-  "subtitle": "Sous-titre court et percutant",
-  "description": "Explication complète de la logique de cette cure adaptée à sa santé spécifique (3-4 phrases).",
+  "title": "Nom inspirant et court de la cure (ex: Cure Pureté & Équilibre)",
+  "subtitle": "Sous-titre court (ex: Protocole ciblé 3 jours)",
+  "description": "Synthèse très courte (1 à 2 phrases max, simple, limpide).",
   "goal": "detox" | "immunity" | "digestion" | "energy" | "weight_loss" | "glow",
-  "goalLabel": "Libellé de l'objectif (ex: Détox Hépatique Douce)",
+  "goalLabel": "Libellé de l'objectif (ex: Détox Douce)",
   "durationDays": ${durationDays},
   "compatibilityScore": 98,
-  "clinicalRationale": "Pourquoi ce protocole est sécurisé et idéal pour ses pathologies et son profil",
+  "clinicalRationale": "Explication ultra-concise en 1 à 2 phrases (30 mots max) : pourquoi ce choix respecte sa santé sans aucun risque.",
   "precautions": [
-    "Précaution médicale ou d'hydratation 1",
-    "Précaution 2"
+    "Précaution 1 (très courte)",
+    "Précaution 2 (très courte)"
   ],
   "benefits": [
-    "Bénéfice majeur 1",
-    "Bénéfice majeur 2",
-    "Bénéfice majeur 3"
+    "Bénéfice majeur 1 (ex: Tolérance digestive absolue)",
+    "Bénéfice majeur 2 (ex: Zéro pic de glycémie)",
+    "Bénéfice majeur 3 (ex: Hydratation cellulaire pure)"
   ],
   "days": [
     {
       "dayNumber": 1,
       "timing": "morning_empty_stomach",
-      "timingLabel": "À jeun au réveil (entre 7h00 et 8h30)",
+      "timingLabel": "À jeun au réveil (7h00 - 8h30)",
       "cocktailName": "Nom du cocktail du Jour 1",
-      "focus": "Objectif principal du jour (ex: Réveil rénal et hydratation)",
+      "focus": "Objectif court (ex: Drainage doux)",
       "fruits": ["Fruit1", "Fruit2", "Fruit3"],
-      "advice": "Conseil d'hygiène de vie et de consommation pour cette journée",
-      "tasteProfile": "Description sensorielle des saveurs en bouche",
+      "advice": "Conseil d'hygiène simple en 1 phrase courte",
+      "tasteProfile": "Saveur en 2-4 mots (ex: Frais, herbacé et délicat)",
       "benefits": ["Bénéfice 1", "Bénéfice 2"]
     }
   ]

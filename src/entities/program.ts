@@ -91,7 +91,7 @@ export interface UserProgram {
   startDate: string;
   endDate: string;
   currentDay: number;
-  status: 'active' | 'completed' | 'paused' | 'cancelled';
+  status: 'active' | 'completed' | 'paused' | 'cancelled' | 'saved';
   checkins: UserProgramCheckin[];
   dailyCheckins?: Record<number, UserProgramCheckin>;
   programSnapshot: Program;

@@ -9,19 +9,18 @@ import {
   Leaf,
   Shield,
   HeartPulse,
-  Flame,
   Clock,
-  Droplets,
   ArrowRight,
-  Filter,
   Check,
   AlertCircle,
   X,
-  Award,
-  Zap,
   ShieldCheck,
   Star,
   Settings2,
+  Bookmark,
+  Trash2,
+  Play,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +30,6 @@ import { useProfileStore } from '@/stores/profile';
 import {
   type Program,
   type UserProgram,
-  type ProgramGoal,
   type ProgramsPageSettings,
   type Fruit,
   UserRole,
@@ -42,6 +40,10 @@ import {
   getPrograms,
   getProgramsSettings,
   subscribeToUserActiveProgram,
+  subscribeToUserSavedPrograms,
+  saveUserCustomProgram,
+  activateUserSavedProgram,
+  deleteUserProgram,
   enrollUserInProgram,
   checkinProgramDay,
   cancelUserProgram,
@@ -53,9 +55,9 @@ import { NutrifysCustomProgramModal } from '@/components/features/programs/Nutri
 
 const GOAL_FILTERS: { key: string; label: string; icon: any }[] = [
   { key: 'all', label: 'Toutes les cures', icon: Sparkles },
-  { key: 'detox', label: 'Détox et Élimination', icon: Leaf },
-  { key: 'immunity', label: 'Immunité et Vitalité', icon: Shield },
-  { key: 'digestion', label: 'Ventre Plat et Digestion', icon: HeartPulse },
+  { key: 'detox', label: 'Détox', icon: Leaf },
+  { key: 'immunity', label: 'Immunité', icon: Shield },
+  { key: 'digestion', label: 'Digestion', icon: HeartPulse },
 ];
 
 const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -72,6 +74,7 @@ const ProgramsPage: PageComponent = () => {
   const [programs, setPrograms] = useState<Program[]>(DEFAULT_PROGRAMS);
   const [fruits, setFruits] = useState<Fruit[]>([]);
   const [userProgram, setUserProgram] = useState<UserProgram | null>(null);
+  const [savedPrograms, setSavedPrograms] = useState<UserProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isNutrifysModalOpen, setIsNutrifysModalOpen] = useState(false);
 
@@ -82,6 +85,8 @@ const ProgramsPage: PageComponent = () => {
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [activatingSavedId, setActivatingSavedId] = useState<string | null>(null);
+  const [deletingSavedId, setDeletingSavedId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Load programs, settings and fruits
@@ -142,6 +147,18 @@ const ProgramsPage: PageComponent = () => {
     return () => unsub();
   }, [user?.uid]);
 
+  // Subscribe to user's saved custom programs
+  useEffect(() => {
+    if (!user?.uid) {
+      setSavedPrograms([]);
+      return;
+    }
+    const unsub = subscribeToUserSavedPrograms(user.uid, (list) => {
+      setSavedPrograms(list);
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
   // Filter programs
   const filteredPrograms = useMemo(() => {
     return programs.filter((p) => {
@@ -186,7 +203,7 @@ const ProgramsPage: PageComponent = () => {
       setSelectedProgram(null);
       setStatusMessage({
         type: 'success',
-        text: `Félicitations ! Vous êtes inscrit à la cure "${program.title}". Votre accompagnement démarre ${startingToday ? "immédiatement" : 'demain matin'}.`,
+        text: `Félicitations ! Vous suivez la cure "${program.title}". Démarrage ${startingToday ? 'aujourd’hui' : 'demain matin'}.`,
       });
     } catch (err: any) {
       console.error('Enrollment error:', err);
@@ -199,6 +216,74 @@ const ProgramsPage: PageComponent = () => {
     }
   };
 
+  const handleSaveCustomProgram = async (program: Program) => {
+    if (!user) {
+      navigate('/auth/login');
+      return;
+    }
+    try {
+      await saveUserCustomProgram(
+        user.uid,
+        {
+          name: user.name || 'Client',
+          email: user.email || '',
+          phone: user.phone || undefined,
+        },
+        program
+      );
+      setStatusMessage({
+        type: 'success',
+        text: `Votre cure "${program.title}" a été ajoutée à vos programmes enregistrés.`,
+      });
+    } catch (err) {
+      console.error('Save program error:', err);
+      setStatusMessage({
+        type: 'error',
+        text: "Impossible d'enregistrer la cure. Veuillez réessayer.",
+      });
+      throw err;
+    }
+  };
+
+  const handleActivateSavedProgram = async (savedProg: UserProgram) => {
+    if (!user) return;
+    setActivatingSavedId(savedProg.id);
+    try {
+      await activateUserSavedProgram(savedProg.id, user.uid, true);
+      setStatusMessage({
+        type: 'success',
+        text: `Votre cure "${savedProg.programTitle}" a démarré avec succès !`,
+      });
+    } catch (err) {
+      console.error('Activate saved program error:', err);
+      setStatusMessage({
+        type: 'error',
+        text: "Impossible de démarrer cette cure. Veuillez réessayer.",
+      });
+    } finally {
+      setActivatingSavedId(null);
+    }
+  };
+
+  const handleDeleteSavedProgram = async (savedProgId: string) => {
+    setDeletingSavedId(savedProgId);
+    try {
+      await deleteUserProgram(savedProgId);
+      setStatusMessage({
+        type: 'success',
+        text: 'Programme retiré de votre liste.',
+      });
+    } catch (err) {
+      console.error('Delete saved program error:', err);
+      setStatusMessage({
+        type: 'error',
+        text: 'Erreur lors de la suppression.',
+      });
+    } finally {
+      setDeletingSavedId(null);
+    }
+  };
+
   const handleCheckin = async (dayNumber: number, notes?: string) => {
     if (!userProgram) return;
     setIsCheckingIn(true);
@@ -206,7 +291,7 @@ const ProgramsPage: PageComponent = () => {
       await checkinProgramDay(userProgram, dayNumber, notes);
       setStatusMessage({
         type: 'success',
-        text: `Jour ${dayNumber} validé avec brio ! Savourez chaque instant de votre cure.`,
+        text: `Jour ${dayNumber} validé avec succès ! Continuez sur cette belle lancée.`,
       });
     } catch (err: any) {
       console.error('Checkin error:', err);
@@ -241,15 +326,15 @@ const ProgramsPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow={pageSettings.eyebrow || 'COACHING BIEN-ÊTRE ET PROTOCOLES CIBLÉS'}
+      eyebrow={pageSettings.eyebrow || 'CURES & PROTOCOLES BIEN-ÊTRE'}
       titleBefore={pageSettings.titleBefore || 'FYS '}
       titleHighlight={pageSettings.titleHighlight || 'Program'}
-      titleAfter={pageSettings.titleAfter || " — L'Art de la Cure Vivante"}
-      sectionBefore={pageSettings.sectionBefore || 'Découvrez nos cures de jus frais '}
-      sectionHighlight={pageSettings.sectionHighlight || '100% pressés à froid'}
+      titleAfter={pageSettings.titleAfter || ''}
+      sectionBefore="Nos cures de jus frais "
+      sectionHighlight="100% pressés à froid"
       subtitle={
         pageSettings.subtitle ||
-        'Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine.'
+        'Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme et instaurer une routine saine.'
       }
       imageUrl={
         pageSettings.heroImageUrl ||
@@ -263,14 +348,14 @@ const ProgramsPage: PageComponent = () => {
               className="rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 text-xs font-bold h-10 px-4 shadow-sm cursor-pointer gap-1.5"
             >
               <Settings2 className="size-4" />
-              Mode Administrateur (Gérer Cures & Vitrine)
+              Gérer les Cures & Vitrine (Admin)
             </Button>
           </div>
         ) : undefined
       }
     >
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 space-y-8 sm:space-y-12 pb-20">
-        {/* Status Feedback Banner */}
+        {/* Status Notification Banner */}
         {statusMessage && (
           <div
             className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-sm transition-all animate-pop-in-cute ${
@@ -279,24 +364,25 @@ const ProgramsPage: PageComponent = () => {
                 : 'bg-destructive/10 border border-destructive/30 text-destructive'
             }`}
           >
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
               {statusMessage.type === 'success' ? (
-                <CheckCircle2 className="size-5 text-primary shrink-0" />
+                <CheckCircle2 className="size-4 text-primary shrink-0" />
               ) : (
-                <AlertCircle className="size-5 text-destructive shrink-0" />
+                <AlertCircle className="size-4 text-destructive shrink-0" />
               )}
-              <span className="font-semibold">{statusMessage.text}</span>
+              <span className="font-semibold truncate">{statusMessage.text}</span>
             </div>
             <button
               onClick={() => setStatusMessage(null)}
-              className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
+              aria-label="Fermer"
             >
               <X className="size-4" />
             </button>
           </div>
         )}
 
-        {/* Active Program Coach Section (if user is currently enrolled) */}
+        {/* ── 1. ACTIVE PROGRAM COACH (if enrolled) ── */}
         {userProgram && (
           <section className="space-y-4">
             <ActiveProgramCoach
@@ -309,189 +395,198 @@ const ProgramsPage: PageComponent = () => {
           </section>
         )}
 
-        {/* Spotlight Bento Flagship (Only shown if user has no active program) */}
-        {!userProgram && flagshipProgram && (
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
-            <div className="absolute -right-20 -top-20 size-80 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
-              {/* Left Photo */}
-              <div className="lg:col-span-5 relative min-h-[220px] sm:min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
-                <img
-                  src={flagshipProgram.imageUrl}
-                  alt={flagshipProgram.title}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                  }}
-                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-
-                <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-10 flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-md">
-                    <Star className="size-3.5 fill-white" />
-                    Cure Signature
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-black/60 text-white backdrop-blur-md border border-white/20">
-                    <Calendar className="size-3.5 text-primary" />
-                    {flagshipProgram.durationDays} jours
-                  </span>
+        {/* ── 2. MES CURES ENREGISTRÉES (Approche NutriFYS) ── */}
+        {savedPrograms.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
+                  <Bookmark className="size-4" />
                 </div>
-
-                <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 text-white z-10 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                    Pack complet {flagshipProgram.durationDays}x 500ml
-                  </span>
-                  <p className="text-xl font-bold font-display">
-                    {flagshipProgram.title}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Content */}
-              <div className="lg:col-span-7 p-3.5 sm:p-10 space-y-4 sm:space-y-6">
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary/20 text-white border border-primary/30">
-                    <Leaf className="size-3.5 text-primary" />
-                    Purification Hépatique et Ventre Léger
-                  </div>
-
-                  <h3 className="text-2xl sm:text-4xl font-bold font-display tracking-tight text-white leading-tight">
-                    {flagshipProgram.title}
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold font-display text-foreground">
+                    Mes Cures Enregistrées ({savedPrograms.length})
                   </h3>
-
-                  <p className="text-white/80 text-xs sm:text-base leading-relaxed">
-                    {flagshipProgram.subtitle} {flagshipProgram.description}
+                  <p className="text-xs text-muted-foreground">
+                    Vos protocoles sur-mesure NutriFYS sauvegardés, prêts à être démarrés.
                   </p>
-                </div>
-
-                {/* Day-by-day preview pills */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                    Les 3 étapes de votre cure :
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {flagshipProgram.days.map((d, di) => (
-                      <div
-                        key={di}
-                        className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2"
-                      >
-                        <span className="size-5 sm:size-6 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-[10px] shrink-0">
-                          J{d.dayNumber || d.day || di + 1}
-                        </span>
-                        <span className="font-bold truncate text-[11px]">
-                          {d.cocktailName || d.juiceName}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pricing & CTA */}
-                <div className="pt-3 sm:pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-                  <div className="text-center sm:text-left">
-                    <div className="flex items-baseline justify-center sm:justify-start gap-2">
-                      <span className="text-2xl sm:text-3xl font-bold font-display text-white">
-                        {flagshipProgram.bundlePrice?.toLocaleString() || flagshipProgram.price.toLocaleString()} XAF
-                      </span>
-                      {flagshipProgram.originalPrice && (
-                        <span className="text-xs sm:text-sm line-through text-white/50 font-semibold">
-                          {flagshipProgram.originalPrice.toLocaleString()} XAF
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] sm:text-[11px] text-white/70">Livré frais avec protocole complet NutriFYS</span>
-                  </div>
-
-                  <Button
-                    size="lg"
-                    onClick={() => setSelectedProgram(flagshipProgram)}
-                    className="w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-6 sm:px-8 shadow-md transition-all active:scale-98 cursor-pointer"
-                  >
-                    Découvrir et Démarrer
-                    <ArrowRight className="size-4 ml-2" />
-                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedPrograms.map((sp) => {
+                const snapshot = sp.programSnapshot;
+                const isActivating = activatingSavedId === sp.id;
+                const isDeleting = deletingSavedId === sp.id;
+
+                return (
+                  <div
+                    key={sp.id}
+                    className="p-4 sm:p-5 rounded-3xl border border-primary/20 bg-card hover:border-primary/40 shadow-xs transition-all space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                          <Sparkles className="size-3" />
+                          Sur-Mesure NutriFYS
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                          <Calendar className="size-3 text-primary" />
+                          {sp.durationDays} Jours
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm sm:text-base font-bold font-display text-foreground line-clamp-1">
+                        {sp.programTitle}
+                      </h4>
+
+                      {snapshot?.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {snapshot.description}
+                        </p>
+                      )}
+
+                      {/* Days preview pill list */}
+                      {snapshot?.days && snapshot.days.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {snapshot.days.slice(0, 3).map((d, di) => (
+                            <span
+                              key={di}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/60 text-foreground border border-border/50 truncate max-w-[130px]"
+                            >
+                              <Leaf className="size-2.5 text-primary shrink-0" />
+                              <span className="truncate">{d.cocktailName || d.juiceName}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isDeleting}
+                        onClick={() => handleDeleteSavedProgram(sp.id)}
+                        className="text-xs text-muted-foreground hover:text-destructive h-9 px-2.5 rounded-xl cursor-pointer"
+                        title="Supprimer la cure"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-3.5" />
+                        )}
+                      </Button>
+
+                      <div className="flex items-center gap-2">
+                        {snapshot && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProgram(snapshot)}
+                            className="rounded-xl text-xs h-9 px-3 cursor-pointer"
+                          >
+                            Détails
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          disabled={isActivating}
+                          onClick={() => handleActivateSavedProgram(sp)}
+                          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold h-9 px-3.5 shadow-xs cursor-pointer gap-1.5"
+                        >
+                          {isActivating ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" />
+                              Lancement...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="size-3.5 fill-current" />
+                              Démarrer
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
-        {/* NutriFYS Custom Cure Callout Card (Approach B) */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-card via-card/95 to-primary/10 border border-primary/30 p-4 sm:p-8 shadow-sm">
-          <div className="absolute -right-12 -top-12 size-48 rounded-full bg-primary/15 blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div className="space-y-2.5 max-w-xl">
+        {/* ── 3. NUTRIFYS SUR-MESURE INVITATION (Épurée & Percutante) ── */}
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-card via-card/95 to-primary/10 border border-primary/25 p-4 sm:p-6 shadow-xs">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2 max-w-xl">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-xs">
-                  <Sparkles className="size-3.5 fill-current" />
-                  NutriFYS Approche Sur-Mesure
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
+                  <Sparkles className="size-3.5" />
+                  NutriFYS Intelligence
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                   <ShieldCheck className="size-3.5" />
-                  Adapté à votre santé
+                  100% Adapté à votre santé
                 </span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl font-bold font-display text-foreground leading-tight">
-                Besoin d'un protocole unique ? Laissez NutriFYS composer votre cure.
+              <h3 className="text-lg sm:text-2xl font-bold font-display text-foreground leading-tight">
+                Une cure sur-mesure conçue pour vous.
               </h3>
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {activeConditions.length > 0 || activeAllergies.length > 0
-                  ? `NutriFYS prend en compte vos particularités médicales (${[
+                  ? `NutriFYS formule un protocole qui respecte scrupuleusement vos particularités (${[
                       ...activeConditions,
                       ...activeAllergies.map((a) => `sans ${a}`),
-                    ].join(', ')}) pour formuler un protocole 100% sécurisé et ultra-efficace.`
-                  : 'Formulez une cure sur-mesure de 3, 5 ou 7 jours calibrée exactement selon votre métabolisme, vos préférences et les récoltes fraîches du moment.'}
+                    ].join(', ')}).`
+                  : 'Laissez notre IA nutritionnelle élaborer votre cure personnalisée de 3, 5 ou 7 jours selon vos objectifs et les fruits frais disponibles.'}
               </p>
             </div>
 
-            <div className="shrink-0 flex flex-col sm:flex-row gap-2.5">
+            <div className="shrink-0">
               <Button
                 onClick={() => setIsNutrifysModalOpen(true)}
-                className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-6 shadow-md transition-all active:scale-98 cursor-pointer gap-2"
+                className="w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-11 px-6 shadow-md transition-all active:scale-98 cursor-pointer gap-2"
               >
                 <Sparkles className="size-4" />
-                Formuler ma cure avec NutriFYS
-                <ArrowRight className="size-4 ml-auto sm:ml-1" />
+                Concevoir ma cure avec NutriFYS
+                <ArrowRight className="size-4" />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Catalog of All Programs */}
-        <section className="space-y-8 pt-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+        {/* ── 4. CATALOGUE DES CURES SIGNATURES (Lisible & Structuré) ── */}
+        <section className="space-y-6 pt-2">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                  Formules Ciblées FYS
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-3">
-                <span>Catalogue des Programmes</span>
+              <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">
+                Cures Signatures FYS
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Choisissez la cure qui répond exactement à votre besoin de santé actuel.
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Des protocoles clés en main créés par nos maîtres jus.
               </p>
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full md:w-80">
+            <div className="relative w-full md:w-72">
               <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher détox, immunité, digestion..."
-                className="pl-10 h-11 text-xs rounded-2xl bg-card border-border/80 shadow-xs"
+                placeholder="Rechercher détox, immunité..."
+                className="pl-9 h-10 text-xs rounded-xl bg-card border-border/80"
               />
             </div>
           </div>
 
           {/* Goal Filter Chips */}
-          <div className="w-full flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none touch-pan-x min-w-0">
+          <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x min-w-0">
             {GOAL_FILTERS.map((f) => {
               const Icon = f.icon;
               const isActive = selectedGoal === f.key;
@@ -500,9 +595,9 @@ const ProgramsPage: PageComponent = () => {
                   key={f.key}
                   type="button"
                   onClick={() => setSelectedGoal(f.key)}
-                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-xs shrink-0 ${
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                     isActive
-                      ? 'bg-primary text-primary-foreground shadow-md scale-102 ring-2 ring-primary/40'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'bg-card text-muted-foreground hover:text-foreground border border-border/70 hover:border-primary/40'
                   }`}
                 >
@@ -514,7 +609,7 @@ const ProgramsPage: PageComponent = () => {
           </div>
 
           {/* Programs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredPrograms.map((program) => {
               const isUserActiveThis = userProgram?.programId === program.id;
               const currentPrice = program.bundlePrice || program.price;
@@ -522,127 +617,85 @@ const ProgramsPage: PageComponent = () => {
               return (
                 <div
                   key={program.id}
-                  className={`group relative rounded-2xl sm:rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
+                  className={`group relative rounded-2xl sm:rounded-3xl border bg-card overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-primary/40 ${
                     isUserActiveThis
-                      ? 'border-primary ring-2 ring-primary/40 shadow-md'
-                      : 'border-border/70 shadow-xs'
+                      ? 'border-primary ring-2 ring-primary/30 shadow-xs'
+                      : 'border-border/70'
                   }`}
                 >
-                  {/* Card Top: Photo with Overlay Badges */}
+                  {/* Photo with Overlay */}
                   <div>
-                    <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-muted">
+                    <div className="relative h-48 w-full overflow-hidden bg-muted">
                       <img
                         src={program.imageUrl}
                         alt={program.title}
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                         }}
-                        className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-1000 ease-out"
+                        className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                      {/* Top Badges */}
-                      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-xs">
+                      {/* Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
                           {program.goalLabel || program.goal}
                         </span>
 
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-black/60 text-white backdrop-blur-md shadow-xs border border-white/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-black/60 text-white backdrop-blur-md border border-white/20">
                           <Calendar className="size-3 text-primary" />
                           {program.durationDays} jours
                         </span>
                       </div>
 
-                      {/* Bottom Banner Over Photo */}
-                      <div className="absolute bottom-3 left-4 right-4 text-white z-10">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                          {program.bottlesTotal}x {program.bottleSize} • 100% Brut
-                        </span>
-                        <h3 className="text-lg sm:text-xl font-bold font-display leading-tight truncate">
+                      {/* Title on bottom of photo */}
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white z-10">
+                        <h3 className="text-base sm:text-lg font-bold font-display leading-tight truncate">
                           {program.title}
                         </h3>
                       </div>
                     </div>
 
-                    {/* Card Content Details */}
-                    <div className="p-3.5 sm:p-6 space-y-3 sm:space-y-4">
-                      <div>
-                        <p className="text-xs font-bold text-primary">
-                          {program.subtitle}
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 line-clamp-2">
-                          {program.description}
-                        </p>
-                      </div>
+                    {/* Content */}
+                    <div className="p-4 space-y-3">
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                        {program.description}
+                      </p>
 
-                      {/* Benefits preview */}
+                      {/* 2 Key Benefits */}
                       {program.benefits && program.benefits.length > 0 && (
-                        <div className="space-y-1.5 pt-1">
+                        <div className="space-y-1 pt-1">
                           {program.benefits.slice(0, 2).map((b, bi) => (
                             <div
                               key={bi}
-                              className="flex items-center gap-2 text-xs font-medium text-foreground/90"
+                              className="flex items-center gap-1.5 text-xs text-foreground/90 font-medium"
                             >
-                              <Check className="size-3.5 text-primary shrink-0" />
+                              <Check className="size-3 text-primary shrink-0" />
                               <span className="truncate">{b}</span>
                             </div>
                           ))}
                         </div>
                       )}
-
-                      {/* Days preview thumbnails chain */}
-                      <div className="pt-2 border-t border-border/50">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-2">
-                          Recettes incluses ({program.days.length}) :
-                        </span>
-                        <div className="flex items-center gap-1.5 overflow-hidden">
-                          {program.days.slice(0, 3).map((d, di) => (
-                            <span
-                              key={di}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-muted/60 text-foreground border border-border/60 truncate"
-                            >
-                              <Leaf className="size-3 text-primary shrink-0" />
-                              <span className="truncate">{d.cocktailName || d.juiceName}</span>
-                            </span>
-                          ))}
-                          {program.days.length > 3 && (
-                            <span className="text-[10px] font-bold text-muted-foreground px-1.5">
-                              +{program.days.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   {/* Card Footer */}
-                  <div className="p-3.5 sm:p-6 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2.5 sm:gap-3">
+                  <div className="p-4 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                        Pack Cure Complète
+                        Pack complet
                       </span>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base sm:text-lg font-bold font-display text-primary">
-                          {currentPrice.toLocaleString()} XAF
-                        </span>
-                        {program.originalPrice && (
-                          <span className="text-xs line-through text-muted-foreground font-medium">
-                            {program.originalPrice.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-base font-bold font-display text-primary">
+                        {currentPrice.toLocaleString()} XAF
+                      </span>
                     </div>
 
                     <Button
                       onClick={() => setSelectedProgram(program)}
-                      className={`rounded-2xl text-xs font-bold h-10 px-4 sm:px-5 shadow-xs transition-all active:scale-98 cursor-pointer ${
-                        isUserActiveThis
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                      }`}
+                      className="rounded-xl text-xs font-bold h-9 px-4 shadow-xs cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       {isUserActiveThis ? 'Cure en cours' : 'Voir la cure'}
-                      <ArrowRight className="size-3.5 ml-1.5" />
+                      <ArrowRight className="size-3.5 ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -651,25 +704,14 @@ const ProgramsPage: PageComponent = () => {
           </div>
 
           {filteredPrograms.length === 0 && (
-            <div className="text-center py-16 p-8 rounded-[2.5rem] border border-dashed border-border bg-card/40 space-y-3">
-              <Sparkles className="size-10 text-muted-foreground mx-auto opacity-50" />
-              <h4 className="text-base font-bold text-foreground">
-                Aucune cure ne correspond à vos critères.
+            <div className="text-center py-12 p-6 rounded-3xl border border-dashed border-border bg-card/40 space-y-2">
+              <Sparkles className="size-8 text-muted-foreground mx-auto opacity-50" />
+              <h4 className="text-sm font-bold text-foreground">
+                Aucune cure trouvée
               </h4>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Essayez d'ajuster vos mots-clés de recherche ou sélectionnez une autre catégorie.
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                Modifiez vos critères de recherche ou sélectionnez une autre catégorie.
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedGoal('all');
-                  setSearchQuery('');
-                }}
-                className="rounded-xl text-xs cursor-pointer mt-2"
-              >
-                Réinitialiser les filtres
-              </Button>
             </div>
           )}
         </section>
@@ -685,13 +727,14 @@ const ProgramsPage: PageComponent = () => {
           activeProgramTitle={userProgram?.programTitle}
         />
 
-        {/* NutriFYS Custom Program Modal (Approach B) */}
+        {/* NutriFYS Custom Program Modal */}
         <NutrifysCustomProgramModal
           isOpen={isNutrifysModalOpen}
           onClose={() => setIsNutrifysModalOpen(false)}
           profile={profile}
           fruits={fruits}
           onEnroll={handleEnroll}
+          onSaveProgram={handleSaveCustomProgram}
           isEnrolling={isEnrolling}
         />
       </div>
