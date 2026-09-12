@@ -69,8 +69,9 @@ export const useAudioStore = createStore<AudioState>((set, get) => ({
     audioInstance.volume = get().volume;
     audioInstance.play().then(() => {
       set({ playing: true });
-    }).catch((e) => {
-      console.warn('[FYS Audio] Autoplay prevented:', e);
+    }).catch((_e) => {
+      // Browser blocked autoplay until first user gesture; expected behavior
+      console.debug('[FYS Audio] Autoplay awaiting user interaction');
     });
   },
   

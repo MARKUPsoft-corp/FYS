@@ -104,7 +104,30 @@ export function subscribeToUserActiveProgram(
 }
 
 /**
- * Enroll a user into a program.
+ * Recursively strip undefined values from an object before sending to Firestore.
+ * Firestore strictly forbids `undefined` in document fields.
+ */
+function sanitizeFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeFirestore(item)) as unknown as T;
+  }
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeFirestore(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return obj;
+}
+
+/**
+ * Enroll a user in a program.
  */
 export async function enrollUserInProgram(
   userId: string,
@@ -119,9 +142,9 @@ export async function enrollUserInProgram(
   const newDocRef = doc(collection(db, COLLECTIONS.USER_PROGRAMS));
   const newProgramData: Omit<UserProgram, 'id'> = {
     userId,
-    userName: user.name,
-    userEmail: user.email,
-    userPhone: user.phone,
+    userName: user.name || 'Client',
+    userEmail: user.email || '',
+    userPhone: user.phone || null,
     programId: program.id,
     programTitle: program.title,
     programSlug: program.slug,
@@ -132,12 +155,12 @@ export async function enrollUserInProgram(
     currentDay: 1,
     status: 'active',
     checkins: [],
-    programSnapshot: program,
+    programSnapshot: sanitizeFirestore(program),
     createdAt: new Date().toISOString(),
   };
 
   await setDoc(newDocRef, {
-    ...newProgramData,
+    ...sanitizeFirestore(newProgramData),
     _serverTimestamp: serverTimestamp(),
   });
 
@@ -155,9 +178,9 @@ export async function saveUserCustomProgram(
   const newDocRef = doc(collection(db, COLLECTIONS.USER_PROGRAMS));
   const newProgramData: Omit<UserProgram, 'id'> = {
     userId,
-    userName: user.name,
-    userEmail: user.email,
-    userPhone: user.phone,
+    userName: user.name || 'Client',
+    userEmail: user.email || '',
+    userPhone: user.phone || null,
     programId: program.id,
     programTitle: program.title,
     programSlug: program.slug,
@@ -168,12 +191,12 @@ export async function saveUserCustomProgram(
     currentDay: 1,
     status: 'saved',
     checkins: [],
-    programSnapshot: program,
+    programSnapshot: sanitizeFirestore(program),
     createdAt: new Date().toISOString(),
   };
 
   await setDoc(newDocRef, {
-    ...newProgramData,
+    ...sanitizeFirestore(newProgramData),
     _serverTimestamp: serverTimestamp(),
   });
 
@@ -287,8 +310,8 @@ export async function checkinProgramDay(
             dayNumber,
             day: dayNumber,
             completedAt: todayIso,
-            note: notes ?? c.note ?? c.notes,
-            notes: notes ?? c.notes ?? c.note,
+            note: notes ?? c.note ?? c.notes ?? null,
+            notes: notes ?? c.notes ?? c.note ?? null,
           }
         : c
     );
@@ -299,8 +322,8 @@ export async function checkinProgramDay(
         dayNumber,
         day: dayNumber,
         completedAt: todayIso,
-        note: notes,
-        notes,
+        note: notes ?? null,
+        notes: notes ?? null,
       },
     ];
   }
@@ -310,7 +333,7 @@ export async function checkinProgramDay(
   const nextDay = Math.min(userProgram.durationDays, Math.max(dayNumber + 1, userProgram.currentDay));
 
   await updateDoc(ref, {
-    checkins: newCheckins,
+    checkins: sanitizeFirestore(newCheckins),
     currentDay: isCompleted ? userProgram.durationDays : nextDay,
     status: isCompleted ? 'completed' : 'active',
     lastCheckinDate: todayIso,

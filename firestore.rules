@@ -42,6 +42,33 @@ service cloud.firestore {
     }
     
     // ------------------------------------------------------------------------
+    // Programmes FYS & Cures (Programs)
+    // ------------------------------------------------------------------------
+    
+    match /programs/{programId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ------------------------------------------------------------------------
+    // Inscriptions & Suivi des Cures Utilisateurs (User Programs)
+    // ------------------------------------------------------------------------
+    
+    match /user_programs/{userProgramId} {
+      // Création : utilisateur authentifié pour lui-même
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Lecture : l'admin ou le propriétaire
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Mise à jour : l'admin ou le propriétaire
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Suppression : l'admin ou le propriétaire
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+    
+    // ------------------------------------------------------------------------
     // Cocktails
     // ------------------------------------------------------------------------
     
