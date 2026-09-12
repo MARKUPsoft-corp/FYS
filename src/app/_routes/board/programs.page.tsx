@@ -406,19 +406,19 @@ const ProgramsPage: PageComponent = () => {
     }
   };
 
-  // Sticky subHeader containing the 4-tab bar with authentic glassmorphism
+  // Sticky subHeader containing the 4-tab bar (subtle glassmorphism, true full-width edge-to-edge)
   const subHeaderTabs = (
-    <div className="sticky top-[calc(var(--sat,0px)+5rem)] z-20 w-full -mx-1 md:-mx-2 lg:-mx-4 w-[calc(100%+0.5rem)] md:w-[calc(100%+1rem)] lg:w-[calc(100%+2rem)] bg-background/60 dark:bg-background/45 backdrop-blur-[48px] saturate-[190%] border-b border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.4)] transition-all">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2.5 sm:py-3.5">
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none p-1.5 rounded-2xl sm:rounded-full bg-white/40 dark:bg-white/[0.05] backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[inset_0_1px_2px_rgba(255,255,255,0.7),0_4px_20px_rgba(0,0,0,0.04)] sm:grid sm:grid-cols-4 touch-pan-x">
+    <div className="sticky top-[calc(var(--sat,0px)+5rem)] z-20 w-full bg-background/80 dark:bg-background/75 backdrop-blur-md border-b border-border/50 shadow-xs transition-all">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none p-1 rounded-2xl sm:rounded-full bg-muted/40 dark:bg-muted/25 border border-border/40 sm:grid sm:grid-cols-4 touch-pan-x">
           {/* Tab 1: Découvrir & Sur-Mesure */}
           <button
             type="button"
             onClick={() => setActiveTab('discover')}
-            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer shrink-0 sm:shrink ${
+            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shrink-0 sm:shrink ${
               activeTab === 'discover'
-                ? 'bg-primary/95 text-primary-foreground font-bold shadow-[0_4px_16px_rgba(63,109,78,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] border border-white/30 backdrop-blur-md'
-                : 'text-foreground/75 hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
             }`}
           >
             <Sparkles className="size-4 shrink-0" />
@@ -430,10 +430,10 @@ const ProgramsPage: PageComponent = () => {
           <button
             type="button"
             onClick={() => setActiveTab('active')}
-            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer shrink-0 sm:shrink ${
+            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shrink-0 sm:shrink ${
               activeTab === 'active'
-                ? 'bg-primary/95 text-primary-foreground font-bold shadow-[0_4px_16px_rgba(63,109,78,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] border border-white/30 backdrop-blur-md'
-                : 'text-foreground/75 hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
             }`}
           >
             <Activity className="size-4 shrink-0" />
@@ -442,9 +442,9 @@ const ProgramsPage: PageComponent = () => {
 
             {userProgram && (
               <span
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md ${
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === 'active'
-                    ? 'bg-white/25 text-white border border-white/40 shadow-xs'
+                    ? 'bg-white/20 text-white'
                     : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                 }`}
               >
@@ -461,10 +461,10 @@ const ProgramsPage: PageComponent = () => {
           <button
             type="button"
             onClick={() => setActiveTab('saved')}
-            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer shrink-0 sm:shrink ${
+            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shrink-0 sm:shrink ${
               activeTab === 'saved'
-                ? 'bg-primary/95 text-primary-foreground font-bold shadow-[0_4px_16px_rgba(63,109,78,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] border border-white/30 backdrop-blur-md'
-                : 'text-foreground/75 hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
             }`}
           >
             <Bookmark className="size-4 shrink-0" />
@@ -473,10 +473,10 @@ const ProgramsPage: PageComponent = () => {
 
             {savedPrograms.length > 0 && (
               <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md ${
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === 'saved'
-                    ? 'bg-white/25 text-white border border-white/40 shadow-xs'
-                    : 'bg-primary/15 text-primary border border-primary/25'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-primary/10 text-primary border border-primary/20'
                 }`}
               >
                 {savedPrograms.length}
@@ -488,10 +488,10 @@ const ProgramsPage: PageComponent = () => {
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer shrink-0 sm:shrink ${
+            className={`relative flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shrink-0 sm:shrink ${
               activeTab === 'history'
-                ? 'bg-primary/95 text-primary-foreground font-bold shadow-[0_4px_16px_rgba(63,109,78,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] border border-white/30 backdrop-blur-md'
-                : 'text-foreground/75 hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
             }`}
           >
             <History className="size-4 shrink-0" />
@@ -500,10 +500,10 @@ const ProgramsPage: PageComponent = () => {
 
             {pastPrograms.length > 0 && (
               <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md ${
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === 'history'
-                    ? 'bg-white/25 text-white border border-white/40 shadow-xs'
-                    : 'bg-muted-foreground/15 text-muted-foreground border border-border/60'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-muted-foreground/15 text-muted-foreground border border-border/40'
                 }`}
               >
                 {pastPrograms.length}

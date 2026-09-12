@@ -50,7 +50,7 @@ export function BoardPageShell({
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        <div className="relative z-10 flex-1 flex items-end justify-between gap-4">
+        <div className="relative z-10 flex-1 flex items-end justify-between gap-4 max-w-7xl mx-auto w-full">
           <div>
             <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">
               {eyebrow}
@@ -67,7 +67,7 @@ export function BoardPageShell({
 
       {subHeader}
 
-      <div className={`px-1 sm:px-3 md:px-4 space-y-8 ${subHeader ? 'mt-6 sm:mt-8' : ''}`}>
+      <div className={`max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-8 ${subHeader ? 'mt-6 sm:mt-8' : ''}`}>
         {actions}
 
         {hasSectionHeader && (

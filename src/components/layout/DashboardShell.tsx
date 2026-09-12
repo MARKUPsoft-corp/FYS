@@ -41,11 +41,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <main
         ref={mainRef}
         className={cn(
-          'max-w-7xl mx-auto pt-topbar pb-bottom-nav lg:pt-24 lg:pb-0',
+          'w-full pt-topbar pb-bottom-nav lg:pt-24 lg:pb-0',
           'transition-all duration-300 ease-in-out',
         )}
       >
-        <div key={location.pathname} className="w-full max-w-[1800px] mx-auto px-1 md:px-2 lg:px-4 page-transition-wrapper">
+        <div key={location.pathname} className="w-full page-transition-wrapper">
           {children}
         </div>
       </main>
