@@ -6,7 +6,7 @@ import {
   HeartPulse, Pencil, Check, Plus, X,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind, Sparkles,
   AlertCircle, Loader2, Music, Volume2, VolumeX, Sun,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -555,6 +555,48 @@ const Profile: PageComponent = () => {
           <p className="text-[12px] font-semibold text-primary mt-3">
             {actualTheme === 'dark' ? t('theme.dark') : t('theme.light')}
           </p>
+        </div>
+
+        {/* Language Preference Card */}
+        <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Globe className="size-6 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display font-bold text-foreground">Langue de l'application</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-snug">
+                  Choisissez votre langue d'affichage préférée
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-2xl border border-border/50 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage('fr')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  i18n.language?.startsWith('fr')
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Français
+              </button>
+              <button
+                type="button"
+                onClick={() => i18n.changeLanguage('en')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  i18n.language?.startsWith('en')
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Ambient Music Toggle */}

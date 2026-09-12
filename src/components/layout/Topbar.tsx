@@ -1,12 +1,21 @@
 import { Link, useLocation, useNavigate } from 'rasengan';
-import { LogIn, LogOut, ShoppingBag, Wallet, Image, CircleDollarSign } from 'lucide-react';
+import {
+  LogIn,
+  LogOut,
+  ShoppingBag,
+  Wallet,
+  Image,
+  CircleDollarSign,
+  CalendarCheck,
+  Settings,
+  Globe,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
 import { signOut } from '@/services/auth';
 import { clearPendingAction } from '@/lib/pending-action';
 import { getNavItemsForRole, getGuestNavItems } from '@/data/navigation';
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { NotificationBell } from '@/components/common/NotificationBell';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -19,7 +28,7 @@ import {
 import { UserRole } from '@/entities/user';
 
 export function Topbar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -93,7 +102,38 @@ export function Topbar() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <LanguageSwitcher />
+          {/* Accès rapide à la gestion de FYS Programme */}
+          {user?.role === UserRole.ADMIN ? (
+            <Link
+              to="/board/programs-admin"
+              className={cn(
+                'relative flex items-center gap-1.5 h-10 px-3 rounded-xl font-bold text-xs transition-all shadow-xs shrink-0',
+                location.pathname.startsWith('/board/programs-admin')
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25',
+              )}
+              aria-label="Gestion FYS Programme"
+              title="Gestion FYS Programme"
+            >
+              <CalendarCheck className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Gestion Cures</span>
+            </Link>
+          ) : (
+            <Link
+              to="/board/programs"
+              className={cn(
+                'relative flex items-center gap-1.5 h-10 px-3 rounded-xl font-bold text-xs transition-all shadow-xs shrink-0',
+                location.pathname.startsWith('/board/programs')
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25',
+              )}
+              aria-label="FYS Programme"
+              title="FYS Programme"
+            >
+              <CalendarCheck className="size-4 shrink-0" />
+              <span className="hidden sm:inline">FYS Programme</span>
+            </Link>
+          )}
 
           <NotificationBell />
 
@@ -155,8 +195,6 @@ export function Topbar() {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuSeparator />
-
                 <DropdownMenuItem
                   onClick={() => navigate('/board/profile')}
                   className="flex items-center gap-3 cursor-pointer py-2"
@@ -168,11 +206,65 @@ export function Topbar() {
                   </Avatar>
                   <div className="flex flex-col min-w-0">
                     <span className="font-semibold text-foreground truncate">{user.name}</span>
-                    <span className="text-sm text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground truncate">
                       {user.email}
                     </span>
                   </div>
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={() => navigate('/board/profile')}
+                  className="gap-2.5 cursor-pointer text-xs font-semibold"
+                >
+                  <Settings className="size-4 text-muted-foreground" />
+                  Paramètres & Profil
+                </DropdownMenuItem>
+
+                {user.role === UserRole.ADMIN && (
+                  <DropdownMenuItem
+                    onClick={() => navigate('/board/programs-admin')}
+                    className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
+                  >
+                    <CalendarCheck className="size-4 text-primary" />
+                    Gestion FYS Programme
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* Changement de Langue dans les Paramètres */}
+                <div className="px-2 py-1.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 px-1">
+                    <Globe className="size-3 text-primary" />
+                    Langue / Language
+                  </span>
+                  <div className="grid grid-cols-2 gap-1 bg-muted/60 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => i18n.changeLanguage('fr')}
+                      className={`py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                        i18n.language?.startsWith('fr')
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Français
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => i18n.changeLanguage('en')}
+                      className={`py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                        i18n.language?.startsWith('en')
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      English
+                    </button>
+                  </div>
+                </div>
 
                 <DropdownMenuSeparator />
 

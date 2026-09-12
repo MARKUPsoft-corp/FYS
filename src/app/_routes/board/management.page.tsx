@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { PageComponent } from 'rasengan';
+import { PageComponent, Link } from 'rasengan';
 import {
   CircleDollarSign,
   TrendingUp,
@@ -19,6 +19,7 @@ import {
   FileSpreadsheet,
   ChevronRight,
   Package,
+  CalendarCheck,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -182,6 +183,17 @@ const ManagementPage: PageComponent = () => {
       sectionHighlight="Coûts & Bénéfices"
       subtitle="Calculez au centime près les dépenses réelles par commande livrée (ingrédients, bouteilles vides avec étiquettes, frais annexes) et la marge nette dégagée."
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      actions={
+        <div className="flex justify-end pb-2">
+          <Link
+            to="/board/programs-admin"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-2xl bg-secondary text-secondary-foreground font-bold text-xs shadow-sm hover:bg-secondary/90 transition-all cursor-pointer"
+          >
+            <CalendarCheck className="size-4" />
+            Gestion FYS Programme
+          </Link>
+        </div>
+      }
     >
       <div className="space-y-8 max-w-7xl mx-auto w-full pb-16">
         {/* ── 1. GLOBAL KPI DASHBOARD ── */}

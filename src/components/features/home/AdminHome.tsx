@@ -3,7 +3,8 @@ import { Link } from 'rasengan';
 import {
   GlassWater, Apple, ShoppingBag, Users, Tag, ArrowRight,
   TrendingUp, Loader2, Clock, CheckCircle2, Truck, Package,
-  XCircle, AlertCircle, Wallet, CreditCard, LayoutTemplate, CircleDollarSign
+  XCircle, AlertCircle, Wallet, CreditCard, LayoutTemplate, CircleDollarSign,
+  CalendarCheck,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -126,6 +127,15 @@ export function AdminHome({ name }: Props) {
 
   const quickActions = [
     {
+      label: 'FYS Programme (Gestion Cures)',
+      description: 'Pilotez les cures signatures, modifiez la vitrine, les prix et suivez les clients inscrits.',
+      icon: CalendarCheck,
+      iconBg: 'bg-primary/15 dark:bg-primary/25',
+      iconColor: 'text-primary',
+      path: '/board/programs-admin',
+      cta: 'Gérer les Cures & Vitrine',
+    },
+    {
       label: t('nav.fruits'),
       description: t('fruits.subtitle'),
       icon: Apple,
@@ -190,6 +200,17 @@ export function AdminHome({ name }: Props) {
       sectionHighlight={t('home.admin.sectionHighlight')}
       subtitle={t('home.admin.sectionSubtitle')}
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      actions={
+        <div className="flex justify-end pb-2">
+          <Link
+            to="/board/programs-admin"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-secondary text-secondary-foreground font-bold text-xs sm:text-sm shadow-md hover:bg-secondary/90 active:scale-98 transition-all cursor-pointer"
+          >
+            <CalendarCheck className="size-4.5" />
+            Gestion FYS Programme
+          </Link>
+        </div>
+      }
     >
       <div className="space-y-10 max-w-7xl mx-auto w-full overflow-x-hidden">
       {/* ── KPI CARDS ── */}
