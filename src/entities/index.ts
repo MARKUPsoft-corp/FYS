@@ -7,3 +7,4 @@ export * from './chat';
 export * from './notification';
 export * from './settings';
 export * from './kpay';
+export * from './program';

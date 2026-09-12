@@ -8,6 +8,8 @@ export const COLLECTIONS = {
   CONVERSATIONS: 'conversations',
   SETTINGS: 'settings',
   KPAY_TRANSACTIONS: 'kpay_transactions',
+  PROGRAMS: 'programs',
+  USER_PROGRAMS: 'user_programs',
 } as const;
 
 // Sous-collection profil santé, chemin: users/{uid}/profile/main

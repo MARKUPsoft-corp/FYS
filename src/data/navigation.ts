@@ -12,6 +12,7 @@ import {
   Image,
   CreditCard,
   CircleDollarSign,
+  CalendarCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -74,6 +75,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: HeartPulse,
     roles: [UserRole.CUSTOMER],
     showInMobileTab: false,
+  },
+  {
+    key: 'programs',
+    label: 'Programmes',
+    labelKey: 'nav.programs',
+    path: '/board/programs',
+    icon: CalendarCheck,
+    roles: [UserRole.CUSTOMER, UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: true,
   },
 
   // ── Admin ─────────────────────────────────────────────

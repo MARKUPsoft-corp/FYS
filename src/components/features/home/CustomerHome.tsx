@@ -1,19 +1,20 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'rasengan';
-import { Beaker, ChevronRight, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown } from 'lucide-react';
+import { Beaker, ChevronRight, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useState, useEffect } from 'react';
 
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
-import { isUsableFruit, OrderStatus, partitionCocktailIngredients, type Fruit } from '@/entities';
+import { isUsableFruit, OrderStatus, partitionCocktailIngredients, type Fruit, type UserProgram } from '@/entities';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useUserOrders } from '@/hooks/useOrders';
 import { CocktailBanner } from '@/components/features/cocktail/CocktailBanner';
 import { getSessions } from '@/services/chat';
 import { getPricingSettings } from '@/services/settings';
+import { subscribeToUserActiveProgram } from '@/services/program';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -59,6 +60,16 @@ export function CustomerHome(_props: Props) {
   
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [activeProgram, setActiveProgram] = useState<UserProgram | null>(null);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setActiveProgram(null);
+      return;
+    }
+    const unsub = subscribeToUserActiveProgram(user.uid, (up) => setActiveProgram(up));
+    return () => unsub();
+  }, [user?.uid]);
 
   const handleAiSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -194,6 +205,65 @@ export function CustomerHome(_props: Props) {
             )}
           </div>
         </div>
+
+        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER ── */}
+        {activeProgram ? (
+          <div className="rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 border border-emerald-400/30">
+            <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative z-10 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/30">
+                  <CalendarCheck className="size-3.5 text-amber-300" />
+                  Cure en cours
+                </span>
+                <span className="text-xs text-emerald-100 font-semibold">
+                  Jour {activeProgram.currentDay} sur {activeProgram.durationDays}
+                </span>
+              </div>
+              <h3 className="text-2xl font-black">{activeProgram.programTitle}</h3>
+              <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl">
+                {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Continuez votre routine bien-être aujourd'hui !
+              </p>
+            </div>
+            <div className="relative z-10 shrink-0">
+              <Link to="/board/programs">
+                <Button className="rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 font-bold text-xs h-11 px-6 shadow-md transition-all">
+                  Suivre ma cure & jus du jour
+                  <ArrowRight className="size-4 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[2.5rem] p-6 sm:p-8 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-primary/10 border border-emerald-500/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className="size-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                <CalendarCheck className="size-7" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+                    Nouveau • FYS Program
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                  Suivez une cure détox ou vitalité jour par jour
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
+                  Des programmes structurés sur 3 à 7 jours avec des jus frais prescrits chaque jour par nos nutritionnistes pour purifier votre organisme et faire le plein d'énergie.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0">
+              <Link to="/board/programs">
+                <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-11 px-6 shadow-xs">
+                  Découvrir les programmes
+                  <ArrowRight className="size-4 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
         <div className="space-y-8 pt-6">
