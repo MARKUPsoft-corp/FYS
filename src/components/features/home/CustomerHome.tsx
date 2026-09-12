@@ -7,14 +7,14 @@ import { useState, useEffect } from 'react';
 
 import { getFruits } from '@/services/fruit';
 import { useQuery } from '@tanstack/react-query';
-import { isUsableFruit, OrderStatus, partitionCocktailIngredients, type Fruit, type UserProgram } from '@/entities';
+import { isUsableFruit, OrderStatus, partitionCocktailIngredients, type Fruit, type UserProgram, type Program, DEFAULT_PROGRAMS } from '@/entities';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { useUserOrders } from '@/hooks/useOrders';
 import { CocktailBanner } from '@/components/features/cocktail/CocktailBanner';
 import { getSessions } from '@/services/chat';
 import { getPricingSettings } from '@/services/settings';
-import { subscribeToUserActiveProgram } from '@/services/program';
+import { subscribeToUserActiveProgram, getPrograms } from '@/services/program';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -81,6 +81,54 @@ export function CustomerHome(_props: Props) {
     queryKey: ['fruits'],
     queryFn: getFruits,
   });
+
+  const { data: allPrograms = DEFAULT_PROGRAMS } = useQuery({
+    queryKey: ['programs'],
+    queryFn: getPrograms,
+  });
+
+  const [suggestedProgram, setSuggestedProgram] = useState<Program | null>(null);
+
+  useEffect(() => {
+    if (!allPrograms || allPrograms.length === 0) return;
+
+    try {
+      const SESSION_KEY = 'fys_session_featured_program_id';
+      const LAST_KEY = 'fys_last_suggested_program_id';
+
+      // 1. Déjà un programme sélectionné pour cette session de navigation
+      const sessionProgId = typeof window !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+      if (sessionProgId) {
+        const found = allPrograms.find((p) => p.id === sessionProgId);
+        if (found) {
+          setSuggestedProgram(found);
+          return;
+        }
+      }
+
+      // 2. Nouvelle session (utilisateur sorti puis revenu) : on en propose un autre aléatoirement
+      const lastProgId = typeof window !== 'undefined' ? localStorage.getItem(LAST_KEY) : null;
+      const candidates = allPrograms.length > 1
+        ? allPrograms.filter((p) => p.id !== lastProgId)
+        : allPrograms;
+
+      const pool = candidates.length > 0 ? candidates : allPrograms;
+      const randomIndex = Math.floor(Math.random() * pool.length);
+      const chosen = pool[randomIndex];
+
+      if (chosen) {
+        setSuggestedProgram(chosen);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(SESSION_KEY, chosen.id);
+          localStorage.setItem(LAST_KEY, chosen.id);
+        }
+      }
+    } catch {
+      setSuggestedProgram(allPrograms[0] || null);
+    }
+  }, [allPrograms]);
+
+  const displayProgram = suggestedProgram || allPrograms[0] || DEFAULT_PROGRAMS[0];
 
   useEffect(() => {
     if (user?.uid) fetchProfile(user.uid);
@@ -253,13 +301,13 @@ export function CustomerHome(_props: Props) {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-primary/30 text-white group cursor-pointer">
+        ) : displayProgram ? (
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-primary/30 text-white group">
             {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
-                src="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt="Cures FYS Program"
+                src={displayProgram.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+                alt={displayProgram.title}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1200';
                 }}
@@ -273,27 +321,32 @@ export function CustomerHome(_props: Props) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
                     <Sparkles className="size-3.5 text-secondary" />
-                    NOUVEAU • FYS PROGRAM
+                    CURE CONSEILLÉE POUR VOUS • FYS PROGRAM
                   </span>
                   <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    Cures 3 à 7 jours
+                    Cure {displayProgram.durationDays} jours ({displayProgram.bottlesTotal} flacons)
                   </span>
+                  {displayProgram.badge && (
+                    <span className="text-xs text-secondary font-bold bg-secondary/15 px-3 py-1 rounded-full backdrop-blur-xs border border-secondary/30">
+                      {displayProgram.badge}
+                    </span>
+                  )}
                 </div>
 
                 <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
-                  Détox, Vitalité et Ventre Plat : Votre Cure de Jus Vivants
+                  {displayProgram.title} : {displayProgram.subtitle}
                 </h3>
 
                 <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
-                  Des protocoles jour par jour formulés avec nos nutritionnistes. 100% purs jus bruts pressés à froid le matin même, zéro eau, zéro conservateur.
+                  {displayProgram.description}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Leaf className="size-3 text-primary" /> 100% Pressé à froid
+                    <Leaf className="size-3 text-primary" /> {displayProgram.goalLabel}
                   </span>
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Package className="size-3 text-secondary" /> Livré frais chaque matin
+                    <Package className="size-3 text-secondary" /> {displayProgram.price.toLocaleString()} XAF le pack
                   </span>
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
                     <Sparkles className="size-3 text-secondary" /> Suivi quotidien NutriFYS
@@ -302,16 +355,16 @@ export function CustomerHome(_props: Props) {
               </div>
 
               <div className="relative z-10 shrink-0">
-                <Link to="/board/programs">
+                <Link to={`/board/programs?program=${displayProgram.id}`}>
                   <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer">
-                    Découvrir les cures
+                    Découvrir cette cure
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
         <div className="space-y-8 pt-6">

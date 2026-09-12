@@ -147,6 +147,20 @@ const ProgramsPage: PageComponent = () => {
     };
   }, []);
 
+  // Open program from URL query params (e.g. ?program=...)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !programs.length) return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const programId = searchParams.get('program');
+    if (programId) {
+      const match = programs.find((p) => p.id === programId || p.slug === programId);
+      if (match) {
+        setSelectedProgram(match);
+        setActiveTab('discover');
+      }
+    }
+  }, [programs]);
+
   // Fetch health profile
   useEffect(() => {
     if (user?.uid) {
