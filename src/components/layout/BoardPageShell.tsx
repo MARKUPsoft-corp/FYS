@@ -59,7 +59,7 @@ export function BoardPageShell({
         </div>
       </div>
 
-      <div className="px-3 md:px-4 space-y-8">
+      <div className="px-1 sm:px-3 md:px-4 space-y-8">
         {actions}
 
         <div className="text-center">

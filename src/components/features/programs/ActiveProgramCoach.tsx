@@ -103,7 +103,7 @@ export function ActiveProgramCoach({
   return (
     <div className="space-y-8">
       {/* Top Hero Card With FYS Brand Colors & Clean Structure */}
-      <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white p-5 sm:p-10 shadow-xl border border-primary/30">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white p-3.5 sm:p-10 shadow-xl border border-primary/30">
         {/* Subtle radial glows */}
         <div className="absolute -right-16 -top-16 size-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 -bottom-16 size-56 rounded-full bg-secondary/15 blur-3xl pointer-events-none" />
@@ -199,7 +199,7 @@ export function ActiveProgramCoach({
 
       {/* Prescription du Jour : Hero Juice Card */}
       {todayItem && (
-        <div className="rounded-3xl sm:rounded-[2.5rem] border border-border/80 bg-card shadow-sm overflow-hidden">
+        <div className="rounded-2xl sm:rounded-[2.5rem] border border-border/80 bg-card shadow-sm overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             {/* Left: Juice Photo with Verified Source */}
             <div className="lg:col-span-5 relative min-h-[220px] sm:min-h-[300px] lg:min-h-full overflow-hidden bg-muted">
@@ -237,7 +237,7 @@ export function ActiveProgramCoach({
             </div>
 
             {/* Right: Nutrition Info, Fruits & Interactive Check-in */}
-            <div className="lg:col-span-7 p-4 sm:p-8 flex flex-col justify-between space-y-5 sm:space-y-6">
+            <div className="lg:col-span-7 p-3.5 sm:p-8 flex flex-col justify-between space-y-5 sm:space-y-6">
               <div className="space-y-4 sm:space-y-5">
                 {/* Timing & Bottle specs */}
                 <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 pb-4 border-b border-border/60">
@@ -353,7 +353,7 @@ export function ActiveProgramCoach({
       )}
 
       {/* Visual Stepper of Days */}
-      <div className="rounded-3xl sm:rounded-[2.5rem] border border-border/80 bg-card p-4 sm:p-8 shadow-xs space-y-4 sm:space-y-5">
+      <div className="rounded-2xl sm:rounded-[2.5rem] border border-border/80 bg-card p-3.5 sm:p-8 shadow-xs space-y-4 sm:space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm sm:text-base font-bold font-display uppercase tracking-wider text-foreground flex items-center gap-2">

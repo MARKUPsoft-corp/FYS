@@ -202,11 +202,11 @@ const ProgramsPage: PageComponent = () => {
       subtitle="Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine."
       imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 pb-20">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 space-y-8 sm:space-y-12 pb-20">
         {/* Status Feedback Banner */}
         {statusMessage && (
           <div
-            className={`p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-sm transition-all animate-pop-in-cute ${
+            className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-sm transition-all animate-pop-in-cute ${
               statusMessage.type === 'success'
                 ? 'bg-primary/10 border border-primary/30 text-foreground'
                 : 'bg-destructive/10 border border-destructive/30 text-destructive'
@@ -244,12 +244,12 @@ const ProgramsPage: PageComponent = () => {
 
         {/* Spotlight Bento Flagship (Only shown if user has no active program) */}
         {!userProgram && flagshipProgram && (
-          <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
             <div className="absolute -right-20 -top-20 size-80 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
               {/* Left Photo */}
-              <div className="lg:col-span-5 relative min-h-[240px] sm:min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
+              <div className="lg:col-span-5 relative min-h-[220px] sm:min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
                 <img
                   src={flagshipProgram.imageUrl}
                   alt={flagshipProgram.title}
@@ -260,7 +260,7 @@ const ProgramsPage: PageComponent = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
-                <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-10 flex items-center gap-2">
+                <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-10 flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-md">
                     <Star className="size-3.5 fill-white" />
                     Cure Signature
@@ -271,7 +271,7 @@ const ProgramsPage: PageComponent = () => {
                   </span>
                 </div>
 
-                <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 text-white z-10 space-y-1">
+                <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 text-white z-10 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     Pack complet {flagshipProgram.durationDays}x 500ml
                   </span>
@@ -282,8 +282,8 @@ const ProgramsPage: PageComponent = () => {
               </div>
 
               {/* Right Content */}
-              <div className="lg:col-span-7 p-5 sm:p-10 space-y-5 sm:space-y-6">
-                <div className="space-y-2.5 sm:space-y-3">
+              <div className="lg:col-span-7 p-3.5 sm:p-10 space-y-4 sm:space-y-6">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary/20 text-white border border-primary/30">
                     <Leaf className="size-3.5 text-primary" />
                     Purification Hépatique et Ventre Léger
@@ -303,13 +303,13 @@ const ProgramsPage: PageComponent = () => {
                   <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                     Les 3 étapes de votre cure :
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {flagshipProgram.days.map((d, di) => (
                       <div
                         key={di}
-                        className="p-2.5 sm:p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2.5"
+                        className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2"
                       >
-                        <span className="size-6 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-[10px] shrink-0">
+                        <span className="size-5 sm:size-6 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-[10px] shrink-0">
                           J{d.dayNumber || d.day || di + 1}
                         </span>
                         <span className="font-bold truncate text-[11px]">
@@ -321,7 +321,7 @@ const ProgramsPage: PageComponent = () => {
                 </div>
 
                 {/* Pricing & CTA */}
-                <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="pt-3 sm:pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="text-center sm:text-left">
                     <div className="flex items-baseline justify-center sm:justify-start gap-2">
                       <span className="text-2xl sm:text-3xl font-bold font-display text-white">
@@ -403,7 +403,7 @@ const ProgramsPage: PageComponent = () => {
           </div>
 
           {/* Programs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {filteredPrograms.map((program) => {
               const isUserActiveThis = userProgram?.programId === program.id;
               const currentPrice = program.bundlePrice || program.price;
@@ -411,7 +411,7 @@ const ProgramsPage: PageComponent = () => {
               return (
                 <div
                   key={program.id}
-                  className={`group relative rounded-3xl sm:rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
+                  className={`group relative rounded-2xl sm:rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
                     isUserActiveThis
                       ? 'border-primary ring-2 ring-primary/40 shadow-md'
                       : 'border-border/70 shadow-xs'
@@ -454,7 +454,7 @@ const ProgramsPage: PageComponent = () => {
                     </div>
 
                     {/* Card Content Details */}
-                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                    <div className="p-3.5 sm:p-6 space-y-3 sm:space-y-4">
                       <div>
                         <p className="text-xs font-bold text-primary">
                           {program.subtitle}
@@ -505,7 +505,7 @@ const ProgramsPage: PageComponent = () => {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="p-4 sm:p-6 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2.5 sm:gap-3">
+                  <div className="p-3.5 sm:p-6 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2.5 sm:gap-3">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                         Pack Cure Complète
