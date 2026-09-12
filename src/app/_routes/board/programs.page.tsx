@@ -563,30 +563,28 @@ const ProgramsPage: PageComponent = () => {
 
         {/* ── 4. CATALOGUE DES CURES SIGNATURES (Lisible & Structuré) ── */}
         <section className="space-y-6 pt-2">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">
-                Cures Signatures FYS
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                Des protocoles clés en main créés par nos maîtres jus.
-              </p>
-            </div>
+          <div className="text-center space-y-1">
+            <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">
+              Cures Signatures FYS
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
+              Des protocoles clés en main créés par nos maîtres jus.
+            </p>
+          </div>
 
-            {/* Search Input */}
-            <div className="relative w-full md:w-72">
-              <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher détox, immunité..."
-                className="pl-9 h-10 text-xs rounded-xl bg-card border-border/80"
-              />
-            </div>
+          {/* Search Input */}
+          <div className="relative w-full max-w-md mx-auto">
+            <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher détox, immunité..."
+              className="pl-9 h-10 text-xs rounded-xl bg-card border-border/80"
+            />
           </div>
 
           {/* Goal Filter Chips */}
-          <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x min-w-0">
+          <div className="w-full flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x min-w-0">
             {GOAL_FILTERS.map((f) => {
               const Icon = f.icon;
               const isActive = selectedGoal === f.key;
