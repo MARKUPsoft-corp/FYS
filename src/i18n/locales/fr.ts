@@ -15,6 +15,7 @@ export default {
     payments: 'Paiements',
     management: 'FYS Management',
     programs: 'Programmes',
+    adminPrograms: 'Gestion Cures',
   },
   auth: {
     login: {

@@ -21,26 +21,35 @@ import {
   Zap,
   ShieldCheck,
   Star,
+  Settings2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { useAuthStore } from '@/stores/auth';
+import { useProfileStore } from '@/stores/profile';
 import {
   type Program,
   type UserProgram,
   type ProgramGoal,
+  type ProgramsPageSettings,
+  type Fruit,
+  UserRole,
   DEFAULT_PROGRAMS,
+  DEFAULT_PROGRAMS_PAGE_SETTINGS,
 } from '@/entities';
 import {
   getPrograms,
+  getProgramsSettings,
   subscribeToUserActiveProgram,
   enrollUserInProgram,
   checkinProgramDay,
   cancelUserProgram,
 } from '@/services/program';
+import { getFruits } from '@/services/fruit';
 import { ProgramDetailModal } from '@/components/features/programs/ProgramDetailModal';
 import { ActiveProgramCoach } from '@/components/features/programs/ActiveProgramCoach';
+import { NutrifysCustomProgramModal } from '@/components/features/programs/NutrifysCustomProgramModal';
 
 const GOAL_FILTERS: { key: string; label: string; icon: any }[] = [
   { key: 'all', label: 'Toutes les cures', icon: Sparkles },
@@ -54,11 +63,17 @@ const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1337825/pexels-photo-13
 const ProgramsPage: PageComponent = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { profile, fetch: fetchProfile } = useProfileStore();
   const navigate = useNavigate();
 
+  const [pageSettings, setPageSettings] = useState<ProgramsPageSettings>(
+    DEFAULT_PROGRAMS_PAGE_SETTINGS
+  );
   const [programs, setPrograms] = useState<Program[]>(DEFAULT_PROGRAMS);
+  const [fruits, setFruits] = useState<Fruit[]>([]);
   const [userProgram, setUserProgram] = useState<UserProgram | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [isNutrifysModalOpen, setIsNutrifysModalOpen] = useState(false);
 
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,15 +84,23 @@ const ProgramsPage: PageComponent = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load programs
+  // Load programs, settings and fruits
   useEffect(() => {
     let isMounted = true;
     async function load() {
       try {
-        const list = await getPrograms();
-        if (isMounted) setPrograms(list);
+        const [list, fetchedSettings, fetchedFruits] = await Promise.all([
+          getPrograms(),
+          getProgramsSettings(),
+          getFruits(),
+        ]);
+        if (isMounted) {
+          setPrograms(list);
+          setPageSettings(fetchedSettings);
+          setFruits(fetchedFruits);
+        }
       } catch (err) {
-        console.error('Error fetching programs:', err);
+        console.error('Error fetching programs or settings:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -87,6 +110,25 @@ const ProgramsPage: PageComponent = () => {
       isMounted = false;
     };
   }, []);
+
+  // Fetch health profile
+  useEffect(() => {
+    if (user?.uid) {
+      fetchProfile(user.uid);
+    }
+  }, [user?.uid]);
+
+  const activeConditions = useMemo(() => {
+    return (profile?.healthConditions ?? []).filter(
+      (c) => !c.toLowerCase().includes('aucune') && !c.toLowerCase().includes('none')
+    );
+  }, [profile?.healthConditions]);
+
+  const activeAllergies = useMemo(() => {
+    return (profile?.allergies ?? []).filter(
+      (a) => !a.toLowerCase().includes('aucune') && !a.toLowerCase().includes('none')
+    );
+  }, [profile?.allergies]);
 
   // Subscribe to user's active program
   useEffect(() => {
@@ -114,7 +156,13 @@ const ProgramsPage: PageComponent = () => {
   }, [programs, selectedGoal, searchQuery]);
 
   // Featured flagship program
-  const flagshipProgram = programs.find((p) => p.slug === 'cure-detox-eclair') || programs[0];
+  const flagshipProgram = useMemo(() => {
+    if (pageSettings.flagshipProgramId) {
+      const found = programs.find((p) => p.id === pageSettings.flagshipProgramId);
+      if (found) return found;
+    }
+    return programs.find((p) => p.slug === 'cure-detox-eclair') || programs[0];
+  }, [programs, pageSettings.flagshipProgramId]);
 
   // Handlers
   const handleEnroll = async (program: Program, startingToday: boolean) => {
@@ -193,14 +241,33 @@ const ProgramsPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="COACHING BIEN-ÊTRE ET PROTOCOLES CIBLÉS"
-      titleBefore="FYS "
-      titleHighlight="Program"
-      titleAfter=" — L'Art de la Cure Vivante"
-      sectionBefore="Découvrez nos cures de jus frais "
-      sectionHighlight="100% pressés à froid"
-      subtitle="Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine."
-      imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600"
+      eyebrow={pageSettings.eyebrow || 'COACHING BIEN-ÊTRE ET PROTOCOLES CIBLÉS'}
+      titleBefore={pageSettings.titleBefore || 'FYS '}
+      titleHighlight={pageSettings.titleHighlight || 'Program'}
+      titleAfter={pageSettings.titleAfter || " — L'Art de la Cure Vivante"}
+      sectionBefore={pageSettings.sectionBefore || 'Découvrez nos cures de jus frais '}
+      sectionHighlight={pageSettings.sectionHighlight || '100% pressés à froid'}
+      subtitle={
+        pageSettings.subtitle ||
+        'Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine.'
+      }
+      imageUrl={
+        pageSettings.heroImageUrl ||
+        'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600'
+      }
+      actions={
+        user?.role === UserRole.ADMIN ? (
+          <div className="flex justify-end pb-2">
+            <Button
+              onClick={() => navigate('/board/programs-admin')}
+              className="rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 text-xs font-bold h-10 px-4 shadow-sm cursor-pointer gap-1.5"
+            >
+              <Settings2 className="size-4" />
+              Mode Administrateur (Gérer Cures & Vitrine)
+            </Button>
+          </div>
+        ) : undefined
+      }
     >
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 space-y-8 sm:space-y-12 pb-20">
         {/* Status Feedback Banner */}
@@ -349,6 +416,50 @@ const ProgramsPage: PageComponent = () => {
             </div>
           </div>
         )}
+
+        {/* NutriFYS Custom Cure Callout Card (Approach B) */}
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-card via-card/95 to-primary/10 border border-primary/30 p-4 sm:p-8 shadow-sm">
+          <div className="absolute -right-12 -top-12 size-48 rounded-full bg-primary/15 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-2.5 max-w-xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-xs">
+                  <Sparkles className="size-3.5 fill-current" />
+                  NutriFYS Approche Sur-Mesure
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                  <ShieldCheck className="size-3.5" />
+                  Adapté à votre santé
+                </span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-bold font-display text-foreground leading-tight">
+                Besoin d'un protocole unique ? Laissez NutriFYS composer votre cure.
+              </h3>
+
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                {activeConditions.length > 0 || activeAllergies.length > 0
+                  ? `NutriFYS prend en compte vos particularités médicales (${[
+                      ...activeConditions,
+                      ...activeAllergies.map((a) => `sans ${a}`),
+                    ].join(', ')}) pour formuler un protocole 100% sécurisé et ultra-efficace.`
+                  : 'Formulez une cure sur-mesure de 3, 5 ou 7 jours calibrée exactement selon votre métabolisme, vos préférences et les récoltes fraîches du moment.'}
+              </p>
+            </div>
+
+            <div className="shrink-0 flex flex-col sm:flex-row gap-2.5">
+              <Button
+                onClick={() => setIsNutrifysModalOpen(true)}
+                className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-6 shadow-md transition-all active:scale-98 cursor-pointer gap-2"
+              >
+                <Sparkles className="size-4" />
+                Formuler ma cure avec NutriFYS
+                <ArrowRight className="size-4 ml-auto sm:ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Catalog of All Programs */}
         <section className="space-y-8 pt-4">
@@ -572,6 +683,16 @@ const ProgramsPage: PageComponent = () => {
           isEnrolling={isEnrolling}
           hasActiveProgram={!!userProgram && userProgram.programId !== selectedProgram?.id}
           activeProgramTitle={userProgram?.programTitle}
+        />
+
+        {/* NutriFYS Custom Program Modal (Approach B) */}
+        <NutrifysCustomProgramModal
+          isOpen={isNutrifysModalOpen}
+          onClose={() => setIsNutrifysModalOpen(false)}
+          profile={profile}
+          fruits={fruits}
+          onEnroll={handleEnroll}
+          isEnrolling={isEnrolling}
         />
       </div>
     </BoardPageShell>

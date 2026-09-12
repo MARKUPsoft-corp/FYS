@@ -12,6 +12,10 @@ import {
   parseSupplementResponse,
   type AIRecommendation,
   type AnalysisOptions,
+  buildCustomProgramPrompt,
+  parseCustomProgramResponse,
+  type CustomProgramOptions,
+  type GeneratedCustomProgram,
 } from './ai.shared';
 const genai = new GoogleGenerativeAI(
   import.meta.env.RASENGAN_GEMINI_API_KEY as string,
@@ -95,3 +99,22 @@ export async function recommendSupplementsWithGemini(
       : (parsed.recommendedIds.find((id) => validIds.has(id)) ?? ''),
   };
 }
+
+export async function generateCustomProgramWithGemini(
+  options: CustomProgramOptions
+): Promise<GeneratedCustomProgram> {
+  const lang = options.lang || (i18n.language?.startsWith('en') ? 'en' : 'fr');
+  const customModel = genai.getGenerativeModel({
+    model: 'gemini-3.1-flash-lite',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      maxOutputTokens: 2800,
+    },
+  });
+
+  const prompt = buildCustomProgramPrompt({ ...options, lang });
+  const result = await customModel.generateContent(prompt);
+  const raw = result.response.text();
+  return parseCustomProgramResponse(raw, options.durationDays);
+}
+

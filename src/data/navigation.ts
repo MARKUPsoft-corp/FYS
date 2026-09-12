@@ -182,6 +182,16 @@ export const NAV_ITEMS: NavItem[] = [
     showInMobileTab: false,
     showInDesktopNav: false,
   },
+  {
+    key: 'admin-programs',
+    label: 'Gestion Cures',
+    labelKey: 'nav.adminPrograms',
+    path: '/board/programs-admin',
+    icon: CalendarCheck,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: true,
+  },
 ];
 
 export function getNavItemsForRole(role: UserRole): NavItem[] {

@@ -831,3 +831,154 @@ export function parseSupplementResponse(raw: string): AIRecommendation {
   }
 }
 
+// ── NutriFYS Dynamic Program Generator (Approach B) ─────────────────────────
+
+export interface CustomProgramOptions {
+  profile: HealthProfile | null;
+  durationDays: number;
+  availableFruits: Fruit[];
+  userGoal?: string;
+  userPrompt?: string;
+  lang?: string;
+}
+
+export interface GeneratedCustomProgramDay {
+  dayNumber: number;
+  timing: 'morning_empty_stomach' | 'morning' | 'afternoon' | 'evening';
+  timingLabel: string;
+  cocktailName: string;
+  focus: string;
+  fruits: string[];
+  advice: string;
+  tasteProfile: string;
+  benefits: string[];
+}
+
+export interface GeneratedCustomProgram {
+  title: string;
+  subtitle: string;
+  description: string;
+  goal: 'detox' | 'immunity' | 'digestion' | 'energy' | 'weight_loss' | 'glow';
+  goalLabel: string;
+  durationDays: number;
+  compatibilityScore: number;
+  clinicalRationale: string;
+  precautions: string[];
+  benefits: string[];
+  days: GeneratedCustomProgramDay[];
+}
+
+export function buildCustomProgramPrompt(options: CustomProgramOptions): string {
+  const { profile, durationDays, availableFruits, userGoal, userPrompt, lang } = options;
+  const isEn = lang === 'en';
+
+  const conditions = (profile?.healthConditions ?? [])
+    .filter((c) => !c.toLowerCase().includes('aucune') && !c.toLowerCase().includes('none'))
+    .join(', ') || (isEn ? 'None reported' : 'Aucune pathologie signalée');
+
+  const allergies = (profile?.allergies ?? [])
+    .filter((a) => !a.toLowerCase().includes('aucune') && !a.toLowerCase().includes('none'))
+    .join(', ') || (isEn ? 'None' : 'Aucune');
+
+  const goals = userGoal || (profile?.goals ?? []).join(', ') || (isEn ? 'Detox and Vitality' : 'Détox et Vitalité');
+
+  const fruitList = availableFruits
+    .map((f) => `• ${f.name} (Catégorie: ${f.category ?? 'fruit'})`)
+    .join('\n');
+
+  return `Tu es NutriFYS, l'IA experte en nutrition clinique et micronutrition de la marque FYS (Fresh & Healthy Juices).
+Ta mission : Créer une cure de jus 100% SUR-MESURE et PERSONNALISÉE pour un utilisateur selon son profil médical et ses objectifs de santé réels.
+
+PROFIL DU PATIENT / CLIENT :
+- Pathologies & Conditions de santé : ${conditions}
+- Allergies strictes : ${allergies}
+- Objectifs recherchés : ${goals}
+- Durée de la cure : ${durationDays} jours
+${userPrompt ? `- Précisions et souhaits du client : "${userPrompt}"` : ''}
+
+FRUITS DISPONIBLES DANS L'INVENTAIRE FYS (tu dois utiliser UNIQUEMENT des fruits de cette liste) :
+${fruitList}
+
+RÈGLES CLINIQUES ET DE SÉCURITÉ ABSOLUES (CRITIQUE) :
+1. TOLÉRANCE ZÉRO SUR LES ALLERGIES : Ne propose sous aucun prétexte un fruit listé dans les allergies.
+2. DIABÈTE / RÉSISTANCE À L'INSULINE : Si l'utilisateur est diabétique ou pré-diabétique, interdis les mélanges trop riches en fructose rapide (ex: mangue très mûre ou pastèque isolée). Privilégie les bases alcalines à index glycémique très bas (concombre, pomme verte Granny, citron vert, céleri/menthe).
+3. ULCÈRE / REFLUX GASTRO-ŒSOPHAGIEN / GASTRITE : Évite impérativement les agrumes acides ou les doses agressives de gingembre à jeun. Préfère les jus adoucissants (carotte, concombre, papaye, pomme douce).
+4. HYPERTENSION : Privilégie les fruits riches en potassium et vasodilatateurs naturels (betterave, concombre).
+5. ZÉRO ÉMOJI : N'utilise AUCUN émoji dans aucun texte. Emploie un style professionnel, élégant, médical et bienveillant.
+6. COMPOSITION DE CHAQUE JOUR : Chaque jour propose 1 flacon de 500ml composé de 2 à 4 fruits choisis STRICTEMENT dans la liste des fruits disponibles.
+7. PROGRESSION DE LA CURE : Organise une vraie logique clinique sur les ${durationDays} jours (ex: J1 réveil digestif & hydratation cellulaire, J2 drainage hépatique & rénal, J3 consolidation & vitalité...).
+
+FORMAT DE RÉPONSE ATTENDU (UNIQUEMENT DU JSON STRICT, PAS DE TEXTE AUTOUR) :
+{
+  "title": "Nom inspirant de la cure (ex: Cure Métabolique Concombre & Chlorophylle)",
+  "subtitle": "Sous-titre court et percutant",
+  "description": "Explication complète de la logique de cette cure adaptée à sa santé spécifique (3-4 phrases).",
+  "goal": "detox" | "immunity" | "digestion" | "energy" | "weight_loss" | "glow",
+  "goalLabel": "Libellé de l'objectif (ex: Détox Hépatique Douce)",
+  "durationDays": ${durationDays},
+  "compatibilityScore": 98,
+  "clinicalRationale": "Pourquoi ce protocole est sécurisé et idéal pour ses pathologies et son profil",
+  "precautions": [
+    "Précaution médicale ou d'hydratation 1",
+    "Précaution 2"
+  ],
+  "benefits": [
+    "Bénéfice majeur 1",
+    "Bénéfice majeur 2",
+    "Bénéfice majeur 3"
+  ],
+  "days": [
+    {
+      "dayNumber": 1,
+      "timing": "morning_empty_stomach",
+      "timingLabel": "À jeun au réveil (entre 7h00 et 8h30)",
+      "cocktailName": "Nom du cocktail du Jour 1",
+      "focus": "Objectif principal du jour (ex: Réveil rénal et hydratation)",
+      "fruits": ["Fruit1", "Fruit2", "Fruit3"],
+      "advice": "Conseil d'hygiène de vie et de consommation pour cette journée",
+      "tasteProfile": "Description sensorielle des saveurs en bouche",
+      "benefits": ["Bénéfice 1", "Bénéfice 2"]
+    }
+  ]
+}`;
+}
+
+export function parseCustomProgramResponse(
+  raw: string,
+  fallbackDays: number = 3
+): GeneratedCustomProgram {
+  const jsonText = raw.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    const parsed = JSON.parse(jsonText);
+    return {
+      title: parsed.title || 'Cure Sur-Mesure NutriFYS',
+      subtitle: parsed.subtitle || 'Protocole nutritionnel personnalisé',
+      description: parsed.description || 'Votre cure personnalisée formulée pour vos objectifs.',
+      goal: parsed.goal || 'detox',
+      goalLabel: parsed.goalLabel || 'Cure Personnalisée',
+      durationDays: Number(parsed.durationDays) || fallbackDays,
+      compatibilityScore: Number(parsed.compatibilityScore) || 98,
+      clinicalRationale: parsed.clinicalRationale || 'Formulé selon votre profil de santé unique.',
+      precautions: Array.isArray(parsed.precautions) ? parsed.precautions : ['Boire au moins 1.5L d’eau plate par jour.'],
+      benefits: Array.isArray(parsed.benefits) ? parsed.benefits : ['Vitalité naturelle', 'Équilibre digestif'],
+      days: Array.isArray(parsed.days)
+        ? parsed.days.map((d: any, idx: number) => ({
+            dayNumber: Number(d.dayNumber) || idx + 1,
+            timing: d.timing || 'morning_empty_stomach',
+            timingLabel: d.timingLabel || 'À jeun au réveil',
+            cocktailName: d.cocktailName || `Jus Protecteur J${idx + 1}`,
+            focus: d.focus || 'Énergie et Vitalité',
+            fruits: Array.isArray(d.fruits) ? d.fruits : ['Pomme', 'Concombre'],
+            advice: d.advice || 'Dégustez lentement par petites gorgées.',
+            tasteProfile: d.tasteProfile || 'Frais et équilibré',
+            benefits: Array.isArray(d.benefits) ? d.benefits : ['Vitalité'],
+          }))
+        : [],
+    };
+  } catch (e) {
+    console.error('[NutriFYS] Could not parse custom program response:', e, raw);
+    throw new Error('Échec de la génération du programme NutriFYS. Veuillez réessayer.');
+  }
+}
+
+

@@ -50,3 +50,11 @@ export async function recommendSupplements(
   const { recommendSupplementsWithGemini } = await import('./ai.gemini');
   return recommendSupplementsWithGemini(ingredients, profile, availableSupplements);
 }
+
+export async function generateCustomProgram(options: import('./ai.shared').CustomProgramOptions) {
+  const { generateCustomProgramWithGemini } = await import('./ai.gemini');
+  return generateCustomProgramWithGemini(options);
+}
+
+export type { CustomProgramOptions, GeneratedCustomProgram, GeneratedCustomProgramDay } from './ai.shared';
+

@@ -100,6 +100,36 @@ export interface UserProgram {
   cancelledAt?: string;
 }
 
+export interface ProgramsPageSettings {
+  heroImageUrl: string;
+  eyebrow: string;
+  titleBefore: string;
+  titleHighlight: string;
+  titleAfter?: string;
+  subtitle: string;
+  sectionBefore: string;
+  sectionHighlight: string;
+  sectionSubtitle: string;
+  flagshipProgramId?: string;
+  updatedAt?: any;
+}
+
+export const DEFAULT_PROGRAMS_PAGE_SETTINGS: ProgramsPageSettings = {
+  heroImageUrl:
+    'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  eyebrow: 'FYS Program',
+  titleBefore: 'Votre Cure Santé',
+  titleHighlight: '100% Fraîche',
+  titleAfter: '& Pressée à Froid',
+  subtitle:
+    'Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine.',
+  sectionBefore: 'Découvrez nos cures de jus frais',
+  sectionHighlight: '100% pressés à froid',
+  sectionSubtitle:
+    'Choisissez une cure signature FYS ou laissez NutriFYS composer votre protocole sur-mesure.',
+  flagshipProgramId: 'program-detox-3j',
+};
+
 // ── 3 Programmes de lancement avec images vérifiées & zéro emoji ───────────
 
 export const DEFAULT_PROGRAMS: Program[] = [

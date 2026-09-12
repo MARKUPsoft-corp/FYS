@@ -18,7 +18,7 @@ const AppLayout: LayoutComponent = () => {
   const isCustomer = user?.role === UserRole.CUSTOMER;
 
   // Pages réservées à l'admin
-  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/landing', '/board/pricing', '/board/users', '/board/cocktails', '/board/payments', '/board/management'];
+  const ADMIN_ONLY_PATHS = ['/board/fruits', '/board/categories', '/board/landing', '/board/pricing', '/board/users', '/board/cocktails', '/board/payments', '/board/management', '/board/programs-admin'];
 
   useEffect(() => {
     if (loading || isAuthRoute) return;
