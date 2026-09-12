@@ -27,6 +27,7 @@ import {
   XCircle,
   Plus,
   Award,
+  Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ import {
 import {
   getPrograms,
   getProgramsSettings,
+  subscribeToUserActivePrograms,
   subscribeToUserActiveProgram,
   subscribeToUserSavedPrograms,
   subscribeToUserPastPrograms,
@@ -99,11 +101,21 @@ const ProgramsPage: PageComponent = () => {
   );
   const [programs, setPrograms] = useState<Program[]>(DEFAULT_PROGRAMS);
   const [fruits, setFruits] = useState<Fruit[]>([]);
-  const [userProgram, setUserProgram] = useState<UserProgram | null>(null);
+  const [activePrograms, setActivePrograms] = useState<UserProgram[]>([]);
+  const [selectedActiveIndex, setSelectedActiveIndex] = useState<number>(0);
   const [savedPrograms, setSavedPrograms] = useState<UserProgram[]>([]);
   const [pastPrograms, setPastPrograms] = useState<UserProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isNutrifysModalOpen, setIsNutrifysModalOpen] = useState(false);
+
+  const currentActiveProgram =
+    activePrograms[selectedActiveIndex] || activePrograms[0] || null;
+
+  useEffect(() => {
+    if (selectedActiveIndex >= activePrograms.length && activePrograms.length > 0) {
+      setSelectedActiveIndex(0);
+    }
+  }, [activePrograms.length, selectedActiveIndex]);
 
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,14 +192,14 @@ const ProgramsPage: PageComponent = () => {
     );
   }, [profile?.allergies]);
 
-  // Subscribe to user's active program
+  // Subscribe to user's active programs (supports multiple simultaneous cures)
   useEffect(() => {
     if (!user?.uid) {
-      setUserProgram(null);
+      setActivePrograms([]);
       return;
     }
-    const unsub = subscribeToUserActiveProgram(user.uid, (up) => {
-      setUserProgram(up);
+    const unsub = subscribeToUserActivePrograms(user.uid, (list) => {
+      setActivePrograms(list);
     });
     return () => unsub();
   }, [user?.uid]);
@@ -381,13 +393,13 @@ const ProgramsPage: PageComponent = () => {
   };
 
   const handleCheckin = async (dayNumber: number, notes?: string) => {
-    if (!userProgram) return;
+    if (!currentActiveProgram) return;
     setIsCheckingIn(true);
     try {
-      await checkinProgramDay(userProgram, dayNumber, notes);
+      await checkinProgramDay(currentActiveProgram, dayNumber, notes);
       setStatusMessage({
         type: 'success',
-        text: `Jour ${dayNumber} validé avec succès ! Continuez sur cette belle lancée.`,
+        text: `Jour ${dayNumber} de "${currentActiveProgram.programTitle}" validé avec succès ! Continuez sur cette belle lancée.`,
       });
     } catch (err: any) {
       console.error('Checkin error:', err);
@@ -401,13 +413,13 @@ const ProgramsPage: PageComponent = () => {
   };
 
   const handleCancel = async () => {
-    if (!userProgram) return;
+    if (!currentActiveProgram) return;
     setIsCancelling(true);
     try {
-      await cancelUserProgram(userProgram.id);
+      await cancelUserProgram(currentActiveProgram.id);
       setStatusMessage({
         type: 'success',
-        text: 'Votre programme a été interrompu et archivé dans votre historique.',
+        text: `Votre cure "${currentActiveProgram.programTitle}" a été interrompue et archivée dans votre historique.`,
       });
     } catch (err: any) {
       console.error('Cancellation error:', err);
@@ -454,7 +466,7 @@ const ProgramsPage: PageComponent = () => {
             <span className="hidden sm:inline">Cures en cours</span>
             <span className="sm:hidden">En cours</span>
 
-            {userProgram && (
+            {activePrograms.length > 0 && (
               <span
                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === 'active'
@@ -466,7 +478,7 @@ const ProgramsPage: PageComponent = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span className="hidden md:inline">Active</span>
+                <span>{activePrograms.length}</span>
               </span>
             )}
           </button>
@@ -755,7 +767,7 @@ const ProgramsPage: PageComponent = () => {
               {/* Programs Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredPrograms.map((program) => {
-                  const isUserActiveThis = userProgram?.programId === program.id;
+                  const isUserActiveThis = activePrograms.some((p) => p.programId === program.id);
                   const currentPrice = program.bundlePrice || program.price;
 
                   return (
@@ -867,16 +879,108 @@ const ProgramsPage: PageComponent = () => {
             ══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'active' && (
           <div className="space-y-6">
-            {userProgram ? (
-              <section className="space-y-4">
-                <ActiveProgramCoach
-                  userProgram={userProgram}
-                  onCheckin={handleCheckin}
-                  onCancel={handleCancel}
-                  isCheckingIn={isCheckingIn}
-                  isCancelling={isCancelling}
-                />
-              </section>
+            {activePrograms.length > 0 ? (
+              <div className="space-y-6">
+                {/* Multi-cures switcher header if user has > 1 active cures */}
+                {activePrograms.length > 1 && (
+                  <div className="p-4 sm:p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-9 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                          <Layers className="size-4.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm sm:text-base font-bold text-foreground">
+                              Vos cures en simultané
+                            </h3>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                              {activePrograms.length} actives en parallèle
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Sélectionnez un programme ci-dessous pour afficher sa journée en cours et valider vos jus.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cures Selector Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {activePrograms.map((prog, idx) => {
+                        const isSelected = selectedActiveIndex === idx;
+                        const totalDays = prog.durationDays || 3;
+                        const completedCount = prog.checkins?.length || 0;
+                        const pct = Math.min(100, Math.round((completedCount / totalDays) * 100));
+
+                        return (
+                          <button
+                            key={prog.id}
+                            type="button"
+                            onClick={() => setSelectedActiveIndex(idx)}
+                            className={`relative p-3.5 sm:p-4 rounded-2xl text-left border transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 text-start ${
+                              isSelected
+                                ? 'bg-primary/10 border-primary ring-2 ring-primary/30 shadow-xs'
+                                : 'bg-muted/30 hover:bg-muted/50 border-border/70 hover:border-border'
+                            }`}
+                          >
+                            <div className="space-y-1.5 w-full min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary capitalize truncate">
+                                  {prog.programGoal || 'Santé'}
+                                </span>
+                                {isSelected ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
+                                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Coaching affiché
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                                    Cliquer pour afficher
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
+                                {prog.programTitle}
+                              </h4>
+                              <p className="text-[11px] text-muted-foreground">
+                                Jour {prog.currentDay} sur {totalDays} • {completedCount} flacon{completedCount > 1 ? 's' : ''} validé{completedCount > 1 ? 's' : ''}
+                              </p>
+                            </div>
+
+                            {/* Mini Progress Bar */}
+                            <div className="space-y-1 w-full pt-1">
+                              <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
+                                <span>Progression</span>
+                                <span>{pct}%</span>
+                              </div>
+                              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all duration-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Program Coach for currently selected active program */}
+                {currentActiveProgram && (
+                  <section className="space-y-4">
+                    <ActiveProgramCoach
+                      userProgram={currentActiveProgram}
+                      onCheckin={handleCheckin}
+                      onCancel={handleCancel}
+                      isCheckingIn={isCheckingIn}
+                      isCancelling={isCancelling}
+                    />
+                  </section>
+                )}
+              </div>
             ) : (
               <div className="max-w-2xl mx-auto py-12 px-6 rounded-3xl border border-dashed border-border/80 bg-card/50 text-center space-y-6">
                 <div className="size-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-inner">
@@ -1264,10 +1368,21 @@ const ProgramsPage: PageComponent = () => {
           onClose={() => setSelectedProgram(null)}
           onEnroll={handleEnroll}
           isEnrolling={isEnrolling}
+          isAlreadyActive={activePrograms.some((p) => p.programId === selectedProgram?.id)}
           hasActiveProgram={
-            !!userProgram && userProgram.programId !== selectedProgram?.id
+            activePrograms.length > 0 &&
+            !activePrograms.some((p) => p.programId === selectedProgram?.id)
           }
-          activeProgramTitle={userProgram?.programTitle}
+          activeProgramTitle={activePrograms.map((p) => p.programTitle).join(', ')}
+          onGoToActive={() => {
+            const foundIdx = activePrograms.findIndex(
+              (p) => p.programId === selectedProgram?.id
+            );
+            if (foundIdx !== -1) {
+              setSelectedActiveIndex(foundIdx);
+            }
+            setActiveTab('active');
+          }}
         />
 
         {/* NutriFYS Custom Program Modal */}

@@ -69,38 +69,47 @@ export async function getProgramById(programId: string): Promise<Program | null>
 }
 
 /**
- * Subscribe to the active program of a user.
+ * Subscribe to all active programs of a user (allows following multiple cures simultaneously).
  */
-export function subscribeToUserActiveProgram(
+export function subscribeToUserActivePrograms(
   userId: string,
-  callback: (userProgram: UserProgram | null) => void
+  callback: (userPrograms: UserProgram[]) => void
 ): Unsubscribe {
   const q = query(
     collection(db, COLLECTIONS.USER_PROGRAMS),
     where('userId', '==', userId),
-    where('status', '==', 'active'),
-    limit(1)
+    where('status', '==', 'active')
   );
 
   return onSnapshot(
     q,
     (snap) => {
-      if (snap.empty) {
-        callback(null);
-        return;
-      }
-      const docSnap = snap.docs[0];
-      const data = docSnap.data();
-      callback({
-        id: docSnap.id,
-        ...data,
-      } as UserProgram);
+      const list: UserProgram[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as UserProgram);
+      });
+      list.sort(
+        (a, b) => new Date(b.startDate || b.createdAt).getTime() - new Date(a.startDate || a.createdAt).getTime()
+      );
+      callback(list);
     },
     (err) => {
-      console.error('[ProgramService] Error listening to user active program:', err);
-      callback(null);
+      console.error('[ProgramService] Error listening to user active programs:', err);
+      callback([]);
     }
   );
+}
+
+/**
+ * Subscribe to the first/most recent active program of a user (for backward compatibility).
+ */
+export function subscribeToUserActiveProgram(
+  userId: string,
+  callback: (userProgram: UserProgram | null) => void
+): Unsubscribe {
+  return subscribeToUserActivePrograms(userId, (list) => {
+    callback(list[0] || null);
+  });
 }
 
 /**
@@ -268,29 +277,14 @@ export function subscribeToUserPastPrograms(
 }
 
 /**
- * Activate a saved program for a user. Pauses any currently active program.
+ * Activate a saved program for a user.
  */
 export async function activateUserSavedProgram(
   userProgramId: string,
-  userId: string,
+  _userId: string,
   startingToday: boolean = true
 ): Promise<void> {
-  // 1. Pause any currently active program for this user
-  const activeQ = query(
-    collection(db, COLLECTIONS.USER_PROGRAMS),
-    where('userId', '==', userId),
-    where('status', '==', 'active')
-  );
-  const activeSnap = await getDocs(activeQ);
-  for (const activeDoc of activeSnap.docs) {
-    if (activeDoc.id !== userProgramId) {
-      await updateDoc(doc(db, COLLECTIONS.USER_PROGRAMS, activeDoc.id), {
-        status: 'paused',
-      });
-    }
-  }
-
-  // 2. Activate this program with fresh start date
+  // Activate this program with fresh start date (supports concurrent active programs)
   const now = new Date();
   const targetDoc = doc(db, COLLECTIONS.USER_PROGRAMS, userProgramId);
   const snap = await getDoc(targetDoc);

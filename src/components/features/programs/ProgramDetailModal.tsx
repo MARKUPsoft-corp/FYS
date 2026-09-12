@@ -27,6 +27,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Award,
+  Activity,
 } from 'lucide-react';
 import { ProgramOrderSheet } from './ProgramOrderSheet';
 import {
@@ -44,6 +45,8 @@ interface Props {
   isEnrolling?: boolean;
   hasActiveProgram?: boolean;
   activeProgramTitle?: string;
+  isAlreadyActive?: boolean;
+  onGoToActive?: () => void;
 }
 
 const GOAL_ICONS: Record<string, any> = {
@@ -72,6 +75,8 @@ export function ProgramDetailModal({
   isEnrolling = false,
   hasActiveProgram = false,
   activeProgramTitle,
+  isAlreadyActive = false,
+  onGoToActive,
 }: Props) {
   const [startingToday, setStartingToday] = useState(true);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
@@ -308,21 +313,31 @@ export function ProgramDetailModal({
             )}
           </div>
 
-          {/* Active Program Alert if already enrolled in another */}
-          {hasActiveProgram && (
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-secondary/10 border border-secondary/25 text-foreground flex items-start gap-3 text-xs w-full min-w-0 overflow-hidden">
-              <AlertCircle className="size-4 text-secondary shrink-0 mt-0.5" />
+          {/* Active Program Alert if already enrolled in another or in this one */}
+          {isAlreadyActive ? (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-foreground flex items-start gap-3 text-xs w-full min-w-0 overflow-hidden">
+              <Activity className="size-4 text-emerald-500 shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <strong className="text-foreground">Vous suivez actuellement :</strong> « {activeProgramTitle} ».
+                <strong className="text-foreground">Cure en cours de suivi :</strong> Vous réalisez actuellement ce programme.
                 <p className="text-muted-foreground mt-0.5 break-words">
-                  Pour préserver l'efficacité biologique de votre cure, nous vous conseillons de la terminer avant d'en entamer une nouvelle.
+                  Consultez votre progression, le planning du jour et validez vos jus directement dans l'onglet « Cures en cours ».
                 </p>
               </div>
             </div>
-          )}
+          ) : hasActiveProgram ? (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-primary/10 border border-primary/25 text-foreground flex items-start gap-3 text-xs w-full min-w-0 overflow-hidden">
+              <Sparkles className="size-4 text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <strong className="text-foreground">Cure en simultané :</strong> Vous suivez déjà « {activeProgramTitle} ».
+                <p className="text-muted-foreground mt-0.5 break-words">
+                  Vous pouvez parfaitement combiner plusieurs cures en parallèle (ex. Détox le matin et Boost après-midi). Vos cures seront toutes actives et suivies indépendamment dans votre onglet « Cures en cours ».
+                </p>
+              </div>
+            </div>
+          ) : null}
 
-          {/* Starting Day Selector */}
-          {!hasActiveProgram && (
+          {/* Starting Day Selector (only if not already running this program) */}
+          {!isAlreadyActive && (
             <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/60 space-y-3 w-full min-w-0 overflow-hidden">
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block break-words">
                 Quand souhaitez-vous commencer votre cure ?
@@ -392,7 +407,18 @@ export function ProgramDetailModal({
             Fermer
           </Button>
 
-          {!hasActiveProgram && (
+          {isAlreadyActive ? (
+            <Button
+              onClick={() => {
+                onClose();
+                onGoToActive?.();
+              }}
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-5 sm:px-7 rounded-xl shadow-md transition-all active:scale-98 cursor-pointer"
+            >
+              <Activity className="size-4 mr-2 shrink-0" />
+              <span>Accéder au coaching en cours</span>
+            </Button>
+          ) : (
             <Button
               onClick={handleEnrollClick}
               disabled={isEnrolling}
@@ -406,7 +432,11 @@ export function ProgramDetailModal({
               ) : (
                 <>
                   <Sparkles className="size-4 mr-2 shrink-0" />
-                  <span className="truncate">Démarrer ce programme ({program.durationDays} jours)</span>
+                  <span className="truncate">
+                    {hasActiveProgram
+                      ? `Démarrer en parallèle (${program.durationDays} jours)`
+                      : `Démarrer ce programme (${program.durationDays} jours)`}
+                  </span>
                 </>
               )}
             </Button>
