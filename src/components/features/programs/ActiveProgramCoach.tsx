@@ -103,29 +103,29 @@ export function ActiveProgramCoach({
   return (
     <div className="space-y-8">
       {/* Top Hero Card With FYS Brand Colors & Clean Structure */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white p-7 sm:p-10 shadow-xl border border-primary/30">
+      <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white p-5 sm:p-10 shadow-xl border border-primary/30">
         {/* Subtle radial glows */}
         <div className="absolute -right-16 -top-16 size-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 -bottom-16 size-56 rounded-full bg-secondary/15 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/15 backdrop-blur-md text-white border border-white/20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-white/15 backdrop-blur-md text-white border border-white/20">
                 <Sparkles className="size-3.5 text-secondary animate-pulse" />
                 Votre Cure en cours
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-primary/40 text-white border border-primary/40">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-primary/40 text-white border border-primary/40">
                 <Calendar className="size-3.5" />
                 Jour {activeDay} sur {totalDays}
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-white">
+            <h2 className="text-2xl sm:text-4xl font-bold font-display tracking-tight text-white">
               {userProgram.programTitle}
             </h2>
 
-            <p className="text-white/80 text-sm sm:text-base leading-relaxed">
+            <p className="text-white/80 text-xs sm:text-base leading-relaxed">
               {isProgramCompleted
                 ? 'Félicitations ! Vous avez accompli avec succès l’intégralité de votre cure.'
                 : 'Chaque gorgée apporte des enzymes vivantes et des micronutriments protecteurs à votre organisme.'}
@@ -133,23 +133,23 @@ export function ActiveProgramCoach({
           </div>
 
           {/* Metric Badges */}
-          <div className="shrink-0 flex items-center gap-6 bg-black/30 backdrop-blur-md p-5 rounded-3xl border border-white/15">
+          <div className="w-full sm:w-auto shrink-0 flex items-center justify-around sm:justify-start gap-4 sm:gap-6 bg-black/30 backdrop-blur-md p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-white/15">
             <div className="text-center">
-              <div className="text-4xl sm:text-5xl font-bold text-white font-display">
+              <div className="text-3xl sm:text-5xl font-bold text-white font-display">
                 {percentComplete}%
               </div>
-              <div className="text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
+              <div className="text-[10px] sm:text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
                 Progression
               </div>
             </div>
 
-            <div className="h-12 w-px bg-white/20" />
+            <div className="h-10 sm:h-12 w-px bg-white/20" />
 
             <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-secondary font-display">
+              <div className="text-2xl sm:text-4xl font-bold text-secondary font-display">
                 {completedCount}/{totalDays}
               </div>
-              <div className="text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
+              <div className="text-[10px] sm:text-[11px] font-bold text-white/70 uppercase tracking-widest mt-1">
                 Jus Validés
               </div>
             </div>
@@ -199,10 +199,10 @@ export function ActiveProgramCoach({
 
       {/* Prescription du Jour : Hero Juice Card */}
       {todayItem && (
-        <div className="rounded-[2.5rem] border border-border/80 bg-card shadow-sm overflow-hidden">
+        <div className="rounded-3xl sm:rounded-[2.5rem] border border-border/80 bg-card shadow-sm overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             {/* Left: Juice Photo with Verified Source */}
-            <div className="lg:col-span-5 relative min-h-[300px] lg:min-h-full overflow-hidden bg-muted">
+            <div className="lg:col-span-5 relative min-h-[220px] sm:min-h-[300px] lg:min-h-full overflow-hidden bg-muted">
               <img
                 src={todayItem.cocktailImage || todayItem.imageUrl || userProgram.programSnapshot.imageUrl}
                 alt={todayItem.cocktailName || todayItem.juiceName}
@@ -214,18 +214,18 @@ export function ActiveProgramCoach({
               <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
 
               {/* Floating Day Badge */}
-              <div className="absolute top-5 left-5 z-10">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-md">
+              <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-md">
                   {displayedDayNum === activeDay ? 'Prescription d’Aujourd’hui' : `Détail du Jour ${displayedDayNum}`}
                 </span>
               </div>
 
               {/* Title & Taste Note over Photo */}
-              <div className="absolute bottom-5 left-5 right-5 text-white z-10 space-y-1.5">
-                <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+              <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 text-white z-10 space-y-1 sm:space-y-1.5">
+                <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider">
                   Jour {displayedDayNum} • {todayItem.focus || 'Fraîcheur et Bienfaits'}
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-bold font-display leading-tight">
+                <h3 className="text-xl sm:text-3xl font-bold font-display leading-tight">
                   {todayItem.cocktailName || todayItem.juiceName}
                 </h3>
                 {todayItem.tasteProfile && (
@@ -237,16 +237,16 @@ export function ActiveProgramCoach({
             </div>
 
             {/* Right: Nutrition Info, Fruits & Interactive Check-in */}
-            <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-              <div className="space-y-5">
+            <div className="lg:col-span-7 p-4 sm:p-8 flex flex-col justify-between space-y-5 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-5">
                 {/* Timing & Bottle specs */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/60">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 pb-4 border-b border-border/60">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-                      <TimingIcon className="size-4" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                      <TimingIcon className="size-3.5 sm:size-4" />
                       {timingLabel}
                     </span>
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-muted text-muted-foreground">
+                    <span className="inline-flex items-center px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold bg-muted text-muted-foreground">
                       500ml 100% Frais
                     </span>
                   </div>
@@ -255,7 +255,7 @@ export function ActiveProgramCoach({
                     variant="outline"
                     size="sm"
                     onClick={() => handleOrderJuice(todayItem)}
-                    className="text-xs font-bold h-9 border-primary/30 hover:bg-primary/10 text-foreground cursor-pointer"
+                    className="w-full sm:w-auto text-xs font-bold h-9 border-primary/30 hover:bg-primary/10 text-foreground cursor-pointer"
                   >
                     <ShoppingBag className="size-3.5 mr-1.5 text-primary" />
                     Commander ce jus
@@ -264,14 +264,14 @@ export function ActiveProgramCoach({
 
                 {/* Fresh Ingredients */}
                 <div>
-                  <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">
+                  <p className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">
                     Ingrédients bruts pressés à froid :
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {(todayItem.fruitNames || todayItem.fruits || []).map((fruit, fi) => (
                       <span
                         key={fi}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-foreground border border-primary/20"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-foreground border border-primary/20"
                       >
                         <Leaf className="size-3 text-primary" />
                         {fruit}
@@ -282,7 +282,7 @@ export function ActiveProgramCoach({
 
                 {/* Instructions */}
                 {todayItem.instructions && (
-                  <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/50 text-xs text-muted-foreground flex items-start gap-2.5">
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-muted/40 border border-border/50 text-xs text-muted-foreground flex items-start gap-2.5">
                     <Droplets className="size-4 text-primary shrink-0 mt-0.5" />
                     <span>
                       <strong className="text-foreground">Conseil dégustation :</strong> {todayItem.instructions}
@@ -292,7 +292,7 @@ export function ActiveProgramCoach({
 
                 {/* NutriFYS Coach Quote */}
                 {(todayItem.advice || todayItem.nutrifysAdvice) && (
-                  <div className="p-4 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground space-y-1.5">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground space-y-1.5">
                     <div className="flex items-center gap-2 text-secondary font-bold text-xs">
                       <Sparkles className="size-4" />
                       <span>LE CONSEIL DU COACH NUTRIFYS</span>
@@ -305,7 +305,7 @@ export function ActiveProgramCoach({
               </div>
 
               {/* Check-in Action Bar */}
-              <div className="pt-5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-5 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                 <div className="text-xs text-muted-foreground text-center sm:text-left">
                   {isDisplayedDayChecked ? (
                     <span className="inline-flex items-center gap-1.5 text-primary font-bold">
@@ -330,7 +330,7 @@ export function ActiveProgramCoach({
                     <Button
                       onClick={() => onCheckin(displayedDayNum)}
                       disabled={isCheckingIn}
-                      className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-8 shadow-md transition-all active:scale-98 cursor-pointer"
+                      className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-6 sm:px-8 shadow-md transition-all active:scale-98 cursor-pointer"
                     >
                       {isCheckingIn ? (
                         <>
@@ -353,20 +353,20 @@ export function ActiveProgramCoach({
       )}
 
       {/* Visual Stepper of Days */}
-      <div className="rounded-[2.5rem] border border-border/80 bg-card p-6 sm:p-8 shadow-xs space-y-5">
+      <div className="rounded-3xl sm:rounded-[2.5rem] border border-border/80 bg-card p-4 sm:p-8 shadow-xs space-y-4 sm:space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold font-display uppercase tracking-wider text-foreground flex items-center gap-2">
+            <h3 className="text-sm sm:text-base font-bold font-display uppercase tracking-wider text-foreground flex items-center gap-2">
               <Calendar className="size-4 text-primary" />
               Parcours de la cure ({totalDays} étapes)
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
               Cliquez sur un jour pour afficher sa recette et ses bienfaits.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3.5">
           {userProgram.programSnapshot.days.map((day, idx) => {
             const dNum = day.dayNumber || day.day || idx + 1;
             const isCompleted = completedDayNumbers.has(dNum);

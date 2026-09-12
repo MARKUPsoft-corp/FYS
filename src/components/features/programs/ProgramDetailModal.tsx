@@ -94,9 +94,12 @@ export function ProgramDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border border-primary/20 shadow-2xl rounded-3xl bg-background/98 backdrop-blur-xl overflow-x-hidden">
+      <DialogContent
+        showCloseButton={false}
+        className="w-[calc(100%-1.25rem)] sm:w-full max-w-3xl max-h-[92vh] overflow-y-auto p-0 border border-primary/20 shadow-2xl rounded-3xl bg-background/98 backdrop-blur-xl overflow-x-hidden"
+      >
         {/* Top Hero Visual Banner */}
-        <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-muted">
+        <div className="relative h-52 sm:h-72 w-full overflow-hidden bg-muted">
           <img
             src={program.imageUrl}
             alt={program.title}
@@ -108,19 +111,19 @@ export function ProgramDetailModal({
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/35" />
 
           {/* Floating Badges */}
-          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-md">
-                <GoalIcon className="size-3.5" />
+          <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 flex items-start justify-between z-10 gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-md">
+                <GoalIcon className="size-3 sm:size-3.5" />
                 {program.goalLabel || program.goal}
               </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-card/85 text-foreground backdrop-blur-md shadow-xs border border-border/40">
-                <Calendar className="size-3.5 text-primary" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-card/85 text-foreground backdrop-blur-md shadow-xs border border-border/40">
+                <Calendar className="size-3 sm:size-3.5 text-primary" />
                 {program.durationDays} jours
               </span>
               {program.badge && (
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-secondary text-secondary-foreground shadow-sm">
-                  <Award className="size-3.5" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-secondary text-secondary-foreground shadow-sm">
+                  <Award className="size-3 sm:size-3.5" />
                   {program.badge}
                 </span>
               )}
@@ -128,42 +131,42 @@ export function ProgramDetailModal({
 
             <button
               onClick={onClose}
-              className="size-9 rounded-full bg-black/45 hover:bg-black/65 text-white flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer"
+              className="size-8 sm:size-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer shrink-0"
             >
-              <X className="size-5" />
+              <X className="size-4 sm:size-5" />
             </button>
           </div>
 
           {/* Banner Title */}
-          <div className="absolute bottom-4 left-5 right-5 z-10 space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground">
+          <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5 z-10 space-y-0.5 sm:space-y-1">
+            <h2 className="text-xl sm:text-3xl font-bold font-display tracking-tight text-foreground line-clamp-2">
               {program.title}
             </h2>
-            <p className="text-xs sm:text-sm font-medium text-primary max-w-xl">
+            <p className="text-xs sm:text-sm font-medium text-primary line-clamp-2">
               {program.subtitle}
             </p>
           </div>
         </div>
 
         {/* Modal Content Body */}
-        <div className="p-5 sm:p-7 space-y-7">
+        <div className="p-4 sm:p-7 space-y-5 sm:space-y-7">
           {/* Key Value Props Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-muted/40 border border-border/60 text-center">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Flacons</p>
-              <p className="text-base font-bold text-foreground mt-0.5">{program.durationDays}x {program.bottleSize}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-muted/40 border border-border/60 text-center">
+            <div className="p-1">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground truncate">Flacons</p>
+              <p className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">{program.durationDays}x {program.bottleSize}</p>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Pressage</p>
-              <p className="text-base font-bold text-primary mt-0.5">100% à froid</p>
+            <div className="p-1">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground truncate">Pressage</p>
+              <p className="text-sm sm:text-base font-bold text-primary mt-0.5 truncate">100% à froid</p>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Sucre et eau</p>
-              <p className="text-base font-bold text-foreground mt-0.5">0% ajouté</p>
+            <div className="p-1">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground truncate">Sucre et eau</p>
+              <p className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">0% ajouté</p>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Pack complet</p>
-              <p className="text-base font-bold text-primary mt-0.5">{packPrice.toLocaleString()} XAF</p>
+            <div className="p-1">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground truncate">Pack complet</p>
+              <p className="text-sm sm:text-base font-bold text-primary mt-0.5 truncate">{packPrice.toLocaleString()} XAF</p>
             </div>
           </div>
 
@@ -173,14 +176,14 @@ export function ProgramDetailModal({
               {program.description}
             </p>
             {program.benefits && program.benefits.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 pt-1">
                 {program.benefits.map((b, bi) => (
                   <div
                     key={bi}
-                    className="flex items-center gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs font-medium text-foreground"
+                    className="flex items-start sm:items-center gap-2.5 p-2.5 sm:p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs font-medium text-foreground"
                   >
-                    <CheckCircle2 className="size-4 text-primary shrink-0" />
-                    <span>{b}</span>
+                    <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5 sm:mt-0" />
+                    <span className="leading-snug">{b}</span>
                   </div>
                 ))}
               </div>
@@ -189,18 +192,18 @@ export function ProgramDetailModal({
 
           {/* Interactive Day-by-Day Juice Explorer */}
           <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                <Sparkles className="size-4 text-secondary" />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5 sm:gap-2">
+                <Sparkles className="size-3.5 sm:size-4 text-secondary" />
                 Déroulé des jus de votre cure
               </h3>
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground shrink-0">
                 Jour {selectedDayIndex + 1} sur {program.days.length}
               </span>
             </div>
 
             {/* Day Selector Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <div className="w-full flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none touch-pan-x min-w-0">
               {program.days.map((dayItem, index) => {
                 const isSelected = selectedDayIndex === index;
                 const dNum = dayItem.dayNumber || dayItem.day || index + 1;
@@ -209,7 +212,7 @@ export function ProgramDetailModal({
                     key={index}
                     type="button"
                     onClick={() => setSelectedDayIndex(index)}
-                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                       isSelected
                         ? 'bg-primary text-primary-foreground shadow-md scale-102 ring-2 ring-primary/40'
                         : 'bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/40'
@@ -218,7 +221,7 @@ export function ProgramDetailModal({
                     <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
                       J{dNum}
                     </span>
-                    <span>{dayItem.cocktailName || dayItem.juiceName}</span>
+                    <span className="whitespace-nowrap">{dayItem.cocktailName || dayItem.juiceName}</span>
                   </button>
                 );
               })}
@@ -229,7 +232,7 @@ export function ProgramDetailModal({
               <div className="rounded-3xl border border-primary/20 bg-card overflow-hidden shadow-lg transition-all duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-5">
                   {/* Juice Photo */}
-                  <div className="md:col-span-2 relative min-h-[220px] md:min-h-full overflow-hidden bg-muted">
+                  <div className="md:col-span-2 relative min-h-[190px] sm:min-h-[220px] md:min-h-full overflow-hidden bg-muted">
                     <img
                       src={currentDayItem.cocktailImage || currentDayItem.imageUrl || program.imageUrl}
                       alt={currentDayItem.cocktailName || currentDayItem.juiceName}
@@ -243,17 +246,17 @@ export function ProgramDetailModal({
                       <span className="text-[10px] font-bold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
                         {currentDayItem.focus || 'Prescription quotidienne'}
                       </span>
-                      <p className="text-base font-bold leading-snug mt-1">
+                      <p className="text-sm sm:text-base font-bold leading-snug mt-1">
                         {currentDayItem.cocktailName || currentDayItem.juiceName}
                       </p>
                     </div>
                   </div>
 
                   {/* Juice Details */}
-                  <div className="md:col-span-3 p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                  <div className="md:col-span-3 p-4 sm:p-6 flex flex-col justify-between space-y-4">
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                           <TimingIcon className="size-3.5" />
                           {timingLabel}
                         </span>
@@ -288,7 +291,7 @@ export function ProgramDetailModal({
 
                       {/* NutriFYS Advice Box */}
                       {(currentDayItem.advice || currentDayItem.nutrifysAdvice) && (
-                        <div className="p-3.5 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground space-y-1">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground space-y-1">
                           <div className="flex items-center gap-1.5 text-secondary font-bold text-xs">
                             <Sparkles className="size-3.5" />
                             <span>Conseil NutriFYS pour ce jour</span>
@@ -307,7 +310,7 @@ export function ProgramDetailModal({
 
           {/* Active Program Alert if already enrolled in another */}
           {hasActiveProgram && (
-            <div className="p-4 rounded-2xl bg-secondary/10 border border-secondary/25 text-foreground flex items-start gap-3 text-xs">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-secondary/10 border border-secondary/25 text-foreground flex items-start gap-3 text-xs">
               <AlertCircle className="size-4 text-secondary shrink-0 mt-0.5" />
               <div>
                 <strong className="text-foreground">Vous suivez actuellement :</strong> « {activeProgramTitle} ».
@@ -324,11 +327,11 @@ export function ProgramDetailModal({
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
                 Quand souhaitez-vous commencer votre cure ?
               </span>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setStartingToday(true)}
-                  className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
+                  className={`p-3 sm:p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     startingToday
                       ? 'border-primary bg-primary/10 text-foreground shadow-xs ring-1 ring-primary'
                       : 'border-border/60 bg-card text-muted-foreground hover:border-border'
@@ -343,7 +346,7 @@ export function ProgramDetailModal({
                 <button
                   type="button"
                   onClick={() => setStartingToday(false)}
-                  className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
+                  className={`p-3 sm:p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     !startingToday
                       ? 'border-primary bg-primary/10 text-foreground shadow-xs ring-1 ring-primary'
                       : 'border-border/60 bg-card text-muted-foreground hover:border-border'
@@ -359,7 +362,7 @@ export function ProgramDetailModal({
           )}
 
           {/* Pack WhatsApp Order CTA Box */}
-          <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             <div>
               <p className="text-xs font-bold text-foreground">
                 Besoin de vous faire livrer les jus frais à domicile ?
@@ -372,7 +375,7 @@ export function ProgramDetailModal({
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all shrink-0 cursor-pointer"
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all shrink-0 cursor-pointer"
             >
               <MessageCircle className="size-4" />
               Commander le pack ({packPrice.toLocaleString()} XAF)
@@ -381,8 +384,8 @@ export function ProgramDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-5 bg-card border-t border-border/60 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={onClose} disabled={isEnrolling} className="text-xs cursor-pointer">
+        <div className="p-4 sm:p-5 bg-card border-t border-border/60 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+          <Button variant="ghost" onClick={onClose} disabled={isEnrolling} className="w-full sm:w-auto text-xs cursor-pointer">
             Fermer
           </Button>
 
@@ -390,7 +393,7 @@ export function ProgramDetailModal({
             <Button
               onClick={handleEnrollClick}
               disabled={isEnrolling}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-7 rounded-xl shadow-md transition-all active:scale-98 cursor-pointer"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-5 sm:px-7 rounded-xl shadow-md transition-all active:scale-98 cursor-pointer"
             >
               {isEnrolling ? (
                 <>

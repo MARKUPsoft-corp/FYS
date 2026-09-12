@@ -244,12 +244,12 @@ const ProgramsPage: PageComponent = () => {
 
         {/* Spotlight Bento Flagship (Only shown if user has no active program) */}
         {!userProgram && flagshipProgram && (
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
+          <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
             <div className="absolute -right-20 -top-20 size-80 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
               {/* Left Photo */}
-              <div className="lg:col-span-5 relative min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
+              <div className="lg:col-span-5 relative min-h-[240px] sm:min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
                 <img
                   src={flagshipProgram.imageUrl}
                   alt={flagshipProgram.title}
@@ -260,7 +260,7 @@ const ProgramsPage: PageComponent = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
-                <div className="absolute top-5 left-5 z-10 flex items-center gap-2">
+                <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-10 flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-md">
                     <Star className="size-3.5 fill-white" />
                     Cure Signature
@@ -271,7 +271,7 @@ const ProgramsPage: PageComponent = () => {
                   </span>
                 </div>
 
-                <div className="absolute bottom-5 left-5 right-5 text-white z-10 space-y-1">
+                <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 text-white z-10 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     Pack complet {flagshipProgram.durationDays}x 500ml
                   </span>
@@ -282,18 +282,18 @@ const ProgramsPage: PageComponent = () => {
               </div>
 
               {/* Right Content */}
-              <div className="lg:col-span-7 p-7 sm:p-10 space-y-6">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary/20 text-white border border-primary/30">
+              <div className="lg:col-span-7 p-5 sm:p-10 space-y-5 sm:space-y-6">
+                <div className="space-y-2.5 sm:space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary/20 text-white border border-primary/30">
                     <Leaf className="size-3.5 text-primary" />
                     Purification Hépatique et Ventre Léger
                   </div>
 
-                  <h3 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-white leading-tight">
+                  <h3 className="text-2xl sm:text-4xl font-bold font-display tracking-tight text-white leading-tight">
                     {flagshipProgram.title}
                   </h3>
 
-                  <p className="text-white/80 text-sm sm:text-base leading-relaxed">
+                  <p className="text-white/80 text-xs sm:text-base leading-relaxed">
                     {flagshipProgram.subtitle} {flagshipProgram.description}
                   </p>
                 </div>
@@ -307,7 +307,7 @@ const ProgramsPage: PageComponent = () => {
                     {flagshipProgram.days.map((d, di) => (
                       <div
                         key={di}
-                        className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2.5"
+                        className="p-2.5 sm:p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2.5"
                       >
                         <span className="size-6 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-[10px] shrink-0">
                           J{d.dayNumber || d.day || di + 1}
@@ -321,25 +321,25 @@ const ProgramsPage: PageComponent = () => {
                 </div>
 
                 {/* Pricing & CTA */}
-                <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                   <div className="text-center sm:text-left">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold font-display text-white">
+                    <div className="flex items-baseline justify-center sm:justify-start gap-2">
+                      <span className="text-2xl sm:text-3xl font-bold font-display text-white">
                         {flagshipProgram.bundlePrice?.toLocaleString() || flagshipProgram.price.toLocaleString()} XAF
                       </span>
                       {flagshipProgram.originalPrice && (
-                        <span className="text-sm line-through text-white/50 font-semibold">
+                        <span className="text-xs sm:text-sm line-through text-white/50 font-semibold">
                           {flagshipProgram.originalPrice.toLocaleString()} XAF
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-white/70">Livré frais avec protocole complet NutriFYS</span>
+                    <span className="text-[10px] sm:text-[11px] text-white/70">Livré frais avec protocole complet NutriFYS</span>
                   </div>
 
                   <Button
                     size="lg"
                     onClick={() => setSelectedProgram(flagshipProgram)}
-                    className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-8 shadow-md transition-all active:scale-98 cursor-pointer"
+                    className="w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-6 sm:px-8 shadow-md transition-all active:scale-98 cursor-pointer"
                   >
                     Découvrir et Démarrer
                     <ArrowRight className="size-4 ml-2" />
@@ -380,7 +380,7 @@ const ProgramsPage: PageComponent = () => {
           </div>
 
           {/* Goal Filter Chips */}
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+          <div className="w-full flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none touch-pan-x min-w-0">
             {GOAL_FILTERS.map((f) => {
               const Icon = f.icon;
               const isActive = selectedGoal === f.key;
@@ -389,7 +389,7 @@ const ProgramsPage: PageComponent = () => {
                   key={f.key}
                   type="button"
                   onClick={() => setSelectedGoal(f.key)}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-xs shrink-0 ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-md scale-102 ring-2 ring-primary/40'
                       : 'bg-card text-muted-foreground hover:text-foreground border border-border/70 hover:border-primary/40'
@@ -403,7 +403,7 @@ const ProgramsPage: PageComponent = () => {
           </div>
 
           {/* Programs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredPrograms.map((program) => {
               const isUserActiveThis = userProgram?.programId === program.id;
               const currentPrice = program.bundlePrice || program.price;
@@ -411,7 +411,7 @@ const ProgramsPage: PageComponent = () => {
               return (
                 <div
                   key={program.id}
-                  className={`group relative rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
+                  className={`group relative rounded-3xl sm:rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
                     isUserActiveThis
                       ? 'border-primary ring-2 ring-primary/40 shadow-md'
                       : 'border-border/70 shadow-xs'
@@ -419,7 +419,7 @@ const ProgramsPage: PageComponent = () => {
                 >
                   {/* Card Top: Photo with Overlay Badges */}
                   <div>
-                    <div className="relative h-56 w-full overflow-hidden bg-muted">
+                    <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-muted">
                       <img
                         src={program.imageUrl}
                         alt={program.title}
@@ -432,11 +432,11 @@ const ProgramsPage: PageComponent = () => {
 
                       {/* Top Badges */}
                       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-xs">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-xs">
                           {program.goalLabel || program.goal}
                         </span>
 
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-black/60 text-white backdrop-blur-md shadow-xs border border-white/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-black/60 text-white backdrop-blur-md shadow-xs border border-white/20">
                           <Calendar className="size-3 text-primary" />
                           {program.durationDays} jours
                         </span>
@@ -447,14 +447,14 @@ const ProgramsPage: PageComponent = () => {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                           {program.bottlesTotal}x {program.bottleSize} • 100% Brut
                         </span>
-                        <h3 className="text-xl font-bold font-display leading-tight truncate">
+                        <h3 className="text-lg sm:text-xl font-bold font-display leading-tight truncate">
                           {program.title}
                         </h3>
                       </div>
                     </div>
 
                     {/* Card Content Details */}
-                    <div className="p-6 space-y-4">
+                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                       <div>
                         <p className="text-xs font-bold text-primary">
                           {program.subtitle}
@@ -488,7 +488,7 @@ const ProgramsPage: PageComponent = () => {
                           {program.days.slice(0, 3).map((d, di) => (
                             <span
                               key={di}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-muted/60 text-foreground border border-border/60 truncate"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-muted/60 text-foreground border border-border/60 truncate"
                             >
                               <Leaf className="size-3 text-primary shrink-0" />
                               <span className="truncate">{d.cocktailName || d.juiceName}</span>
@@ -505,13 +505,13 @@ const ProgramsPage: PageComponent = () => {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="p-6 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-3">
+                  <div className="p-4 sm:p-6 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2.5 sm:gap-3">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                         Pack Cure Complète
                       </span>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-lg font-bold font-display text-primary">
+                        <span className="text-base sm:text-lg font-bold font-display text-primary">
                           {currentPrice.toLocaleString()} XAF
                         </span>
                         {program.originalPrice && (
@@ -524,7 +524,7 @@ const ProgramsPage: PageComponent = () => {
 
                     <Button
                       onClick={() => setSelectedProgram(program)}
-                      className={`rounded-2xl text-xs font-bold h-10 px-5 shadow-xs transition-all active:scale-98 cursor-pointer ${
+                      className={`rounded-2xl text-xs font-bold h-10 px-4 sm:px-5 shadow-xs transition-all active:scale-98 cursor-pointer ${
                         isUserActiveThis
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-primary hover:bg-primary/90 text-primary-foreground'

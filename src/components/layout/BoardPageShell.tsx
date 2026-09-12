@@ -49,7 +49,7 @@ export function BoardPageShell({
             <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">
               {eyebrow}
             </p>
-            <h1 className="font-display font-extrabold text-4xl text-white">
+            <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-white">
               {titleBefore}{' '}
               <span className="text-secondary italic">{titleHighlight}</span>
               {titleAfter ? ` ${titleAfter}` : ''}
@@ -63,7 +63,7 @@ export function BoardPageShell({
         {actions}
 
         <div className="text-center">
-          <h3 className="font-display font-bold text-3xl">
+          <h3 className="font-display font-bold text-xl sm:text-3xl">
             <span className="text-foreground">{sectionBefore} </span>
             <span className="text-primary">{sectionHighlight}</span>
           </h3>
