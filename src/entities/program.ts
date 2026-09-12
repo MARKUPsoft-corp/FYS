@@ -15,10 +15,10 @@ export type ProgramTiming =
   | 'evening';
 
 export const PROGRAM_TIMING_LABELS: Record<ProgramTiming, string> = {
-  morning_empty_stomach: '🌅 À jeun au réveil',
-  morning: '☀️ Au petit-déjeuner',
-  afternoon: '⚡ Coup de boost (16h)',
-  evening: '🌙 En début de soirée',
+  morning_empty_stomach: 'À jeun au réveil',
+  morning: 'Au petit-déjeuner',
+  afternoon: 'En collation (16h)',
+  evening: 'En début de soirée',
 };
 
 export interface ProgramDayItem {
@@ -33,7 +33,7 @@ export interface ProgramDayItem {
   timing: ProgramTiming;
   timingLabel: string;
   focus?: string;
-  tasteProfile?: string; // e.g. "Acidulé, rafraîchissant & vivifiant"
+  tasteProfile?: string;
   benefits: string[];
   advice: string;
   nutrifysAdvice?: string; // Alias
@@ -60,8 +60,7 @@ export interface Program {
   badge?: string; // "Cure Express", "Bestseller", "Idéal Débutant"...
   difficulty?: 'Facile' | 'Intermédiaire' | 'Intense';
   imageUrl: string;
-  colorAccent: string; // 'emerald' | 'amber' | 'teal' | 'rose' | 'orange'
-  gradientBanner?: string;
+  colorAccent: string; // 'primary' | 'secondary' | 'accent'
   highlights: string[];
   benefits?: string[]; // Alias
   days: ProgramDayItem[];
@@ -101,16 +100,16 @@ export interface UserProgram {
   cancelledAt?: string;
 }
 
-// ── 3 Programmes de lancement ultra-gourmands & alléchants ──────────────────
+// ── 3 Programmes de lancement avec images vérifiées & zéro emoji ───────────
 
 export const DEFAULT_PROGRAMS: Program[] = [
   {
     id: 'program-detox-3j',
     slug: 'cure-detox-eclair',
     title: 'Cure Détox Éclair',
-    subtitle: 'Purifiez votre organisme et dégonflez en 3 jours chrono.',
+    subtitle: 'Purifiez votre organisme et dégonflez en 3 jours.',
     description:
-      'Un protocole express conçu pour relancer votre système digestif, éliminer les toxines accumulées et retrouver une sensation immédiate de légèreté. 1 jus pressé à froid ultra-frais chaque matin à jeun.',
+      'Un protocole express conçu pour relancer votre système digestif, éliminer les toxines accumulées et retrouver une sensation immédiate de légèreté. Un jus pressé à froid ultra-frais chaque matin à jeun.',
     goal: 'detox',
     goalLabel: 'Détox & Élimination',
     durationDays: 3,
@@ -122,20 +121,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
     badge: 'Bestseller Express',
     difficulty: 'Facile',
     imageUrl:
-      'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=1200&auto=format&fit=crop',
-    colorAccent: 'emerald',
-    gradientBanner: 'from-emerald-950/80 via-emerald-900/50 to-teal-950/80',
+      'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    colorAccent: 'primary',
     highlights: [
       '3 flacons 500ml 100% bruts sans eau ni sucres ajoutés',
-      'Effet dégonflement et ventre léger immédiat',
-      'Drainage hépatique & rénal naturel en 72h',
+      'Effet dégonflement et ventre léger garanti',
+      'Drainage hépatique et rénal naturel en 72 heures',
       'Coaching quotidien NutriFYS pas à pas',
     ],
     benefits: [
-      'Élimination accélérée des déchets métaboliques',
-      'Sensation de légèreté digestive dès le 2e matin',
+      'Élimination accélérée des toxines métaboliques',
+      'Sensation de légèreté digestive dès le deuxième matin',
       'Alcalinisation et hydratation cellulaire profonde',
-      'Regain de clarté mentale et vitalité matinale',
+      'Regain de vitalité et teint frais',
     ],
     isActive: true,
     days: [
@@ -146,21 +144,21 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Élixir Vert Détox',
         juiceName: 'Élixir Vert Détox',
         cocktailImage:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 À jeun au réveil (7h00 - 8h30)',
-        focus: 'Hydratation cellulaire & drainage',
-        tasteProfile: 'Notes fraîches de menthe poivrée, vivacité du citron vert & douceur de pomme',
+        timingLabel: 'À jeun au réveil (entre 7h00 et 8h30)',
+        focus: 'Hydratation cellulaire et drainage',
+        tasteProfile: 'Notes vives de menthe poivrée, vivacité du citron vert et douceur de pomme croquante',
         bottleSize: '500ml',
         benefits: ['Drainage des émonctoires', 'Alcalinisant puissant', 'Légèreté digestive'],
         fruitNames: ['Concombre', 'Pomme Verte', 'Menthe', 'Gingembre'],
         fruits: ['Concombre', 'Pomme Verte', 'Menthe', 'Gingembre'],
         advice:
-          'Buvez lentement par petites gorgées 20 minutes avant votre petit-déjeuner. Hydratez-vous avec au moins 1,5L d’eau plate aujourd’hui pour accompagner le drainage naturel.',
+          'Buvez lentement par petites gorgées 20 minutes avant votre premier repas. Hydratez-vous avec au moins 1,5L d’eau plate aujourd’hui pour accompagner le drainage naturel.',
         nutrifysAdvice:
-          'Buvez lentement par petites gorgées 20 minutes avant votre petit-déjeuner. Hydratez-vous avec au moins 1,5L d’eau plate aujourd’hui pour accompagner le drainage naturel.',
+          'Buvez lentement par petites gorgées 20 minutes avant votre premier repas. Hydratez-vous avec au moins 1,5L d’eau plate aujourd’hui pour accompagner le drainage naturel.',
         instructions: 'Conserver bien frais. Agiter délicatement avant de déguster.',
       },
       {
@@ -170,13 +168,13 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Sunrise Purifiant',
         juiceName: 'Sunrise Purifiant',
         cocktailImage:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 À jeun au réveil (7h00 - 8h30)',
-        focus: 'Relance hépatique & détoxification',
-        tasteProfile: 'Texture veloutée d’ananas mûr, chaleur dorée du curcuma & acidité du citron',
+        timingLabel: 'À jeun au réveil (entre 7h00 et 8h30)',
+        focus: 'Relance hépatique et élimination',
+        tasteProfile: 'Douceur d’ananas mûr, chaleur du curcuma et acidité d’agrumes fraîchement cueillis',
         bottleSize: '500ml',
         benefits: ['Enzymes bromélaïne actives', 'Soutien hépatique', 'Antioxydants vivants'],
         fruitNames: ['Ananas', 'Carotte', 'Citron', 'Curcuma'],
@@ -185,7 +183,7 @@ export const DEFAULT_PROGRAMS: Program[] = [
           'La bromélaïne de l’ananas et la curcumine soutiennent votre foie dans sa phase d’élimination. Évitez les aliments ultra-transformés et les fritures pour maximiser l’effet.',
         nutrifysAdvice:
           'La bromélaïne de l’ananas et la curcumine soutiennent votre foie dans sa phase d’élimination. Évitez les aliments ultra-transformés et les fritures pour maximiser l’effet.',
-        instructions: 'Idéal à température ambiante ou légèrement frais.',
+        instructions: 'Idéal à température fraîche.',
       },
       {
         dayNumber: 3,
@@ -194,22 +192,22 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Grand Reset Vital',
         juiceName: 'Grand Reset Vital',
         cocktailImage:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 À jeun au réveil (7h00 - 8h30)',
-        focus: 'Consolidation & éclat vital',
-        tasteProfile: 'Richesse tellurique de la betterave adoucie par la pomme croquante et le gingembre piquant',
+        timingLabel: 'À jeun au réveil (entre 7h00 et 8h30)',
+        focus: 'Consolidation et vitalité durable',
+        tasteProfile: 'Richesse douce de la betterave adoucie par la pomme croquante et le gingembre frais',
         bottleSize: '500ml',
-        benefits: ['Oxygénation des tissus', 'Teint éclatant', 'Vitalité durable'],
+        benefits: ['Oxygénation des tissus', 'Teint lumineux', 'Vitalité durable'],
         fruitNames: ['Pomme', 'Betterave', 'Gingembre', 'Citron'],
         fruits: ['Pomme', 'Betterave', 'Gingembre', 'Citron'],
         advice:
-          'Dernier jour de votre cure ! Vous devriez déjà ressentir un ventre plus plat, une digestion apaisée et un esprit clair. Privilégiez un dîner léger pour clore la cure en douceur.',
+          'Dernier jour de votre cure. Vous devriez déjà ressentir un ventre plus plat, une digestion apaisée et un esprit clair. Privilégiez un dîner léger pour clore la cure en douceur.',
         nutrifysAdvice:
-          'Dernier jour de votre cure ! Vous devriez déjà ressentir un ventre plus plat, une digestion apaisée et un esprit clair. Privilégiez un dîner léger pour clore la cure en douceur.',
-        instructions: 'Dégustez avec gratitude pour tout ce bien fait à votre corps.',
+          'Dernier jour de votre cure. Vous devriez déjà ressentir un ventre plus plat, une digestion apaisée et un esprit clair. Privilégiez un dîner léger pour clore la cure en douceur.',
+        instructions: 'Dégustez lentement pour savourer tous les nutriments.',
       },
     ],
   },
@@ -217,9 +215,9 @@ export const DEFAULT_PROGRAMS: Program[] = [
     id: 'program-immunite-7j',
     slug: 'bouclier-immunite',
     title: 'Bouclier Immunité & Vitalité',
-    subtitle: '7 jours pour blinder vos défenses et recharger vos batteries.',
+    subtitle: '7 jours pour fortifier vos défenses et recharger vos batteries.',
     description:
-      'Une semaine complète d’apports massifs en vitamines C bioactives, bêtacarotène et polyphénols protecteurs. Idéal lors des coups de fatigue, périodes intenses ou changements de météo.',
+      'Une semaine complète d’apports massifs en vitamines C bioactives, bêtacarotène et polyphénols protecteurs. Idéal lors des coups de fatigue ou périodes de surmenage.',
     goal: 'immunity',
     goalLabel: 'Défenses & Énergie',
     durationDays: 7,
@@ -231,20 +229,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
     badge: 'Vitalité Maximale',
     difficulty: 'Intermédiaire',
     imageUrl:
-      'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=1200&auto=format&fit=crop',
-    colorAccent: 'amber',
-    gradientBanner: 'from-amber-950/80 via-orange-950/50 to-amber-900/80',
+      'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    colorAccent: 'secondary',
     highlights: [
-      '7 flacons 500ml ultra-riches en vitamine C active',
-      'Synergie curcuma doré, gingembre & agrumes gorgés de soleil',
-      'Barrière protectrice naturelle contre les coups de pompe',
+      '7 flacons 500ml riches en vitamine C active',
+      'Synergie curcuma doré, gingembre et agrumes du terroir',
+      'Barrière protectrice naturelle contre les baisses d’énergie',
       'Accompagnement quotidien étape par étape avec NutriFYS',
     ],
     benefits: [
-      'Renforcement prouvé de la barrière immunitaire',
-      'Énergie naturelle stable sans pic de caféine',
-      'Protection cellulaire contre le stress oxydatif',
-      'Amélioration notable du sommeil et de la récupération',
+      'Renforcement naturel de la résistance physique',
+      'Énergie naturelle stable sans coup de pompe',
+      'Protection antioxydante contre le stress cellulaire',
+      'Amélioration du dynamisme et de la concentration',
     ],
     isActive: true,
     days: [
@@ -255,19 +252,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Citrus Tonic Boost',
         juiceName: 'Citrus Tonic Boost',
         cocktailImage:
-          'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Coup de fouet & réveil tonique',
-        tasteProfile: 'Zestes d’orange gorgés de jus, pamplemousse rubis & pointe de gingembre revigorante',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Coup de fouet et éveil tonique',
+        tasteProfile: 'Zestes d’orange gorgés de jus, pamplemousse rubis et pointe de gingembre revigorante',
         bottleSize: '500ml',
         benefits: ['Vitamine C pure', 'Hydratation tonifiante', 'Éveil métabolique'],
         fruitNames: ['Orange', 'Pamplemousse', 'Citron Vert', 'Gingembre'],
         fruits: ['Orange', 'Pamplemousse', 'Citron Vert', 'Gingembre'],
-        advice: 'Lancez votre semaine avec une explosion d’agrumes frais pour réveiller instantanément votre vitalité.',
-        nutrifysAdvice: 'Lancez votre semaine avec une explosion d’agrumes frais pour réveiller instantanément votre vitalité.',
+        advice: 'Lancez votre semaine avec une explosion d’agrumes frais pour réveiller instantanément votre métabolisme.',
+        nutrifysAdvice: 'Lancez votre semaine avec une explosion d’agrumes frais pour réveiller instantanément votre métabolisme.',
       },
       {
         dayNumber: 2,
@@ -276,13 +273,13 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Orange Curcuma Énergie',
         juiceName: 'Orange Curcuma Énergie',
         cocktailImage:
-          'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Anti-inflammatoire & bouclier cellulaire',
-        tasteProfile: 'Douceur terreuse de la carotte mariée aux agrumes et à la chaleur enveloppante du curcuma',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Protection cellulaire et vitalité',
+        tasteProfile: 'Douceur veloutée de la carotte mariée aux agrumes et à la chaleur du curcuma',
         bottleSize: '500ml',
         benefits: ['Curcumine bioactive', 'Bêtacarotène', 'Protection des cellules'],
         fruitNames: ['Carotte', 'Orange', 'Curcuma', 'Pomme'],
@@ -297,13 +294,13 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Tropical Défense',
         juiceName: 'Tropical Défense',
         cocktailImage:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1099680/pexels-photo-1099680.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1099680/pexels-photo-1099680.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Enzymes tropicales & régénération',
-        tasteProfile: 'Parfum envoûtant du fruit de la passion mûr combiné à l’ananas doré bien juteux',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Enzymes tropicales et régénération',
+        tasteProfile: 'Parfum suave du fruit de la passion mûr combiné à l’ananas doré bien juteux',
         bottleSize: '500ml',
         benefits: ['Enzymes vivantes', 'Régénération des tissus', 'Antioxydants'],
         fruitNames: ['Ananas', 'Fruit de la Passion', 'Gingembre'],
@@ -318,19 +315,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Ruby Vitalité',
         juiceName: 'Ruby Vitalité',
         cocktailImage:
-          'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Oxygénation sanguine & endurance',
-        tasteProfile: 'Couleur grenat envoûtante, douceur veloutée et coup de fouet citronné',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Oxygénation et endurance',
+        tasteProfile: 'Couleur grenat intense, douceur veloutée et coup de fouet citronné',
         bottleSize: '500ml',
         benefits: ['Oxygénation', 'Endurance naturelle', 'Circulation'],
         fruitNames: ['Betterave', 'Pomme', 'Carotte', 'Citron'],
         fruits: ['Betterave', 'Pomme', 'Carotte', 'Citron'],
-        advice: 'La betterave améliore l’oxygénation sanguine. Idéal pour passer le cap du milieu de semaine sans coup de pompe.',
-        nutrifysAdvice: 'La betterave améliore l’oxygénation sanguine. Idéal pour passer le cap du milieu de semaine sans coup de pompe.',
+        advice: 'La betterave améliore l’oxygénation des tissus. Idéal pour franchir le milieu de semaine avec dynamisme.',
+        nutrifysAdvice: 'La betterave améliore l’oxygénation des tissus. Idéal pour franchir le milieu de semaine avec dynamisme.',
       },
       {
         dayNumber: 5,
@@ -339,12 +336,12 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Élixir Vert Protecteur',
         juiceName: 'Élixir Vert Protecteur',
         cocktailImage:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Chlorophylle & reminéralisation',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Chlorophylle et reminéralisation',
         tasteProfile: 'Pureté végétale croquante, menthe revigorante et fraîcheur désaltérante',
         bottleSize: '500ml',
         benefits: ['Chlorophylle active', 'Minéraux alcalinisants', 'Défenses renforcées'],
@@ -360,19 +357,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Golden Sunrise',
         juiceName: 'Golden Sunrise',
         cocktailImage:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/452737/pexels-photo-452737.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/452737/pexels-photo-452737.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Teint éclatant & éclat vital',
-        tasteProfile: 'Explosion dorée d’agrumes tropicaux et douceur carotte gorgée de soleil',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Teint lumineux et tonus',
+        tasteProfile: 'Harmonie d’agrumes tropicaux et douceur de carotte mûrie au soleil',
         bottleSize: '500ml',
         benefits: ['Teint lumineux', 'Tonus général', 'Défenses optimales'],
         fruitNames: ['Ananas', 'Orange', 'Carotte', 'Curcuma'],
         fruits: ['Ananas', 'Orange', 'Carotte', 'Curcuma'],
-        advice: 'Plus qu’un jour ! Vous apportez un stock précieux de micronutriments protecteurs à votre corps.',
-        nutrifysAdvice: 'Plus qu’un jour ! Vous apportez un stock précieux de micronutriments protecteurs à votre corps.',
+        advice: 'Plus qu’un jour. Vous avez apporté un stock précieux de micronutriments protecteurs à votre organisme.',
+        nutrifysAdvice: 'Plus qu’un jour. Vous avez apporté un stock précieux de micronutriments protecteurs à votre organisme.',
       },
       {
         dayNumber: 7,
@@ -381,19 +378,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Bouclier Suprême',
         juiceName: 'Bouclier Suprême',
         cocktailImage:
-          'https://images.unsplash.com/photo-1556881286-fc6915169721?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1556881286-fc6915169721?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/158053/fresh-orange-juice-squeezed-refreshing-citrus-158053.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning',
-        timingLabel: '☀️ Au petit-déjeuner',
-        focus: 'Apothéose de la cure & immunité verrouillée',
-        tasteProfile: 'Harmonie exotique intense, nectar de passion puissant et citron vert pétillant',
+        timingLabel: 'Au petit-déjeuner',
+        focus: 'Apothéose de la cure et consolidation',
+        tasteProfile: 'Harmonie tropicale intense, nectar de passion puissant et citron vert pétillant',
         bottleSize: '500ml',
         benefits: ['Consolidation finale', 'Énergie durable', 'Protection long terme'],
         fruitNames: ['Passion', 'Ananas', 'Gingembre', 'Citron'],
         fruits: ['Passion', 'Ananas', 'Gingembre', 'Citron'],
-        advice: 'Félicitations pour ces 7 jours de régularité ! Vos défenses naturelles sont rechargées au maximum.',
-        nutrifysAdvice: 'Félicitations pour ces 7 jours de régularité ! Vos défenses naturelles sont rechargées au maximum.',
+        advice: 'Félicitations pour ces 7 jours de régularité. Vos défenses naturelles sont rechargées au maximum.',
+        nutrifysAdvice: 'Félicitations pour ces 7 jours de régularité. Vos défenses naturelles sont rechargées au maximum.',
       },
     ],
   },
@@ -401,11 +398,11 @@ export const DEFAULT_PROGRAMS: Program[] = [
     id: 'program-ventre-plat-5j',
     slug: 'ventre-plat-confort',
     title: 'Ventre Plat & Confort Digestif',
-    subtitle: '5 jours pour apaiser vos intestins et dire adieu aux ballonnements.',
+    subtitle: '5 jours pour apaiser vos intestins et soulager les ballonnements.',
     description:
-      'Conçu avec des fruits riches en enzymes protéolytiques (bromélaïne de l’ananas), menthe fraîche apaisante et concombre hydratant. Soulage rapidement les inconforts après repas et affine la taille.',
+      'Conçu avec des fruits riches en enzymes digestives naturelles (bromélaïne de l’ananas), menthe fraîche apaisante et concombre hydratant. Soulage rapidement les inconforts après repas.',
     goal: 'digestion',
-    goalLabel: 'Digestion & Ventre Plat',
+    goalLabel: 'Digestion & Confort',
     durationDays: 5,
     bottlesTotal: 5,
     bottleSize: '500ml',
@@ -415,20 +412,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
     badge: 'Confort Intestinal',
     difficulty: 'Facile',
     imageUrl:
-      'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=1200&auto=format&fit=crop',
-    colorAccent: 'teal',
-    gradientBanner: 'from-teal-950/80 via-emerald-950/50 to-teal-900/80',
+      'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    colorAccent: 'primary',
     highlights: [
-      '5 flacons 500ml ciblés sur le microbiote et la détente abdominale',
-      'Bromélaïne d’ananas frais & menthe bio apaisante',
-      'Soulagement visible des lourdeurs et ballonnements',
-      'Routine simple et agréable sur 5 jours ouvrés',
+      '5 flacons 500ml ciblés sur le confort et la détente intestinale',
+      'Bromélaïne d’ananas frais et menthe apaisante',
+      'Soulagement durable des lourdeurs et ballonnements',
+      'Protocole agréable sur 5 jours ouvrés',
     ],
     benefits: [
-      'Diminution sensible du tour de taille et dégonflement',
-      'Régénération de la barrière muqueuse digestive',
-      'Transit naturel facilité sans laxatif agressif',
-      'Digestion légère après chaque repas',
+      'Diminution sensible des sensations de gonflement',
+      'Apaisement de la muqueuse digestive',
+      'Transit naturel doux et régulier',
+      'Sensation de confort léger après chaque repas',
     ],
     isActive: true,
     days: [
@@ -439,13 +435,13 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Ananas Menthe Pure',
         juiceName: 'Ananas Menthe Pure',
         cocktailImage:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 Le matin à jeun',
-        focus: 'Détente intestinale & amorce enzymatique',
-        tasteProfile: 'Douceur acidulée d’ananas bien mûr et frisson glacé de menthe verte',
+        timingLabel: 'Le matin à jeun',
+        focus: 'Détente intestinale et amorce enzymatique',
+        tasteProfile: 'Douceur acidulée d’ananas mûr et fraîcheur vivifiante de menthe verte',
         bottleSize: '500ml',
         benefits: ['Bromélaïne active', 'Fraîcheur intestinale', 'Effet décongestionnant'],
         fruitNames: ['Ananas', 'Menthe', 'Citron Vert'],
@@ -460,19 +456,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Douceur Verte Concombre',
         juiceName: 'Douceur Verte Concombre',
         cocktailImage:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1622597467836-f3885f2011ea?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 Le matin à jeun',
-        focus: 'Hydratation profonde & fibres solubles',
+        timingLabel: 'Le matin à jeun',
+        focus: 'Hydratation profonde et fibres solubles',
         tasteProfile: 'Légèreté absolue, notes croquantes de pomme et concombre rafraîchissant',
         bottleSize: '500ml',
         benefits: ['Hydratation profonde', 'Fibres solubles bio', 'Zéro sensation de lourdeur'],
         fruitNames: ['Concombre', 'Pomme', 'Gingembre'],
         fruits: ['Concombre', 'Pomme', 'Gingembre'],
-        advice: 'Mangez assis et prenez le temps de bien mâcher vos repas aujourd’hui pour accompagner le travail bienfaisant du jus.',
-        nutrifysAdvice: 'Mangez assis et prenez le temps de bien mâcher vos repas aujourd’hui pour accompagner le travail bienfaisant du jus.',
+        advice: 'Mangez assis et prenez le temps de bien mâcher vos repas aujourd’hui pour accompagner le travail du jus.',
+        nutrifysAdvice: 'Mangez assis et prenez le temps de bien mâcher vos repas aujourd’hui pour accompagner le travail du jus.',
       },
       {
         dayNumber: 3,
@@ -481,19 +477,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Passion Gingembre Apaisant',
         juiceName: 'Passion Gingembre Apaisant',
         cocktailImage:
-          'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1099680/pexels-photo-1099680.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1560717789-0ac7c58ac90a?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/1099680/pexels-photo-1099680.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 Le matin à jeun',
-        focus: 'Feu digestif & stimulation enzymatique',
-        tasteProfile: 'Nectar exotique onctueux de fruit de la passion avec un piquant chaleureux de gingembre',
+        timingLabel: 'Le matin à jeun',
+        focus: 'Feu digestif et confort',
+        tasteProfile: 'Nectar exotique de fruit de la passion relevé par un piquant doux de gingembre',
         bottleSize: '500ml',
-        benefits: ['Tonus gastrique', 'Flore intestinale apaisée', 'Élimination des gaz'],
+        benefits: ['Tonus gastrique', 'Flore apaisée', 'Élimination des gaz'],
         fruitNames: ['Fruit de la Passion', 'Ananas', 'Gingembre'],
         fruits: ['Fruit de la Passion', 'Ananas', 'Gingembre'],
-        advice: 'Le gingembre réchauffe le système digestif et stimule les sucs gastriques naturels sans irriter.',
-        nutrifysAdvice: 'Le gingembre réchauffe le système digestif et stimule les sucs gastriques naturels sans irriter.',
+        advice: 'Le gingembre réchauffe le système digestif et soutient les sucs gastriques naturels sans irriter.',
+        nutrifysAdvice: 'Le gingembre réchauffe le système digestif et soutient les sucs gastriques naturels sans irriter.',
       },
       {
         dayNumber: 4,
@@ -502,15 +498,15 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Élixir Confort Total',
         juiceName: 'Élixir Confort Total',
         cocktailImage:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 Le matin à jeun',
-        focus: 'Décongestion & apaisement des spasmes',
+        timingLabel: 'Le matin à jeun',
+        focus: 'Décongestion et bien-être abdominal',
         tasteProfile: 'Fraîcheur limpide, subtil parfum de menthe froissée et pomme acidulée',
         bottleSize: '500ml',
-        benefits: ['Légèreté abdominale', 'Décongestion pelvienne', 'Bien-être post-repas'],
+        benefits: ['Légèreté abdominale', 'Décongestion', 'Bien-être post-repas'],
         fruitNames: ['Pomme', 'Concombre', 'Menthe', 'Citron'],
         fruits: ['Pomme', 'Concombre', 'Menthe', 'Citron'],
         advice: 'Remarquez comme votre ventre est plus souple au réveil. Continuez à boire suffisamment d’eau tempérée.',
@@ -523,19 +519,19 @@ export const DEFAULT_PROGRAMS: Program[] = [
         cocktailName: 'Zen Digest Final',
         juiceName: 'Zen Digest Final',
         cocktailImage:
-          'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=800',
         imageUrl:
-          'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?q=80&w=800&auto=format&fit=crop',
+          'https://images.pexels.com/photos/338713/pexels-photo-338713.jpeg?auto=compress&cs=tinysrgb&w=800',
         timing: 'morning_empty_stomach',
-        timingLabel: '🌅 Le matin à jeun',
-        focus: 'Consolidation & équilibre pérenne',
+        timingLabel: 'Le matin à jeun',
+        focus: 'Consolidation et équilibre pérenne',
         tasteProfile: 'Harmonie veloutée ananas-passion rafraîchie d’une pointe de menthe bio',
         bottleSize: '500ml',
         benefits: ['Équilibre pérenne', 'Ventre plat durable', 'Microbiote revitalisé'],
         fruitNames: ['Ananas', 'Passion', 'Menthe'],
         fruits: ['Ananas', 'Passion', 'Menthe'],
-        advice: 'Dernier jour du rituel ! Vous avez réinitialisé votre confort digestif pour les semaines à venir.',
-        nutrifysAdvice: 'Dernier jour du rituel ! Vous avez réinitialisé votre confort digestif pour les semaines à venir.',
+        advice: 'Dernier jour du rituel. Vous avez réinitialisé votre confort digestif pour les semaines à venir.',
+        nutrifysAdvice: 'Dernier jour du rituel. Vous avez réinitialisé votre confort digestif pour les semaines à venir.',
       },
     ],
   },

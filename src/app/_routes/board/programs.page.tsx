@@ -42,12 +42,14 @@ import {
 import { ProgramDetailModal } from '@/components/features/programs/ProgramDetailModal';
 import { ActiveProgramCoach } from '@/components/features/programs/ActiveProgramCoach';
 
-const GOAL_FILTERS: { key: string; label: string; icon: any; colorClass: string }[] = [
-  { key: 'all', label: 'Toutes les cures', icon: Sparkles, colorClass: 'hover:border-primary' },
-  { key: 'detox', label: 'Détox & Élimination', icon: Leaf, colorClass: 'hover:border-emerald-500' },
-  { key: 'immunity', label: 'Immunité & Vitalité', icon: Shield, colorClass: 'hover:border-amber-500' },
-  { key: 'digestion', label: 'Ventre Plat & Digestion', icon: HeartPulse, colorClass: 'hover:border-teal-500' },
+const GOAL_FILTERS: { key: string; label: string; icon: any }[] = [
+  { key: 'all', label: 'Toutes les cures', icon: Sparkles },
+  { key: 'detox', label: 'Détox et Élimination', icon: Leaf },
+  { key: 'immunity', label: 'Immunité et Vitalité', icon: Shield },
+  { key: 'digestion', label: 'Ventre Plat et Digestion', icon: HeartPulse },
 ];
+
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 const ProgramsPage: PageComponent = () => {
   const { t } = useTranslation();
@@ -111,7 +113,7 @@ const ProgramsPage: PageComponent = () => {
     });
   }, [programs, selectedGoal, searchQuery]);
 
-  // Featured flagship program (e.g. Détox Éclair)
+  // Featured flagship program
   const flagshipProgram = programs.find((p) => p.slug === 'cure-detox-eclair') || programs[0];
 
   // Handlers
@@ -191,30 +193,30 @@ const ProgramsPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="COACHING BIEN-ÊTRE & PROTOCOLES CIBLÉS"
+      eyebrow="COACHING BIEN-ÊTRE ET PROTOCOLES CIBLÉS"
       titleBefore="FYS "
       titleHighlight="Program"
       titleAfter=" — L'Art de la Cure Vivante"
       sectionBefore="Découvrez nos cures de jus frais "
       sectionHighlight="100% pressés à froid"
       subtitle="Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme, raviver votre énergie et instaurer une routine saine."
-      imageUrl="https://images.unsplash.com/photo-1622597467836-f3885f2011ea?auto=format&fit=crop&w=1600&q=80"
+      imageUrl="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 pb-20">
-        {/* ── Status Feedback Banner ── */}
+        {/* Status Feedback Banner */}
         {statusMessage && (
           <div
-            className={`p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-md transition-all animate-pop-in-cute ${
+            className={`p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-sm transition-all animate-pop-in-cute ${
               statusMessage.type === 'success'
-                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-950 dark:text-emerald-100'
-                : 'bg-rose-500/15 border border-rose-500/40 text-rose-950 dark:text-rose-100'
+                ? 'bg-primary/10 border border-primary/30 text-foreground'
+                : 'bg-destructive/10 border border-destructive/30 text-destructive'
             }`}
           >
             <div className="flex items-center gap-2.5">
               {statusMessage.type === 'success' ? (
-                <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle2 className="size-5 text-primary shrink-0" />
               ) : (
-                <AlertCircle className="size-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <AlertCircle className="size-5 text-destructive shrink-0" />
               )}
               <span className="font-semibold">{statusMessage.text}</span>
             </div>
@@ -227,7 +229,7 @@ const ProgramsPage: PageComponent = () => {
           </div>
         )}
 
-        {/* ── Active Program Coach Section (if user is currently enrolled) ── */}
+        {/* Active Program Coach Section (if user is currently enrolled) */}
         {userProgram && (
           <section className="space-y-4">
             <ActiveProgramCoach
@@ -240,34 +242,37 @@ const ProgramsPage: PageComponent = () => {
           </section>
         )}
 
-        {/* ── Spotlight Bento Flagship (Only shown if user has no active program) ── */}
+        {/* Spotlight Bento Flagship (Only shown if user has no active program) */}
         {!userProgram && flagshipProgram && (
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-emerald-900/90 via-teal-950 to-emerald-950 text-white shadow-2xl border border-emerald-500/30 group">
-            <div className="absolute -right-20 -top-20 size-80 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none" />
-            
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1F3326] via-[#28422F] to-[#142219] text-white shadow-xl border border-primary/30 group">
+            <div className="absolute -right-20 -top-20 size-80 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
               {/* Left Photo */}
               <div className="lg:col-span-5 relative min-h-[320px] lg:min-h-[440px] overflow-hidden bg-muted">
                 <img
                   src={flagshipProgram.imageUrl}
                   alt={flagshipProgram.title}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                  }}
                   className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-                
+
                 <div className="absolute top-5 left-5 z-10 flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-white shadow-lg">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-md">
                     <Star className="size-3.5 fill-white" />
                     Cure Signature
                   </span>
                   <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-black/60 text-white backdrop-blur-md border border-white/20">
-                    <Calendar className="size-3.5 text-emerald-400" />
+                    <Calendar className="size-3.5 text-primary" />
                     {flagshipProgram.durationDays} jours
                   </span>
                 </div>
 
                 <div className="absolute bottom-5 left-5 right-5 text-white z-10 space-y-1">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-300">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     Pack complet {flagshipProgram.durationDays}x 500ml
                   </span>
                   <p className="text-xl font-bold font-display">
@@ -279,24 +284,24 @@ const ProgramsPage: PageComponent = () => {
               {/* Right Content */}
               <div className="lg:col-span-7 p-7 sm:p-10 space-y-6">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                    <Leaf className="size-3.5 text-emerald-300" />
-                    Purification Hépatique & Ventre Léger
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary/20 text-white border border-primary/30">
+                    <Leaf className="size-3.5 text-primary" />
+                    Purification Hépatique et Ventre Léger
                   </div>
-                  
-                  <h3 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-white leading-tight">
+
+                  <h3 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-white leading-tight">
                     {flagshipProgram.title}
                   </h3>
 
-                  <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed">
+                  <p className="text-white/80 text-sm sm:text-base leading-relaxed">
                     {flagshipProgram.subtitle} {flagshipProgram.description}
                   </p>
                 </div>
 
                 {/* Day-by-day preview pills */}
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300">
-                    Les 3 potions de votre cure :
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                    Les 3 étapes de votre cure :
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {flagshipProgram.days.map((d, di) => (
@@ -304,7 +309,7 @@ const ProgramsPage: PageComponent = () => {
                         key={di}
                         className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2.5"
                       >
-                        <span className="size-6 rounded-full bg-emerald-500 text-white font-extrabold flex items-center justify-center text-[10px] shrink-0">
+                        <span className="size-6 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-[10px] shrink-0">
                           J{d.dayNumber || d.day || di + 1}
                         </span>
                         <span className="font-bold truncate text-[11px]">
@@ -319,25 +324,25 @@ const ProgramsPage: PageComponent = () => {
                 <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-center sm:text-left">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black font-display text-white">
+                      <span className="text-3xl font-bold font-display text-white">
                         {flagshipProgram.bundlePrice?.toLocaleString() || flagshipProgram.price.toLocaleString()} XAF
                       </span>
                       {flagshipProgram.originalPrice && (
-                        <span className="text-sm line-through text-emerald-300/70 font-semibold">
+                        <span className="text-sm line-through text-white/50 font-semibold">
                           {flagshipProgram.originalPrice.toLocaleString()} XAF
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-emerald-200">Livré frais avec protocole complet NutriFYS</span>
+                    <span className="text-[11px] text-white/70">Livré frais avec protocole complet NutriFYS</span>
                   </div>
 
                   <Button
                     size="lg"
                     onClick={() => setSelectedProgram(flagshipProgram)}
-                    className="rounded-2xl bg-white hover:bg-emerald-50 text-emerald-900 font-extrabold text-xs sm:text-sm h-12 px-8 shadow-xl transition-all active:scale-98 cursor-pointer"
+                    className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-8 shadow-md transition-all active:scale-98 cursor-pointer"
                   >
-                    Découvrir & Démarrer
-                    <ArrowRight className="size-4 ml-2 text-emerald-700" />
+                    Découvrir et Démarrer
+                    <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </div>
               </div>
@@ -345,16 +350,16 @@ const ProgramsPage: PageComponent = () => {
           </div>
         )}
 
-        {/* ── Catalog of All Programs ── */}
+        {/* Catalog of All Programs */}
         <section className="space-y-8 pt-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                   Formules Ciblées FYS
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground flex items-center gap-3">
+              <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-3">
                 <span>Catalogue des Programmes</span>
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -368,7 +373,7 @@ const ProgramsPage: PageComponent = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher détox, immunité, ventre plat..."
+                placeholder="Rechercher détox, immunité, digestion..."
                 className="pl-10 h-11 text-xs rounded-2xl bg-card border-border/80 shadow-xs"
               />
             </div>
@@ -386,8 +391,8 @@ const ProgramsPage: PageComponent = () => {
                   onClick={() => setSelectedGoal(f.key)}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-xs ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-md scale-102 ring-2 ring-emerald-400/40'
-                      : 'bg-card text-muted-foreground hover:text-foreground border border-border/70 hover:border-emerald-500/40'
+                      ? 'bg-primary text-primary-foreground shadow-md scale-102 ring-2 ring-primary/40'
+                      : 'bg-card text-muted-foreground hover:text-foreground border border-border/70 hover:border-primary/40'
                   }`}
                 >
                   <Icon className="size-3.5" />
@@ -406,40 +411,43 @@ const ProgramsPage: PageComponent = () => {
               return (
                 <div
                   key={program.id}
-                  className={`group relative rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-2xl hover:border-emerald-500/50 hover:-translate-y-1 ${
+                  className={`group relative rounded-[2.5rem] border bg-card overflow-hidden flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 ${
                     isUserActiveThis
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-xl'
-                      : 'border-border/70 shadow-sm'
+                      ? 'border-primary ring-2 ring-primary/40 shadow-md'
+                      : 'border-border/70 shadow-xs'
                   }`}
                 >
-                  {/* Card Top: Appetizing Photo with Overlay Badges */}
+                  {/* Card Top: Photo with Overlay Badges */}
                   <div>
                     <div className="relative h-56 w-full overflow-hidden bg-muted">
                       <img
                         src={program.imageUrl}
                         alt={program.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                        }}
                         className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-1000 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
                       {/* Top Badges */}
                       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-600/90 text-white backdrop-blur-md shadow-md border border-emerald-400/30">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-xs">
                           {program.goalLabel || program.goal}
                         </span>
 
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold bg-black/60 text-white backdrop-blur-md shadow-sm border border-white/20">
-                          <Calendar className="size-3 text-emerald-400" />
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-black/60 text-white backdrop-blur-md shadow-xs border border-white/20">
+                          <Calendar className="size-3 text-primary" />
                           {program.durationDays} jours
                         </span>
                       </div>
 
                       {/* Bottom Banner Over Photo */}
                       <div className="absolute bottom-3 left-4 right-4 text-white z-10">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                           {program.bottlesTotal}x {program.bottleSize} • 100% Brut
                         </span>
-                        <h3 className="text-xl font-black font-display leading-tight truncate">
+                        <h3 className="text-xl font-bold font-display leading-tight truncate">
                           {program.title}
                         </h3>
                       </div>
@@ -448,7 +456,7 @@ const ProgramsPage: PageComponent = () => {
                     {/* Card Content Details */}
                     <div className="p-6 space-y-4">
                       <div>
-                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <p className="text-xs font-bold text-primary">
                           {program.subtitle}
                         </p>
                         <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 line-clamp-2">
@@ -464,7 +472,7 @@ const ProgramsPage: PageComponent = () => {
                               key={bi}
                               className="flex items-center gap-2 text-xs font-medium text-foreground/90"
                             >
-                              <Check className="size-3.5 text-emerald-500 shrink-0" />
+                              <Check className="size-3.5 text-primary shrink-0" />
                               <span className="truncate">{b}</span>
                             </div>
                           ))}
@@ -482,7 +490,7 @@ const ProgramsPage: PageComponent = () => {
                               key={di}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-muted/60 text-foreground border border-border/60 truncate"
                             >
-                              <Leaf className="size-3 text-emerald-500 shrink-0" />
+                              <Leaf className="size-3 text-primary shrink-0" />
                               <span className="truncate">{d.cocktailName || d.juiceName}</span>
                             </span>
                           ))}
@@ -503,7 +511,7 @@ const ProgramsPage: PageComponent = () => {
                         Pack Cure Complète
                       </span>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-lg font-black font-display text-emerald-600 dark:text-emerald-400">
+                        <span className="text-lg font-bold font-display text-primary">
                           {currentPrice.toLocaleString()} XAF
                         </span>
                         {program.originalPrice && (
@@ -516,10 +524,10 @@ const ProgramsPage: PageComponent = () => {
 
                     <Button
                       onClick={() => setSelectedProgram(program)}
-                      className={`rounded-2xl text-xs font-bold h-10 px-5 shadow-sm transition-all active:scale-98 cursor-pointer ${
+                      className={`rounded-2xl text-xs font-bold h-10 px-5 shadow-xs transition-all active:scale-98 cursor-pointer ${
                         isUserActiveThis
-                          ? 'bg-emerald-700 text-white'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                       }`}
                     >
                       {isUserActiveThis ? 'Cure en cours' : 'Voir la cure'}
@@ -555,7 +563,7 @@ const ProgramsPage: PageComponent = () => {
           )}
         </section>
 
-        {/* ── Modal Detail ── */}
+        {/* Modal Detail */}
         <ProgramDetailModal
           program={selectedProgram}
           isOpen={!!selectedProgram}

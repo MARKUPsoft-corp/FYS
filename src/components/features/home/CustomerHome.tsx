@@ -206,92 +206,104 @@ export function CustomerHome(_props: Props) {
           </div>
         </div>
 
-        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (ULTRA APPÉTISSANT & ANIMÉ) ── */}
+        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (CHARTE FYS, IMAGES VÉRIFIÉES & ZÉRO EMOJI) ── */}
         {activeProgram ? (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-emerald-500/40 text-white group">
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group">
             {/* Background photo with subtle zoom */}
             <div className="absolute inset-0 bg-muted">
               <img
-                src={activeProgram.programSnapshot?.imageUrl || "https://images.unsplash.com/photo-1622597467836-f3885f2011ea?auto=format&fit=crop&w=1200&q=80"}
+                src={activeProgram.programSnapshot?.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
                 alt={activeProgram.programTitle}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
+                }}
                 className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-black/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#142219]/95 via-[#1F3326]/85 to-black/60" />
             </div>
 
             <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-3 max-w-xl">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-md border border-emerald-400/40 animate-pulse">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
                     <CalendarCheck className="size-3.5" />
                     Cure active en cours
                   </span>
-                  <span className="text-xs text-emerald-200 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                  <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
                     Jour {activeProgram.currentDay} sur {activeProgram.durationDays}
                   </span>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-black font-display text-white leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
                   {activeProgram.programTitle}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-                  {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Votre jus frais du jour vous attend !
+                <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+                  {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Votre jus frais du jour vous attend.
                 </p>
               </div>
 
               <div className="relative z-10 shrink-0">
                 <Link to="/board/programs">
-                  <Button className="rounded-2xl bg-white text-emerald-900 hover:bg-emerald-50 font-extrabold text-xs sm:text-sm h-12 px-7 shadow-xl transition-all active:scale-98 cursor-pointer">
-                    Consulter ma prescription & valider mon jus
-                    <ArrowRight className="size-4 ml-2 text-emerald-700" />
+                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
+                    Consulter ma prescription et valider mon jus
+                    <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>
               </div>
             </div>
           </div>
         ) : (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-emerald-500/30 text-white group cursor-pointer">
-            {/* Appetizing fresh cold-pressed background photography */}
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-primary/30 text-white group cursor-pointer">
+            {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
-                src="https://images.unsplash.com/photo-1622597467836-f3885f2011ea?auto=format&fit=crop&w=1200&q=80"
+                src="https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"
                 alt="Cures FYS Program"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1200';
+                }}
                 className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-emerald-950/85 to-black/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1F3326]/85 to-black/60" />
             </div>
 
             <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-3 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-md">
-                    <Sparkles className="size-3.5 text-amber-300" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
+                    <Sparkles className="size-3.5 text-secondary" />
                     NOUVEAU • FYS PROGRAM
                   </span>
-                  <span className="text-xs text-emerald-200 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                  <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
                     Cures 3 à 7 jours
                   </span>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-black font-display text-white leading-tight">
-                  Détox, Vitalité & Ventre Plat : Votre Cure de Jus Vivants
+                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
+                  Détox, Vitalité et Ventre Plat : Votre Cure de Jus Vivants
                 </h3>
 
-                <p className="text-xs sm:text-sm text-emerald-100/85 max-w-xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
                   Des protocoles jour par jour formulés avec nos nutritionnistes. 100% purs jus bruts pressés à froid le matin même, zéro eau, zéro conservateur.
                 </p>
 
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-emerald-200 font-semibold">
-                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🌿 100% Pressé à froid</span>
-                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🚚 Livré frais chaque matin</span>
-                  <span className="bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">🧠 Suivi quotidien NutriFYS</span>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
+                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
+                    <Leaf className="size-3 text-primary" /> 100% Pressé à froid
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
+                    <Package className="size-3 text-secondary" /> Livré frais chaque matin
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
+                    <Sparkles className="size-3 text-secondary" /> Suivi quotidien NutriFYS
+                  </span>
                 </div>
               </div>
 
               <div className="relative z-10 shrink-0">
                 <Link to="/board/programs">
-                  <Button className="rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs sm:text-sm h-12 px-7 shadow-lg shadow-emerald-500/25 transition-all active:scale-98 cursor-pointer">
+                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer">
                     Découvrir les cures
                     <ArrowRight className="size-4 ml-2" />
                   </Button>

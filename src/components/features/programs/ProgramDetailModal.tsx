@@ -25,9 +25,8 @@ import {
   Check,
   X,
   ArrowRight,
-  ChevronRight,
   ShieldCheck,
-  Apple,
+  Award,
 } from 'lucide-react';
 import {
   type Program,
@@ -62,6 +61,8 @@ const TIMING_ICONS: Record<string, any> = {
   evening: Clock,
 };
 
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
+
 export function ProgramDetailModal({
   program,
   isOpen,
@@ -93,30 +94,33 @@ export function ProgramDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border border-emerald-500/20 shadow-2xl rounded-3xl bg-background/98 backdrop-blur-xl overflow-x-hidden">
-        {/* ── Top Hero Visual Banner ── */}
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 border border-primary/20 shadow-2xl rounded-3xl bg-background/98 backdrop-blur-xl overflow-x-hidden">
+        {/* Top Hero Visual Banner */}
         <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-muted">
           <img
             src={program.imageUrl}
             alt={program.title}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+            }}
             className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-1000 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/35" />
 
           {/* Floating Badges */}
           <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/90 text-white backdrop-blur-md shadow-lg border border-emerald-400/40">
-                <GoalIcon className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground backdrop-blur-md shadow-md">
+                <GoalIcon className="size-3.5" />
                 {program.goalLabel || program.goal}
               </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 dark:bg-black/80 text-foreground backdrop-blur-md shadow-sm border border-border/40">
-                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-card/85 text-foreground backdrop-blur-md shadow-xs border border-border/40">
+                <Calendar className="size-3.5 text-primary" />
                 {program.durationDays} jours
               </span>
               {program.badge && (
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-md">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-secondary text-secondary-foreground shadow-sm">
+                  <Award className="size-3.5" />
                   {program.badge}
                 </span>
               )}
@@ -124,7 +128,7 @@ export function ProgramDetailModal({
 
             <button
               onClick={onClose}
-              className="size-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-colors"
+              className="size-9 rounded-full bg-black/45 hover:bg-black/65 text-white flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer"
             >
               <X className="size-5" />
             </button>
@@ -132,34 +136,34 @@ export function ProgramDetailModal({
 
           {/* Banner Title */}
           <div className="absolute bottom-4 left-5 right-5 z-10 space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground">
+            <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground">
               {program.title}
             </h2>
-            <p className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 max-w-xl">
+            <p className="text-xs sm:text-sm font-medium text-primary max-w-xl">
               {program.subtitle}
             </p>
           </div>
         </div>
 
-        {/* ── Modal Content Body ── */}
+        {/* Modal Content Body */}
         <div className="p-5 sm:p-7 space-y-7">
           {/* Key Value Props Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-muted/40 border border-border/60 text-center">
             <div>
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Flacons</p>
-              <p className="text-base font-black text-foreground mt-0.5">{program.durationDays}x {program.bottleSize}</p>
+              <p className="text-base font-bold text-foreground mt-0.5">{program.durationDays}x {program.bottleSize}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Pressage</p>
-              <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">100% à froid</p>
+              <p className="text-base font-bold text-primary mt-0.5">100% à froid</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-muted-foreground">Sucre / Eau</p>
-              <p className="text-base font-black text-foreground mt-0.5">0% Ajouté</p>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Sucre et eau</p>
+              <p className="text-base font-bold text-foreground mt-0.5">0% ajouté</p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Pack complet</p>
-              <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{packPrice.toLocaleString()} XAF</p>
+              <p className="text-base font-bold text-primary mt-0.5">{packPrice.toLocaleString()} XAF</p>
             </div>
           </div>
 
@@ -173,9 +177,9 @@ export function ProgramDetailModal({
                 {program.benefits.map((b, bi) => (
                   <div
                     key={bi}
-                    className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 text-xs font-medium text-foreground"
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs font-medium text-foreground"
                   >
-                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="size-4 text-primary shrink-0" />
                     <span>{b}</span>
                   </div>
                 ))}
@@ -183,11 +187,11 @@ export function ProgramDetailModal({
             )}
           </div>
 
-          {/* ── Interactive Day-by-Day Juice Explorer ── */}
+          {/* Interactive Day-by-Day Juice Explorer */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                <Sparkles className="size-4 text-emerald-500" />
+                <Sparkles className="size-4 text-secondary" />
                 Déroulé des jus de votre cure
               </h3>
               <span className="text-xs font-medium text-muted-foreground">
@@ -207,8 +211,8 @@ export function ProgramDetailModal({
                     onClick={() => setSelectedDayIndex(index)}
                     className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-600 text-white shadow-lg scale-102 ring-2 ring-emerald-400/50'
-                        : 'bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:border-emerald-500/40'
+                        ? 'bg-primary text-primary-foreground shadow-md scale-102 ring-2 ring-primary/40'
+                        : 'bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/40'
                     }`}
                   >
                     <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
@@ -222,21 +226,24 @@ export function ProgramDetailModal({
 
             {/* Featured Juice Card for Selected Day */}
             {currentDayItem && (
-              <div className="rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-card to-emerald-500/5 overflow-hidden shadow-lg transition-all duration-300">
+              <div className="rounded-3xl border border-primary/20 bg-card overflow-hidden shadow-lg transition-all duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-5">
                   {/* Juice Photo */}
                   <div className="md:col-span-2 relative min-h-[220px] md:min-h-full overflow-hidden bg-muted">
                     <img
                       src={currentDayItem.cocktailImage || currentDayItem.imageUrl || program.imageUrl}
                       alt={currentDayItem.cocktailName || currentDayItem.juiceName}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                      }}
                       className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3 text-white">
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
                         {currentDayItem.focus || 'Prescription quotidienne'}
                       </span>
-                      <p className="text-base font-black leading-snug mt-1">
+                      <p className="text-base font-bold leading-snug mt-1">
                         {currentDayItem.cocktailName || currentDayItem.juiceName}
                       </p>
                     </div>
@@ -246,7 +253,7 @@ export function ProgramDetailModal({
                   <div className="md:col-span-3 p-5 sm:p-6 flex flex-col justify-between space-y-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                           <TimingIcon className="size-3.5" />
                           {timingLabel}
                         </span>
@@ -256,7 +263,7 @@ export function ProgramDetailModal({
                       </div>
 
                       {currentDayItem.tasteProfile && (
-                        <p className="text-xs italic text-muted-foreground bg-muted/30 p-2.5 rounded-xl border border-border/40">
+                        <p className="text-xs italic text-muted-foreground bg-muted/40 p-2.5 rounded-xl border border-border/40">
                           « {currentDayItem.tasteProfile} »
                         </p>
                       )}
@@ -264,15 +271,15 @@ export function ProgramDetailModal({
                       {/* Ingredients Chips */}
                       <div>
                         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">
-                          Fruits & plantes bio pressés :
+                          Fruits et plantes bruts pressés :
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                           {(currentDayItem.fruitNames || currentDayItem.fruits || []).map((f, fi) => (
                             <span
                               key={fi}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border border-emerald-500/20 shadow-2xs"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-foreground border border-primary/20"
                             >
-                              <Leaf className="size-3 text-emerald-600" />
+                              <Leaf className="size-3 text-primary" />
                               {f}
                             </span>
                           ))}
@@ -281,12 +288,12 @@ export function ProgramDetailModal({
 
                       {/* NutriFYS Advice Box */}
                       {(currentDayItem.advice || currentDayItem.nutrifysAdvice) && (
-                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-950 dark:text-amber-200 space-y-1">
-                          <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-bold text-xs">
-                            <Sparkles className="size-3.5 text-amber-500" />
+                        <div className="p-3.5 rounded-2xl bg-secondary/10 border border-secondary/20 text-foreground space-y-1">
+                          <div className="flex items-center gap-1.5 text-secondary font-bold text-xs">
+                            <Sparkles className="size-3.5" />
                             <span>Conseil NutriFYS pour ce jour</span>
                           </div>
-                          <p className="text-xs leading-relaxed">
+                          <p className="text-xs leading-relaxed text-muted-foreground">
                             {currentDayItem.advice || currentDayItem.nutrifysAdvice}
                           </p>
                         </div>
@@ -300,12 +307,12 @@ export function ProgramDetailModal({
 
           {/* Active Program Alert if already enrolled in another */}
           {hasActiveProgram && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3 text-xs">
-              <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-secondary/10 border border-secondary/25 text-foreground flex items-start gap-3 text-xs">
+              <AlertCircle className="size-4 text-secondary shrink-0 mt-0.5" />
               <div>
-                <strong>Vous suivez actuellement :</strong> « {activeProgramTitle} ».
+                <strong className="text-foreground">Vous suivez actuellement :</strong> « {activeProgramTitle} ».
                 <p className="text-muted-foreground mt-0.5">
-                  Pour préserver l'efficacité biologique de votre organisme, nous vous conseillons de terminer votre cure actuelle avant d'en entamer une nouvelle.
+                  Pour préserver l'efficacité biologique de votre cure, nous vous conseillons de la terminer avant d'en entamer une nouvelle.
                 </p>
               </div>
             </div>
@@ -323,8 +330,8 @@ export function ProgramDetailModal({
                   onClick={() => setStartingToday(true)}
                   className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     startingToday
-                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 shadow-sm ring-1 ring-emerald-500'
-                      : 'border-border/60 bg-background text-muted-foreground hover:border-border'
+                      ? 'border-primary bg-primary/10 text-foreground shadow-xs ring-1 ring-primary'
+                      : 'border-border/60 bg-card text-muted-foreground hover:border-border'
                   }`}
                 >
                   <span className="block font-bold text-sm text-foreground mb-0.5">
@@ -338,8 +345,8 @@ export function ProgramDetailModal({
                   onClick={() => setStartingToday(false)}
                   className={`p-3.5 rounded-2xl text-left border text-xs transition-all cursor-pointer ${
                     !startingToday
-                      ? 'border-emerald-600 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 shadow-sm ring-1 ring-emerald-500'
-                      : 'border-border/60 bg-background text-muted-foreground hover:border-border'
+                      ? 'border-primary bg-primary/10 text-foreground shadow-xs ring-1 ring-primary'
+                      : 'border-border/60 bg-card text-muted-foreground hover:border-border'
                   }`}
                 >
                   <span className="block font-bold text-sm text-foreground mb-0.5">
@@ -352,7 +359,7 @@ export function ProgramDetailModal({
           )}
 
           {/* Pack WhatsApp Order CTA Box */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600/10 via-teal-600/10 to-transparent border border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-foreground">
                 Besoin de vous faire livrer les jus frais à domicile ?
@@ -365,7 +372,7 @@ export function ProgramDetailModal({
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-md transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all shrink-0 cursor-pointer"
             >
               <MessageCircle className="size-4" />
               Commander le pack ({packPrice.toLocaleString()} XAF)
@@ -373,7 +380,7 @@ export function ProgramDetailModal({
           </div>
         </div>
 
-        {/* ── Footer Actions ── */}
+        {/* Footer Actions */}
         <div className="p-5 bg-card border-t border-border/60 flex items-center justify-between gap-3">
           <Button variant="ghost" onClick={onClose} disabled={isEnrolling} className="text-xs cursor-pointer">
             Fermer
@@ -383,7 +390,7 @@ export function ProgramDetailModal({
             <Button
               onClick={handleEnrollClick}
               disabled={isEnrolling}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs h-11 px-7 rounded-xl shadow-lg transition-all active:scale-98 cursor-pointer"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 px-7 rounded-xl shadow-md transition-all active:scale-98 cursor-pointer"
             >
               {isEnrolling ? (
                 <>
