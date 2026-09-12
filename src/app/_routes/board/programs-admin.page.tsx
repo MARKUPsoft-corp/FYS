@@ -24,6 +24,14 @@ import {
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useAuthStore } from '@/stores/auth';
 import { AdminProgramEditModal } from '@/components/features/programs/AdminProgramEditModal';
 import {
   getProgramsSettings,
@@ -34,6 +42,9 @@ import {
   deleteProgram,
   seedDefaultPrograms,
   getAllUserPrograms,
+  subscribeToAllUserPrograms,
+  adminValidateProgramDay,
+  adminUnvalidateProgramDay,
 } from '@/services/program';
 import { getFruits } from '@/services/fruit';
 import { uploadProgramImage } from '@/services/storage';
@@ -49,6 +60,7 @@ type Tab = 'showcase' | 'cures' | 'subscribers';
 
 const ProgramsAdminPage: PageComponent = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('cures');
 
   // Showcase settings state
@@ -70,6 +82,8 @@ const ProgramsAdminPage: PageComponent = () => {
   // Subscribers state
   const [subscribers, setSubscribers] = useState<UserProgram[]>([]);
   const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [selectedSubscriber, setSelectedSubscriber] = useState<UserProgram | null>(null);
+  const [actionLoadingDay, setActionLoadingDay] = useState<number | null>(null);
 
   // Notification feedback
   const [statusFeedback, setStatusFeedback] = useState<{
@@ -122,10 +136,45 @@ const ProgramsAdminPage: PageComponent = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'subscribers') {
-      loadSubscribers();
-    }
+    if (activeTab !== 'subscribers') return;
+    setSubscribersLoading(true);
+    const unsubscribe = subscribeToAllUserPrograms(
+      (list) => {
+        setSubscribers(list);
+        setSubscribersLoading(false);
+      },
+      (err) => {
+        console.error('[ProgramsAdmin] Error in real-time subscribers sync:', err);
+        setSubscribersLoading(false);
+      }
+    );
+    return () => unsubscribe();
   }, [activeTab]);
+
+  const handleAdminValidateDay = async (userProgramId: string, dayNumber: number) => {
+    setActionLoadingDay(dayNumber);
+    try {
+      const adminName = user?.displayName || user?.email || 'Administrateur FYS';
+      await adminValidateProgramDay(userProgramId, dayNumber, adminName);
+      showFeedback('success', `Jour ${dayNumber} validé avec succès.`);
+    } catch (err: any) {
+      showFeedback('error', err.message || 'Erreur lors de la validation du jour.');
+    } finally {
+      setActionLoadingDay(null);
+    }
+  };
+
+  const handleAdminUnvalidateDay = async (userProgramId: string, dayNumber: number) => {
+    setActionLoadingDay(dayNumber);
+    try {
+      await adminUnvalidateProgramDay(userProgramId, dayNumber);
+      showFeedback('success', `Validation du jour ${dayNumber} annulée.`);
+    } catch (err: any) {
+      showFeedback('error', err.message || 'Erreur lors de l’annulation.');
+    } finally {
+      setActionLoadingDay(null);
+    }
+  };
 
   // Handle Hero Image Upload
   const handleHeroImageUpload = async (
@@ -752,6 +801,7 @@ const ProgramsAdminPage: PageComponent = () => {
                         <th className="py-3 px-3">Progression</th>
                         <th className="py-3 px-3">Date de début</th>
                         <th className="py-3 px-3">Statut</th>
+                        <th className="py-3 px-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
@@ -804,6 +854,17 @@ const ProgramsAdminPage: PageComponent = () => {
                                   : 'En cours'}
                               </span>
                             </td>
+                            <td className="py-3 px-3 text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedSubscriber(sub)}
+                                className="h-8 rounded-xl text-xs font-bold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+                              >
+                                <Eye className="size-3.5" />
+                                <span>Gérer les jours</span>
+                              </Button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -813,6 +874,159 @@ const ProgramsAdminPage: PageComponent = () => {
               )}
             </div>
           </section>
+        )}
+
+        {/* Modal Admin Inspection & Day Validation for Subscriber */}
+        {selectedSubscriber && (
+          <Dialog
+            open={!!selectedSubscriber}
+            onOpenChange={(open) => !open && setSelectedSubscriber(null)}
+          >
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-6 rounded-3xl border-primary/20 bg-background/95 backdrop-blur-xl">
+              <DialogHeader>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    <Sparkles className="size-3 inline mr-1" />
+                    Suivi FYS Programme
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      (subscribers.find((s) => s.id === selectedSubscriber.id)?.status || selectedSubscriber.status) === 'completed'
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-primary/15 text-primary'
+                    }`}
+                  >
+                    {(subscribers.find((s) => s.id === selectedSubscriber.id)?.status || selectedSubscriber.status) === 'completed'
+                      ? 'Cure terminée'
+                      : 'Cure en cours'}
+                  </span>
+                </div>
+                <DialogTitle className="text-xl font-display font-bold text-foreground">
+                  Suivi de cure : {selectedSubscriber.userName || selectedSubscriber.userEmail || `User ${selectedSubscriber.userId.slice(0, 6)}`}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Cure &laquo; {selectedSubscriber.programTitle} &raquo; &middot; {selectedSubscriber.durationDays} jours &middot; Démarré le {new Date(selectedSubscriber.startDate).toLocaleDateString('fr-FR')}
+                </DialogDescription>
+              </DialogHeader>
+
+              {(() => {
+                const liveSub = subscribers.find((s) => s.id === selectedSubscriber.id) || selectedSubscriber;
+                const completedCheckins = liveSub.checkins || [];
+                const duration = liveSub.durationDays || 7;
+                const progressPct = Math.min(100, Math.round((completedCheckins.length / duration) * 100));
+
+                return (
+                  <div className="space-y-6 mt-4">
+                    {/* Progress summary card */}
+                    <div className="p-4 rounded-2xl bg-muted/50 border border-border/60 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-muted-foreground">Régularité et avancement</span>
+                        <span className="text-foreground">
+                          {completedCheckins.length} / {duration} jours validés ({progressPct}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Days grid */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Validation des jours de cure
+                        </h4>
+                        <span className="text-[11px] text-muted-foreground">
+                          Mise à jour en temps réel
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {Array.from({ length: duration }).map((_, idx) => {
+                          const dayNum = idx + 1;
+                          const checkin = completedCheckins.find(
+                            (c) => (c.dayNumber || c.day) === dayNum
+                          );
+                          const isValidated = !!checkin;
+                          const isLoadingThisDay = actionLoadingDay === dayNum;
+
+                          return (
+                            <div
+                              key={dayNum}
+                              className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                isValidated
+                                  ? 'bg-emerald-500/5 border-emerald-500/30'
+                                  : 'bg-card border-border/60'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-foreground">
+                                    Jour {dayNum}
+                                  </span>
+                                  {isValidated ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                      <CheckCircle2 className="size-3" /> Validé
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground">
+                                      En attente
+                                    </span>
+                                  )}
+                                </div>
+                                {isValidated && checkin.completedAt && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                                    Le {new Date(checkin.completedAt).toLocaleDateString('fr-FR')} {checkin.note || checkin.notes ? `· ${checkin.note || checkin.notes}` : ''}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="shrink-0">
+                                {isValidated ? (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={isLoadingThisDay}
+                                    onClick={() => handleAdminUnvalidateDay(liveSub.id, dayNum)}
+                                    className="h-8 px-2.5 text-[11px] font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                                  >
+                                    {isLoadingThisDay ? (
+                                      <Loader2 className="size-3 animate-spin" />
+                                    ) : (
+                                      'Annuler'
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    disabled={isLoadingThisDay}
+                                    onClick={() => handleAdminValidateDay(liveSub.id, dayNum)}
+                                    className="h-8 px-3 text-[11px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-xs transition-all cursor-pointer gap-1"
+                                  >
+                                    {isLoadingThisDay ? (
+                                      <Loader2 className="size-3 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="size-3" />
+                                        <span>Valider</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Modal Create/Edit Cure */}

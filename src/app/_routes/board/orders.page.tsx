@@ -2,7 +2,7 @@ import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
   ShoppingBag, Package, Clock, Loader2, Phone, Mail,
   CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
-  CalendarDays, Search, Navigation, Trash2, Printer, Plus, Minus,
+  CalendarDays, Calendar, Search, Navigation, Trash2, Printer, Plus, Minus,
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
@@ -153,6 +153,8 @@ function OrderCard({
   onClick: () => void;
 }) {
   const { t } = useTranslation();
+  const isProgram = order.type === 'program';
+
   return (
     <div
       onClick={onClick}
@@ -160,7 +162,18 @@ function OrderCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-display font-bold text-foreground truncate">{order.cocktailNameSnapshot}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-display font-bold text-foreground truncate">
+              {isProgram
+                ? (order.programTitleSnapshot || order.cocktailNameSnapshot || 'Cure FYS Programme')
+                : order.cocktailNameSnapshot}
+            </p>
+            {isProgram && (
+              <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="size-3" /> FYS Programme · {order.programDurationDays || 7} jours
+              </span>
+            )}
+          </div>
           {showCustomer && (
             <p className="text-xs font-semibold text-primary truncate mt-0.5">{order.userNameSnapshot}</p>
           )}
@@ -168,40 +181,60 @@ function OrderCard({
             <Clock className="size-3" />
             {formatDate(order.createdAt as unknown as { seconds: number })}
           </p>
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-            {order.hasAddedSugar ? (
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-                🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+
+          {isProgram ? (
+            <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-muted font-medium text-[11px]">
+                Objectif : {order.programGoal || 'Vitalité'}
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
-                🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
-              </span>
-            )}
-          </div>
-          {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
-            const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot);
-            return (
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
-                {mainFruits.length > 0 && (
-                  <span className="text-muted-foreground font-medium flex items-center gap-1">
-                    🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+              {order.startingDate && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-muted font-medium text-[11px]">
+                  Début : {order.startingDate}
+                </span>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                {order.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
                   </span>
-                )}
-                {supplements.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
-                    🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                    🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
                   </span>
                 )}
               </div>
-            );
-          })()}
+              {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
+                const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot);
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
+                    {mainFruits.length > 0 && (
+                      <span className="text-muted-foreground font-medium flex items-center gap-1">
+                        🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                      </span>
+                    )}
+                    {supplements.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
+                        🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </div>
         <StatusBadge status={order.status} />
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {order.orderLines?.length ? (
+        {isProgram ? (
+          <span>
+            Pack cure complète · {order.programBottlesTotal || order.quantity} flacons frais inclus
+          </span>
+        ) : order.orderLines?.length ? (
           order.orderLines.map((line, i) => (
             <span key={i}>
               {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
@@ -209,22 +242,23 @@ function OrderCard({
             </span>
           ))
         ) : (
-          // Legacy: pour les anciennes commandes sans orderLines
           <>
             {t('orders.bottleCount', { count: order.quantity })}
             {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
           </>
         )}
-        {' · '}
-        {order.orderLines?.length ? (
-          order.orderLines.map((line, i) => (
-            <span key={i}>
-              {line.pricePerBottle.toLocaleString()} XAF
-              {i < order.orderLines.length - 1 ? ' + ' : ''}
-            </span>
-          ))
-        ) : (
-          `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
+        {!isProgram && ' · '}
+        {!isProgram && (
+          order.orderLines?.length ? (
+            order.orderLines.map((line, i) => (
+              <span key={i}>
+                {line.pricePerBottle.toLocaleString()} XAF
+                {i < order.orderLines.length - 1 ? ' + ' : ''}
+              </span>
+            ))
+          ) : (
+            `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
+          )
         )}
       </p>
 
@@ -233,6 +267,80 @@ function OrderCard({
         <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
           {t('orders.details')} <ChevronRight className="size-3.5" />
         </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Program Info Block ────────────────────────────────────────────────────────
+
+function ProgramInfoBlock({
+  order,
+  isAdmin,
+}: {
+  order: Order;
+  isAdmin?: boolean;
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+        Détails de la cure FYS Programme
+      </p>
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 mb-1.5">
+              <Sparkles className="size-3" /> FYS Programme
+            </span>
+            <h4 className="font-display font-bold text-base text-foreground">
+              {order.programTitleSnapshot || order.cocktailNameSnapshot || 'Cure FYS Programme'}
+            </h4>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-xs font-bold text-foreground block">
+              {order.programDurationDays || 7} jours
+            </span>
+            <span className="text-[11px] text-muted-foreground block">
+              {order.programBottlesTotal || order.quantity} flacons
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2.5 rounded-xl bg-background/80 border border-border/40">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Objectif</p>
+            <p className="font-bold text-foreground mt-0.5 capitalize">{order.programGoal || 'Vitalité'}</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-background/80 border border-border/40">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Début prévu</p>
+            <p className="font-bold text-foreground mt-0.5">{order.startingDate || 'Immédiat'}</p>
+          </div>
+        </div>
+
+        {isAdmin ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/board/programs-admin')}
+            className="w-full text-xs font-bold rounded-xl gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+          >
+            <Calendar className="size-3.5" />
+            Accéder au suivi des abonnés FYS Programme
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/board/programs')}
+            className="w-full text-xs font-bold rounded-xl gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+          >
+            <Sparkles className="size-3.5" />
+            Suivre ma cure dans FYS Programme
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -506,12 +614,16 @@ function ClientOrderSheet({
       <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
 
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
-          <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
+          <SheetTitle className="font-display text-xl font-bold">{order.programTitleSnapshot || order.cocktailNameSnapshot}</SheetTitle>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <p className="text-[13px] text-muted-foreground">
               {t('orders.orderFrom', { date: formatDate(order.createdAt as unknown as { seconds: number }) })}
             </p>
-            {order.hasAddedSugar ? (
+            {order.type === 'program' ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="size-3" /> FYS Programme · {order.programDurationDays || 7} jours
+              </span>
+            ) : order.hasAddedSugar ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
                 🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
               </span>
@@ -589,18 +701,22 @@ function ClientOrderSheet({
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
-          {/* Cocktail info */}
-          <CocktailInfoBlock
-            cocktail={cocktail}
-            loading={cocktailLoading}
-            orderImageUrl={order.cocktailImageSnapshot}
-            orderFruitImages={order.ingredientImageSnapshots}
-            clientName={order.userNameSnapshot}
-            cocktailNameFallback={order.cocktailNameSnapshot}
-            hasAddedSugar={order.hasAddedSugar}
-            ingredientsSnapshot={order.cocktailIngredientsSnapshot}
-            orderAnalysisSnapshot={order.aiAnalysisSnapshot}
-          />
+          {/* Cocktail or Program info */}
+          {order.type === 'program' ? (
+            <ProgramInfoBlock order={order} isAdmin={false} />
+          ) : (
+            <CocktailInfoBlock
+              cocktail={cocktail}
+              loading={cocktailLoading}
+              orderImageUrl={order.cocktailImageSnapshot}
+              orderFruitImages={order.ingredientImageSnapshots}
+              clientName={order.userNameSnapshot}
+              cocktailNameFallback={order.cocktailNameSnapshot}
+              hasAddedSugar={order.hasAddedSugar}
+              ingredientsSnapshot={order.cocktailIngredientsSnapshot}
+              orderAnalysisSnapshot={order.aiAnalysisSnapshot}
+            />
+          )}
 
           {/* Status actuel */}
           <div className="flex items-center justify-between">
@@ -718,73 +834,90 @@ function ClientOrderSheet({
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.summary')}</p>
             <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">Cocktail</span>
-                <span className="text-[13px] font-semibold text-foreground">{order.cocktailNameSnapshot}</span>
+                <span className="text-[13px] text-muted-foreground">{order.type === 'program' ? 'Programme' : 'Cocktail'}</span>
+                <span className="text-[13px] font-semibold text-foreground">{order.programTitleSnapshot || order.cocktailNameSnapshot}</span>
               </div>
-              {(() => {
-                const ings = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
-                if (!ings.length) return null;
-                const { mainFruits, supplements } = partitionCocktailIngredients(ings, fruits);
-                return (
-                  <div className="px-4 py-3 space-y-1.5 bg-muted/20">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      {t('orders.ingredients', 'Composition')}
-                    </span>
-                    {mainFruits.length > 0 && (
-                      <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
-                        <span className="text-muted-foreground shrink-0">🍓 {t('orders.mainFruits', 'Fruits')} :</span>
-                        <span>{mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
-                      </p>
-                    )}
-                    {supplements.length > 0 && (
-                      <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
-                        <span className="font-semibold shrink-0">🌿 {t('orders.supplements', 'Suppléments')} :</span>
-                        <span>{supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-              {order.orderLines?.length ? (
+              {order.type === 'program' ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
-                    <div className="text-right space-y-1">
-                      {order.orderLines.map((line, i) => (
-                        <p key={i} className="text-[13px] font-semibold text-foreground">
-                          {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
-                        </p>
-                      ))}
-                    </div>
+                    <span className="text-[13px] text-muted-foreground">Pack cure</span>
+                    <span className="text-[13px] font-semibold text-primary">{order.programDurationDays || 7} jours ({order.programBottlesTotal || order.quantity} flacons)</span>
                   </div>
-                  {order.orderLines.map((line, i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">
-                        {line.quantity} × {line.pricePerBottle.toLocaleString()} XAF ({line.bottleSizeLabel})
-                      </span>
-                      <span className="text-[13px] font-semibold text-foreground">
-                        {line.lineTotal.toLocaleString()} XAF
-                      </span>
+                  {order.startingDate && (
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">Date de début</span>
+                      <span className="text-[13px] font-semibold text-foreground">{order.startingDate}</span>
                     </div>
-                  ))}
+                  )}
                 </>
               ) : (
                 <>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {t('orders.bottleCount', { count: order.quantity })}
-                      {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">
-                      {order.quantity} × {order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF
-                    </span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {((order.cocktailPriceSnapshot || 0) * (order.quantity || 0)).toLocaleString()} XAF
-                    </span>
-                  </div>
+                  {(() => {
+                    const ings = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                    if (!ings.length) return null;
+                    const { mainFruits, supplements } = partitionCocktailIngredients(ings, fruits);
+                    return (
+                      <div className="px-4 py-3 space-y-1.5 bg-muted/20">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                          {t('orders.ingredients', 'Composition')}
+                        </span>
+                        {mainFruits.length > 0 && (
+                          <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
+                            <span className="text-muted-foreground shrink-0">🍓 {t('orders.mainFruits', 'Fruits')} :</span>
+                            <span>{mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
+                          </p>
+                        )}
+                        {supplements.length > 0 && (
+                          <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
+                            <span className="font-semibold shrink-0">🌿 {t('orders.supplements', 'Suppléments')} :</span>
+                            <span>{supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {order.orderLines?.length ? (
+                    <>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
+                        <div className="text-right space-y-1">
+                          {order.orderLines.map((line, i) => (
+                            <p key={i} className="text-[13px] font-semibold text-foreground">
+                              {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                      {order.orderLines.map((line, i) => (
+                        <div key={i} className="flex items-center justify-between px-4 py-3">
+                          <span className="text-[13px] text-muted-foreground">
+                            {line.quantity} × {line.pricePerBottle.toLocaleString()} XAF ({line.bottleSizeLabel})
+                          </span>
+                          <span className="text-[13px] font-semibold text-foreground">
+                            {line.lineTotal.toLocaleString()} XAF
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
+                        <span className="text-[13px] font-semibold text-foreground">
+                          {t('orders.bottleCount', { count: order.quantity })}
+                          {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[13px] text-muted-foreground">
+                          {order.quantity} × {order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF
+                        </span>
+                        <span className="text-[13px] font-semibold text-foreground">
+                          {((order.cocktailPriceSnapshot || 0) * (order.quantity || 0)).toLocaleString()} XAF
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               <div className="flex items-center justify-between px-4 py-3">
@@ -960,12 +1093,16 @@ function AdminOrderSheet({
         <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
             <div className="flex items-start justify-between gap-2">
             <div>
-              <SheetTitle className="font-display text-xl font-bold">{order.cocktailNameSnapshot}</SheetTitle>
+              <SheetTitle className="font-display text-xl font-bold">{order.programTitleSnapshot || order.cocktailNameSnapshot}</SheetTitle>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-[13px] text-muted-foreground">
                   {formatDate(order.createdAt as unknown as { seconds: number })}
                 </p>
-                {order.hasAddedSugar ? (
+                {order.type === 'program' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
+                    <Sparkles className="size-3" /> FYS Programme · {order.programDurationDays || 7} jours
+                  </span>
+                ) : order.hasAddedSugar ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
                     🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
                   </span>
@@ -1045,18 +1182,22 @@ function AdminOrderSheet({
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
 
-          {/* Cocktail info */}
-          <CocktailInfoBlock
-            cocktail={cocktail}
-            loading={cocktailLoading}
-            orderImageUrl={order.cocktailImageSnapshot}
-            orderFruitImages={order.ingredientImageSnapshots}
-            clientName={order.userNameSnapshot}
-            cocktailNameFallback={order.cocktailNameSnapshot}
-            hasAddedSugar={order.hasAddedSugar}
-            ingredientsSnapshot={order.cocktailIngredientsSnapshot}
-            orderAnalysisSnapshot={order.aiAnalysisSnapshot}
-          />
+          {/* Cocktail or Program info */}
+          {order.type === 'program' ? (
+            <ProgramInfoBlock order={order} isAdmin={true} />
+          ) : (
+            <CocktailInfoBlock
+              cocktail={cocktail}
+              loading={cocktailLoading}
+              orderImageUrl={order.cocktailImageSnapshot}
+              orderFruitImages={order.ingredientImageSnapshots}
+              clientName={order.userNameSnapshot}
+              cocktailNameFallback={order.cocktailNameSnapshot}
+              hasAddedSugar={order.hasAddedSugar}
+              ingredientsSnapshot={order.cocktailIngredientsSnapshot}
+              orderAnalysisSnapshot={order.aiAnalysisSnapshot}
+            />
+          )}
 
           {/* Contact client */}
           <div className="space-y-3">
@@ -1362,7 +1503,30 @@ function AdminOrderSheet({
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.details')}</p>
             <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-              {order.orderLines?.length ? (
+              {order.type === 'program' ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Type de commande</span>
+                    <span className="text-[13px] font-semibold text-primary">Cure FYS Programme ({order.programDurationDays || 7} jours)</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Flacons inclus</span>
+                    <span className="text-[13px] font-semibold text-foreground">{order.programBottlesTotal || order.quantity} flacons</span>
+                  </div>
+                  {order.startingDate && (
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[13px] text-muted-foreground">Date de début</span>
+                      <span className="text-[13px] font-semibold text-foreground">{order.startingDate}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[13px] text-muted-foreground">Prix pack cure</span>
+                    <span className="text-[13px] font-semibold text-foreground">
+                      {(order.totalPrice - (order.deliveryFee || 0) + (order.discountAmount || 0)).toLocaleString()} XAF
+                    </span>
+                  </div>
+                </>
+              ) : order.orderLines?.length ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
@@ -1528,6 +1692,28 @@ const Orders: PageComponent = () => {
   const closeHistoryParam = useCloseHistoryParam();
   const isAdmin = user?.role === UserRole.ADMIN;
 
+  const tabParam = searchParams.get('tab');
+  const [orderTypeTab, setOrderTypeTab] = useState<'classic' | 'program'>(
+    tabParam === 'programs' || tabParam === 'program' ? 'program' : 'classic'
+  );
+
+  useEffect(() => {
+    if (tabParam === 'programs' || tabParam === 'program') {
+      setOrderTypeTab('program');
+    } else if (tabParam === 'classic') {
+      setOrderTypeTab('classic');
+    }
+  }, [tabParam]);
+
+  function handleTabChange(tab: 'classic' | 'program') {
+    setOrderTypeTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab === 'program' ? 'programs' : 'classic');
+      return next;
+    }, { replace: true });
+  }
+
   const [filterStatus, setFilterStatus] = useState<'all' | OrderStatus>('all');
   const [periodType, setPeriodType] = useState<PeriodType>('all');
   const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
@@ -1588,21 +1774,35 @@ const Orders: PageComponent = () => {
     [orders, periodType, periodAnchor],
   );
 
+  const classicOrdersCount = useMemo(
+    () => periodOrders.filter((o) => o.type !== 'program').length,
+    [periodOrders]
+  );
+  const programOrdersCount = useMemo(
+    () => periodOrders.filter((o) => o.type === 'program').length,
+    [periodOrders]
+  );
+
   const visible = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return periodOrders.filter((o) => {
+      const isProg = o.type === 'program';
+      if (orderTypeTab === 'program' && !isProg) return false;
+      if (orderTypeTab === 'classic' && isProg) return false;
+
       if (filterStatus !== 'all' && o.status !== filterStatus) return false;
       if (!q) return true;
       return (
-        o.cocktailNameSnapshot.toLowerCase().includes(q) ||
-        o.userNameSnapshot.toLowerCase().includes(q) ||
+        (o.cocktailNameSnapshot?.toLowerCase().includes(q) ?? false) ||
+        (o.programTitleSnapshot?.toLowerCase().includes(q) ?? false) ||
+        (o.userNameSnapshot?.toLowerCase().includes(q) ?? false) ||
         (o.userEmailSnapshot?.toLowerCase().includes(q) ?? false) ||
         (o.userPhoneSnapshot?.toLowerCase().includes(q) ?? false) ||
         (o.deliveryDetails?.phone?.toLowerCase().includes(q) ?? false) ||
         o.id.toLowerCase().includes(q)
       );
     });
-  }, [periodOrders, filterStatus, searchQuery]);
+  }, [periodOrders, orderTypeTab, filterStatus, searchQuery]);
 
   const periodLabel = formatPeriodLabel(periodType, periodAnchor);
 
@@ -1635,8 +1835,49 @@ const Orders: PageComponent = () => {
         imageUrl={heroImageUrl}
         heroExtra={heroExtra}
       >
-        {/* Period + status filters (admin & client) */}
         <div className="space-y-6">
+          {/* Tabs: Commandes classiques vs Commandes programmes */}
+          <div className="p-1.5 rounded-2xl bg-card/80 backdrop-blur-md border border-border/60 shadow-sm flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleTabChange('classic')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                orderTypeTab === 'classic'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              <ShoppingBag className="size-4 shrink-0" />
+              <span>{t('orders.tabs.classic', 'Commandes classiques')}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                orderTypeTab === 'classic'
+                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {classicOrdersCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('program')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                orderTypeTab === 'program'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              <Calendar className="size-4 shrink-0" />
+              <span>{t('orders.tabs.programs', 'Commandes programmes')}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                orderTypeTab === 'program'
+                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {programOrdersCount}
+              </span>
+            </button>
+          </div>
         <div  className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
@@ -1733,11 +1974,13 @@ const Orders: PageComponent = () => {
                   {label}
                   {value !== 'all' && (
                     <span className="ml-1.5 opacity-60">
-                      {periodOrders.filter((o) => o.status === value).length}
+                      {periodOrders.filter((o) => (orderTypeTab === 'program' ? o.type === 'program' : o.type !== 'program') && o.status === value).length}
                     </span>
                   )}
                   {value === 'all' && periodType !== 'all' && (
-                    <span className="ml-1.5 opacity-60">{periodOrders.length}</span>
+                    <span className="ml-1.5 opacity-60">
+                      {orderTypeTab === 'program' ? programOrdersCount : classicOrdersCount}
+                    </span>
                   )}
                 </button>
               ))}
@@ -1784,6 +2027,8 @@ const Orders: PageComponent = () => {
             <p className="text-sm font-semibold text-foreground">
               {filterStatus !== 'all' || periodType !== 'all'
                 ? t('orders.emptyFilter')
+                : orderTypeTab === 'program'
+                ? 'Aucune commande de cure trouvée'
                 : t('orders.emptyAll')}
             </p>
             {(filterStatus !== 'all' || periodType !== 'all') && (
@@ -1797,16 +2042,28 @@ const Orders: PageComponent = () => {
             )}
             {!isAdmin && filterStatus === 'all' && periodType === 'all' && (
               <>
-                <p className="text-xs text-muted-foreground max-w-[200px]">
-                  {t('orders.exploreText')}
+                <p className="text-xs text-muted-foreground max-w-[240px]">
+                  {orderTypeTab === 'program'
+                    ? 'Découvrez nos packs de cures détox, énergie et vitalité avec accompagnement quotidien.'
+                    : t('orders.exploreText')}
                 </p>
-                <Button
-                  className="rounded-full bg-secondary text-white font-bold hover:bg-secondary/90 px-8 mt-2 gap-2"
-                  size="sm"
-                  onClick={() => navigate('/board/catalogue')}
-                >
-                  <ShoppingBag className="size-4" /> {t('orders.exploreButton')}
-                </Button>
+                {orderTypeTab === 'program' ? (
+                  <Button
+                    className="rounded-full bg-primary text-primary-foreground font-bold hover:bg-primary/90 px-8 mt-2 gap-2 cursor-pointer"
+                    size="sm"
+                    onClick={() => navigate('/board/programs')}
+                  >
+                    <Sparkles className="size-4" /> Découvrir FYS Programme
+                  </Button>
+                ) : (
+                  <Button
+                    className="rounded-full bg-secondary text-white font-bold hover:bg-secondary/90 px-8 mt-2 gap-2 cursor-pointer"
+                    size="sm"
+                    onClick={() => navigate('/board/catalogue')}
+                  >
+                    <ShoppingBag className="size-4" /> {t('orders.exploreButton')}
+                  </Button>
+                )}
               </>
             )}
             {(filterStatus !== 'all' || periodType !== 'all') && (

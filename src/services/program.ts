@@ -513,3 +513,73 @@ export async function getAllUserPrograms(): Promise<UserProgram[]> {
   }
 }
 
+/**
+ * Listen to all user programs in real time for admin monitoring.
+ */
+export function subscribeToAllUserPrograms(
+  callback: (userPrograms: UserProgram[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.USER_PROGRAMS),
+    limit(100)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list: UserProgram[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as UserProgram);
+      });
+      list.sort((a, b) => new Date(b.startDate || b.createdAt).getTime() - new Date(a.startDate || a.createdAt).getTime());
+      callback(list);
+    },
+    (err) => {
+      console.error('[ProgramService] Error listening to all user programs:', err);
+      onError?.(err);
+    }
+  );
+}
+
+/**
+ * Admin action to validate a specific day of a user's program.
+ */
+export async function adminValidateProgramDay(
+  userProgramId: string,
+  dayNumber: number,
+  adminName: string = 'Administrateur'
+): Promise<void> {
+  const ref = doc(db, COLLECTIONS.USER_PROGRAMS, userProgramId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Programme utilisateur introuvable');
+
+  const up = { id: snap.id, ...snap.data() } as UserProgram;
+  await checkinProgramDay(up, dayNumber, `Validé par ${adminName}`);
+}
+
+/**
+ * Admin action to unvalidate a day of a user's program.
+ */
+export async function adminUnvalidateProgramDay(
+  userProgramId: string,
+  dayNumber: number
+): Promise<void> {
+  const ref = doc(db, COLLECTIONS.USER_PROGRAMS, userProgramId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Programme utilisateur introuvable');
+
+  const up = { id: snap.id, ...snap.data() } as UserProgram;
+  const filteredCheckins = (up.checkins || []).filter(
+    (c) => (c.dayNumber || c.day) !== dayNumber
+  );
+
+  const isCompleted = filteredCheckins.length >= up.durationDays;
+
+  await updateDoc(ref, {
+    checkins: sanitizeFirestore(filteredCheckins),
+    status: isCompleted ? 'completed' : 'active',
+  });
+}
+
+

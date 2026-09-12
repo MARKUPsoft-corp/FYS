@@ -76,6 +76,17 @@ export interface Order {
   aiAnalysisSnapshot?: AIAnalysis;
   /** Option sucre (false ou undefined = 100% naturel sans sucre) */
   hasAddedSugar?: boolean;
+  /** Type de commande : 'classic' (cocktails à la carte) ou 'program' (cure FYS Programme) */
+  type?: 'classic' | 'program';
+  /** Référence du programme si type === 'program' */
+  programId?: string;
+  programTitleSnapshot?: string;
+  programGoal?: string;
+  programDurationDays?: number;
+  programBottlesTotal?: number;
+  userProgramId?: string;
+  startingDate?: string;
+
   /** Image figée à la commande (catalogue ou fruit principal / collage source) */
   cocktailImageSnapshot?: string;
   /** Photos fruits figées pour collage si pas d'image cocktail */

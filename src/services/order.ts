@@ -12,7 +12,9 @@ import {
   type BottleSize,
   type Cocktail,
   type Order,
+  type OrderLine,
   type OrderExpenses,
+  type Program,
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
@@ -92,6 +94,7 @@ export async function createOrder(
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
+    type: 'classic',
     userId: user.uid,
     userNameSnapshot: user.name,
     userEmailSnapshot: user.email,
@@ -151,6 +154,110 @@ export async function createOrder(
     title: receivedTitle,
     message: customerBody,
     link: `/board/orders?order=${ref.id}`,
+  }).catch(console.error);
+
+  return ref.id;
+}
+
+export async function createProgramOrder(
+  user: UserInfo,
+  program: Program,
+  deliveryFee: number,
+  startingDate: string,
+  deliveryDetails?: { district: string; phone: string; instructions: string; coordinates?: { lat: number; lng: number } },
+  visuals?: { discountAmount?: number; promoCodeApplied?: string },
+  userProgramId?: string,
+): Promise<string> {
+  if (deliveryDetails && !deliveryDetails.district.trim()) {
+    throw new Error('Le quartier de livraison est requis.');
+  }
+
+  const cleanedDeliveryDetails = deliveryDetails ? {
+    district: deliveryDetails.district,
+    phone: deliveryDetails.phone,
+    instructions: deliveryDetails.instructions,
+    ...(deliveryDetails.coordinates?.lat != null && deliveryDetails.coordinates?.lng != null
+      ? { coordinates: { lat: deliveryDetails.coordinates.lat, lng: deliveryDetails.coordinates.lng } }
+      : {}
+    ),
+  } : undefined;
+
+  const bottleSize: BottleSize = (program.bottleSize as BottleSize) || '500ml';
+  const bottlesCount = program.bottlesTotal || program.durationDays || 3;
+  const pricePerBottle = Math.round(program.price / bottlesCount);
+
+  const orderLinesWithLabels: OrderLine[] = [
+    {
+      bottleSize,
+      bottleSizeLabel: BOTTLE_LABELS[bottleSize] || '500ml',
+      quantity: bottlesCount,
+      bottleBasePriceSnapshot: pricePerBottle,
+      pricePerBottle,
+      lineTotal: program.price,
+    },
+  ];
+
+  const totalPrice = Math.max(0, program.price + deliveryFee - (visuals?.discountAmount ?? 0));
+
+  const ref = doc(collection(db, COLLECTIONS.ORDERS));
+  const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
+    id: ref.id,
+    type: 'program',
+    userId: user.uid,
+    userNameSnapshot: user.name,
+    userEmailSnapshot: user.email,
+    ...(user.phone ? { userPhoneSnapshot: user.phone } : {}),
+    cocktailId: program.id,
+    cocktailNameSnapshot: `Cure ${program.title} (${program.durationDays} jours)`,
+    programId: program.id,
+    programTitleSnapshot: program.title,
+    programGoal: program.goal,
+    programDurationDays: program.durationDays,
+    programBottlesTotal: bottlesCount,
+    ...(userProgramId ? { userProgramId } : {}),
+    startingDate,
+    hasAddedSugar: false,
+    orderLines: orderLinesWithLabels,
+    deliveryFee,
+    totalPrice,
+    status: OrderStatus.PENDING,
+    ...(cleanedDeliveryDetails ? { deliveryDetails: cleanedDeliveryDetails } : {}),
+    ...(program.imageUrl ? { cocktailImageSnapshot: program.imageUrl } : {}),
+    ...(visuals?.discountAmount ? { discountAmount: visuals.discountAmount } : {}),
+    ...(visuals?.promoCodeApplied ? { promoCodeApplied: visuals.promoCodeApplied } : {}),
+  };
+
+  await setDoc(ref, {
+    ...order,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  const orderTitle = 'Nouvelle commande de cure !';
+  const receivedTitle = 'Commande de cure reçue !';
+  const orderBody = `${user.name} a commandé la cure "${program.title}" (${program.durationDays} jours - ${program.price.toLocaleString()} XAF).`;
+  const customerBody = `Votre commande pour la cure "${program.title}" (${program.durationDays} jours) a bien été enregistrée.`;
+
+  notifyAdmins({
+    title: orderTitle,
+    message: orderBody,
+    link: `/board/orders?tab=programs&order=${ref.id}`,
+  }).catch(console.error);
+
+  sendPushNotification({
+    title: orderTitle,
+    body: orderBody,
+    url: `/board/orders?tab=programs&order=${ref.id}`,
+    audience: 'admins',
+    tag: `order-new-${ref.id}`,
+    skipInApp: true,
+  }).catch(console.error);
+
+  createNotification({
+    userId: user.uid,
+    title: receivedTitle,
+    message: customerBody,
+    link: `/board/orders?tab=programs&order=${ref.id}`,
   }).catch(console.error);
 
   return ref.id;

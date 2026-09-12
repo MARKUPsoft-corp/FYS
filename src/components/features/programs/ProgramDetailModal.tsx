@@ -19,7 +19,7 @@ import {
   Shield,
   Sun,
   Coffee,
-  MessageCircle,
+  ShoppingBag,
   AlertCircle,
   Loader2,
   Check,
@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   Award,
 } from 'lucide-react';
+import { ProgramOrderSheet } from './ProgramOrderSheet';
 import {
   type Program,
   type ProgramDayItem,
@@ -86,11 +87,9 @@ export function ProgramDetailModal({
     await onEnroll(program, startingToday);
   };
 
+  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
+
   const packPrice = program.bundlePrice || program.price;
-  const whatsappMessage = encodeURIComponent(
-    `Bonjour FYS ! Je souhaite commander la cure complète "${program.title}" (${program.durationDays} jours, ${packPrice.toLocaleString()} XAF). Pouvez-vous organiser ma livraison ?`
-  );
-  const whatsappUrl = `https://wa.me/237699000000?text=${whatsappMessage}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -367,25 +366,24 @@ export function ProgramDetailModal({
             </div>
           )}
 
-          {/* Pack WhatsApp Order CTA Box */}
+          {/* Pack In-App Order CTA Box */}
           <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 overflow-hidden">
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-foreground break-words">
-                Besoin de vous faire livrer les jus frais à domicile ?
+                Recevez tous vos jus frais à domicile
               </p>
               <p className="text-[11px] text-muted-foreground break-words mt-0.5">
-                Commandez le pack de {program.durationDays} jus en une seule fois auprès de notre atelier.
+                Commandez le pack complet ({program.durationDays} jours, {program.days.reduce((acc, d) => acc + (d.bottleCount || 1), 0)} flacons) avec suivi en temps réel dans vos commandes.
               </p>
             </div>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
+            <Button
+              type="button"
+              onClick={() => setIsOrderSheetOpen(true)}
               className="w-full sm:w-auto justify-center inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all shrink-0 cursor-pointer text-center"
             >
-              <MessageCircle className="size-4 shrink-0" />
+              <ShoppingBag className="size-4 shrink-0" />
               <span className="truncate">Commander le pack ({packPrice.toLocaleString()} XAF)</span>
-            </a>
+            </Button>
           </div>
         </div>
 
@@ -416,6 +414,13 @@ export function ProgramDetailModal({
           )}
         </div>
       </DialogContent>
+
+      {/* In-App Program Order Sheet */}
+      <ProgramOrderSheet
+        program={program}
+        open={isOrderSheetOpen}
+        onOpenChange={setIsOrderSheetOpen}
+      />
     </Dialog>
   );
 }
