@@ -6,6 +6,7 @@ import {
   getRedirectResult,
   getAdditionalUserInfo,
   GoogleAuthProvider,
+  OAuthProvider,
   signOut as firebaseSignOut,
   updateProfile,
 } from 'firebase/auth';
@@ -17,9 +18,12 @@ import { UserRole } from '@/entities';
 import { trackEvent } from '@/lib/analytics';
 
 const googleProvider = new GoogleAuthProvider();
+const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('email');
+appleProvider.addScope('name');
 
 // Creates the Firestore user document at users/{uid}
-async function createUserDoc(uid: string, name: string, email: string) {
+export async function createUserDoc(uid: string, name: string, email: string) {
   await setDoc(doc(db, COLLECTIONS.USERS, uid), {
     uid,
     name,
@@ -30,8 +34,8 @@ async function createUserDoc(uid: string, name: string, email: string) {
   });
 }
 
-/** Crée le doc Firestore uniquement pour un tout premier compte Google. */
-async function createGoogleUserDocIfNew(credential: UserCredential) {
+/** Crée le doc Firestore uniquement pour un tout premier compte OAuth (Google / Apple). */
+async function createOAuthUserDocIfNew(credential: UserCredential, method: 'google' | 'apple') {
   const { user } = credential;
   const additionalUserInfo = getAdditionalUserInfo(credential);
   if (additionalUserInfo?.isNewUser) {
@@ -40,9 +44,9 @@ async function createGoogleUserDocIfNew(credential: UserCredential) {
       user.displayName ?? 'Utilisateur',
       user.email ?? '',
     );
-    trackEvent('sign_up', { method: 'google' });
+    trackEvent('sign_up', { method });
   } else {
-    trackEvent('login', { method: 'google' });
+    trackEvent('login', { method });
   }
 }
 
@@ -73,7 +77,7 @@ export async function loginWithGoogle() {
 
   try {
     const credential = await signInWithPopup(auth, googleProvider);
-    await createGoogleUserDocIfNew(credential);
+    await createOAuthUserDocIfNew(credential, 'google');
     return credential.user;
   } catch (err) {
     const code = (err as { code?: string })?.code ?? '';
@@ -94,25 +98,53 @@ export async function loginWithGoogle() {
 }
 
 /**
- * À appeler au retour de la redirection Google : crée le document Firestore
- * `users/{uid}` la première fois. Ne fait rien s'il n'y a pas de redirection
- * en attente. Si l'état de redirection a été perdu (sessionStorage
- * partitionné/vidé), on l'ignore proprement pour ne pas bloquer l'app.
+ * Connexion Apple : POPUP d'abord, avec bascule automatique vers la
+ * REDIRECTION si le popup est bloqué.
  */
-export async function consumeGoogleRedirect(): Promise<FirebaseUser | null> {
+export async function loginWithApple() {
+  await getRedirectResult(auth).catch(() => {});
+
+  try {
+    const credential = await signInWithPopup(auth, appleProvider);
+    await createOAuthUserDocIfNew(credential, 'apple');
+    return credential.user;
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    const popupBlocked =
+      code === 'auth/popup-blocked' ||
+      code === 'auth/cancelled-popup-request' ||
+      code === 'auth/operation-not-supported-in-this-environment' ||
+      code === 'auth/unauthorized-domain' ||
+      code === 'auth/redirect-operation-pending';
+
+    if (popupBlocked) {
+      await signInWithRedirect(auth, appleProvider);
+      return null;
+    }
+    throw err;
+  }
+}
+
+/**
+ * À appeler au retour de la redirection OAuth (Google ou Apple) : crée le document
+ * Firestore `users/{uid}` la première fois. Ne fait rien s'il n'y a pas de redirection
+ * en attente.
+ */
+export async function consumeOAuthRedirect(): Promise<FirebaseUser | null> {
   let credential: UserCredential | null = null;
   try {
     credential = await getRedirectResult(auth);
   } catch {
-    // "Unable to process request due to missing initial state" : l'état de
-    // redirection est inaccessible — on ne peut pas récupérer le résultat.
-    // L'utilisateur peut retenter (popup) ou utiliser email/mot de passe.
     return null;
   }
   if (!credential) return null;
-  await createGoogleUserDocIfNew(credential);
+  const providerId = credential.providerId || '';
+  const method = providerId.includes('apple') ? 'apple' : 'google';
+  await createOAuthUserDocIfNew(credential, method);
   return credential.user;
 }
+
+export const consumeGoogleRedirect = consumeOAuthRedirect;
 
 export async function signOut() {
   await firebaseSignOut(auth);
