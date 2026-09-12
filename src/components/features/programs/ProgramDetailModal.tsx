@@ -75,6 +75,7 @@ export function ProgramDetailModal({
 }: Props) {
   const [startingToday, setStartingToday] = useState(true);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
 
   if (!program) return null;
 
@@ -86,8 +87,6 @@ export function ProgramDetailModal({
   const handleEnrollClick = async () => {
     await onEnroll(program, startingToday);
   };
-
-  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
 
   const packPrice = program.bundlePrice || program.price;
 
