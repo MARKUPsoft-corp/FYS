@@ -20,7 +20,7 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 // ── Gemini init ───────────────────────────────────────────────────────────
-const genai = new GoogleGenerativeAI(process.env.RASENGAN_GEMINI_API_KEY as string);
+const genai = new GoogleGenerativeAI((process.env.GEMINI_API_KEY || process.env.RASENGAN_GEMINI_API_KEY) as string);
 const model = genai.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
 
 // ── Main Script ───────────────────────────────────────────────────────────
