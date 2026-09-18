@@ -8,7 +8,7 @@ import {
   CircleDollarSign,
   CalendarCheck,
   Building2,
-  Settings,
+  ChevronRight,
   Globe,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -195,10 +195,10 @@ export function Topbar() {
                 </Avatar>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-68 p-1.5 rounded-2xl shadow-xl border border-border/70">
                 <DropdownMenuItem
                   onClick={() => navigate('/board/profile')}
-                  className="flex items-center gap-3 cursor-pointer py-2"
+                  className="flex items-center gap-3 cursor-pointer p-2 rounded-xl"
                 >
                   <Avatar className="size-10 border border-border/30">
                     <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
@@ -206,51 +206,60 @@ export function Topbar() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-foreground truncate">{user.name}</span>
-                    <span className="text-xs text-muted-foreground truncate">
+                    <span className="font-bold text-foreground text-xs truncate">{user.name}</span>
+                    <span className="text-[11px] text-muted-foreground truncate">
                       {user.email}
                     </span>
                   </div>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="my-1.5" />
 
-                <DropdownMenuItem
-                  onClick={() => navigate('/board/profile')}
-                  className="gap-2.5 cursor-pointer text-xs font-semibold"
-                >
-                  <Settings className="size-4 text-muted-foreground" />
-                  Paramètres & Profil
-                </DropdownMenuItem>
-
+                {/* FYS Event - Mis en exergue */}
                 <DropdownMenuItem
                   onClick={() => navigate('/board/events')}
-                  className="gap-2.5 cursor-pointer text-xs font-semibold"
+                  className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-primary/10 hover:bg-primary/20 focus:bg-primary/20 border border-primary/25 text-foreground transition-all group my-0.5"
                 >
-                  <Building2 className="size-4 text-muted-foreground" />
-                  FYS Event (Événements)
+                  <div className="flex items-center justify-center size-10 rounded-xl bg-primary text-primary-foreground shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <Building2 className="size-5 text-primary-foreground" />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="font-extrabold text-xs text-foreground group-hover:text-primary transition-colors">
+                        FYS Event
+                      </span>
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-primary/25 text-primary px-1.5 py-0.5 rounded-md border border-primary/20">
+                        B2B & PRO
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground leading-tight truncate">
+                      Traiteur & Événements
+                    </span>
+                  </div>
+                  <ChevronRight className="size-4 text-primary/70 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                 </DropdownMenuItem>
 
                 {user.role === UserRole.ADMIN && (
                   <>
-                    <DropdownMenuItem
-                      onClick={() => navigate('/board/programs-admin')}
-                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
-                    >
-                      <CalendarCheck className="size-4 text-primary" />
-                      Gestion FYS Programme
-                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1.5" />
                     <DropdownMenuItem
                       onClick={() => navigate('/board/events-admin')}
-                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
+                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/10 rounded-lg py-2"
                     >
                       <Building2 className="size-4 text-primary" />
                       Gestion FYS Event Pro
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/board/programs-admin')}
+                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/10 rounded-lg py-2"
+                    >
+                      <CalendarCheck className="size-4 text-primary" />
+                      Gestion FYS Programme
+                    </DropdownMenuItem>
                   </>
                 )}
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="my-1.5" />
 
                 {/* Changement de Langue dans les Paramètres */}
                 <div className="px-2 py-1.5 space-y-1">
