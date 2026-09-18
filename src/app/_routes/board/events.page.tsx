@@ -1612,7 +1612,7 @@ const EventsPage: PageComponent = () => {
                                         min={0}
                                         value={currentQty}
                                         onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
-                                        className="flex-1 min-w-0 h-9 text-center rounded-xl border border-input bg-background text-foreground text-sm font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="w-10 h-8 text-center rounded-lg border border-input bg-background text-foreground text-xs font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
