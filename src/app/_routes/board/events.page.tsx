@@ -1591,7 +1591,7 @@ const EventsPage: PageComponent = () => {
                                   {/* Quantity stepper */}
                                   <div className="space-y-2 pt-1 border-t border-border/40">
                                     {/* +/- row */}
-                                    <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center justify-center gap-1.5">
                                       <button
                                         type="button"
                                         onClick={() => handleQuantityChange(cocktail.id, -1)}
@@ -1606,7 +1606,7 @@ const EventsPage: PageComponent = () => {
                                         min={0}
                                         value={currentQty}
                                         onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
-                                        className="flex-1 h-9 text-center rounded-xl border border-input bg-background text-foreground text-sm font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="w-10 h-8 text-center rounded-lg border border-input bg-background text-foreground text-xs font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
