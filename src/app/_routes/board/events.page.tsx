@@ -1589,15 +1589,9 @@ const EventsPage: PageComponent = () => {
                                   </div>
 
                                   {/* Quantity stepper */}
-                                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
-                                    <span className="text-xs font-semibold text-muted-foreground">
-                                      {currentQty > 0 ? (
-                                        <span className="text-primary font-bold">{(currentPrice * currentQty).toLocaleString()} XAF</span>
-                                      ) : (
-                                        'Quantité'
-                                      )}
-                                    </span>
-                                    <div className="flex items-center gap-1.5">
+                                  <div className="space-y-2 pt-1 border-t border-border/40">
+                                    {/* +/- row */}
+                                    <div className="flex items-center justify-between gap-1.5">
                                       <button
                                         type="button"
                                         onClick={() => handleQuantityChange(cocktail.id, -1)}
@@ -1612,7 +1606,7 @@ const EventsPage: PageComponent = () => {
                                         min={0}
                                         value={currentQty}
                                         onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
-                                        className="w-10 h-8 text-center rounded-lg border border-input bg-background text-foreground text-xs font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="flex-1 h-9 text-center rounded-xl border border-input bg-background text-foreground text-sm font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
@@ -1623,6 +1617,28 @@ const EventsPage: PageComponent = () => {
                                         <Plus className="size-4" />
                                       </button>
                                     </div>
+
+                                    {/* Price row — with discount applied live */}
+                                    {currentQty > 0 && (() => {
+                                      const rawTotal = currentPrice * currentQty;
+                                      const disc = financials.discountPercent;
+                                      const discountedTotal = disc > 0 ? Math.round(rawTotal * (1 - disc / 100)) : rawTotal;
+                                      return (
+                                        <div className="text-center space-y-0.5">
+                                          {disc > 0 && (
+                                            <p className="text-[10px] text-muted-foreground line-through">
+                                              {rawTotal.toLocaleString()} XAF
+                                            </p>
+                                          )}
+                                          <p className="text-xs font-bold text-primary">
+                                            {discountedTotal.toLocaleString()} XAF
+                                            {disc > 0 && (
+                                              <span className="ml-1 text-emerald-500 text-[10px]">-{disc}%</span>
+                                            )}
+                                          </p>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               </div>
