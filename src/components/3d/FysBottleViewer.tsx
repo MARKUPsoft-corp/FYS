@@ -666,8 +666,8 @@ export function FysBottleViewer({
     // Cap top beveled rim
     const capTopRing = new THREE.TorusGeometry(capRadius - 0.04, 0.03, 16, 48);
     capTopRing.rotateX(Math.PI / 2);
-    capTopRing.position.y = capHeight / 2;
     const capRimMesh = new THREE.Mesh(capTopRing, capMaterial);
+    capRimMesh.position.y = capHeight / 2;
     capGroup.add(capRimMesh);
 
     bottleGroup.add(capGroup);
