@@ -741,51 +741,53 @@ const EventsPage: PageComponent = () => {
                 </div>
               </div>
 
-              {/* Logistics & Equipment */}
-              <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-5">
-                <div className="flex items-center gap-2 pb-4 border-b border-border/50">
-                  <Package className="size-5 text-primary" />
-                  <h3 className="font-display font-bold text-lg text-foreground">
-                    Logistique & Matériel Associé
-                  </h3>
+              {/* Past Event Logistics & Equipment (safe optional rendering) */}
+              {selectedEvent.logistics && (selectedEvent.logistics.needCoolerBoxes || selectedEvent.logistics.needEcoCups || selectedEvent.logistics.needBartenderService || selectedEvent.logistics.notes) && (
+                <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-5">
+                  <div className="flex items-center gap-2 pb-4 border-b border-border/50">
+                    <Package className="size-5 text-primary" />
+                    <h3 className="font-display font-bold text-lg text-foreground">
+                      Logistique & Matériel Associé
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {selectedEvent.logistics.needCoolerBoxes && (
+                      <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
+                        <span className="text-xs font-medium text-muted-foreground block">Glacières isothermes</span>
+                        <span className="font-bold text-foreground text-sm">
+                          {selectedEvent.logistics.coolerBoxesCount} glacière(s) ({((selectedEvent.logistics.coolerBoxFee) || 0).toLocaleString()} XAF)
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedEvent.logistics.needEcoCups && (
+                      <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
+                        <span className="text-xs font-medium text-muted-foreground block">Gobelets écologiques</span>
+                        <span className="font-bold text-foreground text-sm">
+                          {selectedEvent.logistics.ecoCupsCount} gobelets ({((selectedEvent.logistics.ecoCupsFee) || 0).toLocaleString()} XAF)
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedEvent.logistics.needBartenderService && (
+                      <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
+                        <span className="text-xs font-medium text-muted-foreground block">Service Barman FYS</span>
+                        <span className="font-bold text-foreground text-sm">
+                          {selectedEvent.logistics.bartenderHours}h sur site ({((selectedEvent.logistics.bartenderFee) || 0).toLocaleString()} XAF)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedEvent.logistics.notes && (
+                    <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 text-xs">
+                      <span className="font-semibold text-muted-foreground block mb-1">Consignes spécifiques :</span>
+                      <p className="text-foreground italic">{selectedEvent.logistics.notes}</p>
+                    </div>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">Glacières isothermes</span>
-                    <span className="font-bold text-foreground text-sm">
-                      {selectedEvent.logistics.needCoolerBoxes
-                        ? `${selectedEvent.logistics.coolerBoxesCount} glacière(s) (${selectedEvent.logistics.coolerBoxFee.toLocaleString()} XAF)`
-                        : 'Non requis'}
-                    </span>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">Gobelets écologiques</span>
-                    <span className="font-bold text-foreground text-sm">
-                      {selectedEvent.logistics.needEcoCups
-                        ? `${selectedEvent.logistics.ecoCupsCount} gobelets (${selectedEvent.logistics.ecoCupsFee.toLocaleString()} XAF)`
-                        : 'Non requis'}
-                    </span>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">Service Barman FYS</span>
-                    <span className="font-bold text-foreground text-sm">
-                      {selectedEvent.logistics.needBartenderService
-                        ? `${selectedEvent.logistics.bartenderHours}h sur site (${selectedEvent.logistics.bartenderFee.toLocaleString()} XAF)`
-                        : 'Non requis'}
-                    </span>
-                  </div>
-                </div>
-
-                {selectedEvent.logistics.notes && (
-                  <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 text-xs">
-                    <span className="font-semibold text-muted-foreground block mb-1">Consignes spécifiques :</span>
-                    <p className="text-foreground italic">{selectedEvent.logistics.notes}</p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Right Col: Financial Summary Card */}
@@ -802,14 +804,14 @@ const EventsPage: PageComponent = () => {
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span>Sous-total jus brut</span>
                     <span className="font-medium text-foreground">
-                      {selectedEvent.rawJuiceTotal.toLocaleString()} XAF
+                      {(selectedEvent.rawJuiceTotal || 0).toLocaleString()} XAF
                     </span>
                   </div>
 
-                  {selectedEvent.discountPercent > 0 ? (
+                  {(selectedEvent.discountPercent || 0) > 0 ? (
                     <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
                       <span>Remise sur volume ({selectedEvent.discountPercent}%)</span>
-                      <span>-{selectedEvent.discountAmount.toLocaleString()} XAF</span>
+                      <span>-{(selectedEvent.discountAmount || 0).toLocaleString()} XAF</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between text-muted-foreground text-xs">
@@ -818,12 +820,14 @@ const EventsPage: PageComponent = () => {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span>Prestations & logistique</span>
-                    <span className="font-medium text-foreground">
-                      {selectedEvent.totalLogisticsFee.toLocaleString()} XAF
-                    </span>
-                  </div>
+                  {(selectedEvent.totalLogisticsFee ?? 0) > 0 && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Prestations & logistique</span>
+                      <span className="font-medium text-foreground">
+                        {(selectedEvent.totalLogisticsFee || 0).toLocaleString()} XAF
+                      </span>
+                    </div>
+                  )}
 
                   <div className="pt-4 border-t border-border/60 flex items-center justify-between">
                     <span className="font-display font-extrabold text-base text-foreground">Total Net</span>
@@ -1013,7 +1017,7 @@ const EventsPage: PageComponent = () => {
                     </span>
                     <div className="min-w-0">
                       <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">
-                        Étape {wizardStep} sur 4
+                        Étape {wizardStep} sur 3
                       </span>
                       <h4 className="text-sm font-extrabold text-foreground leading-tight truncate">
                         {WIZARD_STEPS[wizardStep - 1]?.title}
@@ -1021,7 +1025,7 @@ const EventsPage: PageComponent = () => {
                     </div>
                   </div>
                   <span className="text-[11px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 shrink-0">
-                    {Math.round((wizardStep / 4) * 100)}%
+                    {Math.round((wizardStep / 3) * 100)}%
                   </span>
                 </div>
 
@@ -1029,12 +1033,12 @@ const EventsPage: PageComponent = () => {
                 <div className="w-full bg-muted/70 h-2 rounded-full overflow-hidden relative shadow-inner">
                   <div
                     className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${(wizardStep / 4) * 100}%` }}
+                    style={{ width: `${(wizardStep / 3) * 100}%` }}
                   />
                 </div>
 
-                {/* Mobile 4-step Pills */}
-                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                {/* Mobile 3-step Pills */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1">
                   {WIZARD_STEPS.map((s) => {
                     const isCompleted = s.step < wizardStep;
                     const isCurrent = wizardStep === s.step;
@@ -1074,7 +1078,7 @@ const EventsPage: PageComponent = () => {
 
               {/* Desktop Stepper: Connecting Track & Interactive Cards */}
               <div className="hidden sm:block">
-                <div className="grid grid-cols-4 gap-3.5">
+                <div className="grid grid-cols-3 gap-3.5">
                   {WIZARD_STEPS.map((s) => {
                     const isCompleted = s.step < wizardStep;
                     const isCurrent = wizardStep === s.step;
@@ -1733,55 +1737,6 @@ const EventsPage: PageComponent = () => {
                       ))}
                     </div>
                   </div>
-
-                  {/* Logistics summary */}
-                  <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-5">
-                    <div className="flex items-center justify-between pb-4 border-b border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Truck className="size-5 text-primary" />
-                        <h3 className="font-display font-bold text-lg text-foreground">
-                          Logistique & Services
-                        </h3>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setWizardStep(3);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="text-xs text-primary hover:underline font-bold cursor-pointer"
-                      >
-                        Modifier
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Glacières isothermes :</span>
-                        <span className="font-semibold text-foreground">
-                          {needCoolerBoxes ? `${coolerBoxesCount} unité(s)` : 'Non requises'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Gobelets écologiques :</span>
-                        <span className="font-semibold text-foreground">
-                          {needEcoCups ? `${ecoCupsCount} gobelet(s)` : 'Non requis'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Service de barman FYS :</span>
-                        <span className="font-semibold text-foreground">
-                          {needBartenderService ? `${bartenderHours} heure(s)` : 'Non requis'}
-                        </span>
-                      </div>
-                      {logisticsNotes && (
-                        <div className="pt-2 border-t border-border/40">
-                          <span className="text-muted-foreground block text-[11px] mb-1">Consignes particulières d&apos;accès :</span>
-                          <p className="text-foreground italic bg-muted/30 p-2.5 rounded-xl">{logisticsNotes}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Financial Summary & Confirm */}
@@ -1805,13 +1760,6 @@ const EventsPage: PageComponent = () => {
                           <span>-{financials.discountAmount.toLocaleString()} XAF</span>
                         </div>
                       )}
-
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Options logistiques</span>
-                        <span className="font-medium text-foreground">
-                          {financials.totalLogisticsFee.toLocaleString()} XAF
-                        </span>
-                      </div>
 
                       <div className="pt-4 border-t border-border/60 flex items-center justify-between">
                         <span className="font-display font-extrabold text-base text-foreground">Total à régler</span>

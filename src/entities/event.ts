@@ -113,7 +113,7 @@ export interface FysEvent {
   // Contenu & Tarification
   selectedJuices?: FysEventJuiceItem[];
   items?: FysEventJuiceItem[];
-  logistics: FysEventLogistics;
+  logistics?: FysEventLogistics;
   totalBottles: number;
   totalLiters?: number;
   subtotalJuices?: number;

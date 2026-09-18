@@ -628,32 +628,34 @@ const EventsAdminPage: PageComponent = () => {
                   </div>
 
                   {/* Logistics options */}
-                  <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 grid grid-cols-3 gap-2 text-xs text-center">
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Glacières</span>
-                      <strong className="text-foreground">
-                        {detailEvent.logistics.needCoolerBoxes
-                          ? `${detailEvent.logistics.coolerBoxesCount} pcs`
-                          : 'Aucune'}
-                      </strong>
+                  {detailEvent.logistics && (
+                    <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 grid grid-cols-3 gap-2 text-xs text-center">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Glacières</span>
+                        <strong className="text-foreground">
+                          {detailEvent.logistics.needCoolerBoxes
+                            ? `${detailEvent.logistics.coolerBoxesCount} pcs`
+                            : 'Aucune'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Gobelets</span>
+                        <strong className="text-foreground">
+                          {detailEvent.logistics.needEcoCups
+                            ? `${detailEvent.logistics.ecoCupsCount} pcs`
+                            : 'Aucun'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Service Barman</span>
+                        <strong className="text-foreground">
+                          {detailEvent.logistics.needBartenderService
+                            ? `${detailEvent.logistics.bartenderHours}h`
+                            : 'Non'}
+                        </strong>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Gobelets</span>
-                      <strong className="text-foreground">
-                        {detailEvent.logistics.needEcoCups
-                          ? `${detailEvent.logistics.ecoCupsCount} pcs`
-                          : 'Aucun'}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Service Barman</span>
-                      <strong className="text-foreground">
-                        {detailEvent.logistics.needBartenderService
-                          ? `${detailEvent.logistics.bartenderHours}h`
-                          : 'Non'}
-                      </strong>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t border-border/50">
                     <Button
