@@ -24,15 +24,16 @@ import {
   ChevronRight,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
   GlassWater,
   Flame,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { useAuthStore } from '@/stores/auth';
+import { cn } from '@/lib/utils';
 import {
   type FysEvent,
   type FysEventType,
@@ -63,6 +64,37 @@ const EVENT_TYPE_LABELS: Record<FysEventType, string> = {
   mariage_prive: 'Événement privé / Réception',
   autre: 'Autre événement',
 };
+
+const WIZARD_STEPS = [
+  {
+    step: 1,
+    title: 'Entreprise & Cadre',
+    shortTitle: 'Entreprise',
+    subtitle: 'Coordonnées & date',
+    icon: Building2,
+  },
+  {
+    step: 2,
+    title: 'Sélection des Jus',
+    shortTitle: 'Catalogue',
+    subtitle: 'Formats & remises',
+    icon: GlassWater,
+  },
+  {
+    step: 3,
+    title: 'Logistique & Services',
+    shortTitle: 'Logistique',
+    subtitle: 'Glacières & barman',
+    icon: Truck,
+  },
+  {
+    step: 4,
+    title: 'Devis & Validation',
+    shortTitle: 'Confirmation',
+    subtitle: 'Récapitulatif final',
+    icon: FileText,
+  },
+];
 
 const STATUS_CONFIG: Record<
   FysEventStatus,
@@ -176,6 +208,8 @@ const EventsPage: PageComponent = () => {
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [maxUnlockedStep, setMaxUnlockedStep] = useState<number>(1);
+  const [touchedStep1, setTouchedStep1] = useState(false);
 
   // Load pricing settings & cocktails
   useEffect(() => {
@@ -331,6 +365,105 @@ const EventsPage: PageComponent = () => {
       ...prev,
       [key]: Math.max(0, qty),
     }));
+  };
+
+  // Step 1 Validation logic
+  const isStep1Valid = useMemo(() => {
+    const hasCompany = companyName.trim().length >= 2;
+    const hasTitle = eventTitle.trim().length >= 2;
+    const hasDate = Boolean(eventDate);
+    const hasLocation = location.trim().length >= 3;
+    const hasContact = contactPerson.trim().length >= 2;
+    const hasPhone = contactPhone.trim().length >= 6;
+    const hasCustomType = eventType !== 'autre' || customEventType.trim().length >= 2;
+    return Boolean(
+      hasCompany &&
+      hasTitle &&
+      hasDate &&
+      hasLocation &&
+      hasContact &&
+      hasPhone &&
+      hasCustomType
+    );
+  }, [
+    companyName,
+    eventTitle,
+    eventDate,
+    location,
+    contactPerson,
+    contactPhone,
+    eventType,
+    customEventType,
+  ]);
+
+  // Step 2 Validation logic (at least 1 juice bottle selected)
+  const isStep2Valid = useMemo(() => {
+    return financials.totalBottles > 0;
+  }, [financials.totalBottles]);
+
+  // Step 3 Validation logic
+  const isStep3Valid = useMemo(() => {
+    if (needCoolerBoxes && coolerBoxesCount < 1) return false;
+    if (needEcoCups && ecoCupsCount < 1) return false;
+    if (needBartenderService && bartenderHours < 1) return false;
+    return true;
+  }, [needCoolerBoxes, coolerBoxesCount, needEcoCups, ecoCupsCount, needBartenderService, bartenderHours]);
+
+  const handleValidateAndProceedStep1 = () => {
+    setTouchedStep1(true);
+    if (!isStep1Valid) {
+      const missing: string[] = [];
+      if (companyName.trim().length < 2) missing.push('Entreprise / Organisation');
+      if (eventTitle.trim().length < 2) missing.push('Titre de l’événement');
+      if (!eventDate) missing.push('Date de l’événement');
+      if (location.trim().length < 3) missing.push('Lieu ou adresse exacte');
+      if (contactPerson.trim().length < 2) missing.push('Nom du contact');
+      if (contactPhone.trim().length < 6) missing.push('Téléphone direct');
+      if (eventType === 'autre' && customEventType.trim().length < 2) missing.push('Précision du type d’événement');
+
+      setSubmitError(`Veuillez renseigner les champs obligatoires suivants : ${missing.join(', ')}.`);
+      return;
+    }
+    setSubmitError(null);
+    setMaxUnlockedStep((prev) => Math.max(prev, 2));
+    setWizardStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleValidateAndProceedStep2 = () => {
+    if (!isStep2Valid) {
+      setSubmitError('Veuillez sélectionner au moins un flacon de jus dans le catalogue pour votre événement.');
+      return;
+    }
+    setSubmitError(null);
+    setMaxUnlockedStep((prev) => Math.max(prev, 3));
+    setWizardStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleValidateAndProceedStep3 = () => {
+    if (!isStep3Valid) {
+      setSubmitError('Veuillez vérifier les quantités des options logistiques sélectionnées.');
+      return;
+    }
+    setSubmitError(null);
+    setMaxUnlockedStep((prev) => Math.max(prev, 4));
+    setWizardStep(4);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStepClick = (targetStep: number) => {
+    if (targetStep === wizardStep) return;
+    if (targetStep <= maxUnlockedStep) {
+      setSubmitError(null);
+      setWizardStep(targetStep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Prompt validation for current step to provide clear user feedback
+      if (wizardStep === 1) handleValidateAndProceedStep1();
+      else if (wizardStep === 2) handleValidateAndProceedStep2();
+      else if (wizardStep === 3) handleValidateAndProceedStep3();
+    }
   };
 
   // Submit new event order
@@ -738,7 +871,7 @@ const EventsPage: PageComponent = () => {
       titleHighlight="& Entreprises"
       imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
     >
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-6xl mx-auto space-y-8 pb-36 sm:pb-24">
         {/* Navigation Tabs between List and Wizard */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
           <div className="flex items-center gap-2 bg-muted/60 p-1.5 rounded-2xl border border-border/40">
@@ -880,48 +1013,153 @@ const EventsPage: PageComponent = () => {
         {/* ── WIZARD VIEW ────────────────────────────────────────────────────── */}
         {viewMode === 'wizard' && (
           <div className="space-y-8">
-            {/* Stepper Progress Indicator */}
-            <div className="grid grid-cols-4 gap-2 sm:gap-4">
-              {[
-                { step: 1, label: 'Événement' },
-                { step: 2, label: 'Sélection Jus' },
-                { step: 3, label: 'Logistique' },
-                { step: 4, label: 'Confirmation' },
-              ].map((s) => (
-                <button
-                  key={s.step}
-                  type="button"
-                  onClick={() => setWizardStep(s.step)}
-                  className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
-                    wizardStep === s.step
-                      ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
-                      : wizardStep > s.step
-                      ? 'bg-card border-border/70 text-foreground'
-                      : 'bg-card/40 border-border/30 text-muted-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`size-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        wizardStep === s.step
-                          ? 'bg-primary text-primary-foreground'
-                          : wizardStep > s.step
-                          ? 'bg-muted text-foreground'
-                          : 'bg-muted/60 text-muted-foreground'
-                      }`}
-                    >
-                      {wizardStep > s.step ? <Check className="size-3.5" /> : s.step}
+            {/* ── HIGH-END STEPPER COMPONENT ───────────────────────────── */}
+            <div className="bg-card rounded-3xl p-4 sm:p-6 border border-border/70 shadow-xs space-y-4">
+              {/* Mobile View: High clarity, zero truncation */}
+              <div className="sm:hidden space-y-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="size-8 rounded-xl bg-primary text-primary-foreground font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                      {wizardStep}
                     </span>
-                    <span className="text-xs sm:text-sm font-semibold truncate">{s.label}</span>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">
+                        Étape {wizardStep} sur 4
+                      </span>
+                      <h4 className="text-sm font-extrabold text-foreground leading-tight truncate">
+                        {WIZARD_STEPS[wizardStep - 1]?.title}
+                      </h4>
+                    </div>
                   </div>
-                </button>
-              ))}
+                  <span className="text-[11px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 shrink-0">
+                    {Math.round((wizardStep / 4) * 100)}%
+                  </span>
+                </div>
+
+                {/* Animated Linear Progress Bar */}
+                <div className="w-full bg-muted/70 h-2 rounded-full overflow-hidden relative shadow-inner">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${(wizardStep / 4) * 100}%` }}
+                  />
+                </div>
+
+                {/* Mobile 4-step Pills */}
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {WIZARD_STEPS.map((s) => {
+                    const isCompleted = s.step < wizardStep;
+                    const isCurrent = wizardStep === s.step;
+                    const isUnlocked = s.step <= maxUnlockedStep;
+
+                    return (
+                      <button
+                        key={s.step}
+                        type="button"
+                        disabled={!isUnlocked}
+                        onClick={() => handleStepClick(s.step)}
+                        className={cn(
+                          "py-2 px-1 rounded-xl text-center flex flex-col items-center gap-1 transition-all select-none",
+                          isCurrent && "bg-primary text-primary-foreground font-bold shadow-xs ring-2 ring-primary/20",
+                          !isCurrent && isCompleted && "bg-primary/15 text-primary hover:bg-primary/25 cursor-pointer font-bold",
+                          !isCurrent && !isCompleted && isUnlocked && "bg-muted text-foreground cursor-pointer font-medium",
+                          !isUnlocked && "bg-muted/30 text-muted-foreground/40 cursor-not-allowed border border-border/20 opacity-60"
+                        )}
+                      >
+                        <div className="flex items-center justify-center">
+                          {isCompleted ? (
+                            <Check className="size-3.5 text-primary" strokeWidth={3} />
+                          ) : !isUnlocked ? (
+                            <Lock className="size-3" />
+                          ) : (
+                            <span className="text-xs font-black">{s.step}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] truncate max-w-full leading-none font-bold">
+                          {s.shortTitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Desktop Stepper: Connecting Track & Interactive Cards */}
+              <div className="hidden sm:block">
+                <div className="grid grid-cols-4 gap-3.5">
+                  {WIZARD_STEPS.map((s) => {
+                    const isCompleted = s.step < wizardStep;
+                    const isCurrent = wizardStep === s.step;
+                    const isUnlocked = s.step <= maxUnlockedStep;
+                    const Icon = s.icon;
+
+                    return (
+                      <button
+                        key={s.step}
+                        type="button"
+                        disabled={!isUnlocked}
+                        onClick={() => handleStepClick(s.step)}
+                        className={cn(
+                          "group p-4 rounded-2xl text-left border transition-all relative overflow-hidden select-none",
+                          isCurrent && "bg-primary/10 border-primary text-primary ring-2 ring-primary/25 shadow-xs",
+                          !isCurrent && isCompleted && "bg-card border-primary/30 text-foreground hover:border-primary/60 cursor-pointer shadow-xs",
+                          !isCurrent && !isCompleted && isUnlocked && "bg-card border-border/70 text-foreground hover:border-primary/40 cursor-pointer",
+                          !isUnlocked && "bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed opacity-60"
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              "size-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                              isCurrent && "bg-primary text-primary-foreground shadow-xs",
+                              !isCurrent && isCompleted && "bg-primary/20 text-primary font-black",
+                              !isCurrent && !isCompleted && isUnlocked && "bg-muted text-foreground",
+                              !isUnlocked && "bg-muted/40 text-muted-foreground/50"
+                            )}
+                          >
+                            {isCompleted ? (
+                              <Check className="size-5 text-primary" strokeWidth={2.5} />
+                            ) : !isUnlocked ? (
+                              <Lock className="size-4 text-muted-foreground/60" />
+                            ) : (
+                              <Icon className="size-5" />
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                Étape 0{s.step}
+                              </span>
+                              {isCompleted && (
+                                <span className="text-[9px] font-black uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                                  Validé
+                                </span>
+                              )}
+                              {!isUnlocked && (
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                                  Verrouillé
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-bold truncate text-foreground mt-0.5">
+                              {s.title}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {s.subtitle}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {submitError && (
-              <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
+              <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3 animate-in fade-in-50">
                 <AlertCircle className="size-5 shrink-0" />
-                <span>{submitError}</span>
+                <span className="font-semibold text-xs sm:text-sm">{submitError}</span>
               </div>
             )}
 
@@ -946,7 +1184,10 @@ const EventsPage: PageComponent = () => {
                       placeholder="Ex: Orange Cameroun, MTN, Cabinet Deloitte..."
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className={cn(
+                        "h-11 rounded-xl transition-all",
+                        touchedStep1 && companyName.trim().length < 2 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
 
@@ -976,7 +1217,10 @@ const EventsPage: PageComponent = () => {
                         placeholder="Ex: Assemblée générale des actionnaires"
                         value={customEventType}
                         onChange={(e) => setCustomEventType(e.target.value)}
-                        className="h-11 rounded-xl"
+                        className={cn(
+                          "h-11 rounded-xl transition-all",
+                          touchedStep1 && customEventType.trim().length < 2 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                        )}
                       />
                     </div>
                   )}
@@ -989,7 +1233,10 @@ const EventsPage: PageComponent = () => {
                       placeholder="Ex: Séminaire Annuel Q4 & Stratégie"
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className={cn(
+                        "h-11 rounded-xl transition-all",
+                        touchedStep1 && eventTitle.trim().length < 2 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
 
@@ -1014,7 +1261,10 @@ const EventsPage: PageComponent = () => {
                       type="date"
                       value={eventDate}
                       onChange={(e) => setEventDate(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className={cn(
+                        "h-11 rounded-xl transition-all",
+                        touchedStep1 && !eventDate && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
 
@@ -1038,7 +1288,10 @@ const EventsPage: PageComponent = () => {
                       placeholder="Ex: Douala, Bonanjo, Immeuble Krystal Palace, 3ème étage"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className={cn(
+                        "h-11 rounded-xl transition-all",
+                        touchedStep1 && location.trim().length < 3 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                 </div>
@@ -1052,7 +1305,10 @@ const EventsPage: PageComponent = () => {
                         placeholder="Ex: Jean Dupont"
                         value={contactPerson}
                         onChange={(e) => setContactPerson(e.target.value)}
-                        className="h-11 rounded-xl"
+                        className={cn(
+                          "h-11 rounded-xl transition-all",
+                          touchedStep1 && contactPerson.trim().length < 2 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                        )}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1061,7 +1317,10 @@ const EventsPage: PageComponent = () => {
                         placeholder="Ex: +237 690 00 00 00"
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
-                        className="h-11 rounded-xl"
+                        className={cn(
+                          "h-11 rounded-xl transition-all",
+                          touchedStep1 && contactPhone.trim().length < 6 && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                        )}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1076,19 +1335,12 @@ const EventsPage: PageComponent = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end pt-4 border-t border-border/50">
                   <Button
-                    onClick={() => {
-                      if (!companyName.trim() || !eventTitle.trim() || !eventDate || !location.trim() || !contactPerson.trim() || !contactPhone.trim()) {
-                        setSubmitError('Veuillez renseigner tous les champs obligatoires (*).');
-                        return;
-                      }
-                      setSubmitError(null);
-                      setWizardStep(2);
-                    }}
-                    className="rounded-xl font-bold bg-primary text-primary-foreground h-11 px-6"
+                    onClick={handleValidateAndProceedStep1}
+                    className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                   >
-                    Étape suivante : Sélection des Jus
+                    <span>Valider & Choisir les Jus</span>
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </div>
@@ -1289,27 +1541,24 @@ const EventsPage: PageComponent = () => {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-6 border-t border-border/50">
+                  <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border/50">
                     <Button
                       variant="outline"
-                      onClick={() => setWizardStep(1)}
-                      className="rounded-xl font-semibold"
+                      onClick={() => {
+                        setSubmitError(null);
+                        setWizardStep(1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="w-full sm:w-auto rounded-2xl font-semibold cursor-pointer"
                     >
                       <ArrowLeft className="size-4 mr-2" />
-                      Précédent
+                      Précédent : Entreprise & Cadre
                     </Button>
                     <Button
-                      onClick={() => {
-                        if (juiceItems.length === 0) {
-                          setSubmitError('Veuillez sélectionner au moins un flacon de jus.');
-                          return;
-                        }
-                        setSubmitError(null);
-                        setWizardStep(3);
-                      }}
-                      className="rounded-xl font-bold bg-primary text-primary-foreground px-6"
+                      onClick={handleValidateAndProceedStep2}
+                      className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                     >
-                      Étape suivante : Logistique
+                      <span>Étape suivante : Logistique ({financials.totalBottles} flacon{financials.totalBottles > 1 ? 's' : ''})</span>
                       <ArrowRight className="size-4 ml-2" />
                     </Button>
                   </div>
@@ -1477,23 +1726,24 @@ const EventsPage: PageComponent = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-6 border-t border-border/50">
+                <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border/50">
                   <Button
                     variant="outline"
-                    onClick={() => setWizardStep(2)}
-                    className="rounded-xl font-semibold"
-                  >
-                    <ArrowLeft className="size-4 mr-2" />
-                    Précédent
-                  </Button>
-                  <Button
                     onClick={() => {
                       setSubmitError(null);
-                      setWizardStep(4);
+                      setWizardStep(2);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="rounded-xl font-bold bg-primary text-primary-foreground px-6"
+                    className="w-full sm:w-auto rounded-2xl font-semibold cursor-pointer"
                   >
-                    Étape suivante : Récapitulatif
+                    <ArrowLeft className="size-4 mr-2" />
+                    Précédent : Sélection des Jus
+                  </Button>
+                  <Button
+                    onClick={handleValidateAndProceedStep3}
+                    className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
+                  >
+                    <span>Étape suivante : Récapitulatif & Devis</span>
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </div>
@@ -1515,7 +1765,10 @@ const EventsPage: PageComponent = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setWizardStep(1)}
+                        onClick={() => {
+                          setWizardStep(1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         className="text-xs text-primary hover:underline font-bold cursor-pointer"
                       >
                         Modifier
@@ -1559,7 +1812,10 @@ const EventsPage: PageComponent = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setWizardStep(2)}
+                        onClick={() => {
+                          setWizardStep(2);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         className="text-xs text-primary hover:underline font-bold cursor-pointer"
                       >
                         Modifier
@@ -1580,6 +1836,55 @@ const EventsPage: PageComponent = () => {
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Logistics summary */}
+                  <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-5">
+                    <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Truck className="size-5 text-primary" />
+                        <h3 className="font-display font-bold text-lg text-foreground">
+                          Logistique & Services
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWizardStep(3);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="text-xs text-primary hover:underline font-bold cursor-pointer"
+                      >
+                        Modifier
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Glacières isothermes :</span>
+                        <span className="font-semibold text-foreground">
+                          {needCoolerBoxes ? `${coolerBoxesCount} unité(s)` : 'Non requises'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Gobelets écologiques :</span>
+                        <span className="font-semibold text-foreground">
+                          {needEcoCups ? `${ecoCupsCount} gobelet(s)` : 'Non requis'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Service de barman FYS :</span>
+                        <span className="font-semibold text-foreground">
+                          {needBartenderService ? `${bartenderHours} heure(s)` : 'Non requis'}
+                        </span>
+                      </div>
+                      {logisticsNotes && (
+                        <div className="pt-2 border-t border-border/40">
+                          <span className="text-muted-foreground block text-[11px] mb-1">Consignes particulières d&apos;accès :</span>
+                          <p className="text-foreground italic bg-muted/30 p-2.5 rounded-xl">{logisticsNotes}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1621,20 +1926,36 @@ const EventsPage: PageComponent = () => {
                       </div>
                     </div>
 
-                    <Button
-                      onClick={handleCreateEvent}
-                      disabled={submitting}
-                      className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-13 text-sm shadow-md transition-all active:scale-98 cursor-pointer"
-                    >
-                      {submitting ? (
-                        <div className="size-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
-                      ) : (
-                        <>
-                          <CheckCircle2 className="size-4 mr-2" />
-                          Confirmer & Transmettre la commande
-                        </>
-                      )}
-                    </Button>
+                    <div className="space-y-2.5">
+                      <Button
+                        onClick={handleCreateEvent}
+                        disabled={submitting}
+                        className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-13 text-sm shadow-md transition-all active:scale-98 cursor-pointer"
+                      >
+                        {submitting ? (
+                          <div className="size-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+                        ) : (
+                          <>
+                            <CheckCircle2 className="size-4 mr-2" />
+                            Confirmer & Transmettre la commande
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => {
+                          setSubmitError(null);
+                          setWizardStep(3);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="w-full rounded-2xl font-semibold text-xs h-11 cursor-pointer"
+                      >
+                        <ArrowLeft className="size-3.5 mr-2" />
+                        Modifier les options logistiques
+                      </Button>
+                    </div>
 
                     <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                       En validant, votre commande est directement transmise à l&apos;équipe FYS. Un récapitulatif vous sera envoyé et vous pourrez suivre l&apos;état en temps réel.
