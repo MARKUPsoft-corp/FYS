@@ -136,6 +136,24 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------------------------
+    // FYS Events (Événements d'Entreprise & Traiteur B2B)
+    // ------------------------------------------------------------------------
+    
+    match /events/{eventId} {
+      // Création: l'utilisateur doit être authentifié et créer pour lui-même
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Lecture: l'admin ou le propriétaire de l'événement
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Mise à jour: l'admin (pour changer le statut / notes) ou le propriétaire
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Suppression: réservée aux admins
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------------
     // Notifications (cloche)
     // ------------------------------------------------------------------------
     
