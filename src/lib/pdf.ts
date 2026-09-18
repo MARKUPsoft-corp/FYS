@@ -409,24 +409,77 @@ export async function downloadThermalQrPdf(svgId: string, order: Order, count: n
 }
 
 /**
- * Generates and downloads a vector-sharp quotation / order PDF for FYS Event orders.
+ * Generates and downloads a vector-sharp quotation / invoice PDF for FYS Event orders.
  */
-export async function downloadEventDevisPdf(
+export async function downloadEventFacturePdf(
   event: any,
-  supportPhone?: string
+  supportPhone?: string,
+  documentType: 'facture' | 'devis' = 'facture'
 ): Promise<void> {
   try {
     const { pdf } = await import('@react-pdf/renderer');
     const React = await import('react');
     const { EventDevisPDF } = await import('@/components/pdf/EventDevisPDF');
     const blob = await pdf(
-      React.createElement(EventDevisPDF, { event, supportPhone }) as any
+      React.createElement(EventDevisPDF, { event, supportPhone, documentType }) as any
     ).toBlob();
     const cleanCompany = (event.companyName || 'Event').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-    const refStr = (event.id || 'devis').slice(0, 8).toUpperCase();
-    triggerDownload(blob, `Devis_FYS_Event_${cleanCompany}_${refStr}.pdf`);
+    const refStr = (event.id || 'doc').slice(0, 8).toUpperCase();
+    const prefix = documentType === 'facture' ? 'Facture' : 'Devis';
+    triggerDownload(blob, `${prefix}_FYS_Event_${cleanCompany}_${refStr}.pdf`);
   } catch (err) {
-    console.error('Failed to generate vector PDF (FYS Event Devis):', err);
+    console.error(`Failed to generate vector PDF (FYS Event ${documentType}):`, err);
   }
 }
+
+/**
+ * Generates and downloads a vector-sharp quotation / order PDF for FYS Event orders.
+ */
+export async function downloadEventDevisPdf(
+  event: any,
+  supportPhone?: string
+): Promise<void> {
+  return downloadEventFacturePdf(event, supportPhone, 'devis');
+}
+
+/**
+ * Prints directly the vector-sharp invoice / devis PDF for FYS Event orders.
+ */
+export async function printEventFacturePdf(
+  event: any,
+  supportPhone?: string,
+  documentType: 'facture' | 'devis' = 'facture'
+): Promise<void> {
+  try {
+    const { pdf } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { EventDevisPDF } = await import('@/components/pdf/EventDevisPDF');
+    const blob = await pdf(
+      React.createElement(EventDevisPDF, { event, supportPhone, documentType }) as any
+    ).toBlob();
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 4000);
+    };
+  } catch (err) {
+    console.error('Failed to print Event Facture PDF:', err);
+  }
+}
+
 

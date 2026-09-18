@@ -38,7 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/lib/utils';
-import { downloadEventDevisPdf } from '@/lib/pdf';
+import { downloadEventDevisPdf, downloadEventFacturePdf } from '@/lib/pdf';
 import {
   type FysEvent,
   type FysEventType,
@@ -729,11 +729,17 @@ const EventsPage: PageComponent = () => {
             <div className="flex flex-wrap items-center gap-2.5">
               <Button
                 variant="outline"
-                onClick={() => downloadEventDevisPdf(selectedEvent, whatsappNumber)}
+                onClick={() =>
+                  downloadEventFacturePdf(
+                    selectedEvent,
+                    whatsappNumber,
+                    selectedEvent.status === 'draft' || selectedEvent.status === 'submitted' ? 'devis' : 'facture'
+                  )
+                }
                 className="rounded-xl font-semibold text-xs gap-1.5 border-border/80 cursor-pointer"
               >
                 <Download className="size-3.5" />
-                Devis PDF
+                {selectedEvent.status === 'draft' || selectedEvent.status === 'submitted' ? 'Devis PDF' : 'Facture PDF'}
               </Button>
 
               <a

@@ -297,9 +297,15 @@ const s = StyleSheet.create({
 interface Props {
   event: FysEvent;
   supportPhone?: string;
+  documentType?: 'facture' | 'devis';
 }
 
-export function EventDevisPDF({ event, supportPhone }: Props) {
+export function EventDevisPDF({ event, supportPhone, documentType }: Props) {
+  const isFacture = documentType === 'facture' || (documentType !== 'devis' && event.status !== 'draft');
+  const docTypeLabel = isFacture ? 'Facture FYS Event' : 'Devis FYS Event';
+  const metaMainTitle = isFacture ? 'Facture Officielle' : 'Fiche Devis & Commande';
+  const refPrefix = isFacture ? 'FACT' : 'DEV';
+
   const statusCfg = STATUS_COLOR[event.status] || STATUS_COLOR.submitted;
   const statusLabel = FYS_EVENT_STATUS_LABELS[event.status] || event.status;
   const typeLabel = FYS_EVENT_TYPE_LABELS[event.eventType] || event.eventType;
@@ -318,7 +324,7 @@ export function EventDevisPDF({ event, supportPhone }: Props) {
 
   return (
     <Document
-      title={`Devis FYS Event — ${event.companyName} (${event.id.slice(0, 8).toUpperCase()})`}
+      title={`${docTypeLabel} — ${event.companyName} (${event.id.slice(0, 8).toUpperCase()})`}
       author="FYS Event Traiteur Corporate"
     >
       <Page size="A4" style={s.page}>
@@ -333,8 +339,8 @@ export function EventDevisPDF({ event, supportPhone }: Props) {
             </Text>
           </View>
           <View style={s.meta}>
-            <Text style={s.metaTitle}>Fiche Devis & Commande</Text>
-            <Text style={s.metaSub}>Réf: #{event.id.slice(0, 8).toUpperCase()}</Text>
+            <Text style={s.metaTitle}>{metaMainTitle}</Text>
+            <Text style={s.metaSub}>Réf: #{refPrefix}-{event.id.slice(0, 8).toUpperCase()}</Text>
             <Text style={s.metaSub}>Date d&apos;émission : {dateStr}</Text>
           </View>
         </View>

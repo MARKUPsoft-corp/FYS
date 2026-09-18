@@ -31,10 +31,12 @@ import {
   Wine,
   Edit2,
   Check,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { downloadEventFacturePdf, printEventFacturePdf } from '@/lib/pdf';
 import {
   Dialog,
   DialogContent,
@@ -641,7 +643,7 @@ const EventsAdminPage: PageComponent = () => {
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+                      <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
                         <div>
                           <span className="text-[10px] text-muted-foreground block uppercase font-medium">Total Facturé</span>
                           <span className="font-display font-extrabold text-base text-primary">
@@ -649,17 +651,30 @@ const EventsAdminPage: PageComponent = () => {
                           </span>
                         </div>
 
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setDetailEvent(ev);
-                            setAdminStatusNotes(ev.statusNotes || '');
-                          }}
-                          className="rounded-xl font-bold bg-primary text-primary-foreground text-xs h-9 px-4"
-                        >
-                          Gérer
-                          <ChevronRight className="size-3.5 ml-1" />
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadEventFacturePdf(ev, pricingSettings?.whatsappNumber, 'facture')}
+                            title="Télécharger la Facture PDF"
+                            className="rounded-xl font-bold text-xs h-9 px-2.5 sm:px-3 gap-1.5 border-border/80 text-foreground hover:border-primary/50 cursor-pointer"
+                          >
+                            <Printer className="size-3.5 text-primary" />
+                            <span className="hidden sm:inline">Facture</span>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setDetailEvent(ev);
+                              setAdminStatusNotes(ev.statusNotes || '');
+                            }}
+                            className="rounded-xl font-bold bg-primary text-primary-foreground text-xs h-9 px-3.5 cursor-pointer"
+                          >
+                            Gérer
+                            <ChevronRight className="size-3.5 ml-1" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -788,21 +803,43 @@ const EventsAdminPage: PageComponent = () => {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate(`/board/events?id=${detailEvent.id}`)}
-                      className="rounded-xl font-bold text-xs"
-                    >
-                      Ouvrir la vue complète client
-                    </Button>
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-border/50">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => downloadEventFacturePdf(detailEvent, pricingSettings?.whatsappNumber, 'facture')}
+                        className="rounded-xl font-bold text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
+                      >
+                        <Download className="size-3.5" />
+                        Télécharger Facture (PDF)
+                      </Button>
 
-                    <Button
-                      onClick={() => setDetailEvent(null)}
-                      className="rounded-xl font-bold bg-primary text-primary-foreground text-xs"
-                    >
-                      Fermer
-                    </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => printEventFacturePdf(detailEvent, pricingSettings?.whatsappNumber, 'facture')}
+                        className="rounded-xl font-bold text-xs gap-1.5 border-border/80 text-foreground hover:border-primary/50 cursor-pointer"
+                      >
+                        <Printer className="size-3.5 text-primary" />
+                        Imprimer
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => navigate(`/board/events?id=${detailEvent.id}`)}
+                        className="rounded-xl font-bold text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Vue client
+                      </Button>
+
+                      <Button
+                        onClick={() => setDetailEvent(null)}
+                        className="rounded-xl font-bold bg-primary text-primary-foreground text-xs cursor-pointer"
+                      >
+                        Fermer
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
