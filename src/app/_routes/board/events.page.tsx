@@ -52,12 +52,14 @@ import {
 } from '@/entities';
 import {
   getFysEventPricingSettings,
+  subscribeToFysEventPricingSettings,
   calculateVolumeDiscountPercent,
   calculateEventFinancials,
   createFysEvent,
   updateFysEvent,
   subscribeToUserFysEvents,
   getFysEventById,
+  normalizeWhatsAppNumber,
 } from '@/services/event';
 import { getPublicCocktails } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
@@ -194,11 +196,11 @@ const EventsPage: PageComponent = () => {
 
   // WhatsApp Support Config
   const whatsappNumber = pricingSettings?.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
-  const cleanWaNumber = whatsappNumber.replace(/[^0-9]/g, '');
+  const cleanWaNumber = normalizeWhatsAppNumber(whatsappNumber);
 
   const getWhatsAppEventUrl = (event: { id: string; eventTitle?: string; eventName?: string; companyName: string }) => {
     const title = event.eventTitle || event.eventName || 'Commande FYS Event';
-    const ref = event.id.slice(0, 8).toUpperCase();
+    const ref = event.id ? event.id.slice(0, 8).toUpperCase() : 'DEVIS';
     const msg = `Bonjour le Service Client FYS ! Je vous contacte au sujet de notre commande événementielle "${title}" (${event.companyName}), réf: #${ref}.`;
     return `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(msg)}`;
   };
@@ -278,9 +280,11 @@ const EventsPage: PageComponent = () => {
     }
   };
 
-  // Load pricing settings, cocktails & fruits
+  // Subscribe to pricing settings & load cocktails / fruits
   useEffect(() => {
-    getFysEventPricingSettings().then(setPricingSettings).catch(console.error);
+    const unsubPricing = subscribeToFysEventPricingSettings((settings) => {
+      setPricingSettings(settings);
+    });
 
     setLoadingCatalogue(true);
     Promise.all([getPublicCocktails(), getFruits()])
@@ -290,6 +294,8 @@ const EventsPage: PageComponent = () => {
       })
       .catch(console.error)
       .finally(() => setLoadingCatalogue(false));
+
+    return () => unsubPricing();
   }, []);
 
   // Subscribe to user's events

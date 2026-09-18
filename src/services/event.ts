@@ -60,12 +60,72 @@ export async function getFysEventPricingSettings(): Promise<FysEventPricingSetti
       bartenderHalfDayRate: halfDayRate,
       bartenderServiceHourlyRate: hourlyRate,
       baseEventDeliveryFee: deliveryFee,
+      whatsappNumber: data.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber,
       updatedAt: data.updatedAt,
     };
   } catch (error) {
     console.error('[getFysEventPricingSettings] Error:', error);
     return DEFAULT_FYS_EVENT_PRICING;
   }
+}
+
+/**
+ * Écoute en temps réel les paramètres de tarification et configuration FYS Event (y compris WhatsApp)
+ */
+export function subscribeToFysEventPricingSettings(
+  callback: (settings: FysEventPricingSettings) => void
+): () => void {
+  const ref = doc(db, COLLECTIONS.SETTINGS, SETTINGS_DOC_ID);
+  return onSnapshot(ref, (snap) => {
+    if (!snap.exists()) {
+      callback(DEFAULT_FYS_EVENT_PRICING);
+      return;
+    }
+    const data = snap.data() as Partial<FysEventPricingSettings>;
+    const rawTiers = Array.isArray(data.volumeDiscountTiers) && data.volumeDiscountTiers.length > 0
+      ? data.volumeDiscountTiers
+      : (Array.isArray(data.volumeDiscounts) && data.volumeDiscounts.length > 0
+        ? data.volumeDiscounts
+        : DEFAULT_FYS_EVENT_PRICING.volumeDiscounts);
+
+    const coolerUnitPrice = data.coolerBoxPricePerUnit ?? data.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice;
+    const ecoUnitPrice = data.ecoCupPricePerUnit ?? data.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
+    const hourlyRate = data.bartenderServiceHourlyRate ?? (data.bartenderHalfDayRate ? Math.round(data.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
+    const halfDayRate = data.bartenderHalfDayRate ?? hourlyRate * 4;
+    const deliveryFee = data.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
+
+    callback({
+      volumeDiscounts: rawTiers,
+      volumeDiscountTiers: rawTiers,
+      coolerBoxUnitPrice: coolerUnitPrice,
+      coolerBoxPricePerUnit: coolerUnitPrice,
+      ecoCupUnitPrice: ecoUnitPrice,
+      ecoCupPricePerUnit: ecoUnitPrice,
+      bartenderHalfDayRate: halfDayRate,
+      bartenderServiceHourlyRate: hourlyRate,
+      baseEventDeliveryFee: deliveryFee,
+      whatsappNumber: data.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber,
+      updatedAt: data.updatedAt,
+    });
+  }, (err) => {
+    console.error('[subscribeToFysEventPricingSettings] Error:', err);
+  });
+}
+
+/**
+ * Normalise un numéro de téléphone pour WhatsApp (ex: +237 699 00 00 00 ou 699000000 -> 237699000000)
+ */
+export function normalizeWhatsAppNumber(phone?: string): string {
+  if (!phone) return '237699000000';
+  let cleaned = phone.replace(/[^0-9]/g, '');
+  if (!cleaned) return '237699000000';
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.slice(2);
+  }
+  if (cleaned.length === 9 && (cleaned.startsWith('6') || cleaned.startsWith('2'))) {
+    return `237${cleaned}`;
+  }
+  return cleaned;
 }
 
 /**
@@ -80,6 +140,8 @@ export async function updateFysEventPricingSettings(
   const ecoPrice = settings.ecoCupPricePerUnit ?? settings.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
   const hourlyRate = settings.bartenderServiceHourlyRate ?? (settings.bartenderHalfDayRate ? Math.round(settings.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
   const halfDayRate = settings.bartenderHalfDayRate ?? hourlyRate * 4;
+  const deliveryFee = settings.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
+  const whatsappNumber = (settings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
 
   await setDoc(ref, {
     ...settings,
@@ -91,6 +153,8 @@ export async function updateFysEventPricingSettings(
     ecoCupPricePerUnit: ecoPrice,
     bartenderHalfDayRate: halfDayRate,
     bartenderServiceHourlyRate: hourlyRate,
+    baseEventDeliveryFee: deliveryFee,
+    whatsappNumber,
     updatedAt: serverTimestamp(),
   }, { merge: true });
 }

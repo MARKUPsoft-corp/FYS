@@ -27,6 +27,7 @@ import {
   MapPin,
   RefreshCw,
   MessageCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +47,9 @@ import {
   subscribeToAllFysEvents,
   updateFysEventStatus,
   getFysEventPricingSettings,
+  subscribeToFysEventPricingSettings,
   updateFysEventPricingSettings,
+  normalizeWhatsAppNumber,
 } from '@/services/event';
 
 const EVENT_TYPE_LABELS: Record<FysEventType, string> = {
@@ -139,6 +142,7 @@ const EventsAdminPage: PageComponent = () => {
   const [loadingPricing, setLoadingPricing] = useState(true);
   const [savingPricing, setSavingPricing] = useState(false);
   const [pricingSuccess, setPricingSuccess] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
 
   // Check admin authorization
   useEffect(() => {
@@ -160,14 +164,15 @@ const EventsAdminPage: PageComponent = () => {
     return () => unsub();
   }, [user]);
 
-  // Load pricing settings
+  // Subscribe in real-time to pricing settings & WhatsApp number
   useEffect(() => {
-    getFysEventPricingSettings()
-      .then((settings) => {
-        setPricingSettings(settings);
-      })
-      .catch(console.error)
-      .finally(() => setLoadingPricing(false));
+    setLoadingPricing(true);
+    const unsub = subscribeToFysEventPricingSettings((settings) => {
+      setPricingSettings(settings);
+      setLoadingPricing(false);
+    });
+
+    return () => unsub();
   }, []);
 
   // Filtered events
@@ -301,6 +306,7 @@ const EventsAdminPage: PageComponent = () => {
   const handleSavePricing = async () => {
     setSavingPricing(true);
     setPricingSuccess(false);
+    setPricingError(null);
 
     try {
       const currentTiers = pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
@@ -312,14 +318,16 @@ const EventsAdminPage: PageComponent = () => {
         ...pricingSettings,
         volumeDiscounts: sortedTiers,
         volumeDiscountTiers: sortedTiers,
+        whatsappNumber: (pricingSettings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber,
       };
 
       await updateFysEventPricingSettings(toSave);
       setPricingSettings(toSave);
       setPricingSuccess(true);
       setTimeout(() => setPricingSuccess(false), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save pricing settings:', err);
+      setPricingError(err?.message || 'Une erreur est survenue lors de l’enregistrement.');
     } finally {
       setSavingPricing(false);
     }
@@ -967,31 +975,90 @@ const EventsAdminPage: PageComponent = () => {
 
               {/* Section 3: WhatsApp Customer Support */}
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <MessageCircle className="size-4 text-emerald-500" />
-                  Service Client WhatsApp & Assistance Événements
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <MessageCircle className="size-4 text-emerald-500" />
+                    Service Client WhatsApp & Assistance Événements
+                  </h4>
+                  {pricingSuccess && (
+                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 animate-pulse">
+                      <CheckCircle2 className="size-3.5" /> Enregistré avec succès !
+                    </span>
+                  )}
+                </div>
 
-                <div className="p-5 rounded-2xl bg-muted/20 border border-border/50 max-w-xl space-y-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                    Numéro WhatsApp Service Client (avec indicatif pays)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      placeholder="+237699000000"
-                      value={pricingSettings?.whatsappNumber ?? DEFAULT_FYS_EVENT_PRICING.whatsappNumber}
-                      onChange={(e) => {
-                        setPricingSettings((prev) => ({
-                          ...prev,
-                          whatsappNumber: e.target.value.trim(),
-                        }));
-                      }}
-                      className="h-11 rounded-xl font-bold text-sm bg-background"
-                    />
+                <div className="p-5 rounded-2xl bg-muted/20 border border-border/50 max-w-2xl space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                      Numéro WhatsApp Service Client (avec ou sans indicatif pays)
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      <Input
+                        type="text"
+                        placeholder="+237 6 99 00 00 00 ou 699000000"
+                        value={pricingSettings?.whatsappNumber ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPricingSettings((prev) => ({
+                            ...prev,
+                            whatsappNumber: val,
+                          }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSavePricing();
+                          }
+                        }}
+                        className="h-11 rounded-xl font-bold text-sm bg-background flex-1"
+                      />
+
+                      <Button
+                        type="button"
+                        onClick={handleSavePricing}
+                        disabled={savingPricing}
+                        className="h-11 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer px-5 shrink-0 shadow-xs"
+                      >
+                        {savingPricing ? (
+                          <RefreshCw className="size-4 animate-spin mr-2" />
+                        ) : (
+                          <Save className="size-4 mr-2" />
+                        )}
+                        Enregistrer
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* WhatsApp Live Preview & Test Link */}
+                  <div className="p-3.5 rounded-xl bg-card border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Lien WhatsApp direct généré pour les clients
+                      </span>
+                      <code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs break-all">
+                        https://wa.me/{normalizeWhatsAppNumber(pricingSettings?.whatsappNumber)}
+                      </code>
+                    </div>
+
+                    <a
+                      href={`https://wa.me/${normalizeWhatsAppNumber(pricingSettings?.whatsappNumber)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 font-bold text-xs transition-colors shrink-0 cursor-pointer"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      Tester le lien
+                    </a>
+                  </div>
+
+                  {pricingError && (
+                    <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-medium">
+                      {pricingError}
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Ce numéro permet aux entreprises de contacter directement l&apos;équipe FYS via un bouton WhatsApp intégré dans le devis, après la confirmation de commande et dans le récapitulatif financier.
+                    Ce numéro permet aux entreprises de contacter directement l&apos;équipe FYS via un bouton WhatsApp intégré dans le devis (PDF), après la confirmation de commande, à chaque étape du formulaire et dans le récapitulatif financier.
                   </p>
                 </div>
               </div>
