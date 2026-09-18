@@ -7,6 +7,7 @@ import {
   Image,
   CircleDollarSign,
   CalendarCheck,
+  Building2,
   Settings,
   Globe,
 } from 'lucide-react';
@@ -222,14 +223,31 @@ export function Topbar() {
                   Paramètres & Profil
                 </DropdownMenuItem>
 
+                <DropdownMenuItem
+                  onClick={() => navigate('/board/events')}
+                  className="gap-2.5 cursor-pointer text-xs font-semibold"
+                >
+                  <Building2 className="size-4 text-muted-foreground" />
+                  FYS Event (Événements)
+                </DropdownMenuItem>
+
                 {user.role === UserRole.ADMIN && (
-                  <DropdownMenuItem
-                    onClick={() => navigate('/board/programs-admin')}
-                    className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
-                  >
-                    <CalendarCheck className="size-4 text-primary" />
-                    Gestion FYS Programme
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/board/programs-admin')}
+                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
+                    >
+                      <CalendarCheck className="size-4 text-primary" />
+                      Gestion FYS Programme
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/board/events-admin')}
+                      className="gap-2.5 cursor-pointer text-xs font-semibold text-primary"
+                    >
+                      <Building2 className="size-4 text-primary" />
+                      Gestion FYS Event Pro
+                    </DropdownMenuItem>
+                  </>
                 )}
 
                 <DropdownMenuSeparator />

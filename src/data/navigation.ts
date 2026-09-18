@@ -13,6 +13,7 @@ import {
   CreditCard,
   CircleDollarSign,
   CalendarCheck,
+  Building2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -82,6 +83,16 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.programs',
     path: '/board/programs',
     icon: CalendarCheck,
+    roles: [UserRole.CUSTOMER, UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: true,
+  },
+  {
+    key: 'events',
+    label: 'FYS Event',
+    labelKey: 'nav.events',
+    path: '/board/events',
+    icon: Building2,
     roles: [UserRole.CUSTOMER, UserRole.ADMIN],
     showInMobileTab: false,
     showInDesktopNav: true,
@@ -188,6 +199,16 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.adminPrograms',
     path: '/board/programs-admin',
     icon: CalendarCheck,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: true,
+  },
+  {
+    key: 'admin-events',
+    label: 'FYS Event Pro',
+    labelKey: 'nav.adminEvents',
+    path: '/board/events-admin',
+    icon: Building2,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
     showInDesktopNav: true,

@@ -16,6 +16,8 @@ export default {
     management: 'FYS Management',
     programs: 'Programs',
     adminPrograms: 'Cures Management',
+    events: 'FYS Event',
+    adminEvents: 'FYS Event Pro',
   },
   auth: {
     login: {

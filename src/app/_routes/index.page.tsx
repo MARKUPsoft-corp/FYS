@@ -1,6 +1,6 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
 import { useEffect, useState, useRef } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2 } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -14,7 +14,6 @@ import { db } from '@/lib/firebase';
 import { useQuery } from '@tanstack/react-query';
 import { getLandingImagesSettings, getPricingSettings } from '@/services/settings';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
-import { FysBottleViewer } from '@/components/3d/FysBottleViewer';
 
 /* ─────────────────────────────────────────────
    FYS Landing Page — Premium, Clean, Épurée
@@ -36,7 +35,7 @@ const RootIndex: PageComponent = () => {
   // Suivi de la section active
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['features', 'how-it-works', 'nutrifys', 'about'];
+      const sections = ['features', 'how-it-works', 'nutrifys', 'events', 'about'];
       let current = 'home';
       for (const section of sections) {
         const el = document.getElementById(section);
@@ -169,6 +168,7 @@ const RootIndex: PageComponent = () => {
             <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
             <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Comment ça marche</a>
             <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
+            <a href="#events" className={`transition-colors ${activeSection === 'events' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>FYS Event</a>
             <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>À propos</a>
           </div>
 
@@ -226,6 +226,12 @@ const RootIndex: PageComponent = () => {
                         L'assistant NutriFYS
                       </a>
                     </SheetClose>
+
+                    <SheetClose asChild>
+                      <a href="#events" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'events' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        FYS Event (B2B)
+                      </a>
+                    </SheetClose>
                     
                     <SheetClose asChild>
                       <a href="#about" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'about' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
@@ -257,7 +263,7 @@ const RootIndex: PageComponent = () => {
       </nav>
 
       {/* ━━━ HERO ━━━ */}
-      <section className="relative w-full min-h-dvh flex flex-col justify-center bg-card overflow-hidden border-b border-border/40 py-16 lg:py-24">
+      <section className="relative w-full h-dvh min-h-[500px] flex flex-col justify-center bg-card overflow-hidden border-b border-border/40">
         
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
         
@@ -274,52 +280,45 @@ const RootIndex: PageComponent = () => {
         {/* Mobile contrast overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-12 lg:pt-16 pb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left mx-auto lg:mx-0">
-              {/* Launch delivery notice pill */}
-              {isNoticeActive && (
-                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
-                  <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>{launchNoticeContent}</span>
-                </div>
-              )}
-
-              <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
-                Le Premier Bar à Jus <br className="hidden md:block"/>
-                Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
-              </h1>
-
-              <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
-                Votre santé mérite du sur-mesure
-              </p>
-
-              <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
-                Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
-                <Link
-                  to="/lab"
-                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
-                >
-                  Composez mon jus 100% naturel
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/lab?tab=nutrifys"
-                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                >
-                  <Sparkles className="w-4 h-4 text-secondary" />
-                  Discuter avec l'assistant
-                </Link>
+        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
+          <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
+            {/* Launch delivery notice pill */}
+            {isNoticeActive && (
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
+                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{launchNoticeContent}</span>
               </div>
-            </div>
+            )}
 
-            {/* 3D Bottle Interactive Presentation */}
-            <div className="lg:col-span-5 flex flex-col items-center justify-center relative w-full opacity-0 animate-pop-in-cute" style={{ animationDelay: '300ms' }}>
-              <FysBottleViewer className="w-full max-w-md lg:max-w-none" />
+            <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
+              Le Premier Bar à Jus <br className="hidden md:block"/>
+              Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
+            </h1>
+
+            <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
+              Votre santé mérite du sur-mesure
+            </p>
+
+            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
+              Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
+              <Link
+                to="/lab"
+                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
+              >
+                Composez mon jus 100% naturel
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/lab?tab=nutrifys"
+                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
+              >
+                <Sparkles className="w-4 h-4 text-secondary" />
+                Discuter avec l'assistant
+              </Link>
             </div>
           </div>
         </div>
@@ -703,6 +702,110 @@ const RootIndex: PageComponent = () => {
           <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-background"></path>
         </svg>
       </div>
+
+      {/* ━━━ FYS EVENT (CORPORATE & B2B CATERING) ━━━ */}
+      <section id="events" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-[#3F6D4E]/[0.03] dark:bg-[#3F6D4E]/10 border-y border-border/40">
+        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        
+        <div className="max-w-6xl mx-auto relative z-10 space-y-16">
+          {/* Section Header */}
+          <div className="text-center space-y-4 max-w-3xl mx-auto scroll-animate opacity-0">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/25">
+              <Building2 className="w-3.5 h-3.5" />
+              FYS Event • Restauration d&apos;Entreprise & Catering
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              L&apos;excellence du jus frais <br />
+              <span className="text-primary brightness-110">pour vos événements.</span>
+            </h2>
+
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+              Séminaires, conférences, galas et pauses santé d&apos;entreprise : régalez vos invités avec des jus 100% naturels pressés le matin même. Profitez de remises sur volume automatiques et d&apos;une logistique dédiée sur mesure.
+            </p>
+          </div>
+
+          {/* 3 Pillars / Value Props */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-animate opacity-0" style={{ animationDelay: '150ms' }}>
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <GlassWater className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Catalogue Signature
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Sélection exclusive parmi nos recettes les plus plébiscitées. 100% pur fruit sans eau ni sucre ajouté, pressé à froid quelques heures avant l&apos;événement.
+              </p>
+            </div>
+
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <Sparkles className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Tarifs Dégressifs B2B
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Jusqu&apos;à 30% de remise sur volume immédiate. Formats 500ml individuels et 1L de partage. Estimation et validation de devis instantanées.
+              </p>
+            </div>
+
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <Package className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Logistique Clé en Main
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Glacières isothermes 12h pour une fraîcheur absolue sans prise de courant, gobelets écologiques compostables et service barman FYS sur site.
+              </p>
+            </div>
+          </div>
+
+          {/* Hero Banner with Executive Photo & Direct Action */}
+          <div className="relative rounded-[2.5rem] overflow-hidden border border-border/60 shadow-xl scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
+            <div className="absolute inset-0 bg-muted">
+              <img
+                src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
+                alt="FYS Event séminaire d'entreprise"
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/40" />
+            </div>
+
+            <div className="relative z-10 p-8 sm:p-12 md:p-16 max-w-2xl text-white space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 backdrop-blur-xs">
+                <ShieldCheck className="size-3.5 text-secondary" />
+                Devis & Réservation Immédiats
+              </div>
+
+              <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight">
+                Prêt à faire rayonner votre événement ?
+              </h3>
+
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed">
+                Connectez-vous à votre espace FYS pour configurer votre commande d&apos;entreprise, ajuster vos quantités et recevoir votre confirmation sans délai.
+              </p>
+
+              <div className="pt-2">
+                <Link
+                  to="/auth/login?redirect=/board/events"
+                  className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"
+                >
+                  <Building2 className="size-5" />
+                  Accéder à l&apos;espace FYS Event
+                  <ArrowRight className="size-4" />
+                </Link>
+                <p className="text-[11px] text-white/60 mt-2 font-medium">
+                  Redirection automatique vers votre espace événement après connexion.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ━━━ ABOUT US (L'ÉQUIPE) ━━━ */}
       <section id="about" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-background">

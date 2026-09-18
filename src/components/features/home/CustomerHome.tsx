@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'rasengan';
-import { Beaker, ChevronRight, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
+import { Beaker, ChevronRight, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useState, useEffect } from 'react';
@@ -365,6 +365,49 @@ export function CustomerHome(_props: Props) {
             </div>
           </div>
         ) : null}
+
+        {/* B2B / Événements FYS Event Card */}
+        <div className="relative rounded-[2.5rem] overflow-hidden border border-border/70 bg-gradient-to-br from-card via-card to-primary/[0.04] p-7 sm:p-9 shadow-sm transition-all hover:border-primary/40">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                  <Building2 className="size-3.5" />
+                  FYS EVENT • ENTREPRISES & CATERING
+                </span>
+                <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
+                  Tarifs dégressifs
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold font-display text-foreground leading-tight">
+                Un séminaire, un gala ou une réception d&apos;entreprise ?
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Offrez à vos collaborateurs et invités des jus de fruits 100% naturels pressés le matin même. Profitez de remises sur volume automatiques et d&apos;options logistiques dédiées (glacières thermiques, gobelets écologiques, service barman).
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <span className="text-[11px] font-medium text-foreground/80 bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40">
+                  Flacons 500ml & 1L
+                </span>
+                <span className="text-[11px] font-medium text-foreground/80 bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40">
+                  Devis & validation instantanés
+                </span>
+                <span className="text-[11px] font-medium text-foreground/80 bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40">
+                  Logistique clé en main
+                </span>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center">
+              <Link to="/board/events">
+                <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer">
+                  Planifier un événement
+                  <ArrowRight className="size-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
         <div className="space-y-8 pt-6">

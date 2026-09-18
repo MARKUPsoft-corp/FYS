@@ -8,3 +8,4 @@ export * from './notification';
 export * from './settings';
 export * from './kpay';
 export * from './program';
+export * from './event';

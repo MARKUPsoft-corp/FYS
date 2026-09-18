@@ -10,6 +10,7 @@ export const COLLECTIONS = {
   KPAY_TRANSACTIONS: 'kpay_transactions',
   PROGRAMS: 'programs',
   USER_PROGRAMS: 'user_programs',
+  EVENTS: 'events',
 } as const;
 
 // Sous-collection profil santé, chemin: users/{uid}/profile/main
