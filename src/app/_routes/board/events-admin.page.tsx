@@ -250,23 +250,30 @@ const EventsAdminPage: PageComponent = () => {
 
   // Pricing settings handlers
   const handleAddTier = () => {
-    const lastTier = pricingSettings.volumeDiscountTiers[pricingSettings.volumeDiscountTiers.length - 1];
+    const currentTiers = pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
+    const lastTier = currentTiers[currentTiers.length - 1];
     const newMin = lastTier ? lastTier.minBottles + 50 : 20;
     const newPercent = lastTier ? Math.min(50, lastTier.discountPercent + 5) : 5;
 
+    const updated = [
+      ...currentTiers,
+      { minBottles: newMin, discountPercent: newPercent },
+    ].sort((a, b) => a.minBottles - b.minBottles);
+
     setPricingSettings((prev) => ({
       ...prev,
-      volumeDiscountTiers: [
-        ...prev.volumeDiscountTiers,
-        { minBottles: newMin, discountPercent: newPercent },
-      ].sort((a, b) => a.minBottles - b.minBottles),
+      volumeDiscounts: updated,
+      volumeDiscountTiers: updated,
     }));
   };
 
   const handleRemoveTier = (index: number) => {
+    const currentTiers = pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
+    const updated = currentTiers.filter((_, i) => i !== index);
     setPricingSettings((prev) => ({
       ...prev,
-      volumeDiscountTiers: prev.volumeDiscountTiers.filter((_, i) => i !== index),
+      volumeDiscounts: updated,
+      volumeDiscountTiers: updated,
     }));
   };
 
@@ -276,13 +283,15 @@ const EventsAdminPage: PageComponent = () => {
     value: number
   ) => {
     setPricingSettings((prev) => {
-      const updated = [...prev.volumeDiscountTiers];
+      const currentTiers = prev?.volumeDiscountTiers || prev?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
+      const updated = [...currentTiers];
       updated[index] = {
         ...updated[index],
         [field]: value,
       };
       return {
         ...prev,
+        volumeDiscounts: updated,
         volumeDiscountTiers: updated,
       };
     });
@@ -293,12 +302,14 @@ const EventsAdminPage: PageComponent = () => {
     setPricingSuccess(false);
 
     try {
+      const currentTiers = pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
       // Sort tiers ascending by minBottles
-      const sortedTiers = [...pricingSettings.volumeDiscountTiers].sort(
+      const sortedTiers = [...currentTiers].sort(
         (a, b) => a.minBottles - b.minBottles
       );
       const toSave: FysEventPricingSettings = {
         ...pricingSettings,
+        volumeDiscounts: sortedTiers,
         volumeDiscountTiers: sortedTiers,
       };
 
@@ -827,7 +838,7 @@ const EventsAdminPage: PageComponent = () => {
                     <span className="col-span-2 text-right">Actions</span>
                   </div>
 
-                  {pricingSettings.volumeDiscountTiers.map((tier, idx) => (
+                  {(pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || []).map((tier, idx) => (
                     <div key={idx} className="grid grid-cols-12 p-3 items-center gap-3 text-sm">
                       <div className="col-span-5 flex items-center gap-2">
                         <Input
@@ -887,13 +898,15 @@ const EventsAdminPage: PageComponent = () => {
                     <Input
                       type="number"
                       min={0}
-                      value={pricingSettings.coolerBoxPricePerUnit}
-                      onChange={(e) =>
+                      value={pricingSettings?.coolerBoxPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxPricePerUnit}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
                         setPricingSettings((prev) => ({
                           ...prev,
-                          coolerBoxPricePerUnit: parseInt(e.target.value) || 0,
-                        }))
-                      }
+                          coolerBoxPricePerUnit: val,
+                          coolerBoxUnitPrice: val,
+                        }));
+                      }}
                       className="h-11 rounded-xl font-bold text-sm bg-background"
                     />
                     <span className="text-[11px] text-muted-foreground block">
@@ -908,13 +921,15 @@ const EventsAdminPage: PageComponent = () => {
                     <Input
                       type="number"
                       min={0}
-                      value={pricingSettings.ecoCupPricePerUnit}
-                      onChange={(e) =>
+                      value={pricingSettings?.ecoCupPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.ecoCupPricePerUnit}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
                         setPricingSettings((prev) => ({
                           ...prev,
-                          ecoCupPricePerUnit: parseInt(e.target.value) || 0,
-                        }))
-                      }
+                          ecoCupPricePerUnit: val,
+                          ecoCupUnitPrice: val,
+                        }));
+                      }}
                       className="h-11 rounded-xl font-bold text-sm bg-background"
                     />
                     <span className="text-[11px] text-muted-foreground block">
@@ -929,13 +944,15 @@ const EventsAdminPage: PageComponent = () => {
                     <Input
                       type="number"
                       min={0}
-                      value={pricingSettings.bartenderServiceHourlyRate}
-                      onChange={(e) =>
+                      value={pricingSettings?.bartenderServiceHourlyRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
                         setPricingSettings((prev) => ({
                           ...prev,
-                          bartenderServiceHourlyRate: parseInt(e.target.value) || 0,
-                        }))
-                      }
+                          bartenderServiceHourlyRate: val,
+                          bartenderHalfDayRate: val * 4,
+                        }));
+                      }}
                       className="h-11 rounded-xl font-bold text-sm bg-background"
                     />
                     <span className="text-[11px] text-muted-foreground block">

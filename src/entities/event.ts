@@ -1,33 +1,49 @@
 import { Timestamp } from 'firebase/firestore';
 
 export type FysEventType = 
-  | 'seminar'        // Séminaire / Conférence
-  | 'cocktail'       // Cocktail / Réception
-  | 'team_building'  // Team building / Afterwork
-  | 'gala'           // Gala / Soirée d'entreprise
-  | 'wedding'        // Célébration privée / Fête d'entreprise
-  | 'meeting'        // Réunion de direction
-  | 'other';         // Autre événement
+  | 'seminar'
+  | 'seminaire'
+  | 'conference'
+  | 'cocktail'
+  | 'cocktail_entreprise'
+  | 'team_building'
+  | 'gala'
+  | 'soiree_entreprise'
+  | 'lancement_produit'
+  | 'wedding'
+  | 'mariage_prive'
+  | 'meeting'
+  | 'other'
+  | 'autre';
 
-export const FYS_EVENT_TYPE_LABELS: Record<FysEventType, string> = {
+export const FYS_EVENT_TYPE_LABELS: Record<string, string> = {
   seminar: 'Séminaire & Conférence',
+  seminaire: 'Séminaire d\'entreprise',
+  conference: 'Conférence & Forum',
   cocktail: 'Cocktail & Réception',
+  cocktail_entreprise: 'Cocktail d\'entreprise',
   team_building: 'Team Building & Afterwork',
   gala: 'Gala & Cérémonie',
+  soiree_entreprise: 'Soirée d\'entreprise / Gala',
+  lancement_produit: 'Lancement de produit',
   wedding: 'Célébration & Fête',
+  mariage_prive: 'Événement privé / Réception',
   meeting: 'Réunion de Direction',
   other: 'Autre Événement',
+  autre: 'Autre Événement',
 };
 
 export type FysEventStatus = 
-  | 'submitted'        // Demande / Commande envoyée
-  | 'confirmed'        // Confirmée par FYS
-  | 'in_preparation'   // En cours de pressage / préparation
-  | 'out_for_delivery' // En cours de livraison
-  | 'delivered'        // Livrée à l'événement
-  | 'cancelled';       // Annulée
+  | 'draft'
+  | 'submitted'
+  | 'confirmed'
+  | 'in_preparation'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
 
 export const FYS_EVENT_STATUS_LABELS: Record<FysEventStatus, string> = {
+  draft: 'Brouillon',
   submitted: 'Commande reçue',
   confirmed: 'Confirmée',
   in_preparation: 'En préparation',
@@ -41,19 +57,33 @@ export interface FysEventJuiceItem {
   name: string;
   imageUrl?: string;
   description?: string;
-  bottleSize: '500ml' | '1L';
+  bottleSize?: '500ml' | '1L';
+  bottleVolume?: '500ml' | '1L';
   quantity: number;
   unitPrice: number;
-  lineTotal: number;
+  lineTotal?: number;
+  totalPrice?: number;
 }
 
 export interface FysEventLogistics {
-  coolerBoxesNeeded: boolean;      // Glacières isothermes avec glace
+  coolerBoxesNeeded?: boolean;
+  needCoolerBoxes?: boolean;
   coolerBoxesCount?: number;
-  ecoCupsNeeded: boolean;          // Gobelets écologiques biodégradables
+  coolerBoxFee?: number;
+
+  ecoCupsNeeded?: boolean;
+  needEcoCups?: boolean;
   ecoCupsCount?: number;
-  bartenderServiceNeeded: boolean; // Service barman / hôte FYS sur site
-  logisticsFee: number;
+  ecoCupsFee?: number;
+
+  bartenderServiceNeeded?: boolean;
+  needBartenderService?: boolean;
+  bartenderHours?: number;
+  bartenderHourlyRate?: number;
+  bartenderFee?: number;
+
+  logisticsFee?: number;
+  notes?: string;
 }
 
 export interface FysEvent {
@@ -68,26 +98,37 @@ export interface FysEvent {
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
-  eventName: string;
+  eventName?: string;
+  eventTitle?: string;
   eventType: FysEventType;
+  customEventType?: string;
   eventDate: string;        // YYYY-MM-DD
-  deliveryTime: string;     // HH:mm
+  deliveryTime?: string;     // HH:mm
   guestCount: number;       // Nombre de participants estimés
-  locationDistrict: string; // Quartier Yaoundé
-  locationAddress: string;  // Salle / Étage / Adresse précise
+  location?: string;
+  locationDistrict?: string;
+  locationAddress?: string;
   specialInstructions?: string;
 
   // Contenu & Tarification
-  selectedJuices: FysEventJuiceItem[];
+  selectedJuices?: FysEventJuiceItem[];
+  items?: FysEventJuiceItem[];
   logistics: FysEventLogistics;
   totalBottles: number;
-  subtotalJuices: number;
-  volumeDiscountPercent: number;
-  volumeDiscountAmount: number;
-  deliveryFee: number;
-  totalPrice: number;
+  totalLiters?: number;
+  subtotalJuices?: number;
+  rawJuiceTotal?: number;
+  volumeDiscountPercent?: number;
+  discountPercent?: number;
+  volumeDiscountAmount?: number;
+  discountAmount?: number;
+  deliveryFee?: number;
+  totalLogisticsFee?: number;
+  totalPrice?: number;
+  totalAmount?: number;
 
   status: FysEventStatus;
+  statusNotes?: string;
   statusHistory?: { status: FysEventStatus; timestamp: string; note?: string }[];
   adminNotes?: string;
 
@@ -102,10 +143,14 @@ export interface EventVolumeDiscountTier {
 
 export interface FysEventPricingSettings {
   volumeDiscounts: EventVolumeDiscountTier[];
-  coolerBoxUnitPrice: number;       // Prix par glacière mise à disposition (ex: 2 500 XAF)
-  ecoCupUnitPrice: number;           // Prix unitaire par gobelet biodégradable (ex: 75 XAF)
-  bartenderHalfDayRate: number;     // Forfait barman / animateur demi-journée (ex: 15 000 XAF)
-  baseEventDeliveryFee: number;     // Frais de livraison événementielle (ex: 3 000 XAF)
+  volumeDiscountTiers: EventVolumeDiscountTier[];
+  coolerBoxUnitPrice: number;
+  coolerBoxPricePerUnit: number;
+  ecoCupUnitPrice: number;
+  ecoCupPricePerUnit: number;
+  bartenderHalfDayRate: number;
+  bartenderServiceHourlyRate: number;
+  baseEventDeliveryFee: number;
   updatedAt?: Timestamp | any;
 }
 
@@ -116,8 +161,17 @@ export const DEFAULT_FYS_EVENT_PRICING: FysEventPricingSettings = {
     { minBottles: 100, discountPercent: 15 },
     { minBottles: 200, discountPercent: 20 },
   ],
+  volumeDiscountTiers: [
+    { minBottles: 30, discountPercent: 5 },
+    { minBottles: 50, discountPercent: 10 },
+    { minBottles: 100, discountPercent: 15 },
+    { minBottles: 200, discountPercent: 20 },
+  ],
   coolerBoxUnitPrice: 2500,
+  coolerBoxPricePerUnit: 2500,
   ecoCupUnitPrice: 75,
+  ecoCupPricePerUnit: 75,
   bartenderHalfDayRate: 15000,
+  bartenderServiceHourlyRate: 5000,
   baseEventDeliveryFee: 3000,
 };

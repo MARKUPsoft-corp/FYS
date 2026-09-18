@@ -256,10 +256,14 @@ const EventsPage: PageComponent = () => {
 
   // Logistics object
   const logisticsData: FysEventLogistics = useMemo(() => {
-    const coolerBoxFee = needCoolerBoxes ? coolerBoxesCount * pricingSettings.coolerBoxPricePerUnit : 0;
-    const ecoCupsFee = needEcoCups ? ecoCupsCount * pricingSettings.ecoCupPricePerUnit : 0;
+    const coolerUnitPrice = pricingSettings?.coolerBoxPricePerUnit ?? pricingSettings?.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice;
+    const ecoCupPrice = pricingSettings?.ecoCupPricePerUnit ?? pricingSettings?.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
+    const bartenderRate = pricingSettings?.bartenderServiceHourlyRate ?? (pricingSettings?.bartenderHalfDayRate ? Math.round(pricingSettings.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
+
+    const coolerBoxFee = needCoolerBoxes ? coolerBoxesCount * coolerUnitPrice : 0;
+    const ecoCupsFee = needEcoCups ? ecoCupsCount * ecoCupPrice : 0;
     const bartenderFee = needBartenderService
-      ? bartenderHours * pricingSettings.bartenderServiceHourlyRate
+      ? bartenderHours * bartenderRate
       : 0;
 
     return {
@@ -271,7 +275,7 @@ const EventsPage: PageComponent = () => {
       ecoCupsFee,
       needBartenderService,
       bartenderHours: needBartenderService ? bartenderHours : 0,
-      bartenderHourlyRate: pricingSettings.bartenderServiceHourlyRate,
+      bartenderHourlyRate: bartenderRate,
       bartenderFee,
       notes: logisticsNotes,
     };
@@ -294,7 +298,8 @@ const EventsPage: PageComponent = () => {
   // Next discount tier calculation
   const nextDiscountInfo = useMemo(() => {
     const currentBottles = financials.totalBottles;
-    const sortedTiers = [...pricingSettings.volumeDiscountTiers].sort((a, b) => a.minBottles - b.minBottles);
+    const tiers = pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || [];
+    const sortedTiers = [...tiers].sort((a, b) => a.minBottles - b.minBottles);
     const nextTier = sortedTiers.find((tier) => tier.minBottles > currentBottles);
 
     if (!nextTier) {
@@ -307,7 +312,7 @@ const EventsPage: PageComponent = () => {
       nextPercent: nextTier.discountPercent,
       targetBottles: nextTier.minBottles,
     };
-  }, [financials.totalBottles, financials.discountPercent, pricingSettings.volumeDiscountTiers]);
+  }, [financials.totalBottles, financials.discountPercent, pricingSettings]);
 
   // Quantity helpers
   const handleQuantityChange = (cocktailId: string, volume: '500ml' | '1L', delta: number) => {
@@ -1121,7 +1126,7 @@ const EventsPage: PageComponent = () => {
 
                   {/* Visual Tier Milestones */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                    {pricingSettings.volumeDiscountTiers.map((tier, idx) => {
+                    {(pricingSettings?.volumeDiscountTiers || pricingSettings?.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscountTiers || []).map((tier, idx) => {
                       const isActive = financials.totalBottles >= tier.minBottles;
                       return (
                         <div
@@ -1339,7 +1344,7 @@ const EventsPage: PageComponent = () => {
                           Maintien des jus à 4°C pendant 12 heures sans nécessité de branchement électrique. Recommandé pour séminaires et extérieurs.
                         </p>
                         <p className="text-xs font-semibold text-primary">
-                          {pricingSettings.coolerBoxPricePerUnit.toLocaleString()} XAF / glacière (consigne & location)
+                          {(pricingSettings?.coolerBoxPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxPricePerUnit).toLocaleString()} XAF / glacière (consigne & location)
                         </p>
                       </div>
 
@@ -1363,7 +1368,7 @@ const EventsPage: PageComponent = () => {
                           className="w-20 h-9 rounded-xl text-center text-xs font-bold"
                         />
                         <span className="text-xs text-muted-foreground">
-                          = {(coolerBoxesCount * pricingSettings.coolerBoxPricePerUnit).toLocaleString()} XAF
+                          = {(coolerBoxesCount * (pricingSettings?.coolerBoxPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxPricePerUnit)).toLocaleString()} XAF
                         </span>
                       </div>
                     )}
@@ -1383,7 +1388,7 @@ const EventsPage: PageComponent = () => {
                           Gobelets certifiés 100% compostables avec graduation FYS pour dégustation corporate élégante.
                         </p>
                         <p className="text-xs font-semibold text-primary">
-                          {pricingSettings.ecoCupPricePerUnit.toLocaleString()} XAF / unité
+                          {(pricingSettings?.ecoCupPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.ecoCupPricePerUnit).toLocaleString()} XAF / unité
                         </p>
                       </div>
 
@@ -1407,7 +1412,7 @@ const EventsPage: PageComponent = () => {
                           className="w-24 h-9 rounded-xl text-center text-xs font-bold"
                         />
                         <span className="text-xs text-muted-foreground">
-                          = {(ecoCupsCount * pricingSettings.ecoCupPricePerUnit).toLocaleString()} XAF
+                          = {(ecoCupsCount * (pricingSettings?.ecoCupPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.ecoCupPricePerUnit)).toLocaleString()} XAF
                         </span>
                       </div>
                     )}
@@ -1427,7 +1432,7 @@ const EventsPage: PageComponent = () => {
                           Un barman expert FYS en tenue professionnelle pour gérer le service, la présentation et animer l&apos;espace dégustation.
                         </p>
                         <p className="text-xs font-semibold text-primary">
-                          {pricingSettings.bartenderServiceHourlyRate.toLocaleString()} XAF / heure de prestation
+                          {(pricingSettings?.bartenderServiceHourlyRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate).toLocaleString()} XAF / heure de prestation
                         </p>
                       </div>
 
@@ -1451,7 +1456,7 @@ const EventsPage: PageComponent = () => {
                           className="w-20 h-9 rounded-xl text-center text-xs font-bold"
                         />
                         <span className="text-xs text-muted-foreground">
-                          = {(bartenderHours * pricingSettings.bartenderServiceHourlyRate).toLocaleString()} XAF
+                          = {(bartenderHours * (pricingSettings?.bartenderServiceHourlyRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate)).toLocaleString()} XAF
                         </span>
                       </div>
                     )}

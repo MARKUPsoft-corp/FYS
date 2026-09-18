@@ -38,14 +38,28 @@ export async function getFysEventPricingSettings(): Promise<FysEventPricingSetti
       return DEFAULT_FYS_EVENT_PRICING;
     }
     const data = snap.data() as Partial<FysEventPricingSettings>;
-    return {
-      volumeDiscounts: Array.isArray(data.volumeDiscounts) && data.volumeDiscounts.length > 0
+    const rawTiers = Array.isArray(data.volumeDiscountTiers) && data.volumeDiscountTiers.length > 0
+      ? data.volumeDiscountTiers
+      : (Array.isArray(data.volumeDiscounts) && data.volumeDiscounts.length > 0
         ? data.volumeDiscounts
-        : DEFAULT_FYS_EVENT_PRICING.volumeDiscounts,
-      coolerBoxUnitPrice: data.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice,
-      ecoCupUnitPrice: data.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice,
-      bartenderHalfDayRate: data.bartenderHalfDayRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderHalfDayRate,
-      baseEventDeliveryFee: data.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee,
+        : DEFAULT_FYS_EVENT_PRICING.volumeDiscounts);
+
+    const coolerUnitPrice = data.coolerBoxPricePerUnit ?? data.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice;
+    const ecoUnitPrice = data.ecoCupPricePerUnit ?? data.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
+    const hourlyRate = data.bartenderServiceHourlyRate ?? (data.bartenderHalfDayRate ? Math.round(data.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
+    const halfDayRate = data.bartenderHalfDayRate ?? hourlyRate * 4;
+    const deliveryFee = data.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
+
+    return {
+      volumeDiscounts: rawTiers,
+      volumeDiscountTiers: rawTiers,
+      coolerBoxUnitPrice: coolerUnitPrice,
+      coolerBoxPricePerUnit: coolerUnitPrice,
+      ecoCupUnitPrice: ecoUnitPrice,
+      ecoCupPricePerUnit: ecoUnitPrice,
+      bartenderHalfDayRate: halfDayRate,
+      bartenderServiceHourlyRate: hourlyRate,
+      baseEventDeliveryFee: deliveryFee,
       updatedAt: data.updatedAt,
     };
   } catch (error) {
@@ -61,8 +75,22 @@ export async function updateFysEventPricingSettings(
   settings: Partial<FysEventPricingSettings>
 ): Promise<void> {
   const ref = doc(db, COLLECTIONS.SETTINGS, SETTINGS_DOC_ID);
+  const tiers = settings.volumeDiscountTiers || settings.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscounts;
+  const coolerPrice = settings.coolerBoxPricePerUnit ?? settings.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice;
+  const ecoPrice = settings.ecoCupPricePerUnit ?? settings.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
+  const hourlyRate = settings.bartenderServiceHourlyRate ?? (settings.bartenderHalfDayRate ? Math.round(settings.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
+  const halfDayRate = settings.bartenderHalfDayRate ?? hourlyRate * 4;
+
   await setDoc(ref, {
     ...settings,
+    volumeDiscounts: tiers,
+    volumeDiscountTiers: tiers,
+    coolerBoxUnitPrice: coolerPrice,
+    coolerBoxPricePerUnit: coolerPrice,
+    ecoCupUnitPrice: ecoPrice,
+    ecoCupPricePerUnit: ecoPrice,
+    bartenderHalfDayRate: halfDayRate,
+    bartenderServiceHourlyRate: hourlyRate,
     updatedAt: serverTimestamp(),
   }, { merge: true });
 }
@@ -72,12 +100,13 @@ export async function updateFysEventPricingSettings(
  */
 export function calculateVolumeDiscountPercent(
   totalBottles: number,
-  tiers: EventVolumeDiscountTier[]
+  tiers?: EventVolumeDiscountTier[]
 ): number {
-  if (!tiers || tiers.length === 0 || totalBottles <= 0) return 0;
+  const safeTiers = Array.isArray(tiers) && tiers.length > 0 ? tiers : DEFAULT_FYS_EVENT_PRICING.volumeDiscounts;
+  if (!safeTiers || safeTiers.length === 0 || totalBottles <= 0) return 0;
 
   // Trier par minBottles décroissant pour trouver le palier le plus haut atteint
-  const sortedTiers = [...tiers].sort((a, b) => b.minBottles - a.minBottles);
+  const sortedTiers = [...safeTiers].sort((a, b) => b.minBottles - a.minBottles);
   for (const tier of sortedTiers) {
     if (totalBottles >= tier.minBottles) {
       return tier.discountPercent;
@@ -91,48 +120,60 @@ export function calculateVolumeDiscountPercent(
  */
 export function calculateEventFinancials(
   juices: FysEventJuiceItem[],
-  logistics: Omit<FysEventLogistics, 'logisticsFee'>,
-  pricingSettings: FysEventPricingSettings
-): {
-  totalBottles: number;
-  subtotalJuices: number;
-  volumeDiscountPercent: number;
-  volumeDiscountAmount: number;
-  logisticsFee: number;
-  deliveryFee: number;
-  totalPrice: number;
-} {
-  const totalBottles = juices.reduce((acc, j) => acc + (j.quantity || 0), 0);
-  const subtotalJuices = juices.reduce((acc, j) => acc + (j.lineTotal || 0), 0);
+  logistics: any,
+  pricingSettings?: FysEventPricingSettings
+) {
+  const safeSettings = pricingSettings || DEFAULT_FYS_EVENT_PRICING;
+  const safeJuices = Array.isArray(juices) ? juices : [];
 
-  const volumeDiscountPercent = calculateVolumeDiscountPercent(
-    totalBottles,
-    pricingSettings.volumeDiscounts
-  );
-  const volumeDiscountAmount = Math.round(subtotalJuices * (volumeDiscountPercent / 100));
+  const totalBottles = safeJuices.reduce((acc, j) => acc + (j.quantity || 0), 0);
+  const totalLiters = safeJuices.reduce((acc, j) => {
+    const vol = j.bottleVolume || j.bottleSize || '500ml';
+    return acc + (vol === '1L' ? (j.quantity || 0) * 1.0 : (j.quantity || 0) * 0.5);
+  }, 0);
 
-  let logisticsFee = 0;
-  if (logistics.coolerBoxesNeeded) {
-    logisticsFee += (logistics.coolerBoxesCount || 0) * pricingSettings.coolerBoxUnitPrice;
+  const rawJuiceTotal = safeJuices.reduce((acc, j) => {
+    const total = j.totalPrice ?? j.lineTotal ?? ((j.unitPrice || 0) * (j.quantity || 0));
+    return acc + total;
+  }, 0);
+
+  const tiers = safeSettings.volumeDiscountTiers || safeSettings.volumeDiscounts || DEFAULT_FYS_EVENT_PRICING.volumeDiscounts;
+  const discountPercent = calculateVolumeDiscountPercent(totalBottles, tiers);
+  const discountAmount = Math.round(rawJuiceTotal * (discountPercent / 100));
+
+  const coolerUnitPrice = safeSettings.coolerBoxPricePerUnit ?? safeSettings.coolerBoxUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxUnitPrice;
+  const ecoUnitPrice = safeSettings.ecoCupPricePerUnit ?? safeSettings.ecoCupUnitPrice ?? DEFAULT_FYS_EVENT_PRICING.ecoCupUnitPrice;
+  const bartenderRate = safeSettings.bartenderServiceHourlyRate ?? (safeSettings.bartenderHalfDayRate ? Math.round(safeSettings.bartenderHalfDayRate / 4) : 5000);
+
+  let totalLogisticsFee = 0;
+  if (logistics?.needCoolerBoxes || logistics?.coolerBoxesNeeded) {
+    totalLogisticsFee += (logistics.coolerBoxesCount || 0) * coolerUnitPrice;
   }
-  if (logistics.ecoCupsNeeded) {
-    logisticsFee += (logistics.ecoCupsCount || 0) * pricingSettings.ecoCupUnitPrice;
+  if (logistics?.needEcoCups || logistics?.ecoCupsNeeded) {
+    totalLogisticsFee += (logistics.ecoCupsCount || 0) * ecoUnitPrice;
   }
-  if (logistics.bartenderServiceNeeded) {
-    logisticsFee += pricingSettings.bartenderHalfDayRate;
+  if (logistics?.needBartenderService || logistics?.bartenderServiceNeeded) {
+    const hours = logistics.bartenderHours || 4;
+    totalLogisticsFee += hours * bartenderRate;
   }
 
-  const deliveryFee = pricingSettings.baseEventDeliveryFee;
-  const totalPrice = Math.max(0, subtotalJuices - volumeDiscountAmount + logisticsFee + deliveryFee);
+  const deliveryFee = safeSettings.baseEventDeliveryFee ?? 0;
+  const totalAmount = Math.max(0, rawJuiceTotal - discountAmount + totalLogisticsFee);
 
   return {
     totalBottles,
-    subtotalJuices,
-    volumeDiscountPercent,
-    volumeDiscountAmount,
-    logisticsFee,
+    totalLiters,
+    rawJuiceTotal,
+    subtotalJuices: rawJuiceTotal,
+    discountPercent,
+    volumeDiscountPercent: discountPercent,
+    discountAmount,
+    volumeDiscountAmount: discountAmount,
+    totalLogisticsFee,
+    logisticsFee: totalLogisticsFee,
     deliveryFee,
-    totalPrice,
+    totalAmount,
+    totalPrice: totalAmount,
   };
 }
 
@@ -140,23 +181,46 @@ export function calculateEventFinancials(
  * Crée un nouvel événement et passe la commande directement
  */
 export async function createFysEvent(
-  user: UserInfo,
-  eventInput: Omit<FysEvent, 'id' | 'userId' | 'userEmail' | 'userName' | 'userPhone' | 'status' | 'createdAt' | 'updatedAt'>
+  userOrData: any,
+  maybeEventInput?: any
 ): Promise<string> {
   const ref = doc(collection(db, COLLECTIONS.EVENTS));
   const nowIso = new Date().toISOString();
 
-  const newEvent: Omit<FysEvent, 'createdAt' | 'updatedAt'> = {
+  let user: { uid: string; email: string; name: string; phone?: string };
+  let eventInput: any;
+
+  if (maybeEventInput) {
+    user = userOrData;
+    eventInput = maybeEventInput;
+  } else {
+    eventInput = userOrData;
+    user = {
+      uid: eventInput.userId,
+      email: eventInput.userEmail,
+      name: eventInput.userName,
+      phone: eventInput.userPhone,
+    };
+  }
+
+  const newEvent = {
     ...eventInput,
     id: ref.id,
     userId: user.uid,
     userEmail: user.email,
     userName: user.name,
-    ...(user.phone ? { userPhone: user.phone } : {}),
-    status: 'submitted',
+    userPhone: user.phone || eventInput.userPhone || eventInput.contactPhone,
+    companyName: eventInput.companyName,
+    eventName: eventInput.eventName || eventInput.eventTitle,
+    eventTitle: eventInput.eventTitle || eventInput.eventName,
+    location: eventInput.location || eventInput.locationAddress,
+    locationAddress: eventInput.locationAddress || eventInput.location,
+    items: eventInput.items || eventInput.selectedJuices || [],
+    selectedJuices: eventInput.selectedJuices || eventInput.items || [],
+    status: eventInput.status || 'submitted',
     statusHistory: [
       {
-        status: 'submitted',
+        status: eventInput.status || 'submitted',
         timestamp: nowIso,
         note: 'Commande d’événement créée par l’entreprise',
       },
@@ -169,9 +233,13 @@ export async function createFysEvent(
     updatedAt: serverTimestamp(),
   });
 
+  const eventTitle = newEvent.eventTitle || newEvent.eventName || 'Événement';
+  const totalAmount = newEvent.totalAmount ?? newEvent.totalPrice ?? 0;
+  const totalBottles = newEvent.totalBottles ?? 0;
+
   // Notifications Administrateurs
   const adminTitle = 'Nouvel événement FYS Event !';
-  const adminBody = `${eventInput.companyName} a commandé ${eventInput.totalBottles} bouteilles pour "${eventInput.eventName}" (${eventInput.totalPrice.toLocaleString()} XAF).`;
+  const adminBody = `${newEvent.companyName} a commandé ${totalBottles} bouteilles pour "${eventTitle}" (${totalAmount.toLocaleString()} XAF).`;
 
   notifyAdmins({
     title: adminTitle,
@@ -192,7 +260,7 @@ export async function createFysEvent(
   createNotification({
     userId: user.uid,
     title: 'Commande FYS Event reçue !',
-    message: `Votre commande pour l'événement "${eventInput.eventName}" (${eventInput.totalBottles} flacons) est bien enregistrée. Notre équipe prépare votre livraison.`,
+    message: `Votre commande pour l'événement "${eventTitle}" (${totalBottles} flacons) est bien enregistrée. Notre équipe prépare votre livraison.`,
     link: `/board/events?id=${ref.id}`,
   }).catch(console.error);
 
@@ -316,16 +384,17 @@ export async function updateFysEventStatus(
 
   // Notifier l'entreprise / l'utilisateur
   if (eventData.userId) {
+    const eventTitle = eventData.eventTitle || eventData.eventName || 'Événement';
     createNotification({
       userId: eventData.userId,
       title: `Événement FYS Event : ${statusLabel}`,
-      message: `Votre événement "${eventData.eventName}" est désormais : ${statusLabel}.${adminNotes ? ` Note : ${adminNotes}` : ''}`,
+      message: `Votre événement "${eventTitle}" est désormais : ${statusLabel}.${adminNotes ? ` Note : ${adminNotes}` : ''}`,
       link: `/board/events?id=${eventId}`,
     }).catch(console.error);
 
     sendPushNotification({
       title: `Événement FYS Event : ${statusLabel}`,
-      body: `Votre événement "${eventData.eventName}" est passé à : ${statusLabel}.`,
+      body: `Votre événement "${eventTitle}" est passé à : ${statusLabel}.`,
       targetUid: eventData.userId,
       url: `/board/events?id=${eventId}`,
       tag: `event-status-${eventId}`,
