@@ -91,13 +91,6 @@ const WIZARD_STEPS = [
   },
   {
     step: 3,
-    title: 'Logistique & Services',
-    shortTitle: 'Logistique',
-    subtitle: 'Glacières & barman',
-    icon: Truck,
-  },
-  {
-    step: 4,
     title: 'Devis & Validation',
     shortTitle: 'Confirmation',
     subtitle: 'Récapitulatif final',
@@ -419,14 +412,6 @@ const EventsPage: PageComponent = () => {
     return financials.totalBottles > 0;
   }, [financials.totalBottles]);
 
-  // Step 3 Validation logic
-  const isStep3Valid = useMemo(() => {
-    if (needCoolerBoxes && coolerBoxesCount < 1) return false;
-    if (needEcoCups && ecoCupsCount < 1) return false;
-    if (needBartenderService && bartenderHours < 1) return false;
-    return true;
-  }, [needCoolerBoxes, coolerBoxesCount, needEcoCups, ecoCupsCount, needBartenderService, bartenderHours]);
-
   const handleValidateAndProceedStep1 = () => {
     setTouchedStep1(true);
     if (!isStep1Valid) {
@@ -459,17 +444,6 @@ const EventsPage: PageComponent = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleValidateAndProceedStep3 = () => {
-    if (!isStep3Valid) {
-      setSubmitError('Veuillez vérifier les quantités des options logistiques sélectionnées.');
-      return;
-    }
-    setSubmitError(null);
-    setMaxUnlockedStep((prev) => Math.max(prev, 4));
-    setWizardStep(4);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleStepClick = (targetStep: number) => {
     if (targetStep === wizardStep) return;
     if (targetStep <= maxUnlockedStep) {
@@ -480,7 +454,6 @@ const EventsPage: PageComponent = () => {
       // Prompt validation for current step to provide clear user feedback
       if (wizardStep === 1) handleValidateAndProceedStep1();
       else if (wizardStep === 2) handleValidateAndProceedStep2();
-      else if (wizardStep === 3) handleValidateAndProceedStep3();
     }
   };
 
@@ -512,14 +485,14 @@ const EventsPage: PageComponent = () => {
         userPhone: user.phone || contactPhone,
         companyName: companyName.trim(),
         eventType,
-        customEventType: eventType === 'autre' ? customEventType.trim() : undefined,
+        customEventType: eventType === 'autre' ? (customEventType.trim() || '') : '',
         eventTitle: eventTitle.trim(),
         eventDate,
-        deliveryTime: deliveryTime.trim() || undefined,
+        deliveryTime: deliveryTime.trim() || '',
         location: location.trim(),
         contactPerson: contactPerson.trim(),
         contactPhone: contactPhone.trim(),
-        contactEmail: contactEmail.trim() || user.email,
+        contactEmail: contactEmail.trim() || user.email || '',
         guestCount: Number(guestCount) || 1,
         items: juiceItems,
         totalBottles: financials.totalBottles,
@@ -527,9 +500,7 @@ const EventsPage: PageComponent = () => {
         rawJuiceTotal: financials.rawJuiceTotal,
         discountPercent: financials.discountPercent,
         discountAmount: financials.discountAmount,
-        logistics: logisticsData,
-        totalLogisticsFee: financials.totalLogisticsFee,
-        totalAmount: financials.totalAmount,
+        totalAmount: financials.rawJuiceTotal - financials.discountAmount,
         status: 'submitted',
       });
 
@@ -1666,7 +1637,7 @@ const EventsPage: PageComponent = () => {
                       onClick={handleValidateAndProceedStep2}
                       className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                     >
-                      <span>Étape suivante : Logistique ({financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''})</span>
+                      <span>Récapitulatif & Devis ({financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''})</span>
                       <ArrowRight className="size-4 ml-2" />
                     </Button>
                   </div>
@@ -1674,192 +1645,8 @@ const EventsPage: PageComponent = () => {
               </div>
             )}
 
-            {/* STEP 3: LOGISTIQUE & SERVICES */}
+            {/* STEP 3: RÉCAPITULATIF & CONFIRMATION */}
             {wizardStep === 3 && (
-              <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-6">
-                <div className="space-y-1 pb-4 border-b border-border/50">
-                  <h3 className="text-xl font-bold font-display text-foreground">
-                    3. Logistique & Services Complémentaires
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Garantissez la conservation optimale et un service irréprochable le jour J.
-                  </p>
-                </div>
-
-                <div className="space-y-5">
-                  {/* Option 1: Cooler boxes */}
-                  <div className="p-5 rounded-2xl border border-border/60 bg-muted/20 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Package className="size-4 text-primary" />
-                          <h4 className="font-bold text-sm text-foreground">
-                            Glacières Isothermes Professionnelles
-                          </h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Maintien des jus à 4°C pendant 12 heures sans nécessité de branchement électrique. Recommandé pour séminaires et extérieurs.
-                        </p>
-                        <p className="text-xs font-semibold text-primary">
-                          {(pricingSettings?.coolerBoxPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxPricePerUnit).toLocaleString()} XAF / glacière (consigne & location)
-                        </p>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        checked={needCoolerBoxes}
-                        onChange={(e) => setNeedCoolerBoxes(e.target.checked)}
-                        className="size-5 accent-primary rounded-md cursor-pointer mt-1"
-                      />
-                    </div>
-
-                    {needCoolerBoxes && (
-                      <div className="pt-3 border-t border-border/40 flex items-center gap-3">
-                        <span className="text-xs font-medium text-foreground">Nombre de glacières souhaité :</span>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={20}
-                          value={coolerBoxesCount}
-                          onChange={(e) => setCoolerBoxesCount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-20 h-9 rounded-xl text-center text-xs font-bold"
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          = {(coolerBoxesCount * (pricingSettings?.coolerBoxPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.coolerBoxPricePerUnit)).toLocaleString()} XAF
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Option 2: Eco cups */}
-                  <div className="p-5 rounded-2xl border border-border/60 bg-muted/20 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <GlassWater className="size-4 text-primary" />
-                          <h4 className="font-bold text-sm text-foreground">
-                            Gobelets Écologiques Biodégradables
-                          </h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Gobelets certifiés 100% compostables avec graduation FYS pour dégustation corporate élégante.
-                        </p>
-                        <p className="text-xs font-semibold text-primary">
-                          {(pricingSettings?.ecoCupPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.ecoCupPricePerUnit).toLocaleString()} XAF / unité
-                        </p>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        checked={needEcoCups}
-                        onChange={(e) => setNeedEcoCups(e.target.checked)}
-                        className="size-5 accent-primary rounded-md cursor-pointer mt-1"
-                      />
-                    </div>
-
-                    {needEcoCups && (
-                      <div className="pt-3 border-t border-border/40 flex items-center gap-3">
-                        <span className="text-xs font-medium text-foreground">Nombre de gobelets :</span>
-                        <Input
-                          type="number"
-                          min={10}
-                          step={10}
-                          value={ecoCupsCount}
-                          onChange={(e) => setEcoCupsCount(Math.max(10, parseInt(e.target.value) || 10))}
-                          className="w-24 h-9 rounded-xl text-center text-xs font-bold"
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          = {(ecoCupsCount * (pricingSettings?.ecoCupPricePerUnit ?? DEFAULT_FYS_EVENT_PRICING.ecoCupPricePerUnit)).toLocaleString()} XAF
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Option 3: Bartender service */}
-                  <div className="p-5 rounded-2xl border border-border/60 bg-muted/20 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <ChefHat className="size-4 text-primary" />
-                          <h4 className="font-bold text-sm text-foreground">
-                            Service Barman / Animation FYS sur Place
-                          </h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Un barman expert FYS en tenue professionnelle pour gérer le service, la présentation et animer l&apos;espace dégustation.
-                        </p>
-                        <p className="text-xs font-semibold text-primary">
-                          {(pricingSettings?.bartenderServiceHourlyRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate).toLocaleString()} XAF / heure de prestation
-                        </p>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        checked={needBartenderService}
-                        onChange={(e) => setNeedBartenderService(e.target.checked)}
-                        className="size-5 accent-primary rounded-md cursor-pointer mt-1"
-                      />
-                    </div>
-
-                    {needBartenderService && (
-                      <div className="pt-3 border-t border-border/40 flex items-center gap-3">
-                        <span className="text-xs font-medium text-foreground">Nombre d&apos;heures prévues :</span>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={12}
-                          value={bartenderHours}
-                          onChange={(e) => setBartenderHours(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-20 h-9 rounded-xl text-center text-xs font-bold"
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          = {(bartenderHours * (pricingSettings?.bartenderServiceHourlyRate ?? DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate)).toLocaleString()} XAF
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Notes / specific requirements */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Consignes particulières de livraison ou restrictions d&apos;accès
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="Ex: Badge requis à l'accueil, livraison impérativement avant 08h00, ascenseur côté parking..."
-                      value={logisticsNotes}
-                      onChange={(e) => setLogisticsNotes(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-background border border-input text-foreground text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border/50">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSubmitError(null);
-                      setWizardStep(2);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="w-full sm:w-auto rounded-2xl font-semibold cursor-pointer"
-                  >
-                    <ArrowLeft className="size-4 mr-2" />
-                    Précédent : Sélection des Jus
-                  </Button>
-                  <Button
-                    onClick={handleValidateAndProceedStep3}
-                    className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
-                  >
-                    <span>Étape suivante : Récapitulatif & Devis</span>
-                    <ArrowRight className="size-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 4: RÉCAPITULATIF & CONFIRMATION */}
-            {wizardStep === 4 && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                   {/* Event summary box */}
@@ -2055,13 +1842,13 @@ const EventsPage: PageComponent = () => {
                         type="button"
                         onClick={() => {
                           setSubmitError(null);
-                          setWizardStep(3);
+                          setWizardStep(2);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         className="w-full rounded-2xl font-semibold text-xs h-11 cursor-pointer"
                       >
                         <ArrowLeft className="size-3.5 mr-2" />
-                        Modifier les options logistiques
+                        Modifier la sélection des jus
                       </Button>
                     </div>
 
