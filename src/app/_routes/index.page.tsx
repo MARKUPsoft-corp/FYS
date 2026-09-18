@@ -14,6 +14,7 @@ import { db } from '@/lib/firebase';
 import { useQuery } from '@tanstack/react-query';
 import { getLandingImagesSettings, getPricingSettings } from '@/services/settings';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
+import { FysBottleViewer } from '@/components/3d/FysBottleViewer';
 
 /* ─────────────────────────────────────────────
    FYS Landing Page — Premium, Clean, Épurée
@@ -256,7 +257,7 @@ const RootIndex: PageComponent = () => {
       </nav>
 
       {/* ━━━ HERO ━━━ */}
-      <section className="relative w-full h-dvh min-h-[500px] flex flex-col justify-center bg-card overflow-hidden border-b border-border/40">
+      <section className="relative w-full min-h-dvh flex flex-col justify-center bg-card overflow-hidden border-b border-border/40 py-16 lg:py-24">
         
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
         
@@ -273,45 +274,52 @@ const RootIndex: PageComponent = () => {
         {/* Mobile contrast overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
-          <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
-            {/* Launch delivery notice pill */}
-            {isNoticeActive && (
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
-                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>{launchNoticeContent}</span>
+        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-12 lg:pt-16 pb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left mx-auto lg:mx-0">
+              {/* Launch delivery notice pill */}
+              {isNoticeActive && (
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
+                  <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>{launchNoticeContent}</span>
+                </div>
+              )}
+
+              <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
+                Le Premier Bar à Jus <br className="hidden md:block"/>
+                Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
+              </h1>
+
+              <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
+                Votre santé mérite du sur-mesure
+              </p>
+
+              <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
+                Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
+                <Link
+                  to="/lab"
+                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
+                >
+                  Composez mon jus 100% naturel
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/lab?tab=nutrifys"
+                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <Sparkles className="w-4 h-4 text-secondary" />
+                  Discuter avec l'assistant
+                </Link>
               </div>
-            )}
+            </div>
 
-            <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
-              Le Premier Bar à Jus <br className="hidden md:block"/>
-              Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
-            </h1>
-
-            <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
-              Votre santé mérite du sur-mesure
-            </p>
-
-            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
-              Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
-              <Link
-                to="/lab"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
-              >
-                Composez mon jus 100% naturel
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/lab?tab=nutrifys"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
-              >
-                <Sparkles className="w-4 h-4 text-secondary" />
-                Discuter avec l'assistant
-              </Link>
+            {/* 3D Bottle Interactive Presentation */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center relative w-full opacity-0 animate-pop-in-cute" style={{ animationDelay: '300ms' }}>
+              <FysBottleViewer className="w-full max-w-md lg:max-w-none" />
             </div>
           </div>
         </div>
