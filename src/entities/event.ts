@@ -151,6 +151,7 @@ export interface FysEventPricingSettings {
   bartenderHalfDayRate: number;
   bartenderServiceHourlyRate: number;
   baseEventDeliveryFee: number;
+  whatsappNumber?: string;
   updatedAt?: Timestamp | any;
 }
 
@@ -174,4 +175,5 @@ export const DEFAULT_FYS_EVENT_PRICING: FysEventPricingSettings = {
   bartenderHalfDayRate: 15000,
   bartenderServiceHourlyRate: 5000,
   baseEventDeliveryFee: 3000,
+  whatsappNumber: '+237699000000',
 };

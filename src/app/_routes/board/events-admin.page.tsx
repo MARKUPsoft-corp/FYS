@@ -26,6 +26,7 @@ import {
   Phone,
   MapPin,
   RefreshCw,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -961,6 +962,37 @@ const EventsAdminPage: PageComponent = () => {
                       Taux horaire de l&apos;animateur / barman sur site
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Section 3: WhatsApp Customer Support */}
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <MessageCircle className="size-4 text-emerald-500" />
+                  Service Client WhatsApp & Assistance Événements
+                </h4>
+
+                <div className="p-5 rounded-2xl bg-muted/20 border border-border/50 max-w-xl space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                    Numéro WhatsApp Service Client (avec indicatif pays)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="+237699000000"
+                      value={pricingSettings?.whatsappNumber ?? DEFAULT_FYS_EVENT_PRICING.whatsappNumber}
+                      onChange={(e) => {
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          whatsappNumber: e.target.value.trim(),
+                        }));
+                      }}
+                      className="h-11 rounded-xl font-bold text-sm bg-background"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Ce numéro permet aux entreprises de contacter directement l&apos;équipe FYS via un bouton WhatsApp intégré dans le devis, après la confirmation de commande et dans le récapitulatif financier.
+                  </p>
                 </div>
               </div>
             </div>

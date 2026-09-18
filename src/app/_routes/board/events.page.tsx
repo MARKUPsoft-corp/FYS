@@ -28,6 +28,9 @@ import {
   Flame,
   Lock,
   Search,
+  Download,
+  Edit3,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/lib/utils';
+import { downloadEventDevisPdf } from '@/lib/pdf';
 import {
   type FysEvent,
   type FysEventType,
@@ -51,6 +55,7 @@ import {
   calculateVolumeDiscountPercent,
   calculateEventFinancials,
   createFysEvent,
+  updateFysEvent,
   subscribeToUserFysEvents,
   getFysEventById,
 } from '@/services/event';
@@ -173,6 +178,7 @@ const EventsPage: PageComponent = () => {
   // Mode: 'list' or 'wizard'
   const [viewMode, setViewMode] = useState<'list' | 'wizard'>('list');
   const [wizardStep, setWizardStep] = useState<number>(1);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   // Catalogue cocktails & fruits
   const [catalogueCocktails, setCatalogueCocktails] = useState<Cocktail[]>([]);
@@ -185,6 +191,17 @@ const EventsPage: PageComponent = () => {
 
   // Pricing settings
   const [pricingSettings, setPricingSettings] = useState<FysEventPricingSettings>(DEFAULT_FYS_EVENT_PRICING);
+
+  // WhatsApp Support Config
+  const whatsappNumber = pricingSettings?.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
+  const cleanWaNumber = whatsappNumber.replace(/[^0-9]/g, '');
+
+  const getWhatsAppEventUrl = (event: { id: string; eventTitle?: string; eventName?: string; companyName: string }) => {
+    const title = event.eventTitle || event.eventName || 'Commande FYS Event';
+    const ref = event.id.slice(0, 8).toUpperCase();
+    const msg = `Bonjour le Service Client FYS ! Je vous contacte au sujet de notre commande événementielle "${title}" (${event.companyName}), réf: #${ref}.`;
+    return `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(msg)}`;
+  };
 
   // Wizard form state
   const [companyName, setCompanyName] = useState('');
@@ -216,6 +233,50 @@ const EventsPage: PageComponent = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<number>(1);
   const [touchedStep1, setTouchedStep1] = useState(false);
+
+  // Edit an existing event
+  const handleStartEditEvent = (evt: FysEvent) => {
+    setEditingEventId(evt.id);
+    setCompanyName(evt.companyName || '');
+    setEventType(evt.eventType || 'seminaire');
+    setCustomEventType(evt.customEventType || '');
+    setEventTitle(evt.eventTitle || evt.eventName || '');
+    setEventDate(evt.eventDate || '');
+    setDeliveryTime(evt.deliveryTime || '08:30');
+    setLocation(evt.location || evt.locationAddress || '');
+    setContactPerson(evt.contactPerson || '');
+    setContactPhone(evt.contactPhone || '');
+    setContactEmail(evt.contactEmail || '');
+    setGuestCount(evt.guestCount || 30);
+
+    const bottles: Record<string, number> = {};
+    const vols: Record<string, '500ml' | '1L'> = {};
+    (evt.items || evt.selectedJuices || []).forEach((item) => {
+      if (item.cocktailId) {
+        bottles[item.cocktailId] = item.quantity;
+        vols[item.cocktailId] = item.bottleVolume || item.bottleSize || '500ml';
+      }
+    });
+    setSelectedBottles(bottles);
+    setCardVolumes(vols);
+
+    setMaxUnlockedStep(3);
+    setWizardStep(1);
+    setViewMode('wizard');
+    setSubmitError(null);
+    navigate('/board/events');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    const targetId = editingEventId;
+    setEditingEventId(null);
+    if (targetId) {
+      navigate(`/board/events?id=${targetId}`);
+    } else {
+      setViewMode('list');
+    }
+  };
 
   // Load pricing settings, cocktails & fruits
   useEffect(() => {
@@ -478,38 +539,66 @@ const EventsPage: PageComponent = () => {
     setSubmitError(null);
 
     try {
-      const newEventId = await createFysEvent({
-        userId: user.uid,
-        userEmail: user.email,
-        userName: user.name,
-        userPhone: user.phone || contactPhone,
-        companyName: companyName.trim(),
-        eventType,
-        customEventType: eventType === 'autre' ? (customEventType.trim() || '') : '',
-        eventTitle: eventTitle.trim(),
-        eventDate,
-        deliveryTime: deliveryTime.trim() || '',
-        location: location.trim(),
-        contactPerson: contactPerson.trim(),
-        contactPhone: contactPhone.trim(),
-        contactEmail: contactEmail.trim() || user.email || '',
-        guestCount: Number(guestCount) || 1,
-        items: juiceItems,
-        totalBottles: financials.totalBottles,
-        totalLiters: financials.totalLiters,
-        rawJuiceTotal: financials.rawJuiceTotal,
-        discountPercent: financials.discountPercent,
-        discountAmount: financials.discountAmount,
-        totalAmount: financials.rawJuiceTotal - financials.discountAmount,
-        status: 'submitted',
-      });
+      if (editingEventId) {
+        await updateFysEvent(editingEventId, {
+          companyName: companyName.trim(),
+          eventType,
+          customEventType: eventType === 'autre' ? (customEventType.trim() || '') : '',
+          eventTitle: eventTitle.trim(),
+          eventDate,
+          deliveryTime: deliveryTime.trim() || '',
+          location: location.trim(),
+          contactPerson: contactPerson.trim(),
+          contactPhone: contactPhone.trim(),
+          contactEmail: contactEmail.trim() || user.email || '',
+          guestCount: Number(guestCount) || 1,
+          items: juiceItems,
+          totalBottles: financials.totalBottles,
+          totalLiters: financials.totalLiters,
+          rawJuiceTotal: financials.rawJuiceTotal,
+          discountPercent: financials.discountPercent,
+          discountAmount: financials.discountAmount,
+          totalAmount: financials.rawJuiceTotal - financials.discountAmount,
+        });
 
-      // Reset form and view event details
-      setViewMode('list');
-      navigate(`/board/events?id=${newEventId}`);
+        const targetId = editingEventId;
+        setEditingEventId(null);
+        setViewMode('list');
+        navigate(`/board/events?id=${targetId}`);
+      } else {
+        const newEventId = await createFysEvent({
+          userId: user.uid,
+          userEmail: user.email,
+          userName: user.name,
+          userPhone: user.phone || contactPhone,
+          companyName: companyName.trim(),
+          eventType,
+          customEventType: eventType === 'autre' ? (customEventType.trim() || '') : '',
+          eventTitle: eventTitle.trim(),
+          eventDate,
+          deliveryTime: deliveryTime.trim() || '',
+          location: location.trim(),
+          contactPerson: contactPerson.trim(),
+          contactPhone: contactPhone.trim(),
+          contactEmail: contactEmail.trim() || user.email || '',
+          guestCount: Number(guestCount) || 1,
+          items: juiceItems,
+          totalBottles: financials.totalBottles,
+          totalLiters: financials.totalLiters,
+          rawJuiceTotal: financials.rawJuiceTotal,
+          discountPercent: financials.discountPercent,
+          discountAmount: financials.discountAmount,
+          totalAmount: financials.rawJuiceTotal - financials.discountAmount,
+          status: 'submitted',
+        });
+
+        // Reset form and view event details
+        setViewMode('list');
+        navigate(`/board/events?id=${newEventId}`);
+      }
     } catch (err: any) {
-      console.error('Error creating FYS Event:', err);
-      setSubmitError(err.message || 'Une erreur est survenue lors de la validation de la commande.');
+      console.error('Error saving FYS Event:', err);
+      setSubmitError(err.message || 'Une erreur est survenue lors de l’enregistrement de la commande.');
     } finally {
       setSubmitting(false);
     }
@@ -585,15 +674,37 @@ const EventsPage: PageComponent = () => {
               Retour à la liste
             </Button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Button
                 variant="outline"
-                onClick={() => window.print()}
-                className="rounded-xl font-semibold gap-2 border-border/80"
+                onClick={() => downloadEventDevisPdf(selectedEvent, whatsappNumber)}
+                className="rounded-xl font-semibold text-xs gap-1.5 border-border/80 cursor-pointer"
               >
-                <Printer className="size-4" />
-                Imprimer la fiche
+                <Download className="size-3.5" />
+                Devis PDF
               </Button>
+
+              <a
+                href={getWhatsAppEventUrl(selectedEvent)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all"
+              >
+                <MessageCircle className="size-3.5" />
+                WhatsApp
+              </a>
+
+              {selectedEvent.status !== 'delivered' && selectedEvent.status !== 'cancelled' && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleStartEditEvent(selectedEvent)}
+                  className="rounded-xl font-bold text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
+                >
+                  <Edit3 className="size-3.5" />
+                  Modifier
+                </Button>
+              )}
+
               <span
                 className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border ${statusObj.bg} ${statusObj.text} ${statusObj.border}`}
               >
@@ -846,6 +957,39 @@ const EventsPage: PageComponent = () => {
                     Nos recettes sont pressées à froid quelques heures avant l&apos;événement pour préserver l&apos;intégralité des enzymes et nutriments.
                   </p>
                 </div>
+
+                {/* WhatsApp Support & Document Download */}
+                <div className="space-y-2.5 pt-3 border-t border-border/50">
+                  <a
+                    href={getWhatsAppEventUrl(selectedEvent)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98"
+                  >
+                    <MessageCircle className="size-4 shrink-0" />
+                    <span>Discuter sur WhatsApp avec le service client</span>
+                  </a>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => downloadEventDevisPdf(selectedEvent, whatsappNumber)}
+                    className="w-full h-11 rounded-xl font-bold text-xs border-primary/40 text-primary hover:bg-primary/10 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Download className="size-4 shrink-0" />
+                    <span>Télécharger le Devis (PDF)</span>
+                  </Button>
+
+                  {selectedEvent.status !== 'delivered' && selectedEvent.status !== 'cancelled' && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleStartEditEvent(selectedEvent)}
+                      className="w-full h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Edit3 className="size-3.5" />
+                      <span>Modifier cette commande</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -888,13 +1032,20 @@ const EventsPage: PageComponent = () => {
                 setViewMode('wizard');
                 setSubmitError(null);
               }}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5 ${
                 viewMode === 'wizard'
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              + Nouvel Événement
+              {editingEventId ? (
+                <>
+                  <Edit3 className="size-3.5" />
+                  <span>Modifier l&apos;Événement</span>
+                </>
+              ) : (
+                <span>+ Nouvel Événement</span>
+              )}
             </button>
           </div>
 
@@ -990,10 +1141,37 @@ const EventsPage: PageComponent = () => {
                           </span>
                         </div>
 
-                        <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                          Voir la commande
-                          <ChevronRight className="size-4" />
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={getWhatsAppEventUrl(ev)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors"
+                            title="Contacter le service client sur WhatsApp"
+                          >
+                            <MessageCircle className="size-4" />
+                          </a>
+
+                          {ev.status !== 'delivered' && ev.status !== 'cancelled' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEditEvent(ev);
+                              }}
+                              className="p-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
+                              title="Modifier la commande"
+                            >
+                              <Edit3 className="size-4" />
+                            </button>
+                          )}
+
+                          <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:translate-x-1 transition-transform ml-1">
+                            Détails
+                            <ChevronRight className="size-4" />
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1006,6 +1184,32 @@ const EventsPage: PageComponent = () => {
         {/* ── WIZARD VIEW ────────────────────────────────────────────────────── */}
         {viewMode === 'wizard' && (
           <div className="space-y-8">
+            {editingEventId && (
+              <div className="bg-primary/10 border border-primary/30 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                    <Edit3 className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">
+                      Mode Modification Activé : {eventTitle || 'Votre événement'}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Ajustez les informations générales ou le nombre de bouteilles. Les modifications mettront à jour votre commande existante.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="rounded-xl font-semibold text-xs shrink-0 cursor-pointer"
+                >
+                  Annuler la modification
+                </Button>
+              </div>
+            )}
+
             {/* ── HIGH-END STEPPER COMPONENT ───────────────────────────── */}
             <div className="bg-card rounded-3xl p-4 sm:p-6 border border-border/70 shadow-xs space-y-4">
               {/* Mobile View: High clarity, zero truncation */}
@@ -1780,7 +1984,7 @@ const EventsPage: PageComponent = () => {
                         ) : (
                           <>
                             <CheckCircle2 className="size-4 mr-2" />
-                            Confirmer & Transmettre la commande
+                            {editingEventId ? 'Enregistrer les modifications' : 'Confirmer & Transmettre la commande'}
                           </>
                         )}
                       </Button>
@@ -1789,11 +1993,58 @@ const EventsPage: PageComponent = () => {
                         variant="outline"
                         type="button"
                         onClick={() => {
+                          const previewEvent = {
+                            id: editingEventId || 'PROVISOIRE',
+                            companyName: companyName || 'Mon Entreprise',
+                            eventTitle: eventTitle || 'Événement',
+                            eventType,
+                            customEventType,
+                            eventDate: eventDate || new Date().toISOString().split('T')[0],
+                            deliveryTime,
+                            location: location || 'À préciser',
+                            contactPerson: contactPerson || 'Responsable',
+                            contactPhone: contactPhone || '—',
+                            contactEmail: contactEmail || user?.email || '—',
+                            guestCount,
+                            items: juiceItems,
+                            totalBottles: financials.totalBottles,
+                            totalLiters: financials.totalLiters,
+                            rawJuiceTotal: financials.rawJuiceTotal,
+                            discountPercent: financials.discountPercent,
+                            discountAmount: financials.discountAmount,
+                            totalAmount: financials.rawJuiceTotal - financials.discountAmount,
+                            status: editingEventId ? (selectedEvent?.status || 'submitted') : 'submitted',
+                            createdAt: { toDate: () => new Date() },
+                          };
+                          downloadEventDevisPdf(previewEvent as any, whatsappNumber);
+                        }}
+                        className="w-full rounded-2xl font-semibold text-xs h-11 border-primary/30 text-primary hover:bg-primary/10 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Download className="size-3.5" />
+                        Télécharger le Devis (PDF)
+                      </Button>
+
+                      <a
+                        href={`https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(
+                          `Bonjour le Service Client FYS ! J'aimerais des précisions sur notre commande événementielle pour "${eventTitle || companyName || 'notre entreprise'}" (${financials.totalBottles} bouteilles).`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all"
+                      >
+                        <MessageCircle className="size-4" />
+                        Discuter sur WhatsApp avec le service client
+                      </a>
+
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => {
                           setSubmitError(null);
                           setWizardStep(2);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="w-full rounded-2xl font-semibold text-xs h-11 cursor-pointer"
+                        className="w-full rounded-2xl font-semibold text-xs h-10 text-muted-foreground hover:text-foreground cursor-pointer"
                       >
                         <ArrowLeft className="size-3.5 mr-2" />
                         Modifier la sélection des jus

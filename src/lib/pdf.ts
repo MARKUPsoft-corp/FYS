@@ -408,3 +408,25 @@ export async function downloadThermalQrPdf(svgId: string, order: Order, count: n
   }
 }
 
+/**
+ * Generates and downloads a vector-sharp quotation / order PDF for FYS Event orders.
+ */
+export async function downloadEventDevisPdf(
+  event: any,
+  supportPhone?: string
+): Promise<void> {
+  try {
+    const { pdf } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { EventDevisPDF } = await import('@/components/pdf/EventDevisPDF');
+    const blob = await pdf(
+      React.createElement(EventDevisPDF, { event, supportPhone }) as any
+    ).toBlob();
+    const cleanCompany = (event.companyName || 'Event').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+    const refStr = (event.id || 'devis').slice(0, 8).toUpperCase();
+    triggerDownload(blob, `Devis_FYS_Event_${cleanCompany}_${refStr}.pdf`);
+  } catch (err) {
+    console.error('Failed to generate vector PDF (FYS Event Devis):', err);
+  }
+}
+

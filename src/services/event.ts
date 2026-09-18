@@ -401,3 +401,51 @@ export async function updateFysEventStatus(
     }).catch(console.error);
   }
 }
+
+/**
+ * Met à jour une commande d'événement existante par l'utilisateur ou l'administrateur
+ */
+export async function updateFysEvent(
+  eventId: string,
+  eventData: Partial<FysEvent>
+): Promise<void> {
+  const eventRef = doc(db, COLLECTIONS.EVENTS, eventId);
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) throw new Error('Événement introuvable.');
+
+  const existing = snap.data() as FysEvent;
+  const history = existing.statusHistory || [];
+  const nowIso = new Date().toISOString();
+
+  const updatedHistory = [
+    ...history,
+    {
+      status: existing.status,
+      timestamp: nowIso,
+      note: 'Détails de l’événement mis à jour par l’organisateur',
+    },
+  ];
+
+  // Nettoyer les champs undefined pour Firestore
+  const cleanData: Record<string, any> = {};
+  for (const [key, value] of Object.entries(eventData)) {
+    if (value !== undefined) {
+      cleanData[key] = value;
+    }
+  }
+
+  await updateDoc(eventRef, {
+    ...cleanData,
+    statusHistory: updatedHistory,
+    updatedAt: serverTimestamp(),
+  });
+
+  // Notifier les admins de la modification
+  const title = eventData.eventTitle || existing.eventTitle || 'Événement';
+  const company = eventData.companyName || existing.companyName || 'Une entreprise';
+  notifyAdmins({
+    title: 'Commande FYS Event modifiée',
+    message: `${company} a mis à jour sa commande pour "${title}".`,
+    link: `/board/events-admin?event=${eventId}`,
+  }).catch(console.error);
+}
