@@ -27,6 +27,7 @@ import {
   GlassWater,
   Flame,
   Lock,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ import {
   type FysEventLogistics,
   type FysEventPricingSettings,
   type Cocktail,
+  type Fruit,
   DEFAULT_FYS_EVENT_PRICING,
 } from '@/entities';
 import {
@@ -53,6 +55,13 @@ import {
   getFysEventById,
 } from '@/services/event';
 import { getPublicCocktails } from '@/services/cocktail';
+import { getFruits } from '@/services/fruit';
+import {
+  CocktailBanner,
+  buildFruitVisuals,
+  shouldUseFruitCollage,
+} from '@/components/features/cocktail/CocktailBanner';
+import { ingredientSummary } from '@/components/features/catalogue/CocktailCard';
 
 const EVENT_TYPE_LABELS: Record<FysEventType, string> = {
   seminaire: 'Séminaire d\'entreprise',
@@ -172,9 +181,14 @@ const EventsPage: PageComponent = () => {
   const [viewMode, setViewMode] = useState<'list' | 'wizard'>('list');
   const [wizardStep, setWizardStep] = useState<number>(1);
 
-  // Catalogue cocktails
+  // Catalogue cocktails & fruits
   const [catalogueCocktails, setCatalogueCocktails] = useState<Cocktail[]>([]);
+  const [fruits, setFruits] = useState<Fruit[]>([]);
   const [loadingCatalogue, setLoadingCatalogue] = useState(false);
+  const [cocktailSearch, setCocktailSearch] = useState('');
+
+  // Per-card container selection: Record<cocktailId, '500ml' | '1L'>
+  const [cardVolumes, setCardVolumes] = useState<Record<string, '500ml' | '1L'>>({});
 
   // Pricing settings
   const [pricingSettings, setPricingSettings] = useState<FysEventPricingSettings>(DEFAULT_FYS_EVENT_PRICING);
@@ -194,7 +208,6 @@ const EventsPage: PageComponent = () => {
 
   // Items selection: Record<`${cocktailId}_${bottleVolume}`, quantity>
   const [selectedBottles, setSelectedBottles] = useState<Record<string, number>>({});
-  const [activeBottleVolume, setActiveBottleVolume] = useState<'500ml' | '1L'>('500ml');
 
   // Logistics
   const [needCoolerBoxes, setNeedCoolerBoxes] = useState(false);
@@ -211,13 +224,16 @@ const EventsPage: PageComponent = () => {
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<number>(1);
   const [touchedStep1, setTouchedStep1] = useState(false);
 
-  // Load pricing settings & cocktails
+  // Load pricing settings, cocktails & fruits
   useEffect(() => {
     getFysEventPricingSettings().then(setPricingSettings).catch(console.error);
 
     setLoadingCatalogue(true);
-    getPublicCocktails()
-      .then((cocktails) => setCatalogueCocktails(cocktails))
+    Promise.all([getPublicCocktails(), getFruits()])
+      .then(([cocktails, loadedFruits]) => {
+        setCatalogueCocktails(cocktails);
+        setFruits(loadedFruits);
+      })
       .catch(console.error)
       .finally(() => setLoadingCatalogue(false));
   }, []);
@@ -264,14 +280,14 @@ const EventsPage: PageComponent = () => {
   }, [eventIdParam]);
 
   // Convert selectedBottles into FysEventJuiceItem[]
+  // selectedBottles keys: `${cocktailId}` only — volume comes from cardVolumes
   const juiceItems: FysEventJuiceItem[] = useMemo(() => {
     const items: FysEventJuiceItem[] = [];
-    for (const [key, qty] of Object.entries(selectedBottles)) {
+    for (const [cocktailId, qty] of Object.entries(selectedBottles)) {
       if (qty <= 0) continue;
-      const [cocktailId, volume] = key.split('_') as [string, '500ml' | '1L'];
       const cocktail = catalogueCocktails.find((c) => c.id === cocktailId);
       if (!cocktail) continue;
-
+      const volume: '500ml' | '1L' = cardVolumes[cocktailId] || '500ml';
       const base500Price = cocktail.totalPrice || 1500;
       const unitPrice = volume === '1L' ? Math.round(base500Price * 1.8) : base500Price;
 
@@ -286,7 +302,7 @@ const EventsPage: PageComponent = () => {
       });
     }
     return items;
-  }, [selectedBottles, catalogueCocktails]);
+  }, [selectedBottles, cardVolumes, catalogueCocktails]);
 
   // Logistics object
   const logisticsData: FysEventLogistics = useMemo(() => {
@@ -348,23 +364,25 @@ const EventsPage: PageComponent = () => {
     };
   }, [financials.totalBottles, financials.discountPercent, pricingSettings]);
 
-  // Quantity helpers
-  const handleQuantityChange = (cocktailId: string, volume: '500ml' | '1L', delta: number) => {
-    const key = `${cocktailId}_${volume}`;
-    const current = selectedBottles[key] || 0;
+  // Quantity helpers — key is just cocktailId (volume lives in cardVolumes)
+  const handleQuantityChange = (cocktailId: string, delta: number) => {
+    const current = selectedBottles[cocktailId] || 0;
     const next = Math.max(0, current + delta);
     setSelectedBottles((prev) => ({
       ...prev,
-      [key]: next,
+      [cocktailId]: next,
     }));
   };
 
-  const setExplicitQuantity = (cocktailId: string, volume: '500ml' | '1L', qty: number) => {
-    const key = `${cocktailId}_${volume}`;
+  const setExplicitQuantity = (cocktailId: string, qty: number) => {
     setSelectedBottles((prev) => ({
       ...prev,
-      [key]: Math.max(0, qty),
+      [cocktailId]: Math.max(0, qty),
     }));
+  };
+
+  const setCardVolume = (cocktailId: string, volume: '500ml' | '1L') => {
+    setCardVolumes((prev) => ({ ...prev, [cocktailId]: volume }));
   };
 
   // Step 1 Validation logic
@@ -432,7 +450,7 @@ const EventsPage: PageComponent = () => {
 
   const handleValidateAndProceedStep2 = () => {
     if (!isStep2Valid) {
-      setSubmitError('Veuillez sélectionner au moins un flacon de jus dans le catalogue pour votre événement.');
+      setSubmitError('Veuillez sélectionner au moins une bouteille de jus dans le catalogue pour votre événement.');
       return;
     }
     setSubmitError(null);
@@ -708,7 +726,7 @@ const EventsPage: PageComponent = () => {
                   </div>
                   <div className="flex items-center gap-3 text-xs font-bold">
                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">
-                      {selectedEvent.totalBottles} flacons
+                      {selectedEvent.totalBottles} bouteille{selectedEvent.totalBottles > 1 ? 's' : ''}
                     </span>
                     <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full">
                       {selectedEvent.totalLiters.toFixed(1)} Litres
@@ -741,7 +759,7 @@ const EventsPage: PageComponent = () => {
 
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-foreground">
-                          {item.quantity} flacon{item.quantity > 1 ? 's' : ''}
+                          {item.quantity} bouteille{item.quantity > 1 ? 's' : ''}
                         </p>
                         <p className="text-xs font-semibold text-muted-foreground">
                           {item.totalPrice.toLocaleString()} XAF
@@ -984,7 +1002,7 @@ const EventsPage: PageComponent = () => {
                           </div>
                           <div className="bg-muted/40 p-2.5 rounded-xl border border-border/40">
                             <span className="text-muted-foreground block text-[10px]">Volume commandé</span>
-                            <span className="font-semibold text-foreground">{ev.totalBottles} flacons ({ev.totalLiters.toFixed(1)}L)</span>
+                            <span className="font-semibold text-foreground">{ev.totalBottles} bouteille{ev.totalBottles > 1 ? 's' : ''} ({ev.totalLiters.toFixed(1)}L)</span>
                           </div>
                         </div>
                       </div>
@@ -1358,7 +1376,7 @@ const EventsPage: PageComponent = () => {
                         Barème Dégressif B2B
                       </span>
                       <h4 className="font-display font-bold text-lg text-foreground">
-                        {financials.totalBottles} flacon{financials.totalBottles > 1 ? 's' : ''} sélectionné{financials.totalBottles > 1 ? 's' : ''} ({financials.totalLiters.toFixed(1)} Litres)
+                        {financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''} sélectionnée{financials.totalBottles > 1 ? 's' : ''} ({financials.totalLiters.toFixed(1)} Litres)
                       </h4>
                     </div>
 
@@ -1390,7 +1408,7 @@ const EventsPage: PageComponent = () => {
                           }`}
                         >
                           <span className="text-xs block font-bold">
-                            {tier.minBottles}+ flacons
+                            {tier.minBottles}+ bouteilles
                           </span>
                           <span className="text-sm font-black">
                             -{tier.discountPercent}%
@@ -1403,47 +1421,31 @@ const EventsPage: PageComponent = () => {
                   {nextDiscountInfo.hasNext && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
                       <Flame className="size-3.5 text-amber-500" />
-                      Ajoutez encore <strong className="text-foreground">{nextDiscountInfo.needed} flacon{nextDiscountInfo.needed > 1 ? 's' : ''}</strong> pour débloquer la remise de <strong className="text-primary">{nextDiscountInfo.nextPercent}%</strong> !
+                      Ajoutez encore <strong className="text-foreground">{nextDiscountInfo.needed} bouteille{nextDiscountInfo.needed > 1 ? 's' : ''}</strong> pour débloquer la remise de <strong className="text-primary">{nextDiscountInfo.nextPercent}%</strong> !
                     </p>
                   )}
                 </div>
 
-                {/* Catalogue Selection Controls */}
-                <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
+                {/* Catalogue Grid */}
+                <div className="space-y-5">
+                  {/* Header + Search */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-bold font-display text-foreground">
                         2. Sélection des Recettes FYS
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Jus 100% naturels pressés le jour de l&apos;événement. Choisissez le format et la quantité pour chaque recette.
+                        Choisissez le contenant et la quantité pour chaque recette — pressées le jour J.
                       </p>
                     </div>
-
-                    {/* Format Selector Toggle */}
-                    <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/40 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setActiveBottleVolume('500ml')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          activeBottleVolume === '500ml'
-                            ? 'bg-card text-foreground shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Format 500ml (Individuel)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveBottleVolume('1L')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          activeBottleVolume === '1L'
-                            ? 'bg-card text-foreground shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Format 1L (Partage)
-                      </button>
+                    <div className="relative shrink-0 w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        placeholder="Rechercher une recette…"
+                        value={cocktailSearch}
+                        onChange={(e) => setCocktailSearch(e.target.value)}
+                        className="pl-9 h-10 rounded-xl text-sm"
+                      />
                     </div>
                   </div>
 
@@ -1454,91 +1456,179 @@ const EventsPage: PageComponent = () => {
                     </div>
                   ) : catalogueCocktails.length === 0 ? (
                     <div className="py-12 text-center text-muted-foreground text-sm">
-                      Aucun cocktail public disponible dans le catalogue.
+                      Aucune recette publique disponible dans le catalogue.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {catalogueCocktails.map((cocktail) => {
-                        const key = `${cocktail.id}_${activeBottleVolume}`;
-                        const currentQty = selectedBottles[key] || 0;
-                        const basePrice = cocktail.totalPrice || 1500;
-                        const price = activeBottleVolume === '1L' ? Math.round(basePrice * 1.8) : basePrice;
+                    (() => {
+                      const filtered = cocktailSearch.trim()
+                        ? catalogueCocktails.filter((c) =>
+                            c.name.toLowerCase().includes(cocktailSearch.toLowerCase()) ||
+                            (c.description || '').toLowerCase().includes(cocktailSearch.toLowerCase())
+                          )
+                        : catalogueCocktails;
+                      return filtered.length === 0 ? (
+                        <div className="py-10 text-center text-muted-foreground text-sm">
+                          Aucune recette ne correspond à votre recherche.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {filtered.map((cocktail) => {
+                            const currentQty = selectedBottles[cocktail.id] || 0;
+                            const vol: '500ml' | '1L' = cardVolumes[cocktail.id] || '500ml';
+                            const basePrice = cocktail.totalPrice || 1500;
+                            const price500 = basePrice;
+                            const price1L = Math.round(basePrice * 1.8);
+                            const currentPrice = vol === '1L' ? price1L : price500;
+                            const useCollage = shouldUseFruitCollage(cocktail);
+                            const fruitVisuals = buildFruitVisuals(cocktail.ingredients || [], fruits);
+                            const summary = ingredientSummary(cocktail, fruits);
 
-                        return (
-                          <div
-                            key={cocktail.id}
-                            className={`rounded-2xl p-4 border transition-all flex flex-col justify-between gap-4 ${
-                              currentQty > 0
-                                ? 'bg-primary/[0.03] border-primary/60 shadow-xs'
-                                : 'bg-card border-border/60 hover:border-border'
-                            }`}
-                          >
-                            <div className="space-y-3">
-                              <div className="relative aspect-video rounded-xl overflow-hidden bg-muted">
-                                {cocktail.imageUrl ? (
-                                  <img
-                                    src={cocktail.imageUrl}
-                                    alt={cocktail.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
-                                    <GlassWater className="size-8" />
+                            return (
+                              <div
+                                key={cocktail.id}
+                                className={cn(
+                                  'rounded-[1.75rem] overflow-hidden border bg-card shadow-sm transition-all duration-300',
+                                  currentQty > 0
+                                    ? 'border-primary/70 shadow-md ring-2 ring-primary/15'
+                                    : 'border-border/50 hover:-translate-y-1 hover:shadow-lg'
+                                )}
+                              >
+                                {/* Image zone — exactly like CocktailCard */}
+                                <div className="relative h-52 overflow-hidden">
+                                  {useCollage && fruitVisuals.length > 0 ? (
+                                    <CocktailBanner
+                                      cocktailName={cocktail.name}
+                                      fruits={fruitVisuals}
+                                      showText={false}
+                                      heightClass="h-full"
+                                      className="absolute inset-0 scale-100 group-hover:scale-105 transition-transform duration-700 origin-center"
+                                    />
+                                  ) : cocktail.imageUrl ? (
+                                    <div
+                                      className="absolute inset-0 bg-cover bg-center scale-100 hover:scale-105 transition-transform duration-700"
+                                      style={{ backgroundImage: `url('${cocktail.imageUrl}')` }}
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/30 to-secondary/15 flex items-center justify-center">
+                                      <GlassWater className="size-10 text-primary/40" />
+                                    </div>
+                                  )}
+
+                                  {/* Gradient scrim */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent pointer-events-none" />
+
+                                  {/* Tag pill */}
+                                  {cocktail.tag && (
+                                    <div className="absolute top-3 left-3 z-10 bg-secondary text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
+                                      {cocktail.tag}
+                                    </div>
+                                  )}
+
+                                  {/* Selected badge */}
+                                  {currentQty > 0 && (
+                                    <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                                      {currentQty} bt.
+                                    </div>
+                                  )}
+
+                                  {/* Ingredient count pill */}
+                                  {(cocktail.ingredients || []).length > 0 && (
+                                    <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/40 backdrop-blur-sm text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+                                      <Flame className="size-3 text-secondary" />
+                                      {(cocktail.ingredients || []).length} ingrédient{(cocktail.ingredients || []).length > 1 ? 's' : ''}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Info zone */}
+                                <div className="px-4 pt-4 pb-4 space-y-4">
+                                  {/* Name + summary */}
+                                  <div className="space-y-0.5">
+                                    <h4 className="font-display font-bold text-[1.05rem] text-[#F2694A] leading-tight line-clamp-1">
+                                      {cocktail.name}
+                                    </h4>
+                                    <p className="text-[11px] text-muted-foreground line-clamp-1 font-medium">
+                                      {summary || cocktail.description || '—'}
+                                    </p>
                                   </div>
-                                )}
-                                <span className="absolute top-2 right-2 bg-background/80 backdrop-blur-xs text-foreground font-bold text-[11px] px-2 py-0.5 rounded-md border border-border/40">
-                                  {price.toLocaleString()} XAF / {activeBottleVolume}
-                                </span>
-                              </div>
 
-                              <div>
-                                <h4 className="font-bold text-foreground text-sm leading-tight">
-                                  {cocktail.name}
-                                </h4>
-                                {cocktail.description && (
-                                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                    {cocktail.description}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                                  {/* Container selector (500ml / 1L) */}
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setCardVolume(cocktail.id, '500ml')}
+                                      className={cn(
+                                        'flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
+                                        vol === '500ml'
+                                          ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                          : 'bg-muted/60 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
+                                      )}
+                                    >
+                                      500ml
+                                      <span className={cn('block text-[10px] font-semibold mt-0.5', vol === '500ml' ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>
+                                        {price500.toLocaleString()} XAF
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCardVolume(cocktail.id, '1L')}
+                                      className={cn(
+                                        'flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
+                                        vol === '1L'
+                                          ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                          : 'bg-muted/60 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
+                                      )}
+                                    >
+                                      1 Litre
+                                      <span className={cn('block text-[10px] font-semibold mt-0.5', vol === '1L' ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>
+                                        {price1L.toLocaleString()} XAF
+                                      </span>
+                                    </button>
+                                  </div>
 
-                            {/* Stepper */}
-                            <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                Qté ({activeBottleVolume})
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuantityChange(cocktail.id, activeBottleVolume, -5)}
-                                  disabled={currentQty === 0}
-                                  className="size-8 rounded-lg bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors"
-                                  title="Retirer 5"
-                                >
-                                  <Minus className="size-3.5" />
-                                </button>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={currentQty}
-                                  onChange={(e) => setExplicitQuantity(cocktail.id, activeBottleVolume, parseInt(e.target.value) || 0)}
-                                  className="w-14 h-8 text-center rounded-lg text-xs font-bold"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuantityChange(cocktail.id, activeBottleVolume, 5)}
-                                  className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors"
-                                  title="Ajouter 5"
-                                >
-                                  <Plus className="size-3.5" />
-                                </button>
+                                  {/* Quantity stepper */}
+                                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
+                                    <span className="text-xs font-semibold text-muted-foreground">
+                                      {currentQty > 0 ? (
+                                        <span className="text-primary font-bold">{(currentPrice * currentQty).toLocaleString()} XAF</span>
+                                      ) : (
+                                        'Quantité'
+                                      )}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuantityChange(cocktail.id, -1)}
+                                        disabled={currentQty === 0}
+                                        className="size-8 rounded-xl bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors"
+                                        title="Retirer 1"
+                                      >
+                                        <Minus className="size-3.5" />
+                                      </button>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={currentQty}
+                                        onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
+                                        className="w-12 h-8 text-center rounded-lg text-xs font-bold"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuantityChange(cocktail.id, 1)}
+                                        className="size-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors"
+                                        title="Ajouter 1"
+                                      >
+                                        <Plus className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()
                   )}
 
                   <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border/50">
@@ -1558,7 +1648,7 @@ const EventsPage: PageComponent = () => {
                       onClick={handleValidateAndProceedStep2}
                       className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                     >
-                      <span>Étape suivante : Logistique ({financials.totalBottles} flacon{financials.totalBottles > 1 ? 's' : ''})</span>
+                      <span>Étape suivante : Logistique ({financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''})</span>
                       <ArrowRight className="size-4 ml-2" />
                     </Button>
                   </div>
@@ -1807,7 +1897,7 @@ const EventsPage: PageComponent = () => {
                       <div className="flex items-center gap-2">
                         <GlassWater className="size-5 text-primary" />
                         <h3 className="font-display font-bold text-lg text-foreground">
-                          Flacons Commandés ({financials.totalBottles})
+                          Bouteilles Commandées ({financials.totalBottles})
                         </h3>
                       </div>
                       <button
