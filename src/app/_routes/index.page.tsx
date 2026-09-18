@@ -35,7 +35,7 @@ const RootIndex: PageComponent = () => {
   // Suivi de la section active
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['features', 'how-it-works', 'nutrifys', 'events', 'about'];
+      const sections = ['how-it-works', 'features', 'events', 'nutrifys', 'about'];
       let current = 'home';
       for (const section of sections) {
         const el = document.getElementById(section);
@@ -165,10 +165,10 @@ const RootIndex: PageComponent = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
-            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
             <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Comment ça marche</a>
-            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
+            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
             <a href="#events" className={`transition-colors ${activeSection === 'events' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>FYS Event</a>
+            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
             <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>À propos</a>
           </div>
 
@@ -210,26 +210,26 @@ const RootIndex: PageComponent = () => {
                   
                   <div className="flex flex-col gap-1 mt-6">
                     <SheetClose asChild>
-                      <a href="#features" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'features' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        Fonctionnalités
-                      </a>
-                    </SheetClose>
-                    
-                    <SheetClose asChild>
                       <a href="#how-it-works" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'how-it-works' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
                         Comment ça marche
                       </a>
                     </SheetClose>
-                    
+
                     <SheetClose asChild>
-                      <a href="#nutrifys" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'nutrifys' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        L'assistant NutriFYS
+                      <a href="#features" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'features' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        Fonctionnalités
                       </a>
                     </SheetClose>
 
                     <SheetClose asChild>
                       <a href="#events" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'events' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
                         FYS Event (B2B)
+                      </a>
+                    </SheetClose>
+
+                    <SheetClose asChild>
+                      <a href="#nutrifys" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'nutrifys' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
+                        L'assistant NutriFYS
                       </a>
                     </SheetClose>
                     
@@ -540,6 +540,110 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
 
+      {/* ━━━ FYS EVENT (CORPORATE & B2B CATERING) ━━━ */}
+      <section id="events" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-[#3F6D4E]/[0.03] dark:bg-[#3F6D4E]/10 border-y border-border/40">
+        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        
+        <div className="max-w-6xl mx-auto relative z-10 space-y-16">
+          {/* Section Header */}
+          <div className="text-center space-y-4 max-w-3xl mx-auto scroll-animate opacity-0">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/25">
+              <Building2 className="w-3.5 h-3.5" />
+              FYS Event • Restauration d&apos;Entreprise & Catering
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              L&apos;excellence du jus frais <br />
+              <span className="text-primary brightness-110">pour vos événements.</span>
+            </h2>
+
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+              Séminaires, conférences, galas et pauses santé d&apos;entreprise : régalez vos invités avec des jus 100% naturels pressés le matin même. Profitez de remises sur volume automatiques et d&apos;une logistique dédiée sur mesure.
+            </p>
+          </div>
+
+          {/* 3 Pillars / Value Props */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-animate opacity-0" style={{ animationDelay: '150ms' }}>
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <GlassWater className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Catalogue Signature
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Sélection exclusive parmi nos recettes les plus plébiscitées. 100% pur fruit sans eau ni sucre ajouté, pressé à froid quelques heures avant l&apos;événement.
+              </p>
+            </div>
+
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <Sparkles className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Tarifs Dégressifs B2B
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Jusqu&apos;à 30% de remise sur volume immédiate. Formats 500ml individuels et 1L de partage. Estimation et validation de devis instantanées.
+              </p>
+            </div>
+
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <Package className="size-6" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                Logistique Clé en Main
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Glacières isothermes 12h pour une fraîcheur absolue sans prise de courant, gobelets écologiques compostables et service barman FYS sur site.
+              </p>
+            </div>
+          </div>
+
+          {/* Hero Banner with Executive Photo & Direct Action */}
+          <div className="relative rounded-[2.5rem] overflow-hidden border border-border/60 shadow-xl scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
+            <div className="absolute inset-0 bg-muted">
+              <img
+                src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
+                alt="FYS Event séminaire d'entreprise"
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/40" />
+            </div>
+
+            <div className="relative z-10 p-8 sm:p-12 md:p-16 max-w-2xl text-white space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 backdrop-blur-xs">
+                <ShieldCheck className="size-3.5 text-secondary" />
+                Devis & Réservation Immédiats
+              </div>
+
+              <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight">
+                Prêt à faire rayonner votre événement ?
+              </h3>
+
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed">
+                Connectez-vous à votre espace FYS pour configurer votre commande d&apos;entreprise, ajuster vos quantités et recevoir votre confirmation sans délai.
+              </p>
+
+              <div className="pt-2">
+                <Link
+                  to="/auth/login?redirect=/board/events"
+                  className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"
+                >
+                  <Building2 className="size-5" />
+                  Accéder à l&apos;espace FYS Event
+                  <ArrowRight className="size-4" />
+                </Link>
+                <p className="text-[11px] text-white/60 mt-2 font-medium">
+                  Redirection automatique vers votre espace événement après connexion.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ━━━ PRODUCT GALLERY ━━━ */}
       <section className="py-16 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
@@ -702,110 +806,6 @@ const RootIndex: PageComponent = () => {
           <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-background"></path>
         </svg>
       </div>
-
-      {/* ━━━ FYS EVENT (CORPORATE & B2B CATERING) ━━━ */}
-      <section id="events" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-[#3F6D4E]/[0.03] dark:bg-[#3F6D4E]/10 border-y border-border/40">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        
-        <div className="max-w-6xl mx-auto relative z-10 space-y-16">
-          {/* Section Header */}
-          <div className="text-center space-y-4 max-w-3xl mx-auto scroll-animate opacity-0">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/25">
-              <Building2 className="w-3.5 h-3.5" />
-              FYS Event • Restauration d&apos;Entreprise & Catering
-            </div>
-
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              L&apos;excellence du jus frais <br />
-              <span className="text-primary brightness-110">pour vos événements.</span>
-            </h2>
-
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Séminaires, conférences, galas et pauses santé d&apos;entreprise : régalez vos invités avec des jus 100% naturels pressés le matin même. Profitez de remises sur volume automatiques et d&apos;une logistique dédiée sur mesure.
-            </p>
-          </div>
-
-          {/* 3 Pillars / Value Props */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-animate opacity-0" style={{ animationDelay: '150ms' }}>
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
-              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <GlassWater className="size-6" />
-              </div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Catalogue Signature
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Sélection exclusive parmi nos recettes les plus plébiscitées. 100% pur fruit sans eau ni sucre ajouté, pressé à froid quelques heures avant l&apos;événement.
-              </p>
-            </div>
-
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
-              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <Sparkles className="size-6" />
-              </div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Tarifs Dégressifs B2B
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Jusqu&apos;à 30% de remise sur volume immédiate. Formats 500ml individuels et 1L de partage. Estimation et validation de devis instantanées.
-              </p>
-            </div>
-
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
-              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <Package className="size-6" />
-              </div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Logistique Clé en Main
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Glacières isothermes 12h pour une fraîcheur absolue sans prise de courant, gobelets écologiques compostables et service barman FYS sur site.
-              </p>
-            </div>
-          </div>
-
-          {/* Hero Banner with Executive Photo & Direct Action */}
-          <div className="relative rounded-[2.5rem] overflow-hidden border border-border/60 shadow-xl scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
-            <div className="absolute inset-0 bg-muted">
-              <img
-                src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
-                alt="FYS Event séminaire d'entreprise"
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/40" />
-            </div>
-
-            <div className="relative z-10 p-8 sm:p-12 md:p-16 max-w-2xl text-white space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 backdrop-blur-xs">
-                <ShieldCheck className="size-3.5 text-secondary" />
-                Devis & Réservation Immédiats
-              </div>
-
-              <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight">
-                Prêt à faire rayonner votre événement ?
-              </h3>
-
-              <p className="text-sm sm:text-base text-white/80 leading-relaxed">
-                Connectez-vous à votre espace FYS pour configurer votre commande d&apos;entreprise, ajuster vos quantités et recevoir votre confirmation sans délai.
-              </p>
-
-              <div className="pt-2">
-                <Link
-                  to="/auth/login?redirect=/board/events"
-                  className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"
-                >
-                  <Building2 className="size-5" />
-                  Accéder à l&apos;espace FYS Event
-                  <ArrowRight className="size-4" />
-                </Link>
-                <p className="text-[11px] text-white/60 mt-2 font-medium">
-                  Redirection automatique vers votre espace événement après connexion.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ━━━ ABOUT US (L'ÉQUIPE) ━━━ */}
       <section id="about" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-background">
