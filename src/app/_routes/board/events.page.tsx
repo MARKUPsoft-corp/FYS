@@ -1473,7 +1473,7 @@ const EventsPage: PageComponent = () => {
                           Aucune recette ne correspond à votre recherche.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                           {filtered.map((cocktail) => {
                             const currentQty = selectedBottles[cocktail.id] || 0;
                             const vol: '500ml' | '1L' = cardVolumes[cocktail.id] || '500ml';
@@ -1602,25 +1602,25 @@ const EventsPage: PageComponent = () => {
                                         type="button"
                                         onClick={() => handleQuantityChange(cocktail.id, -1)}
                                         disabled={currentQty === 0}
-                                        className="size-8 rounded-xl bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors"
+                                        className="size-9 rounded-xl bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors shrink-0"
                                         title="Retirer 1"
                                       >
-                                        <Minus className="size-3.5" />
+                                        <Minus className="size-4" />
                                       </button>
-                                      <Input
+                                      <input
                                         type="number"
                                         min={0}
                                         value={currentQty}
                                         onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
-                                        className="w-12 h-8 text-center rounded-lg text-xs font-bold"
+                                        className="flex-1 min-w-0 h-9 text-center rounded-xl border border-input bg-background text-foreground text-sm font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
                                         onClick={() => handleQuantityChange(cocktail.id, 1)}
-                                        className="size-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors"
+                                        className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors shrink-0"
                                         title="Ajouter 1"
                                       >
-                                        <Plus className="size-3.5" />
+                                        <Plus className="size-4" />
                                       </button>
                                     </div>
                                   </div>
