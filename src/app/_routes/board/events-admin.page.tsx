@@ -28,9 +28,21 @@ import {
   RefreshCw,
   MessageCircle,
   ExternalLink,
+  Wine,
+  Edit2,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { useAuthStore } from '@/stores/auth';
 import {
@@ -39,8 +51,10 @@ import {
   type FysEventStatus,
   type FysEventType,
   type FysEventPricingSettings,
+  type FysEventFormat,
   type EventVolumeDiscountTier,
   DEFAULT_FYS_EVENT_PRICING,
+  DEFAULT_FYS_EVENT_FORMATS,
 } from '@/entities';
 import {
   getAllFysEvents,
@@ -144,6 +158,19 @@ const EventsAdminPage: PageComponent = () => {
   const [pricingSuccess, setPricingSuccess] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
 
+  // Format modal state
+  const [formatModalOpen, setFormatModalOpen] = useState(false);
+  const [editingFormat, setEditingFormat] = useState<FysEventFormat | null>(null);
+  const [formatFormData, setFormatFormData] = useState<FysEventFormat>({
+    id: '',
+    name: '',
+    shortLabel: '',
+    volumeLiters: 0.5,
+    priceMultiplier: 1.0,
+    isActive: true,
+    description: '',
+  });
+
   // Check admin authorization
   useEffect(() => {
     if (user && user.role !== UserRole.ADMIN) {
@@ -201,43 +228,137 @@ const EventsAdminPage: PageComponent = () => {
 
     const recipeMap = new Map<
       string,
-      { name: string; bottles500ml: number; bottles1L: number; totalLiters: number }
+      {
+        name: string;
+        formats: Record<string, number>;
+        totalLiters: number;
+        totalBottles: number;
+      }
     >();
 
     let grandTotalLiters = 0;
     let grandTotalBottles = 0;
+    const formatKeys = new Set<string>();
 
     for (const ev of targetEvents) {
       for (const item of ev.items) {
         const existing = recipeMap.get(item.cocktailId) || {
           name: item.name,
-          bottles500ml: 0,
-          bottles1L: 0,
+          formats: {},
           totalLiters: 0,
+          totalBottles: 0,
         };
 
-        if (item.bottleVolume === '1L') {
-          existing.bottles1L += item.quantity;
-          existing.totalLiters += item.quantity * 1.0;
-          grandTotalLiters += item.quantity * 1.0;
-        } else {
-          existing.bottles500ml += item.quantity;
-          existing.totalLiters += item.quantity * 0.5;
-          grandTotalLiters += item.quantity * 0.5;
+        const fmtKey = item.bottleVolume || item.bottleSize || '500ml';
+        formatKeys.add(fmtKey);
+
+        existing.formats[fmtKey] = (existing.formats[fmtKey] || 0) + item.quantity;
+        existing.totalBottles += item.quantity;
+
+        let liters = item.volumeLiters;
+        if (!liters || liters <= 0) {
+          const lower = fmtKey.toLowerCase();
+          if (lower.includes('1l') || lower.includes('1 l') || lower.includes('1000')) liters = 1.0;
+          else if (lower.includes('250')) liters = 0.25;
+          else if (lower.includes('330')) liters = 0.33;
+          else if (lower.includes('750')) liters = 0.75;
+          else if (lower.includes('2l') || lower.includes('2 l')) liters = 2.0;
+          else liters = 0.5;
         }
 
+        const itemLiters = item.quantity * liters;
+        existing.totalLiters += itemLiters;
+        grandTotalLiters += itemLiters;
         grandTotalBottles += item.quantity;
+
         recipeMap.set(item.cocktailId, existing);
       }
     }
 
+    const sortedFormats = Array.from(formatKeys);
+    if (sortedFormats.length === 0) {
+      sortedFormats.push('500ml', '1L');
+    }
+
     return {
       items: Array.from(recipeMap.values()).sort((a, b) => b.totalLiters - a.totalLiters),
+      formatKeys: sortedFormats,
       grandTotalLiters,
       grandTotalBottles,
       activeEventsCount: targetEvents.length,
     };
   }, [events]);
+
+  const handleOpenAddFormat = () => {
+    setEditingFormat(null);
+    setFormatFormData({
+      id: '',
+      name: '',
+      shortLabel: '',
+      volumeLiters: 0.5,
+      priceMultiplier: 1.0,
+      isActive: true,
+      description: '',
+    });
+    setFormatModalOpen(true);
+  };
+
+  const handleOpenEditFormat = (fmt: FysEventFormat) => {
+    setEditingFormat(fmt);
+    setFormatFormData({ ...fmt });
+    setFormatModalOpen(true);
+  };
+
+  const handleSaveFormatForm = () => {
+    if (!formatFormData.name.trim()) return;
+    const cleanId = (formatFormData.id || formatFormData.shortLabel || formatFormData.name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
+    const currentFormats = pricingSettings.availableFormats || DEFAULT_FYS_EVENT_FORMATS;
+    let updated: FysEventFormat[];
+
+    if (editingFormat) {
+      updated = currentFormats.map((f) =>
+        f.id === editingFormat.id ? { ...formatFormData, id: editingFormat.id } : f
+      );
+    } else {
+      const newFmt: FysEventFormat = {
+        ...formatFormData,
+        id: cleanId || `fmt_${Date.now()}`,
+      };
+      updated = [...currentFormats, newFmt];
+    }
+
+    setPricingSettings((prev) => ({
+      ...prev,
+      availableFormats: updated,
+    }));
+    setFormatModalOpen(false);
+  };
+
+  const handleToggleFormatActive = (formatId: string) => {
+    setPricingSettings((prev) => {
+      const currentFormats = prev.availableFormats || DEFAULT_FYS_EVENT_FORMATS;
+      const updated = currentFormats.map((f) =>
+        f.id === formatId ? { ...f, isActive: !f.isActive } : f
+      );
+      return {
+        ...prev,
+        availableFormats: updated,
+      };
+    });
+  };
+
+  const handleDeleteFormat = (formatId: string) => {
+    setPricingSettings((prev) => {
+      const currentFormats = prev.availableFormats || DEFAULT_FYS_EVENT_FORMATS;
+      return {
+        ...prev,
+        availableFormats: currentFormats.filter((f) => f.id !== formatId),
+      };
+    });
+  };
 
   // Handle status update
   const handleUpdateStatus = async (eventId: string, newStatus: FysEventStatus) => {
@@ -318,6 +439,7 @@ const EventsAdminPage: PageComponent = () => {
         ...pricingSettings,
         volumeDiscounts: sortedTiers,
         volumeDiscountTiers: sortedTiers,
+        availableFormats: pricingSettings.availableFormats || DEFAULT_FYS_EVENT_FORMATS,
         whatsappNumber: (pricingSettings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber,
       };
 
@@ -748,35 +870,43 @@ const EventsAdminPage: PageComponent = () => {
                   Aucun événement actif nécessitant une préparation pour l&apos;instant.
                 </div>
               ) : (
-                <div className="divide-y divide-border/40 pt-2">
-                  <div className="py-3 grid grid-cols-12 text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">
-                    <span className="col-span-6">Recette Catalogue FYS</span>
-                    <span className="col-span-2 text-center">Flacons 500ml</span>
-                    <span className="col-span-2 text-center">Flacons 1L</span>
-                    <span className="col-span-2 text-right">Volume Total (L)</span>
+                <div className="divide-y divide-border/40 pt-2 overflow-x-auto">
+                  <div className="py-3 min-w-[600px] flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">
+                    <span className="flex-1">Recette Catalogue FYS</span>
+                    <div className="flex items-center gap-4 sm:gap-8 mr-4">
+                      {productionAggregation.formatKeys.map((fmtKey) => (
+                        <span key={fmtKey} className="min-w-[80px] text-center">
+                          Flacons {fmtKey}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="w-24 text-right">Volume Total (L)</span>
                   </div>
 
                   {productionAggregation.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="py-3.5 grid grid-cols-12 items-center text-sm px-2 hover:bg-muted/30 rounded-xl transition-colors"
+                      className="py-3.5 min-w-[600px] flex items-center justify-between text-sm px-2 hover:bg-muted/30 rounded-xl transition-colors"
                     >
-                      <div className="col-span-6 flex items-center gap-3">
+                      <div className="flex-1 flex items-center gap-3">
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                           {idx + 1}
                         </div>
                         <span className="font-bold text-foreground">{item.name}</span>
                       </div>
 
-                      <div className="col-span-2 text-center text-xs font-semibold text-foreground">
-                        {item.bottles500ml}
+                      <div className="flex items-center gap-4 sm:gap-8 mr-4">
+                        {productionAggregation.formatKeys.map((fmtKey) => (
+                          <span
+                            key={fmtKey}
+                            className="min-w-[80px] text-center text-xs font-semibold text-foreground"
+                          >
+                            {item.formats[fmtKey] ? `${item.formats[fmtKey]} fl.` : '—'}
+                          </span>
+                        ))}
                       </div>
 
-                      <div className="col-span-2 text-center text-xs font-semibold text-foreground">
-                        {item.bottles1L}
-                      </div>
-
-                      <div className="col-span-2 text-right font-display font-extrabold text-primary">
+                      <div className="w-24 text-right font-display font-extrabold text-primary">
                         {item.totalLiters.toFixed(1)} L
                       </div>
                     </div>
@@ -823,7 +953,127 @@ const EventsAdminPage: PageComponent = () => {
                 </div>
               </div>
 
-              {/* Section 1: Discount Tiers Table */}
+              {/* Section 1: Formats de Bouteilles Disponibles pour le Catalogue */}
+              <div className="space-y-4 pb-6 border-b border-border/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Wine className="size-4 text-primary" />
+                      Formats de Bouteilles Disponibles pour le Catalogue
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Définissez les formats proposés aux entreprises dans le catalogue. Activez ou désactivez chaque format en un clic.
+                    </p>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOpenAddFormat}
+                    className="rounded-xl font-bold text-xs border-primary/40 text-primary hover:bg-primary/10 cursor-pointer shrink-0"
+                  >
+                    <Plus className="size-3.5 mr-1" />
+                    Ajouter un format
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {(pricingSettings.availableFormats || DEFAULT_FYS_EVENT_FORMATS).map((fmt) => {
+                    const sampleBasePrice = 1500;
+                    const sampleCalcPrice = Math.round(sampleBasePrice * (fmt.priceMultiplier || 1.0));
+
+                    return (
+                      <div
+                        key={fmt.id}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                          fmt.isActive
+                            ? 'bg-card border-primary/40 shadow-xs'
+                            : 'bg-muted/30 border-border/60 opacity-75'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`size-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                              fmt.isActive
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {fmt.shortLabel || fmt.id}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-bold text-sm text-foreground">
+                                  {fmt.name}
+                                </h5>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                  {fmt.volumeLiters} L
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                {fmt.description || `Volume unitaire : ${fmt.volumeLiters} Litre(s)`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                            fmt.isActive
+                              ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                              : 'bg-muted text-muted-foreground border border-border/50'
+                          }`}>
+                            {fmt.isActive ? 'Actif' : 'Inactif'}
+                          </span>
+                        </div>
+
+                        <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                              Tarification (coef. {fmt.priceMultiplier}×)
+                            </span>
+                            <span className="text-xs font-semibold text-foreground">
+                              Ex. base 1 500 XAF → <strong className="text-primary font-bold">{sampleCalcPrice.toLocaleString()} XAF</strong>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              size="sm"
+                              variant={fmt.isActive ? 'secondary' : 'outline'}
+                              onClick={() => handleToggleFormatActive(fmt.id)}
+                              className="h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer"
+                            >
+                              {fmt.isActive ? 'Désactiver' : 'Activer'}
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenEditFormat(fmt)}
+                              className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                              title="Modifier ce format"
+                            >
+                              <Edit2 className="size-3.5" />
+                            </Button>
+
+                            {!['500ml', '1L'].includes(fmt.id) && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteFormat(fmt.id)}
+                                className="h-8 w-8 p-0 rounded-lg text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                title="Supprimer ce format"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section 2: Discount Tiers Table */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -1066,6 +1316,127 @@ const EventsAdminPage: PageComponent = () => {
           </div>
         )}
       </div>
+
+      {/* Format Add / Edit Dialog */}
+      <Dialog open={formatModalOpen} onOpenChange={setFormatModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display font-bold text-lg">
+              {editingFormat ? 'Modifier le Format de Bouteille' : 'Ajouter un Nouveau Format'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Définissez les propriétés de ce format de bouteille pour le catalogue d&apos;événements.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold">Nom complet affiché *</Label>
+              <Input
+                placeholder="Ex: 250 ml (Dégustation)"
+                value={formatFormData.name}
+                onChange={(e) => setFormatFormData({ ...formatFormData, name: e.target.value })}
+                className="rounded-xl h-10 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold">Libellé court (badge) *</Label>
+                <Input
+                  placeholder="Ex: 250ml"
+                  value={formatFormData.shortLabel}
+                  onChange={(e) => setFormatFormData({ ...formatFormData, shortLabel: e.target.value })}
+                  className="rounded-xl h-10 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold">Volume réel (Litres) *</Label>
+                <Input
+                  type="number"
+                  step="0.05"
+                  min="0.05"
+                  placeholder="Ex: 0.25"
+                  value={formatFormData.volumeLiters}
+                  onChange={(e) =>
+                    setFormatFormData({
+                      ...formatFormData,
+                      volumeLiters: parseFloat(e.target.value) || 0.5,
+                    })
+                  }
+                  className="rounded-xl h-10 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-bold">Coefficient multiplicateur de prix *</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  placeholder="Ex: 0.6 ou 1.8"
+                  value={formatFormData.priceMultiplier}
+                  onChange={(e) =>
+                    setFormatFormData({
+                      ...formatFormData,
+                      priceMultiplier: parseFloat(e.target.value) || 1.0,
+                    })
+                  }
+                  className="rounded-xl h-10 text-sm flex-1"
+                />
+                <span className="text-xs text-muted-foreground font-semibold shrink-0">
+                  = {Math.round(1500 * (formatFormData.priceMultiplier || 1.0)).toLocaleString()} XAF (base 1 500)
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-bold">Description / Usage (facultatif)</Label>
+              <Input
+                placeholder="Ex: Idéal pour les pauses dégustation"
+                value={formatFormData.description || ''}
+                onChange={(e) => setFormatFormData({ ...formatFormData, description: e.target.value })}
+                className="rounded-xl h-10 text-sm"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="fmt-active-check"
+                checked={formatFormData.isActive}
+                onChange={(e) => setFormatFormData({ ...formatFormData, isActive: e.target.checked })}
+                className="rounded size-4 text-primary focus:ring-primary cursor-pointer"
+              />
+              <label htmlFor="fmt-active-check" className="text-xs font-bold text-foreground cursor-pointer">
+                Activer immédiatement ce format dans le catalogue
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setFormatModalOpen(false)}
+              className="rounded-xl cursor-pointer"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveFormatForm}
+              disabled={!formatFormData.name.trim() || !formatFormData.shortLabel.trim()}
+              className="rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer"
+            >
+              {editingFormat ? 'Mettre à jour' : 'Ajouter le format'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BoardPageShell>
   );
 };

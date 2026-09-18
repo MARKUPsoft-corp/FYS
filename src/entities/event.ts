@@ -57,8 +57,9 @@ export interface FysEventJuiceItem {
   name: string;
   imageUrl?: string;
   description?: string;
-  bottleSize?: '500ml' | '1L';
-  bottleVolume?: '500ml' | '1L';
+  bottleSize?: string;
+  bottleVolume?: string;
+  volumeLiters?: number;
   quantity: number;
   unitPrice: number;
   lineTotal?: number;
@@ -141,9 +142,64 @@ export interface EventVolumeDiscountTier {
   discountPercent: number; // ex: 30 = 5%, 50 = 10%, 100 = 15%, 200 = 20%
 }
 
+export interface FysEventFormat {
+  id: string;              // ex: '250ml', '330ml', '500ml', '1L'
+  name: string;            // ex: '500 ml (Standard)', '1 Litre (Partage)'
+  shortLabel: string;      // ex: '500ml', '1L'
+  volumeLiters: number;    // ex: 0.5, 1.0, 0.25
+  priceMultiplier: number; // ex: 1.0, 1.8, 0.6 (multiplié par le prix de base de la recette)
+  isActive: boolean;       // true = visible et sélectionnable dans le catalogue
+  isDefault?: boolean;     // true = sélectionné par défaut
+  description?: string;    // ex: 'Format individuel standard'
+}
+
+export const DEFAULT_FYS_EVENT_FORMATS: FysEventFormat[] = [
+  {
+    id: '500ml',
+    name: '500 ml (Standard)',
+    shortLabel: '500ml',
+    volumeLiters: 0.5,
+    priceMultiplier: 1.0,
+    isActive: true,
+    isDefault: true,
+    description: 'Format individuel classique pressé à froid',
+  },
+  {
+    id: '1L',
+    name: '1 Litre (Partage)',
+    shortLabel: '1L',
+    volumeLiters: 1.0,
+    priceMultiplier: 1.8,
+    isActive: true,
+    isDefault: false,
+    description: 'Format carafe idéal pour les réunions et tables de buffets',
+  },
+  {
+    id: '250ml',
+    name: '250 ml (Dégustation)',
+    shortLabel: '250ml',
+    volumeLiters: 0.25,
+    priceMultiplier: 0.6,
+    isActive: false,
+    isDefault: false,
+    description: 'Flacon compact pour pause café ou ateliers',
+  },
+  {
+    id: '330ml',
+    name: '330 ml (Individuel)',
+    shortLabel: '330ml',
+    volumeLiters: 0.33,
+    priceMultiplier: 0.75,
+    isActive: false,
+    isDefault: false,
+    description: 'Format nomade pratique pour conférences',
+  },
+];
+
 export interface FysEventPricingSettings {
   volumeDiscounts: EventVolumeDiscountTier[];
   volumeDiscountTiers: EventVolumeDiscountTier[];
+  availableFormats?: FysEventFormat[];
   coolerBoxUnitPrice: number;
   coolerBoxPricePerUnit: number;
   ecoCupUnitPrice: number;
@@ -168,6 +224,7 @@ export const DEFAULT_FYS_EVENT_PRICING: FysEventPricingSettings = {
     { minBottles: 100, discountPercent: 15 },
     { minBottles: 200, discountPercent: 20 },
   ],
+  availableFormats: DEFAULT_FYS_EVENT_FORMATS,
   coolerBoxUnitPrice: 2500,
   coolerBoxPricePerUnit: 2500,
   ecoCupUnitPrice: 75,

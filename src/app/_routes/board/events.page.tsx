@@ -46,9 +46,11 @@ import {
   type FysEventJuiceItem,
   type FysEventLogistics,
   type FysEventPricingSettings,
+  type FysEventFormat,
   type Cocktail,
   type Fruit,
   DEFAULT_FYS_EVENT_PRICING,
+  DEFAULT_FYS_EVENT_FORMATS,
 } from '@/entities';
 import {
   getFysEventPricingSettings,
@@ -60,6 +62,7 @@ import {
   subscribeToUserFysEvents,
   getFysEventById,
   normalizeWhatsAppNumber,
+  getFormatPrice,
 } from '@/services/event';
 import { getPublicCocktails } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
@@ -188,11 +191,21 @@ const EventsPage: PageComponent = () => {
   const [loadingCatalogue, setLoadingCatalogue] = useState(false);
   const [cocktailSearch, setCocktailSearch] = useState('');
 
-  // Per-card container selection: Record<cocktailId, '500ml' | '1L'>
-  const [cardVolumes, setCardVolumes] = useState<Record<string, '500ml' | '1L'>>({});
+  // Per-card container selection: Record<cocktailId, formatId>
+  const [cardVolumes, setCardVolumes] = useState<Record<string, string>>({});
 
   // Pricing settings
   const [pricingSettings, setPricingSettings] = useState<FysEventPricingSettings>(DEFAULT_FYS_EVENT_PRICING);
+
+  // Active formats configured by Admin (fallback to DEFAULT_FYS_EVENT_FORMATS)
+  const activeFormats = useMemo(() => {
+    const list = (pricingSettings?.availableFormats || DEFAULT_FYS_EVENT_FORMATS).filter((f) => f.isActive);
+    return list.length > 0 ? list : DEFAULT_FYS_EVENT_FORMATS.filter((f) => f.isActive);
+  }, [pricingSettings]);
+
+  const defaultFormat = useMemo(() => {
+    return activeFormats.find((f) => f.isDefault) || activeFormats[0] || DEFAULT_FYS_EVENT_FORMATS[0];
+  }, [activeFormats]);
 
   // WhatsApp Support Config
   const whatsappNumber = pricingSettings?.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
@@ -218,7 +231,7 @@ const EventsPage: PageComponent = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [guestCount, setGuestCount] = useState<number>(30);
 
-  // Items selection: Record<`${cocktailId}_${bottleVolume}`, quantity>
+  // Items selection: Record<`${cocktailId}_${formatId}`, quantity>
   const [selectedBottles, setSelectedBottles] = useState<Record<string, number>>({});
 
   // Logistics
@@ -252,11 +265,18 @@ const EventsPage: PageComponent = () => {
     setGuestCount(evt.guestCount || 30);
 
     const bottles: Record<string, number> = {};
-    const vols: Record<string, '500ml' | '1L'> = {};
+    const vols: Record<string, string> = {};
+    const allFormats = pricingSettings?.availableFormats || DEFAULT_FYS_EVENT_FORMATS;
+
     (evt.items || evt.selectedJuices || []).forEach((item) => {
       if (item.cocktailId) {
-        bottles[item.cocktailId] = item.quantity;
-        vols[item.cocktailId] = item.bottleVolume || item.bottleSize || '500ml';
+        const itemVol = item.bottleVolume || item.bottleSize || defaultFormat.id;
+        const matchedFmt = allFormats.find(
+          (f) => f.id === itemVol || f.shortLabel === itemVol || f.name === itemVol
+        );
+        const fmtId = matchedFmt ? matchedFmt.id : itemVol;
+        bottles[`${item.cocktailId}_${fmtId}`] = (bottles[`${item.cocktailId}_${fmtId}`] || 0) + item.quantity;
+        vols[item.cocktailId] = fmtId;
       }
     });
     setSelectedBottles(bottles);
@@ -340,29 +360,53 @@ const EventsPage: PageComponent = () => {
   }, [eventIdParam]);
 
   // Convert selectedBottles into FysEventJuiceItem[]
-  // selectedBottles keys: `${cocktailId}` only — volume comes from cardVolumes
+  // selectedBottles keys: `${cocktailId}_${formatId}` or legacy `${cocktailId}`
   const juiceItems: FysEventJuiceItem[] = useMemo(() => {
     const items: FysEventJuiceItem[] = [];
-    for (const [cocktailId, qty] of Object.entries(selectedBottles)) {
+    const allFormats = pricingSettings?.availableFormats || DEFAULT_FYS_EVENT_FORMATS;
+
+    for (const [key, qty] of Object.entries(selectedBottles)) {
       if (qty <= 0) continue;
+
+      let cocktailId = key;
+      let formatId = cardVolumes[cocktailId] || defaultFormat.id;
+
+      if (key.includes('_')) {
+        const parts = key.split('_');
+        cocktailId = parts[0];
+        formatId = parts.slice(1).join('_');
+      }
+
       const cocktail = catalogueCocktails.find((c) => c.id === cocktailId);
       if (!cocktail) continue;
-      const volume: '500ml' | '1L' = cardVolumes[cocktailId] || '500ml';
-      const base500Price = cocktail.totalPrice || 1500;
-      const unitPrice = volume === '1L' ? Math.round(base500Price * 1.8) : base500Price;
+
+      const matchedFormat =
+        allFormats.find(
+          (f) => f.id === formatId || f.shortLabel === formatId || f.name === formatId
+        ) ||
+        allFormats.find((f) => f.id === defaultFormat.id) ||
+        defaultFormat;
+
+      const basePrice = cocktail.totalPrice || 1500;
+      const unitPrice = getFormatPrice(basePrice, matchedFormat);
+      const bottleLabel = matchedFormat.shortLabel || matchedFormat.name || formatId;
+      const volumeLiters = matchedFormat.volumeLiters || 0.5;
 
       items.push({
         cocktailId,
         name: cocktail.name,
         imageUrl: cocktail.imageUrl,
-        bottleVolume: volume,
+        bottleVolume: bottleLabel,
+        bottleSize: bottleLabel,
+        volumeLiters,
         quantity: qty,
         unitPrice,
         totalPrice: unitPrice * qty,
+        lineTotal: unitPrice * qty,
       });
     }
     return items;
-  }, [selectedBottles, cardVolumes, catalogueCocktails]);
+  }, [selectedBottles, cardVolumes, catalogueCocktails, pricingSettings, defaultFormat]);
 
   // Logistics object
   const logisticsData: FysEventLogistics = useMemo(() => {
@@ -424,25 +468,27 @@ const EventsPage: PageComponent = () => {
     };
   }, [financials.totalBottles, financials.discountPercent, pricingSettings]);
 
-  // Quantity helpers — key is just cocktailId (volume lives in cardVolumes)
-  const handleQuantityChange = (cocktailId: string, delta: number) => {
-    const current = selectedBottles[cocktailId] || 0;
+  // Quantity helpers — key is `${cocktailId}_${formatId}`
+  const handleQuantityChange = (cocktailId: string, formatId: string, delta: number) => {
+    const key = `${cocktailId}_${formatId}`;
+    const current = selectedBottles[key] || 0;
     const next = Math.max(0, current + delta);
     setSelectedBottles((prev) => ({
       ...prev,
-      [cocktailId]: next,
+      [key]: next,
     }));
   };
 
-  const setExplicitQuantity = (cocktailId: string, qty: number) => {
+  const setExplicitQuantity = (cocktailId: string, formatId: string, qty: number) => {
+    const key = `${cocktailId}_${formatId}`;
     setSelectedBottles((prev) => ({
       ...prev,
-      [cocktailId]: Math.max(0, qty),
+      [key]: Math.max(0, qty),
     }));
   };
 
-  const setCardVolume = (cocktailId: string, volume: '500ml' | '1L') => {
-    setCardVolumes((prev) => ({ ...prev, [cocktailId]: volume }));
+  const setCardVolume = (cocktailId: string, formatId: string) => {
+    setCardVolumes((prev) => ({ ...prev, [cocktailId]: formatId }));
   };
 
   // Step 1 Validation logic
@@ -817,7 +863,7 @@ const EventsPage: PageComponent = () => {
                       {selectedEvent.totalBottles} bouteille{selectedEvent.totalBottles > 1 ? 's' : ''}
                     </span>
                     <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full">
-                      {selectedEvent.totalLiters.toFixed(1)} Litres
+                      {(selectedEvent.totalLiters ?? (selectedEvent.totalBottles * 0.5)).toFixed(1)} Litres
                     </span>
                   </div>
                 </div>
@@ -1134,7 +1180,7 @@ const EventsPage: PageComponent = () => {
                           </div>
                           <div className="bg-muted/40 p-2.5 rounded-xl border border-border/40">
                             <span className="text-muted-foreground block text-[10px]">Volume commandé</span>
-                            <span className="font-semibold text-foreground">{ev.totalBottles} bouteille{ev.totalBottles > 1 ? 's' : ''} ({ev.totalLiters.toFixed(1)}L)</span>
+                            <span className="font-semibold text-foreground">{ev.totalBottles} bouteille{ev.totalBottles > 1 ? 's' : ''} ({(ev.totalLiters ?? (ev.totalBottles * 0.5)).toFixed(1)}L)</span>
                           </div>
                         </div>
                       </div>
@@ -1660,12 +1706,17 @@ const EventsPage: PageComponent = () => {
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                           {filtered.map((cocktail) => {
-                            const currentQty = selectedBottles[cocktail.id] || 0;
-                            const vol: '500ml' | '1L' = cardVolumes[cocktail.id] || '500ml';
                             const basePrice = cocktail.totalPrice || 1500;
-                            const price500 = basePrice;
-                            const price1L = Math.round(basePrice * 1.8);
-                            const currentPrice = vol === '1L' ? price1L : price500;
+                            const currentFmtId = cardVolumes[cocktail.id] || defaultFormat.id;
+                            const currentFmt = activeFormats.find((f) => f.id === currentFmtId) || defaultFormat;
+                            const currentQty = selectedBottles[`${cocktail.id}_${currentFmt.id}`] || 0;
+                            const currentPrice = getFormatPrice(basePrice, currentFmt);
+
+                            // Total bottles across all formats for this cocktail
+                            const totalCocktailBottles = activeFormats.reduce((acc, fmt) => {
+                              return acc + (selectedBottles[`${cocktail.id}_${fmt.id}`] || 0);
+                            }, 0);
+
                             const useCollage = shouldUseFruitCollage(cocktail);
                             const fruitVisuals = buildFruitVisuals(cocktail.ingredients || [], fruits);
                             const summary = ingredientSummary(cocktail, fruits);
@@ -1675,7 +1726,7 @@ const EventsPage: PageComponent = () => {
                                 key={cocktail.id}
                                 className={cn(
                                   'rounded-[1.75rem] overflow-hidden border bg-card shadow-sm transition-all duration-300',
-                                  currentQty > 0
+                                  totalCocktailBottles > 0
                                     ? 'border-primary/70 shadow-md ring-2 ring-primary/15'
                                     : 'border-border/50 hover:-translate-y-1 hover:shadow-lg'
                                 )}
@@ -1712,9 +1763,9 @@ const EventsPage: PageComponent = () => {
                                   )}
 
                                   {/* Selected badge */}
-                                  {currentQty > 0 && (
+                                  {totalCocktailBottles > 0 && (
                                     <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
-                                      {currentQty} bt.
+                                      {totalCocktailBottles} bt.
                                     </div>
                                   )}
 
@@ -1739,38 +1790,49 @@ const EventsPage: PageComponent = () => {
                                     </p>
                                   </div>
 
-                                  {/* Container selector (500ml / 1L) */}
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setCardVolume(cocktail.id, '500ml')}
-                                      className={cn(
-                                        'flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
-                                        vol === '500ml'
-                                          ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                                          : 'bg-muted/60 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
-                                      )}
-                                    >
-                                      500ml
-                                      <span className={cn('block text-[10px] font-semibold mt-0.5', vol === '500ml' ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>
-                                        {price500.toLocaleString()} XAF
-                                      </span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setCardVolume(cocktail.id, '1L')}
-                                      className={cn(
-                                        'flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
-                                        vol === '1L'
-                                          ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                                          : 'bg-muted/60 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
-                                      )}
-                                    >
-                                      1 Litre
-                                      <span className={cn('block text-[10px] font-semibold mt-0.5', vol === '1L' ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>
-                                        {price1L.toLocaleString()} XAF
-                                      </span>
-                                    </button>
+                                  {/* Container selector (Dynamic Formats configured by Admin) */}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {activeFormats.map((fmt) => {
+                                      const isSelected = fmt.id === currentFmt.id;
+                                      const fmtPrice = getFormatPrice(basePrice, fmt);
+                                      const fmtQty = selectedBottles[`${cocktail.id}_${fmt.id}`] || 0;
+
+                                      return (
+                                        <button
+                                          key={fmt.id}
+                                          type="button"
+                                          onClick={() => setCardVolume(cocktail.id, fmt.id)}
+                                          className={cn(
+                                            'flex-1 min-w-[70px] py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer relative text-center',
+                                            isSelected
+                                              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                              : 'bg-muted/60 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
+                                          )}
+                                        >
+                                          <span className="truncate block leading-tight">{fmt.shortLabel || fmt.name}</span>
+                                          <span
+                                            className={cn(
+                                              'block text-[10px] font-semibold mt-0.5',
+                                              isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground/70'
+                                            )}
+                                          >
+                                            {fmtPrice.toLocaleString()} XAF
+                                          </span>
+                                          {fmtQty > 0 && (
+                                            <span
+                                              className={cn(
+                                                'absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black flex items-center justify-center shadow-xs border',
+                                                isSelected
+                                                  ? 'bg-white text-primary border-primary'
+                                                  : 'bg-primary text-primary-foreground border-background'
+                                              )}
+                                            >
+                                              {fmtQty}
+                                            </span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
 
                                   {/* Quantity stepper */}
@@ -1779,7 +1841,7 @@ const EventsPage: PageComponent = () => {
                                     <div className="flex items-center justify-center gap-1.5">
                                       <button
                                         type="button"
-                                        onClick={() => handleQuantityChange(cocktail.id, -1)}
+                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt.id, -1)}
                                         disabled={currentQty === 0}
                                         className="size-9 rounded-xl bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors shrink-0"
                                         title="Retirer 1"
@@ -1790,12 +1852,12 @@ const EventsPage: PageComponent = () => {
                                         type="number"
                                         min={0}
                                         value={currentQty}
-                                        onChange={(e) => setExplicitQuantity(cocktail.id, parseInt(e.target.value) || 0)}
+                                        onChange={(e) => setExplicitQuantity(cocktail.id, currentFmt.id, parseInt(e.target.value) || 0)}
                                         className="w-10 h-8 text-center rounded-lg border border-input bg-background text-foreground text-xs font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
-                                        onClick={() => handleQuantityChange(cocktail.id, 1)}
+                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt.id, 1)}
                                         className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors shrink-0"
                                         title="Ajouter 1"
                                       >

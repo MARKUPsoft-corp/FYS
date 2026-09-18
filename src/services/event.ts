@@ -16,10 +16,12 @@ import {
   type FysEvent,
   type FysEventStatus,
   type FysEventPricingSettings,
+  type FysEventFormat,
   type FysEventJuiceItem,
   type FysEventLogistics,
   type EventVolumeDiscountTier,
   DEFAULT_FYS_EVENT_PRICING,
+  DEFAULT_FYS_EVENT_FORMATS,
   FYS_EVENT_STATUS_LABELS,
   type UserInfo,
 } from '@/entities';
@@ -49,10 +51,14 @@ export async function getFysEventPricingSettings(): Promise<FysEventPricingSetti
     const hourlyRate = data.bartenderServiceHourlyRate ?? (data.bartenderHalfDayRate ? Math.round(data.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
     const halfDayRate = data.bartenderHalfDayRate ?? hourlyRate * 4;
     const deliveryFee = data.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
+    const availableFormats = Array.isArray(data.availableFormats) && data.availableFormats.length > 0
+      ? data.availableFormats
+      : DEFAULT_FYS_EVENT_PRICING.availableFormats;
 
     return {
       volumeDiscounts: rawTiers,
       volumeDiscountTiers: rawTiers,
+      availableFormats,
       coolerBoxUnitPrice: coolerUnitPrice,
       coolerBoxPricePerUnit: coolerUnitPrice,
       ecoCupUnitPrice: ecoUnitPrice,
@@ -70,7 +76,7 @@ export async function getFysEventPricingSettings(): Promise<FysEventPricingSetti
 }
 
 /**
- * Écoute en temps réel les paramètres de tarification et configuration FYS Event (y compris WhatsApp)
+ * Écoute en temps réel les paramètres de tarification et configuration FYS Event (y compris WhatsApp et Formats)
  */
 export function subscribeToFysEventPricingSettings(
   callback: (settings: FysEventPricingSettings) => void
@@ -93,10 +99,14 @@ export function subscribeToFysEventPricingSettings(
     const hourlyRate = data.bartenderServiceHourlyRate ?? (data.bartenderHalfDayRate ? Math.round(data.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
     const halfDayRate = data.bartenderHalfDayRate ?? hourlyRate * 4;
     const deliveryFee = data.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
+    const availableFormats = Array.isArray(data.availableFormats) && data.availableFormats.length > 0
+      ? data.availableFormats
+      : DEFAULT_FYS_EVENT_PRICING.availableFormats;
 
     callback({
       volumeDiscounts: rawTiers,
       volumeDiscountTiers: rawTiers,
+      availableFormats,
       coolerBoxUnitPrice: coolerUnitPrice,
       coolerBoxPricePerUnit: coolerUnitPrice,
       ecoCupUnitPrice: ecoUnitPrice,
@@ -129,7 +139,7 @@ export function normalizeWhatsAppNumber(phone?: string): string {
 }
 
 /**
- * Met à jour les paramètres de tarification et remises de volume pour FYS Event
+ * Met à jour les paramètres de tarification, remises de volume et formats pour FYS Event
  */
 export async function updateFysEventPricingSettings(
   settings: Partial<FysEventPricingSettings>
@@ -142,11 +152,15 @@ export async function updateFysEventPricingSettings(
   const halfDayRate = settings.bartenderHalfDayRate ?? hourlyRate * 4;
   const deliveryFee = settings.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
   const whatsappNumber = (settings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
+  const availableFormats = Array.isArray(settings.availableFormats) && settings.availableFormats.length > 0
+    ? settings.availableFormats
+    : DEFAULT_FYS_EVENT_PRICING.availableFormats;
 
   await setDoc(ref, {
     ...settings,
     volumeDiscounts: tiers,
     volumeDiscountTiers: tiers,
+    availableFormats,
     coolerBoxUnitPrice: coolerPrice,
     coolerBoxPricePerUnit: coolerPrice,
     ecoCupUnitPrice: ecoPrice,
@@ -192,8 +206,17 @@ export function calculateEventFinancials(
 
   const totalBottles = safeJuices.reduce((acc, j) => acc + (j.quantity || 0), 0);
   const totalLiters = safeJuices.reduce((acc, j) => {
-    const vol = j.bottleVolume || j.bottleSize || '500ml';
-    return acc + (vol === '1L' ? (j.quantity || 0) * 1.0 : (j.quantity || 0) * 0.5);
+    if (typeof j.volumeLiters === 'number' && j.volumeLiters > 0) {
+      return acc + (j.quantity || 0) * j.volumeLiters;
+    }
+    const vol = (j.bottleVolume || j.bottleSize || '500ml').toLowerCase();
+    let liters = 0.5;
+    if (vol.includes('1l') || vol.includes('1 l') || vol.includes('1000')) liters = 1.0;
+    else if (vol.includes('250')) liters = 0.25;
+    else if (vol.includes('330')) liters = 0.33;
+    else if (vol.includes('750')) liters = 0.75;
+    else if (vol.includes('2l') || vol.includes('2 l')) liters = 2.0;
+    return acc + (j.quantity || 0) * liters;
   }, 0);
 
   const rawJuiceTotal = safeJuices.reduce((acc, j) => {
@@ -239,6 +262,15 @@ export function calculateEventFinancials(
     totalAmount,
     totalPrice: totalAmount,
   };
+}
+
+/**
+ * Calcule le prix unitaire d'un cocktail pour un format donné
+ */
+export function getFormatPrice(basePrice: number, format?: FysEventFormat | null): number {
+  if (!format) return basePrice;
+  const mult = typeof format.priceMultiplier === 'number' && format.priceMultiplier > 0 ? format.priceMultiplier : 1.0;
+  return Math.round(basePrice * mult);
 }
 
 /**
