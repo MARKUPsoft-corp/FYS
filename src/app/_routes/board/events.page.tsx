@@ -1275,13 +1275,15 @@ const EventsPage: PageComponent = () => {
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Date de l&apos;événement *
                     </label>
-                    <Input
+                    <input
                       type="date"
                       value={eventDate}
                       onChange={(e) => setEventDate(e.target.value)}
                       className={cn(
-                        "h-11 rounded-xl transition-all",
-                        touchedStep1 && !eventDate && "border-destructive bg-destructive/5 focus-visible:ring-destructive"
+                        "w-full h-11 rounded-xl px-3 border bg-background text-foreground text-sm transition-all outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
+                        touchedStep1 && !eventDate
+                          ? "border-destructive bg-destructive/5 focus:ring-destructive"
+                          : "border-input"
                       )}
                     />
                   </div>
@@ -1290,11 +1292,11 @@ const EventsPage: PageComponent = () => {
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Heure de livraison souhaitée sur site
                     </label>
-                    <Input
+                    <input
                       type="time"
                       value={deliveryTime}
                       onChange={(e) => setDeliveryTime(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="w-full h-11 rounded-xl px-3 border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-all"
                     />
                   </div>
 
