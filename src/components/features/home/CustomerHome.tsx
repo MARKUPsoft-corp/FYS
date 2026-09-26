@@ -170,7 +170,7 @@ export function CustomerHome(_props: Props) {
             <div className="flex flex-col items-center justify-center gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">👋</span> 
-                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Bonjour, {firstName}</span>
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('auth.greeting', { name: firstName, defaultValue: `Bonjour, ${firstName}` })}</span>
               </div>
               {isNoticeActive && (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-semibold animate-pop-in-cute">
@@ -188,7 +188,7 @@ export function CustomerHome(_props: Props) {
             ) : profileComplete ? (
               <>
                 <h1 className="text-4xl md:text-5xl font-extrabold font-display tracking-tight text-foreground leading-[1.1]">
-                  Quelle est votre envie du jour ?
+                  {t('home.customer.heroTitle')}
                 </h1>
                 
                 <form onSubmit={handleAiSubmit} className="relative mt-8 w-full group">
@@ -198,7 +198,7 @@ export function CustomerHome(_props: Props) {
                       type="text" 
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Ex: J'ai besoin d'énergie pour le sport..."
+                      placeholder={t('home.customer.heroPlaceholder')}
                       className="flex-1 min-w-0 bg-transparent border-none outline-none text-foreground text-sm md:text-base placeholder:text-muted-foreground/60 mr-2"
                     />
                     <Button 
@@ -207,7 +207,7 @@ export function CustomerHome(_props: Props) {
                       className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 sm:h-12 px-4 sm:px-6 gap-1.5 sm:gap-2 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     >
                       <Sparkles className="size-4" />
-                      <span className="text-xs sm:text-sm">Demander</span>
+                      <span className="text-xs sm:text-sm">{t('home.customer.heroSubmit')}</span>
                     </Button>
                   </div>
                 </form>
@@ -215,7 +215,7 @@ export function CustomerHome(_props: Props) {
                 {profile?.goals && profile.goals.length > 0 && (
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1 mr-1">
-                      <ShieldCheck className="size-3 opacity-70" /> Vos objectifs
+                      <ShieldCheck className="size-3 opacity-70" /> {t('home.customer.yourGoals')}
                     </span>
                     {profile.goals.slice(0, 3).map((goal, idx) => (
                       <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold text-foreground/80 border border-border/60 bg-muted/20">
@@ -228,15 +228,15 @@ export function CustomerHome(_props: Props) {
             ) : (
               <>
                 <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight text-foreground leading-[1.1]">
-                  Personnalisons votre expérience
+                  {t('home.customer.personalizeTitle')}
                 </h1>
                 <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">
-                  Pour que NutriFYS puisse créer des recettes parfaitement adaptées à votre corps, parlez-nous de vous.
+                  {t('home.customer.personalizeSub')}
                 </p>
                 
                 <div className="max-w-md mx-auto mt-6 bg-background rounded-2xl border border-border/50 p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground">Profil santé</span>
+                    <span className="text-xs font-bold text-foreground">{t('home.customer.healthProfile')}</span>
                     <span className="text-xs font-bold text-amber-500">{completionPct}% {t('profile.healthProfileCompleted', 'complété')}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -321,10 +321,10 @@ export function CustomerHome(_props: Props) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
                     <Sparkles className="size-3.5 text-secondary" />
-                    CURE CONSEILLÉE POUR VOUS • FYS PROGRAM
+                    {t('programs.suggestedCureBadge')}
                   </span>
                   <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    Cure {displayProgram.durationDays} jours ({displayProgram.bottlesTotal} flacons)
+                    {t('programs.cureDuration', { duration: displayProgram.durationDays, bottles: displayProgram.bottlesTotal })}
                   </span>
                   {displayProgram.badge && (
                     <span className="text-xs text-secondary font-bold bg-secondary/15 px-3 py-1 rounded-full backdrop-blur-xs border border-secondary/30">
@@ -346,10 +346,10 @@ export function CustomerHome(_props: Props) {
                     <Leaf className="size-3 text-primary" /> {displayProgram.goalLabel}
                   </span>
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Package className="size-3 text-secondary" /> {displayProgram.price.toLocaleString()} XAF le pack
+                    <Package className="size-3 text-secondary" /> {t('programs.pricePerPack', { price: displayProgram.price.toLocaleString() })}
                   </span>
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Sparkles className="size-3 text-secondary" /> Suivi quotidien NutriFYS
+                    <Sparkles className="size-3 text-secondary" /> {t('programs.dailyFollowup')}
                   </span>
                 </div>
               </div>
@@ -357,7 +357,7 @@ export function CustomerHome(_props: Props) {
               <div className="relative z-10 shrink-0">
                 <Link to={`/board/programs?program=${displayProgram.id}`}>
                   <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer">
-                    Découvrir cette cure
+                    {t('programs.discoverCure')}
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>
@@ -370,7 +370,7 @@ export function CustomerHome(_props: Props) {
         <div className="space-y-8 pt-6">
           <div className="flex items-center justify-center px-2 mb-6">
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-display tracking-tight text-center">
-              <span className="text-foreground">Votre</span> <span className="text-primary">Parcours</span>
+              <span className="text-foreground">{t('home.customer.yourJourney.prefix')}</span> <span className="text-primary">{t('home.customer.yourJourney.highlight')}</span>
             </h3>
           </div>
           
@@ -384,10 +384,10 @@ export function CustomerHome(_props: Props) {
                 <div>
                   <p className="text-5xl md:text-6xl font-black font-display text-primary tracking-tighter leading-none">{orders.length || 0}</p>
                   <p className="text-sm font-bold text-foreground mt-3 leading-tight flex items-center gap-1 group-hover:text-primary transition-colors">
-                    Commandes
+                    {t('home.customer.stats.orders')}
                     <ChevronDown className={`size-4 transition-transform duration-300 ${ordersExpanded ? 'rotate-180 text-primary' : 'text-muted-foreground'}`} />
                   </p>
-                  <span className="text-muted-foreground font-medium text-xs">livrées avec soin</span>
+                  <span className="text-muted-foreground font-medium text-xs">{t('home.customer.stats.ordersSub')}</span>
                 </div>
                 <div className={`size-16 md:size-20 rounded-[1.5rem] bg-primary/15 flex items-center justify-center shadow-inner transition-transform duration-500 ${ordersExpanded ? 'rotate-12 scale-110' : 'rotate-3 group-hover:rotate-12'}`}>
                   <Package className="size-8 md:size-10 text-primary" />
@@ -398,15 +398,15 @@ export function CustomerHome(_props: Props) {
               <div className={`grid transition-all duration-500 ease-in-out ${ordersExpanded ? 'grid-rows-[1fr] opacity-100 mt-6' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
                 <div className="overflow-hidden flex flex-col gap-2.5">
                   <div className="flex items-center justify-between bg-background/50 rounded-xl p-2.5 px-4 border border-border/50">
-                    <span className="text-xs font-bold flex items-center gap-2"><Clock className="size-3.5 text-amber-500"/> En attente</span>
+                    <span className="text-xs font-bold flex items-center gap-2"><Clock className="size-3.5 text-amber-500"/> {t('orders.status.pending')}</span>
                     <span className="text-sm font-bold text-foreground">{pendingCount}</span>
                   </div>
                   <div className="flex items-center justify-between bg-background/50 rounded-xl p-2.5 px-4 border border-border/50">
-                    <span className="text-xs font-bold flex items-center gap-2"><ChefHat className="size-3.5 text-primary"/> En préparation</span>
+                    <span className="text-xs font-bold flex items-center gap-2"><ChefHat className="size-3.5 text-primary"/> {t('orders.status.preparing')}</span>
                     <span className="text-sm font-bold text-foreground">{preparingCount}</span>
                   </div>
                   <div className="flex items-center justify-between bg-background/50 rounded-xl p-2.5 px-4 border border-border/50">
-                    <span className="text-xs font-bold flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-500"/> Livrées</span>
+                    <span className="text-xs font-bold flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-500"/> {t('orders.status.delivered')}</span>
                     <span className="text-sm font-bold text-foreground">{deliveredCount}</span>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ export function CustomerHome(_props: Props) {
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-amber-500/10 transition-all duration-300 cursor-default shadow-sm">
               <div>
                 <p className="text-5xl md:text-6xl font-black font-display text-amber-500 tracking-tighter leading-none">{uniqueCocktailsCreated}</p>
-                <p className="text-sm font-bold text-foreground mt-3 leading-tight">Créations <br/> <span className="text-muted-foreground font-medium text-xs">uniques imaginées</span></p>
+                <p className="text-sm font-bold text-foreground mt-3 leading-tight">{t('home.customer.stats.creations')} <br/> <span className="text-muted-foreground font-medium text-xs">{t('home.customer.stats.creationsSub')}</span></p>
               </div>
               <div className="size-16 md:size-20 rounded-[1.5rem] bg-amber-500/15 flex items-center justify-center shadow-inner -rotate-3 hover:-rotate-12 transition-transform duration-300">
                 <Beaker className="size-8 md:size-10 text-amber-500" />
@@ -428,7 +428,7 @@ export function CustomerHome(_props: Props) {
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-emerald-500/10 transition-all duration-300 cursor-default shadow-sm">
               <div>
                 <p className="text-5xl md:text-6xl font-black font-display text-emerald-500 tracking-tighter leading-none">{aiExchangesCount}</p>
-                <p className="text-sm font-bold text-foreground mt-3 leading-tight">Échanges <br/> <span className="text-muted-foreground font-medium text-xs">avec NutriFYS</span></p>
+                <p className="text-sm font-bold text-foreground mt-3 leading-tight">{t('home.customer.stats.ai')} <br/> <span className="text-muted-foreground font-medium text-xs">{t('home.customer.stats.aiSub')}</span></p>
               </div>
               <div className="size-16 md:size-20 rounded-[1.5rem] bg-emerald-500/15 flex items-center justify-center shadow-inner rotate-6 hover:rotate-12 transition-transform duration-300">
                 <Sparkles className="size-8 md:size-10 text-emerald-500" />
@@ -441,7 +441,7 @@ export function CustomerHome(_props: Props) {
         <div className="space-y-8 pt-8">
           <div className="flex items-center justify-center px-2 mb-6">
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-display tracking-tight text-center">
-              <span className="text-foreground">Accès</span> <span className="text-primary">Rapide</span>
+              <span className="text-foreground">{t('home.customer.quickAccess.prefix')}</span> <span className="text-primary">{t('home.customer.quickAccess.highlight')}</span>
             </h3>
           </div>
           
@@ -455,10 +455,10 @@ export function CustomerHome(_props: Props) {
                 <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 shadow-sm border border-primary/20">
                   <Beaker className="size-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Composer manuellement</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed flex-1">Sélectionnez vos fruits et créez votre propre recette de jus de façon manuelle.</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">{t('home.customer.quick.manualTitle')}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{t('home.customer.quick.manualDesc')}</p>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-widest group-hover:underline">Démarrer</span>
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-widest group-hover:underline">{t('home.customer.quick.manualCta')}</span>
                   <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground text-primary transition-colors">
                     <ArrowRight className="size-4" />
                   </div>
@@ -475,10 +475,10 @@ export function CustomerHome(_props: Props) {
                 <div className="size-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 shadow-sm border border-amber-500/20">
                   <Sparkles className="size-7 text-amber-500" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Assistant NutriFYS</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed flex-1">L'IA s'occupe de composer la recette parfaite selon vos objectifs santé.</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">{t('home.customer.quick.aiTitle')}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{t('home.customer.quick.aiDesc')}</p>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-amber-500 uppercase tracking-widest group-hover:underline">Discuter</span>
+                  <span className="text-[11px] font-extrabold text-amber-500 uppercase tracking-widest group-hover:underline">{t('home.customer.quick.aiCta')}</span>
                   <div className="size-8 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white text-amber-500 transition-colors">
                     <ArrowRight className="size-4" />
                   </div>
@@ -495,10 +495,10 @@ export function CustomerHome(_props: Props) {
                 <div className="size-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 shadow-sm border border-emerald-500/20">
                   <Leaf className="size-7 text-emerald-500" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Catalogue FYS</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed flex-1">Découvrez nos recettes signatures validées par des nutritionnistes.</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">{t('home.customer.quick.catalogTitle')}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{t('home.customer.quick.catalogDesc')}</p>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-emerald-500 uppercase tracking-widest group-hover:underline">Explorer</span>
+                  <span className="text-[11px] font-extrabold text-emerald-500 uppercase tracking-widest group-hover:underline">{t('home.customer.quick.catalogCta')}</span>
                   <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white text-emerald-500 transition-colors">
                     <ArrowRight className="size-4" />
                   </div>
@@ -512,11 +512,11 @@ export function CustomerHome(_props: Props) {
         <div className="space-y-8 pt-8">
           <div className="flex flex-col sm:flex-row items-center justify-center relative px-2 mb-6">
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-display tracking-tight text-center">
-              <span className="text-foreground">Commandes</span> <span className="text-primary">récentes</span>
+              <span className="text-foreground">{t('home.customer.recentOrders.prefix')}</span> <span className="text-primary">{t('home.customer.recentOrders.highlight')}</span>
             </h3>
             {recentOrders.length > 0 && (
               <Link to="/board/orders" className="sm:absolute sm:right-2 mt-2 sm:mt-0 text-xs font-bold text-primary hover:underline uppercase tracking-wider">
-                Historique
+                {t('home.customer.recentOrders.historyLink')}
               </Link>
             )}
           </div>
@@ -590,7 +590,7 @@ export function CustomerHome(_props: Props) {
                         
                         <div className="space-y-3">
                           <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-muted-foreground">
-                            <span>{order.orderLines?.length ? `${order.orderLines.reduce((acc, l) => acc + l.quantity, 0)} bouteilles` : `${order.quantity} bouteilles`}</span>
+                            <span>{t('orders.bottles', { count: order.orderLines?.length ? order.orderLines.reduce((acc, l) => acc + l.quantity, 0) : (order.quantity || 1) })}</span>
                             <span className="font-bold font-display text-foreground text-sm sm:text-base">
                               {order.totalPrice.toLocaleString()} XAF
                             </span>
@@ -616,11 +616,11 @@ export function CustomerHome(_props: Props) {
                 <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                   <Package className="size-8 text-muted-foreground/60" />
                 </div>
-                <p className="text-base font-bold text-foreground">Aucune commande récente</p>
-                <p className="text-sm text-muted-foreground mt-1 max-w-sm">Vous n'avez pas encore commandé de cocktail. Rendez-vous dans le Lab pour créer votre première recette !</p>
+                <p className="text-base font-bold text-foreground">{t('home.customer.recentOrders.emptyTitle')}</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm">{t('home.customer.recentOrders.emptyDesc')}</p>
                 <Link to="/lab">
                   <Button variant="outline" className="mt-6 rounded-full font-bold h-10 px-6 gap-2">
-                    <Beaker className="size-4" /> Composer maintenant
+                    <Beaker className="size-4" /> {t('home.customer.recentOrders.emptyCta')}
                   </Button>
                 </Link>
             </div>
@@ -631,9 +631,9 @@ export function CustomerHome(_props: Props) {
         <div className="space-y-8 pt-12 mt-12 border-t border-border/40">
           <div className="px-2 mb-8 text-center">
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-display tracking-tight">
-              <span className="text-foreground">Encyclopédie</span> <span className="text-primary">des fruits</span>
+              <span className="text-foreground">{t('home.customer.encyclopedia.prefix')}</span> <span className="text-primary">{t('home.customer.encyclopedia.highlight')}</span>
             </h3>
-            <p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-lg mx-auto">Cliquez sur un ingrédient pour découvrir ses vertus nutritionnelles et ses interactions.</p>
+            <p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-lg mx-auto">{t('home.customer.encyclopedia.desc')}</p>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 pb-8">
@@ -647,7 +647,7 @@ export function CustomerHome(_props: Props) {
                 >
                   {unavailable && (
                     <span className="absolute top-2 right-2 z-10 text-[9px] font-bold uppercase tracking-widest bg-background/80 backdrop-blur-md text-muted-foreground px-1.5 py-0.5 rounded-full border border-border">
-                      Épuisé
+                      {t('fruits.soldOut')}
                     </span>
                   )}
                   <div
@@ -655,7 +655,7 @@ export function CustomerHome(_props: Props) {
                     style={{ backgroundImage: fruit.imageUrl ? `url('${fruit.imageUrl}')` : 'none' }}
                   />
                   <h5 className="font-bold text-xs text-foreground text-center line-clamp-1 w-full px-1">{fruit.name}</h5>
-                  <p className="text-[10px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.benefits?.[0] || '100% Naturel'}</p>
+                  <p className="text-[10px] text-muted-foreground text-center line-clamp-1 w-full mt-0.5 px-1">{fruit.benefits?.[0] || t('fruits.natural100')}</p>
 
                   <Button
                     variant="ghost"
@@ -663,7 +663,7 @@ export function CustomerHome(_props: Props) {
                     disabled={unavailable}
                     className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 bg-black/5 dark:bg-white/5 rounded-[1.5rem] transition-opacity"
                   >
-                    <span className="sr-only">Voir détails</span>
+                    <span className="sr-only">{t('fruits.viewDetails')}</span>
                   </Button>
                 </div>
               );

@@ -19,13 +19,13 @@ type Props = { name: string };
 
 // ── Status config (subset for activity feed) ─────────────────────────────────
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; dot: string; icon: React.ElementType }> = {
-  [OrderStatus.PENDING]:   { label: 'En attente',   dot: 'bg-amber-400',  icon: Clock },
-  [OrderStatus.CONFIRMED]: { label: 'Confirmée',    dot: 'bg-blue-400',   icon: CheckCircle2 },
-  [OrderStatus.PREPARING]: { label: 'En préparation', dot: 'bg-violet-400', icon: Package },
-  [OrderStatus.READY]:     { label: 'Prête',        dot: 'bg-teal-400',   icon: Truck },
-  [OrderStatus.DELIVERED]: { label: 'Livrée',       dot: 'bg-primary',    icon: CheckCircle2 },
-  [OrderStatus.CANCELLED]: { label: 'Annulée',      dot: 'bg-rose-400',   icon: XCircle },
+const STATUS_CONFIG: Record<OrderStatus, { labelKey: string; dot: string; icon: React.ElementType }> = {
+  [OrderStatus.PENDING]:   { labelKey: 'orders.status.pending',   dot: 'bg-amber-400',  icon: Clock },
+  [OrderStatus.CONFIRMED]: { labelKey: 'orders.status.confirmed',    dot: 'bg-blue-400',   icon: CheckCircle2 },
+  [OrderStatus.PREPARING]: { labelKey: 'orders.status.preparing', dot: 'bg-violet-400', icon: Package },
+  [OrderStatus.READY]:     { labelKey: 'orders.status.ready',        dot: 'bg-teal-400',   icon: Truck },
+  [OrderStatus.DELIVERED]: { labelKey: 'orders.status.delivered',       dot: 'bg-primary',    icon: CheckCircle2 },
+  [OrderStatus.CANCELLED]: { labelKey: 'orders.status.cancelled',      dot: 'bg-rose-400',   icon: XCircle },
 };
 
 const STATUS_ORDER: OrderStatus[] = [
@@ -38,11 +38,12 @@ const STATUS_ORDER: OrderStatus[] = [
 ];
 
 function StatusBadge({ status }: { status: OrderStatus }) {
+  const { t } = useTranslation();
   const cfg = STATUS_CONFIG[status];
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
       <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
@@ -92,7 +93,7 @@ export function AdminHome({ name }: Props) {
 
   const statCards = [
     {
-      label: 'Fruits',
+      label: t('home.admin.stats.fruits'),
       value: stats?.fruitsCount ?? 0,
       icon: Apple,
       path: '/board/fruits',
@@ -100,7 +101,7 @@ export function AdminHome({ name }: Props) {
       bg: 'bg-orange-50 dark:bg-orange-950/30 border-orange-100',
     },
     {
-      label: 'Cocktails',
+      label: t('home.admin.stats.cocktails'),
       value: stats?.catalogueCocktailsCount ?? 0,
       icon: GlassWater,
       path: '/board/catalogue',
@@ -108,7 +109,7 @@ export function AdminHome({ name }: Props) {
       bg: 'bg-primary/10 border-primary/20',
     },
     {
-      label: 'Commandes',
+      label: t('home.admin.stats.orders'),
       value: stats?.ordersCount ?? 0,
       icon: ShoppingBag,
       path: '/board/orders',
@@ -116,7 +117,7 @@ export function AdminHome({ name }: Props) {
       bg: 'bg-secondary/10 border-secondary/20',
     },
     {
-      label: 'Utilisateurs',
+      label: t('home.admin.stats.users'),
       value: stats?.usersCount ?? 0,
       icon: Users,
       path: '/board/users',
@@ -127,13 +128,13 @@ export function AdminHome({ name }: Props) {
 
   const quickActions = [
     {
-      label: 'FYS Programme (Gestion Cures)',
-      description: 'Pilotez les cures signatures, modifiez la vitrine, les prix et suivez les clients inscrits.',
+      label: t('home.admin.quick.programsTitle'),
+      description: t('home.admin.quick.programsDesc'),
       icon: CalendarCheck,
       iconBg: 'bg-primary/15 dark:bg-primary/25',
       iconColor: 'text-primary',
       path: '/board/programs-admin',
-      cta: 'Gérer les Cures & Vitrine',
+      cta: t('home.admin.quick.programsCta'),
     },
     {
       label: t('nav.fruits'),
@@ -145,22 +146,22 @@ export function AdminHome({ name }: Props) {
       cta: t('fruits.addFruit'),
     },
     {
-      label: 'FYS Management',
-      description: 'Suivi des dépenses réelles par commande, coûts et bénéfices nets.',
+      label: t('home.admin.quick.managementTitle'),
+      description: t('home.admin.quick.managementDesc'),
       icon: CircleDollarSign,
       iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
       iconColor: 'text-emerald-600',
       path: '/board/management',
-      cta: 'Gérer la rentabilité',
+      cta: t('home.admin.quick.managementCta'),
     },
     {
-      label: 'Images Publiques',
-      description: 'Gérez toutes les images affichées sur la vitrine publique.',
+      label: t('home.admin.quick.landingTitle'),
+      description: t('home.admin.quick.landingDesc'),
       icon: LayoutTemplate,
       iconBg: 'bg-sky-50 dark:bg-sky-950/30',
       iconColor: 'text-sky-600',
       path: '/board/landing',
-      cta: 'Modifier les images',
+      cta: t('home.admin.quick.landingCta'),
     },
     {
       label: t('pricing.title'),
@@ -173,7 +174,7 @@ export function AdminHome({ name }: Props) {
     },
     {
       label: t('nav.categories'),
-      description: 'Organisez vos fruits par catégories (citrus, tropical…).',
+      description: t('categories.subtitle'),
       icon: Tag,
       iconBg: 'bg-primary/5',
       iconColor: 'text-primary',
@@ -181,22 +182,22 @@ export function AdminHome({ name }: Props) {
       cta: t('categories.addCategory'),
     },
     {
-      label: 'Paiements K-Pay',
-      description: 'Consultez l\'historique des transactions Mobile Money (Orange Money, MTN MoMo).',
+      label: t('home.admin.quick.paymentsTitle'),
+      description: t('home.admin.quick.paymentsDesc'),
       icon: CreditCard,
       iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
       iconColor: 'text-emerald-600',
       path: '/board/payments',
-      cta: 'Voir les paiements',
+      cta: t('home.admin.quick.paymentsCta'),
     },
   ];
 
   return (
     <BoardPageShell
       eyebrow={t('home.admin.title')}
-      titleBefore="Bonjour,"
+      titleBefore={t('home.admin.greeting')}
       titleHighlight={name}
-      sectionBefore="Centre de"
+      sectionBefore={t('home.admin.sectionBefore')}
       sectionHighlight={t('home.admin.sectionHighlight')}
       subtitle={t('home.admin.sectionSubtitle')}
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -207,7 +208,7 @@ export function AdminHome({ name }: Props) {
             className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-secondary text-secondary-foreground font-bold text-xs sm:text-sm shadow-md hover:bg-secondary/90 active:scale-98 transition-all cursor-pointer"
           >
             <CalendarCheck className="size-4.5" />
-            Gestion FYS Programme
+            {t('home.admin.header.programsCta')}
           </Link>
         </div>
       }
@@ -249,7 +250,7 @@ export function AdminHome({ name }: Props) {
               <div className="size-12 rounded-[1.2rem] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center shrink-0">
                  <TrendingUp className="size-6 text-emerald-500" strokeWidth={2.5} />
               </div>
-              <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">Chiffre d&apos;Affaires</p>
+              <p className="font-semibold text-muted-foreground uppercase tracking-widest text-xs">{t('home.admin.revenue.title')}</p>
             </div>
             <div className="relative z-10 min-w-0">
               {isLoading ? (
@@ -267,7 +268,7 @@ export function AdminHome({ name }: Props) {
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800">
                {t('home.admin.recentFilter')}
             </span>
-            <span className="text-xs text-muted-foreground font-medium">Revenus cumulés</span>
+            <span className="text-xs text-muted-foreground font-medium">{t('home.admin.revenue.subtitle')}</span>
           </div>
         </div>
 
@@ -302,7 +303,7 @@ export function AdminHome({ name }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <span className={`size-2 rounded-full ${cfg.dot} shrink-0`} />
-                          <span className="text-sm font-semibold text-foreground truncate">{cfg.label}</span>
+                          <span className="text-sm font-semibold text-foreground truncate">{t(cfg.labelKey)}</span>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                            <div className={`h-full ${cfg.dot} transition-all duration-500`} style={{ width: `${pct}%` }} />
@@ -330,7 +331,7 @@ export function AdminHome({ name }: Props) {
       <div className="space-y-4">
         <div>
           <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.quickActions')}</h3>
-          <p className="text-muted-foreground font-medium text-sm mt-0.5">Accédez rapidement à la gestion de vos stocks, images, prix et paiements.</p>
+          <p className="text-muted-foreground font-medium text-sm mt-0.5">{t('home.admin.quickActionsSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -379,7 +380,7 @@ export function AdminHome({ name }: Props) {
            </div>
            <Button asChild size="sm" className="rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white font-bold transition-colors shrink-0 self-start sm:self-auto">
               <Link to="/board/orders" className="inline-flex items-center gap-1.5">
-                Voir tout <ArrowRight className="size-4" />
+                {t('home.admin.viewAll')} <ArrowRight className="size-4" />
               </Link>
            </Button>
         </div>
@@ -402,7 +403,7 @@ export function AdminHome({ name }: Props) {
                <div className="size-16 rounded-full bg-background border flex items-center justify-center shadow-sm">
                  <AlertCircle className="size-6 text-muted-foreground" />
                </div>
-               <p className="text-base font-semibold text-muted-foreground">Aucune commande pour le moment.</p>
+               <p className="text-base font-semibold text-muted-foreground">{t('home.admin.recentOrders.empty')}</p>
              </div>
            )}
         </div>
@@ -411,8 +412,8 @@ export function AdminHome({ name }: Props) {
       {/* ── 5. COMMUNICATION & OUTILS D'ADMINISTRATION (CÔTE À CÔTE SUR PC) ── */}
       <div className="space-y-4">
         <div>
-          <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">Communication & Diffusion</h3>
-          <p className="text-muted-foreground font-medium text-sm mt-0.5">Gérez le bandeau d&apos;information aux clients et diffusez des notifications push en temps réel.</p>
+          <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.communication.title')}</h3>
+          <p className="text-muted-foreground font-medium text-sm mt-0.5">{t('home.admin.communication.desc')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
