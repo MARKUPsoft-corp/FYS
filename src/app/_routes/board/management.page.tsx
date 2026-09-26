@@ -32,12 +32,13 @@ import { OrderStatus, type Order } from '@/entities/order';
 import { OrderExpensesDialog } from '@/components/features/management/OrderExpensesDialog';
 import { formatIngredientsSummary } from '@/entities/cocktail';
 import { cn } from '@/lib/utils';
-import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 type FilterTab = 'all' | 'filled' | 'pending';
 type SortField = 'date' | 'revenue' | 'profit' | 'margin';
 
 const ManagementPage: PageComponent = () => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,12 +177,12 @@ const ManagementPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Rentabilité & Gestion Financière"
+      eyebrow={t('management.eyebrow', 'Rentabilité & Gestion Financière')}
       titleBefore="FYS"
       titleHighlight="Management"
-      sectionBefore="Suivi des"
-      sectionHighlight="Coûts & Bénéfices"
-      subtitle="Calculez au centime près les dépenses réelles par commande livrée (ingrédients, bouteilles vides avec étiquettes, frais annexes) et la marge nette dégagée."
+      sectionBefore={t('management.sectionBefore', 'Suivi des')}
+      sectionHighlight={t('management.sectionHighlight', 'Coûts & Bénéfices')}
+      subtitle={t('management.subtitle', 'Calculez au centime près les dépenses réelles par commande livrée (ingrédients, bouteilles vides avec étiquettes, frais annexes) et la marge nette dégagée.')}
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
       actions={
         <div className="flex justify-end pb-2">
@@ -190,7 +191,7 @@ const ManagementPage: PageComponent = () => {
             className="inline-flex items-center gap-1.5 h-10 px-4 rounded-2xl bg-secondary text-secondary-foreground font-bold text-xs shadow-sm hover:bg-secondary/90 transition-all cursor-pointer"
           >
             <CalendarCheck className="size-4" />
-            Gestion FYS Programme
+            {t('management.programsCta', 'Gestion FYS Programme')}
           </Link>
         </div>
       }
@@ -204,7 +205,7 @@ const ManagementPage: PageComponent = () => {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Recettes Totales (CA)
+                  {t('management.kpis.revenue', 'Recettes Totales (CA)')}
                 </span>
                 <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                   <ShoppingBag className="size-5" />
@@ -216,8 +217,8 @@ const ManagementPage: PageComponent = () => {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-xs text-muted-foreground font-medium">
-              <span>{globalKpis.totalOrdersCount} commandes livrées</span>
-              <span className="font-semibold text-foreground">Encaissé</span>
+              <span>{t('management.kpiRevenueSub', { count: globalKpis.totalOrdersCount, defaultValue: `${globalKpis.totalOrdersCount} commandes livrées` })}</span>
+              <span className="font-semibold text-foreground">{t('management.kpiRevenueStatus', 'Encaissé')}</span>
             </div>
           </div>
 
@@ -227,7 +228,7 @@ const ManagementPage: PageComponent = () => {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Dépenses Engagées
+                  {t('management.kpiExpensesTitle', 'Dépenses Engagées')}
                 </span>
                 <div className="size-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 border border-amber-200/50 flex items-center justify-center">
                   <Calculator className="size-5" />
@@ -239,9 +240,9 @@ const ManagementPage: PageComponent = () => {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-xs text-muted-foreground font-medium">
-              <span>Fruits, bouteilles, extras</span>
+              <span>{t('management.kpiExpensesSub', 'Fruits, bouteilles, extras')}</span>
               <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                {globalKpis.filledOrdersCount} calculées
+                {t('management.kpiExpensesCalculated', { count: globalKpis.filledOrdersCount, defaultValue: `${globalKpis.filledOrdersCount} calculées` })}
               </span>
             </div>
           </div>
@@ -252,7 +253,7 @@ const ManagementPage: PageComponent = () => {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Bénéfice Net Total
+                  {t('management.kpiProfitTitle', 'Bénéfice Net Total')}
                 </span>
                 <div className="size-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border border-emerald-200/50 flex items-center justify-center">
                   <TrendingUp className="size-5" strokeWidth={2.5} />
@@ -271,7 +272,7 @@ const ManagementPage: PageComponent = () => {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-xs font-medium">
-              <span className="text-muted-foreground">Marge brute globale</span>
+              <span className="text-muted-foreground">{t('management.kpiGrossMargin', 'Marge brute globale')}</span>
               <span
                 className={cn(
                   'px-2.5 py-0.5 rounded-full font-bold text-[11px]',
@@ -293,7 +294,7 @@ const ManagementPage: PageComponent = () => {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Suivi des Dépenses
+                  {t('management.kpiTrackingTitle', 'Suivi des Dépenses')}
                 </span>
                 <div className="size-10 rounded-xl bg-sky-50 dark:bg-sky-950/30 text-sky-600 border border-sky-200/50 flex items-center justify-center">
                   <CheckCircle2 className="size-5" />
@@ -304,14 +305,14 @@ const ManagementPage: PageComponent = () => {
                   {globalKpis.filledOrdersCount}
                 </p>
                 <span className="text-sm font-semibold text-muted-foreground">
-                  / {globalKpis.totalOrdersCount} commandes
+                  {t('management.kpiTrackingSub', { count: globalKpis.totalOrdersCount, defaultValue: `/ ${globalKpis.totalOrdersCount} commandes` })}
                 </span>
               </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-border/30 space-y-1.5">
               <div className="flex justify-between text-xs font-semibold">
-                <span className="text-muted-foreground">Complétées</span>
+                <span className="text-muted-foreground">{t('management.kpiTrackingCompleted', 'Complétées')}</span>
                 <span className="text-sky-600 dark:text-sky-400">{globalKpis.completionRate}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
@@ -339,7 +340,7 @@ const ManagementPage: PageComponent = () => {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                Toutes ({deliveredOrders.length})
+                {t('management.tabAll', { count: deliveredOrders.length, defaultValue: `Toutes (${deliveredOrders.length})` })}
               </button>
               <button
                 type="button"
@@ -352,7 +353,7 @@ const ManagementPage: PageComponent = () => {
                 )}
               >
                 <span className="size-2 rounded-full bg-emerald-500" />
-                Renseignées ({globalKpis.filledOrdersCount})
+                {t('management.tabFilled', { count: globalKpis.filledOrdersCount, defaultValue: `Renseignées (${globalKpis.filledOrdersCount})` })}
               </button>
               <button
                 type="button"
@@ -365,7 +366,7 @@ const ManagementPage: PageComponent = () => {
                 )}
               >
                 <span className="size-2 rounded-full bg-amber-500" />
-                À renseigner ({globalKpis.pendingOrdersCount})
+                {t('management.tabPending', { count: globalKpis.pendingOrdersCount, defaultValue: `À renseigner (${globalKpis.pendingOrdersCount})` })}
               </button>
             </div>
 
@@ -376,7 +377,7 @@ const ManagementPage: PageComponent = () => {
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher client, cocktail, ID..."
+                  placeholder={t('management.filters.search', 'Rechercher client, cocktail, ID...')}
                   className="pl-9 h-10 rounded-xl bg-background text-xs font-medium"
                 />
               </div>
@@ -388,10 +389,10 @@ const ManagementPage: PageComponent = () => {
                   onChange={(e) => setSortField(e.target.value as SortField)}
                   className="h-10 px-3 rounded-xl border border-border/60 bg-background text-xs font-semibold text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="date">Date</option>
-                  <option value="revenue">Prix (CA)</option>
-                  <option value="profit">Bénéfice</option>
-                  <option value="margin">Marge %</option>
+                  <option value="date">{t('management.sortDate', 'Date')}</option>
+                  <option value="revenue">{t('management.sortRevenue', 'Prix (CA)')}</option>
+                  <option value="profit">{t('management.sortProfit', 'Bénéfice')}</option>
+                  <option value="margin">{t('management.sortMargin', 'Marge %')}</option>
                 </select>
                 <Button
                   type="button"
@@ -399,7 +400,7 @@ const ManagementPage: PageComponent = () => {
                   size="icon"
                   onClick={() => setSortAsc((prev) => !prev)}
                   className="size-10 rounded-xl shrink-0"
-                  title={sortAsc ? 'Ordre croissant' : 'Ordre décroissant'}
+                  title={sortAsc ? t('management.sortAsc', 'Ordre croissant') : t('management.sortDesc', 'Ordre décroissant')}
                 >
                   <ArrowUpDown className="size-4" />
                 </Button>
@@ -412,7 +413,7 @@ const ManagementPage: PageComponent = () => {
         {loading ? (
           <div className="p-16 text-center bg-card rounded-[2rem] border border-border/40 shadow-xs">
             <div className="size-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm font-semibold text-muted-foreground">Chargement des commandes et dépenses...</p>
+            <p className="text-sm font-semibold text-muted-foreground">{t('management.loading', 'Chargement des commandes et dépenses...')}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-16 text-center bg-card rounded-[2rem] border border-dashed border-border/60">
@@ -421,13 +422,13 @@ const ManagementPage: PageComponent = () => {
             </div>
             <h3 className="font-display font-bold text-lg text-foreground">
               {deliveredOrders.length === 0
-                ? 'Aucune commande livrée pour le moment'
-                : 'Aucune commande trouvée'}
+                ? t('management.emptyTitle', 'Aucune commande livrée pour le moment')
+                : t('management.emptySearchTitle', 'Aucune commande trouvée')}
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
               {deliveredOrders.length === 0
-                ? 'Seuls les cocktails livrés apparaissent dans FYS Management pour le suivi de la rentabilité.'
-                : 'Aucune commande livrée ne correspond aux filtres ou à votre recherche actuelle.'}
+                ? t('management.emptyDesc', 'Seuls les cocktails livrés apparaissent dans FYS Management pour le suivi de la rentabilité.')
+                : t('management.emptySearchDesc', 'Aucune commande livrée ne correspond aux filtres ou à votre recherche actuelle.')}
             </p>
           </div>
         ) : (
@@ -438,14 +439,14 @@ const ManagementPage: PageComponent = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border/40 bg-muted/20 text-[11px] font-bold uppercase tracking-wider text-muted-foreground select-none">
-                      <th className="py-4 px-6">Commande</th>
-                      <th className="py-4 px-6">Client</th>
-                      <th className="py-4 px-6">Composition</th>
-                      <th className="py-4 px-6 text-right">CA (Prix payé)</th>
-                      <th className="py-4 px-6 text-right">Dépenses réelles</th>
-                      <th className="py-4 px-6 text-right">Bénéfice net</th>
-                      <th className="py-4 px-6 text-center">Marge</th>
-                      <th className="py-4 px-6 text-center">Action</th>
+                      <th className="py-4 px-6">{t('management.tableOrder', 'Commande')}</th>
+                      <th className="py-4 px-6">{t('management.tableClient', 'Client')}</th>
+                      <th className="py-4 px-6">{t('management.tableComposition', 'Composition')}</th>
+                      <th className="py-4 px-6 text-right">{t('management.tableRevenue', 'CA (Prix payé)')}</th>
+                      <th className="py-4 px-6 text-right">{t('management.tableExpenses', 'Dépenses réelles')}</th>
+                      <th className="py-4 px-6 text-right">{t('management.tableProfit', 'Bénéfice net')}</th>
+                      <th className="py-4 px-6 text-center">{t('management.tableMargin', 'Marge')}</th>
+                      <th className="py-4 px-6 text-center">{t('management.tableAction', 'Action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30 text-xs">
@@ -518,12 +519,12 @@ const ManagementPage: PageComponent = () => {
                               <div className="font-mono font-bold text-amber-700 dark:text-amber-400">
                                 {totalExpenses.toLocaleString()} XAF
                                 <span className="block text-[10px] font-normal text-muted-foreground">
-                                  {order.expenses?.items?.length || 0} poste(s)
+                                  {order.expenses?.items?.length || 0} {t('management.itemsCount', { count: order.expenses?.items?.length || 0, defaultValue: 'poste(s)' })}
                                 </span>
                               </div>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/50">
-                                À renseigner
+                                {t('management.badgePending', 'À renseigner')}
                               </span>
                             )}
                           </td>
@@ -585,7 +586,7 @@ const ManagementPage: PageComponent = () => {
                               )}
                             >
                               <Calculator className="size-3.5" />
-                              <span>{hasExpenses ? 'Éditer' : 'Remplir'}</span>
+                              <span>{hasExpenses ? t('management.actionEdit', 'Éditer') : t('management.actionFill', 'Remplir')}</span>
                             </Button>
                           </td>
                         </tr>
@@ -638,12 +639,12 @@ const ManagementPage: PageComponent = () => {
                       {hasExpenses ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                           <CheckCircle2 className="size-3" />
-                          Renseigné
+                          {t('management.badgeRecorded', 'Renseigné')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                           <Clock className="size-3" />
-                          À renseigner
+                          {t('management.badgePending', 'À renseigner')}
                         </span>
                       )}
                     </div>
@@ -660,7 +661,7 @@ const ManagementPage: PageComponent = () => {
                     <div className="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-muted/30 border border-border/40 text-center">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          CA
+                          {t('management.tableRevenue', 'CA')}
                         </span>
                         <span className="font-mono font-bold text-xs text-foreground truncate block">
                           {order.totalPrice.toLocaleString()} XAF
@@ -669,7 +670,7 @@ const ManagementPage: PageComponent = () => {
 
                       <div>
                         <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          Dépenses
+                          {t('management.table.expenses', 'Dépenses')}
                         </span>
                         <span className="font-mono font-bold text-xs text-amber-600 truncate block">
                           {hasExpenses ? `${totalExpenses.toLocaleString()} XAF` : '—'}
@@ -678,7 +679,7 @@ const ManagementPage: PageComponent = () => {
 
                       <div>
                         <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          Bénéfice
+                          {t('management.table.profit', 'Bénéfice')}
                         </span>
                         <span
                           className={cn(
@@ -699,10 +700,10 @@ const ManagementPage: PageComponent = () => {
                     <div className="flex items-center justify-between pt-1">
                       {hasExpenses ? (
                         <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                          Marge : {margin >= 0 ? `+${margin}%` : `${margin}%`}
+                          {t('management.tableMargin', 'Marge')} : {margin >= 0 ? `+${margin}%` : `${margin}%`}
                         </span>
                       ) : (
-                        <span className="text-xs text-muted-foreground italic">Cliquez pour chiffrer</span>
+                        <span className="text-xs text-muted-foreground italic">{t('management.clickToCalculate', 'Cliquez pour chiffrer')}</span>
                       )}
 
                       <Button
@@ -711,7 +712,7 @@ const ManagementPage: PageComponent = () => {
                         variant="ghost"
                         className="h-7 text-xs font-bold text-primary gap-1 p-0 hover:bg-transparent"
                       >
-                        <span>Gérer</span>
+                        <span>{t('management.actionManage', 'Gérer')}</span>
                         <ChevronRight className="size-3.5" />
                       </Button>
                     </div>

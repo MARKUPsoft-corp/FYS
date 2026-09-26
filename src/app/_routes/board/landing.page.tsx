@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PageComponent } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Save, ImagePlus } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const IMAGE_FIELDS = [
 ] as const;
 
 const LandingAdmin: PageComponent = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['landing-images'],
@@ -79,12 +81,12 @@ const LandingAdmin: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Landing Page"
-      titleBefore="Images du"
-      titleHighlight="Site Public"
-      sectionBefore="Gérez le"
-      sectionHighlight="visuel"
-      subtitle="Modifiez les images affichées sur la vitrine publique pour adapter le site aux saisons."
+      eyebrow={t('nav.hero', 'Landing Page')}
+      titleBefore={t('hero.imagesOf', 'Images du')}
+      titleHighlight={t('hero.publicSite', 'Site Public')}
+      sectionBefore={t('hero.sectionBefore', 'Gérez le')}
+      sectionHighlight={t('hero.sectionHighlight', 'visuel')}
+      subtitle={t('hero.pageSubtitle', 'Modifiez les images affichées sur la vitrine publique pour adapter le site aux saisons.')}
       imageUrl="https://images.unsplash.com/photo-1546173159-315724a31696?q=80&w=1200&auto=format&fit=crop"
       actions={
         <div className="flex flex-col sm:flex-row gap-3">
@@ -96,7 +98,7 @@ const LandingAdmin: PageComponent = () => {
             className="rounded-[2rem] h-14 bg-primary text-white font-bold gap-2 w-full sm:w-auto px-8 shadow-[0_8px_30px_rgba(63,109,78,0.25)]"
           >
             {saving ? <Loader2 className="size-5 animate-spin" /> : <Save className="size-5" />}
-            {saved ? 'Enregistré' : 'Sauvegarder'}
+            {saved ? t('common.saved', 'Enregistré') : t('common.save', 'Sauvegarder')}
           </Button>
         </div>
       }
@@ -134,7 +136,7 @@ const LandingAdmin: PageComponent = () => {
                   ) : (
                     <ImagePlus className="size-4" />
                   )}
-                  Remplacer l'image
+                  {t('hero.replaceImage', "Remplacer l'image")}
                   <input
                     type="file"
                     accept="image/*"

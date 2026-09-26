@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageComponent, useNavigate } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import {
   Calendar,
   Sparkles,
@@ -59,6 +60,7 @@ import { DEFAULT_PROGRAMS_PAGE_SETTINGS } from '@/entities';
 type Tab = 'showcase' | 'cures' | 'subscribers';
 
 const ProgramsAdminPage: PageComponent = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('cures');
@@ -289,12 +291,12 @@ const ProgramsAdminPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Administration FYS"
-      titleBefore="Gestion de"
-      titleHighlight="FYS Program"
-      sectionBefore="Pilotez la vitrine et les"
-      sectionHighlight="protocoles de cure"
-      subtitle="Contrôlez les visuels de la page publique, fixez les prix, configurez les recettes journalières et suivez les clients en cure."
+      eyebrow={t('programsAdmin.eyebrow', 'Administration Santé')}
+      titleBefore="FYS"
+      titleHighlight={t('programsAdmin.title', 'Programme')}
+      sectionBefore={t('programsAdmin.eyebrow', 'Administration')}
+      sectionHighlight="Pro"
+      subtitle={t('programsAdmin.subtitle', 'Créez et configurez les cures de jus, les plannings nutritionnels et suivez les abonnés.')}
       imageUrl={settings.heroImageUrl || DEFAULT_PROGRAMS_PAGE_SETTINGS.heroImageUrl}
       actions={
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -310,7 +312,7 @@ const ProgramsAdminPage: PageComponent = () => {
               }`}
             >
               <Layers className="size-3.5" />
-              Catalogue des Cures ({programs.length})
+              {t('programsAdmin.tabs.cures', 'Catalogue des Cures')} ({programs.length})
             </button>
             <button
               type="button"
@@ -322,7 +324,7 @@ const ProgramsAdminPage: PageComponent = () => {
               }`}
             >
               <Settings2 className="size-3.5" />
-              Vitrine & Bannière Hero
+              {t('programsAdmin.tabs.showcase', 'Vitrine & Bannière Hero')}
             </button>
             <button
               type="button"
@@ -334,7 +336,7 @@ const ProgramsAdminPage: PageComponent = () => {
               }`}
             >
               <Users className="size-3.5" />
-              Clients en Cure
+              {t('programsAdmin.tabs.subscribers', 'Abonnés & Suivi')}
             </button>
           </div>
 
@@ -346,7 +348,7 @@ const ProgramsAdminPage: PageComponent = () => {
               className="rounded-xl text-xs cursor-pointer gap-1.5"
             >
               <Eye className="size-3.5" />
-              Voir la page publique
+              {t('programsAdmin.viewPublic', 'Voir la page publique')}
             </Button>
           </div>
         </div>
@@ -380,10 +382,10 @@ const ProgramsAdminPage: PageComponent = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-card border border-border shadow-xs">
               <div>
                 <h3 className="text-base font-bold font-display text-foreground">
-                  Gestion des Cures au Catalogue
+                  {t('programsAdmin.tabs.cures', 'Catalogue des Cures')}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Ajoutez de nouvelles cures, éditez les recettes jour par jour et fixez les tarifs.
+                  {t('programsAdmin.subtitle', 'Ajoutez de nouvelles cures, éditez les recettes jour par jour et fixez les tarifs.')}
                 </p>
               </div>
 
@@ -395,7 +397,7 @@ const ProgramsAdminPage: PageComponent = () => {
                   className="rounded-xl text-xs cursor-pointer gap-1.5"
                 >
                   <Sparkles className="size-3.5 text-primary" />
-                  Synchroniser les cures FYS
+                  {t('programsAdmin.syncDefaults', 'Synchroniser les cures FYS')}
                 </Button>
 
                 <Button
@@ -407,7 +409,7 @@ const ProgramsAdminPage: PageComponent = () => {
                   className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs cursor-pointer gap-1.5 shadow-xs"
                 >
                   <Plus className="size-4" />
-                  Créer une nouvelle cure
+                  {t('programsAdmin.addCure', 'Créer une nouvelle cure')}
                 </Button>
               </div>
             </div>
@@ -759,10 +761,10 @@ const ProgramsAdminPage: PageComponent = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold font-display text-foreground">
-                    Clients Inscrits aux Cures FYS
+                    {t('programsAdmin.subscribersTitle', 'Clients Inscrits aux Cures FYS')}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Suivez en direct les utilisateurs actifs, leur jour actuel de cure et leur régularité.
+                    {t('programsAdmin.subtitle', 'Suivez en direct les utilisateurs actifs, leur jour actuel de cure et leur régularité.')}
                   </p>
                 </div>
 
@@ -778,29 +780,29 @@ const ProgramsAdminPage: PageComponent = () => {
                   ) : (
                     <Clock className="size-3.5" />
                   )}
-                  Actualiser
+                  {t('payments.refresh', 'Actualiser')}
                 </Button>
               </div>
 
               {subscribersLoading ? (
                 <div className="py-16 flex flex-col items-center justify-center space-y-2">
                   <Loader2 className="size-6 animate-spin text-primary" />
-                  <p className="text-xs text-muted-foreground">Chargement des abonnés...</p>
+                  <p className="text-xs text-muted-foreground">{t('common.loading', 'Chargement des abonnés...')}</p>
                 </div>
               ) : subscribers.length === 0 ? (
                 <div className="py-12 text-center rounded-2xl border border-dashed border-border text-xs text-muted-foreground">
-                  Aucun utilisateur n'a de cure active enregistrée pour le moment.
+                  {t('programs.noActiveCure', "Aucun utilisateur n'a de cure active enregistrée pour le moment.")}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
                     <thead className="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border/60">
                       <tr>
-                        <th className="py-3 px-3">Client</th>
-                        <th className="py-3 px-3">Cure Suivie</th>
-                        <th className="py-3 px-3">Progression</th>
-                        <th className="py-3 px-3">Date de début</th>
-                        <th className="py-3 px-3">Statut</th>
+                        <th className="py-3 px-3">{t('programsAdmin.clientName', 'Client')}</th>
+                        <th className="py-3 px-3">{t('programs.title', 'Cure Suivie')}</th>
+                        <th className="py-3 px-3">{t('programsAdmin.progress', 'Progression')}</th>
+                        <th className="py-3 px-3">{t('programsAdmin.startDate', 'Date de début')}</th>
+                        <th className="py-3 px-3">{t('programsAdmin.status', 'Statut')}</th>
                         <th className="py-3 px-3 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -848,10 +850,10 @@ const ProgramsAdminPage: PageComponent = () => {
                                 }`}
                               >
                                 {sub.status === 'completed'
-                                  ? 'Accomplie'
+                                  ? t('programs.completedBadge', 'Accomplie')
                                   : sub.status === 'cancelled'
-                                  ? 'Annulée'
-                                  : 'En cours'}
+                                  ? t('events.status.cancelled', 'Annulée')
+                                  : t('payments.status.PROCESSING', 'En cours')}
                               </span>
                             </td>
                             <td className="py-3 px-3 text-right">

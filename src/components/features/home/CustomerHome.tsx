@@ -17,13 +17,13 @@ import { getPricingSettings } from '@/services/settings';
 import { subscribeToUserActiveProgram, getPrograms } from '@/services/program';
 type Props = Record<string, never>;
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
-  [OrderStatus.PENDING]: { label: 'En attente', icon: Clock, bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700', dot: 'bg-amber-500' },
-  [OrderStatus.CONFIRMED]: { label: 'Confirmée', icon: CheckCircle2, bg: 'bg-sky-50 dark:bg-sky-950/30', text: 'text-sky-700 dark:text-sky-400', border: 'border-sky-200 dark:border-sky-700', dot: 'bg-sky-500' },
-  [OrderStatus.PREPARING]: { label: 'En préparation', icon: ChefHat, bg: 'bg-violet-50 dark:bg-violet-950/30', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-200 dark:border-violet-700', dot: 'bg-violet-500' },
-  [OrderStatus.READY]: { label: 'Prête', icon: Package, bg: 'bg-primary/8 dark:bg-primary/15', text: 'text-primary', border: 'border-primary/30', dot: 'bg-primary' },
-  [OrderStatus.DELIVERED]: { label: 'Livrée', icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-700', dot: 'bg-emerald-500' },
-  [OrderStatus.CANCELLED]: { label: 'Annulée', icon: XCircle, bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border/60', dot: 'bg-muted-foreground/40' },
+const STATUS_CONFIG: Record<OrderStatus, { labelKey: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
+  [OrderStatus.PENDING]: { labelKey: 'orders.pending', icon: Clock, bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700', dot: 'bg-amber-500' },
+  [OrderStatus.CONFIRMED]: { labelKey: 'orders.confirmed', icon: CheckCircle2, bg: 'bg-sky-50 dark:bg-sky-950/30', text: 'text-sky-700 dark:text-sky-400', border: 'border-sky-200 dark:border-sky-700', dot: 'bg-sky-500' },
+  [OrderStatus.PREPARING]: { labelKey: 'orders.preparing', icon: ChefHat, bg: 'bg-violet-50 dark:bg-violet-950/30', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-200 dark:border-violet-700', dot: 'bg-violet-500' },
+  [OrderStatus.READY]: { labelKey: 'orders.ready', icon: Package, bg: 'bg-primary/8 dark:bg-primary/15', text: 'text-primary', border: 'border-primary/30', dot: 'bg-primary' },
+  [OrderStatus.DELIVERED]: { labelKey: 'orders.delivered', icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-700', dot: 'bg-emerald-500' },
+  [OrderStatus.CANCELLED]: { labelKey: 'orders.canceled', icon: XCircle, bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border/60', dot: 'bg-muted-foreground/40' },
 };
 
 export function CustomerHome(_props: Props) {
@@ -141,9 +141,9 @@ export function CustomerHome(_props: Props) {
   const recentOrders = orders.slice(0, 4);
 
   const completionSections = [
-    { label: 'Conditions', done: profile?.healthConditions && profile.healthConditions.length > 0 },
-    { label: 'Allergies', done: profile?.allergies && profile.allergies.length > 0 },
-    { label: 'Objectifs', done: profile?.goals && profile.goals.length > 0 },
+    { label: t('profile.conditions'), done: profile?.healthConditions && profile.healthConditions.length > 0 },
+    { label: t('profile.allergies'), done: profile?.allergies && profile.allergies.length > 0 },
+    { label: t('profile.goals'), done: profile?.goals && profile.goals.length > 0 },
   ];
   const completionCount = completionSections.filter((s) => s.done).length;
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
@@ -237,7 +237,7 @@ export function CustomerHome(_props: Props) {
                 <div className="max-w-md mx-auto mt-6 bg-background rounded-2xl border border-border/50 p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-foreground">Profil santé</span>
-                    <span className="text-xs font-bold text-amber-500">{completionPct}% complété</span>
+                    <span className="text-xs font-bold text-amber-500">{completionPct}% {t('profile.healthProfileCompleted', 'complété')}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-amber-500 rounded-full transition-all duration-700" style={{ width: `${completionPct}%` }} />
@@ -245,7 +245,7 @@ export function CustomerHome(_props: Props) {
                   <Link to="/board/profile" className="block w-full pt-2">
                     <Button className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold h-11 gap-2 shadow-md transition-all">
                       <ShieldCheck className="size-4" />
-                      Compléter mon profil
+                      {t('profile.completeProfile', 'Compléter mon profil')}
                     </Button>
                   </Link>
                 </div>
@@ -275,10 +275,10 @@ export function CustomerHome(_props: Props) {
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
                     <CalendarCheck className="size-3.5" />
-                    Cure active en cours
+                    {t('programs.activeCureTitle')}
                   </span>
                   <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    Jour {activeProgram.currentDay} sur {activeProgram.durationDays}
+                    {t('programs.activeCureDay', { current: activeProgram.currentDay, total: activeProgram.durationDays })}
                   </span>
                 </div>
 
@@ -287,14 +287,14 @@ export function CustomerHome(_props: Props) {
                 </h3>
 
                 <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-                  {activeProgram.checkins?.length || 0} étape{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} validée{(activeProgram.checkins?.length || 0) > 1 ? 's' : ''} sur {activeProgram.durationDays}. Votre jus frais du jour vous attend.
+                  {activeProgram.checkins?.length || 0} / {activeProgram.durationDays} {t('programs.dayCompleted')}
                 </p>
               </div>
 
               <div className="relative z-10 shrink-0">
                 <Link to="/board/programs">
                   <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
-                    Consulter ma prescription et valider mon jus
+                    {t('programs.viewSchedule')}
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>
@@ -599,10 +599,10 @@ export function CustomerHome(_props: Props) {
                           <div className="flex items-end justify-between">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold border ${cfg.bg} ${cfg.text} ${cfg.border} shadow-sm`}>
                               <Icon className="size-3.5" />
-                              {cfg.label}
+                              {t(cfg.labelKey)}
                             </span>
                             <span className="flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 sm:px-4 py-1.5 text-xs font-bold transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                              Afficher
+                              {t('orders.details')}
                             </span>
                           </div>
                         </div>

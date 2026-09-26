@@ -1,6 +1,6 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
 import { useEffect, useState, useRef } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package } from 'lucide-react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package, Globe } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -165,14 +165,25 @@ const RootIndex: PageComponent = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
-            <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Comment ça marche</a>
-            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>Fonctionnalités</a>
-            <a href="#events" className={`transition-colors ${activeSection === 'events' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>FYS Event</a>
-            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>NutriFYS</a>
-            <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>À propos</a>
+            <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.howItWorks')}</a>
+            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.features')}</a>
+            <a href="#events" className={`transition-colors ${activeSection === 'events' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.events')}</a>
+            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.nutrifys')}</a>
+            <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.about')}</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language?.startsWith('fr') ? 'en' : 'fr')}
+              className="flex items-center gap-1.5 h-9 px-2.5 rounded-full border border-border/70 hover:bg-muted/50 text-xs font-black text-foreground transition-all cursor-pointer"
+              title={i18n.language?.startsWith('fr') ? 'Switch to English' : 'Passer en Français'}
+              aria-label="Toggle language"
+            >
+              <Globe className="w-3.5 h-3.5 text-primary" />
+              <span className="uppercase">{i18n.language?.startsWith('fr') ? 'EN' : 'FR'}</span>
+            </button>
+
             <button onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')} className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/50 transition-all">
               {actualTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
@@ -183,13 +194,13 @@ const RootIndex: PageComponent = () => {
                 to="/auth/login"
                 className="h-10 px-5 rounded-full border border-border/80 text-sm font-bold flex items-center gap-2 hover:bg-muted/50 transition-all text-foreground"
               >
-                Se connecter
+                {t('landing.nav.signIn')}
               </Link>
               <Link
                 to="/lab"
                 className="h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
               >
-                Commencer
+                {t('landing.nav.getStarted')}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -211,33 +222,55 @@ const RootIndex: PageComponent = () => {
                   <div className="flex flex-col gap-1 mt-6">
                     <SheetClose asChild>
                       <a href="#how-it-works" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'how-it-works' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        Comment ça marche
+                        {t('landing.nav.howItWorks')}
                       </a>
                     </SheetClose>
 
                     <SheetClose asChild>
                       <a href="#features" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'features' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        Fonctionnalités
+                        {t('landing.nav.features')}
                       </a>
                     </SheetClose>
 
                     <SheetClose asChild>
                       <a href="#events" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'events' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        FYS Event (B2B)
+                        {t('landing.nav.events')}
                       </a>
                     </SheetClose>
 
                     <SheetClose asChild>
                       <a href="#nutrifys" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'nutrifys' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        L'assistant NutriFYS
+                        {t('landing.nav.nutrifys')}
                       </a>
                     </SheetClose>
                     
                     <SheetClose asChild>
                       <a href="#about" className={`text-lg font-medium px-4 py-3 rounded-xl transition-all ${activeSection === 'about' ? 'bg-primary/10 text-primary font-bold' : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'}`}>
-                        À propos de nous
+                        {t('landing.nav.about')}
                       </a>
                     </SheetClose>
+                  </div>
+
+                  {/* Mobile Language Switcher */}
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/40 border border-border/50">
+                    <span className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary" />
+                      {i18n.language?.startsWith('fr') ? 'Langue' : 'Language'}
+                    </span>
+                    <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border/60">
+                      <button
+                        onClick={() => i18n.changeLanguage('fr')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${i18n.language?.startsWith('fr') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                      >
+                        FR
+                      </button>
+                      <button
+                        onClick={() => i18n.changeLanguage('en')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${i18n.language?.startsWith('en') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                      >
+                        EN
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="mt-auto flex flex-col gap-4 pb-8">
@@ -245,13 +278,13 @@ const RootIndex: PageComponent = () => {
                       to="/auth/login"
                       className="h-12 w-full rounded-full border-2 border-border/80 text-base font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all text-foreground"
                     >
-                      Se connecter
+                      {t('landing.nav.signIn')}
                     </Link>
                     <Link
                       to="/lab"
                       className="h-12 w-full rounded-full bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20"
                     >
-                      Commencer maintenant
+                      {t('landing.nav.startNow')}
                       <ArrowRight className="w-5 h-5" />
                     </Link>
                   </div>
@@ -292,16 +325,17 @@ const RootIndex: PageComponent = () => {
             )}
 
             <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
-              Le Premier Bar à Jus <br className="hidden md:block"/>
-              Piloté par <span className="text-primary brightness-110 dark:brightness-125">une IA</span>
+              {t('landing.hero.title1')} <br className="hidden md:block"/>
+              <span className="text-primary brightness-110 dark:brightness-125">{t('landing.hero.titleHighlight')}</span>
+              {t('landing.hero.title2')}
             </h1>
 
             <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
-              Votre santé mérite du sur-mesure
+              {t('landing.hero.badge')}
             </p>
 
             <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
-              Discutez avec NutriFYS, votre assistant nutritionnel IA, pour concevoir des cocktails santé uniques à partir de fruits frais du Cameroun. Recevez des jus pressés à froid, validés cliniquement pour répondre à vos objectifs : énergie, immunité ou détox.
+              {t('landing.hero.subtitle')}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
@@ -309,7 +343,7 @@ const RootIndex: PageComponent = () => {
                 to="/lab"
                 className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
               >
-                Composez mon jus 100% naturel
+                {t('landing.hero.ctaPrimary')}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
@@ -317,7 +351,7 @@ const RootIndex: PageComponent = () => {
                 className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
               >
                 <Sparkles className="w-4 h-4 text-secondary" />
-                Discuter avec l'assistant
+                {t('landing.nutrifys.cta')}
               </Link>
             </div>
           </div>
@@ -334,10 +368,10 @@ const RootIndex: PageComponent = () => {
       <section className="py-12 md:py-16 px-5 md:px-8 relative z-10">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
           {[
-            { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: 'Fruits disponibles', icon: Leaf, color: '#3F6D4E' },
-            { value: '2 min', label: 'Pour créer un jus', icon: Zap, color: '#E0982E' },
-            { value: '100%', label: 'Naturel et frais', icon: ShieldCheck, color: '#F2694A' },
-            { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: 'Recettes créées', icon: Users, color: '#AECBB2' },
+            { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: t('home.customer.labStatsFruits'), icon: Leaf, color: '#3F6D4E' },
+            { value: '2 min', label: t('home.customer.labStatsTime'), icon: Zap, color: '#E0982E' },
+            { value: '100%', label: t('landing.hero.statsNatural'), icon: ShieldCheck, color: '#F2694A' },
+            { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: t('landing.hero.statsRecipes'), icon: Users, color: '#AECBB2' },
           ].map((stat, i) => (
             <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
@@ -361,32 +395,35 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              Simple comme <span style={{ color: '#E0982E' }}>bonjour</span>
+              {t('landing.howItWorks.title')}
             </h2>
+            <p className="text-muted-foreground text-lg">
+              {t('landing.howItWorks.subtitle')}
+            </p>
           </div>
 
           <div className="max-w-3xl mx-auto relative">
             {[
               {
                 step: '01',
-                title: 'Choisissez vos fruits',
-                desc: 'Parcourez notre sélection de fruits de saison ou décrivez vos besoins à NutriFYS, votre assistant nutritionniste.',
+                title: t('landing.howItWorks.step1Title'),
+                desc: t('landing.howItWorks.step1Desc'),
                 color: '#F2694A',
                 img: landingImages.step1,
               },
               {
                 step: '02',
-                title: 'Validation nutritionnelle',
-                desc: 'Votre assistant nutritionniste analyse votre mélange : score santé, bénéfices ciblés, interactions et précautions personnalisées.',
+                title: t('landing.howItWorks.step2Title'),
+                desc: t('landing.howItWorks.step2Desc'),
                 color: '#3F6D4E',
                 img: landingImages.step2,
               },
               {
                 step: '03',
-                title: 'Dégustez',
+                title: t('landing.howItWorks.step3Title'),
                 desc: isNoticeActive
-                  ? `${t('landing.step3DescBase', 'Commandez votre cocktail et recevez-le frais, pressé avec amour par notre équipe à Yaoundé.')} ${launchNoticeContent}`
-                  : t('landing.step3DescBase', 'Commandez votre cocktail et recevez-le frais, pressé avec amour par notre équipe à Yaoundé.'),
+                  ? `${t('landing.howItWorks.step3Desc')} (${launchNoticeContent})`
+                  : t('landing.howItWorks.step3Desc'),
                 color: '#E0982E',
                 img: landingImages.step3,
               },
@@ -476,10 +513,10 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              Deux façons de <span style={{ color: '#F2694A' }}>créer</span>
+              {t('landing.features.title')}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Vous êtes l'artisan ou vous confiez la recette à votre assistant nutritionniste. À vous de choisir.
+              {t('landing.features.subtitle')}
             </p>
           </div>
 
@@ -498,12 +535,12 @@ const RootIndex: PageComponent = () => {
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#E0982E20', color: '#E0982E' }}>
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Composez vous-même</h3>
+                <h3 className="text-xl font-bold text-foreground">{t('landing.features.naturalTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Choisissez vos fruits préférés parmi notre sélection de saison. Ajoutez des compléments (gingembre, miel, citron…). NutriFYS valide automatiquement votre mélange et vous donne le score santé, les bénéfices et les précautions.
+                  {t('landing.features.naturalDesc')}
                 </p>
                 <div className="inline-flex items-center gap-1.5 text-sm font-bold group-hover:gap-3 transition-all" style={{ color: '#E0982E' }}>
-                  Essayer le FYS Lab <ChevronRight className="w-4 h-4" />
+                  {t('home.customer.labCta')} <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -522,12 +559,12 @@ const RootIndex: PageComponent = () => {
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#3F6D4E20', color: '#3F6D4E' }}>
                   <Heart className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Confiez-le à NutriFYS</h3>
+                <h3 className="text-xl font-bold text-foreground">{t('landing.features.nutrifysTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Décrivez simplement ce que vous ressentez : fatigue, problème de digestion, besoin d'énergie… Votre assistant nutritionniste compose instantanément un jus adapté à votre profil de santé, vos allergies et vos objectifs.
+                  {t('landing.features.nutrifysDesc')}
                 </p>
                 <div className="inline-flex items-center gap-1.5 text-sm font-bold group-hover:gap-3 transition-all" style={{ color: '#3F6D4E' }}>
-                  Parler à NutriFYS <ChevronRight className="w-4 h-4" />
+                  {t('landing.nutrifys.cta')} <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -549,16 +586,15 @@ const RootIndex: PageComponent = () => {
           <div className="text-center space-y-4 max-w-3xl mx-auto scroll-animate opacity-0">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/25">
               <Building2 className="w-3.5 h-3.5" />
-              FYS Event • Restauration d&apos;Entreprise & Catering
+              {t('landing.events.badge')}
             </div>
 
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              L&apos;excellence du jus frais <br />
-              <span className="text-primary brightness-110">pour vos événements.</span>
+              {t('landing.events.title')}
             </h2>
 
             <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Séminaires, conférences, galas et pauses santé d&apos;entreprise : régalez vos invités avec des jus 100% naturels pressés le matin même. Profitez de remises sur volume automatiques et d&apos;une logistique dédiée sur mesure.
+              {t('landing.events.subtitle')}
             </p>
           </div>
 
@@ -569,10 +605,10 @@ const RootIndex: PageComponent = () => {
                 <GlassWater className="size-6" />
               </div>
               <h3 className="font-display font-bold text-lg text-foreground">
-                Catalogue Signature
+                {t('landing.events.card1Title')}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Sélection exclusive parmi nos recettes les plus plébiscitées. 100% pur fruit sans eau ni sucre ajouté, pressé à froid quelques heures avant l&apos;événement.
+                {t('landing.events.card1Desc')}
               </p>
             </div>
 
@@ -581,10 +617,10 @@ const RootIndex: PageComponent = () => {
                 <Sparkles className="size-6" />
               </div>
               <h3 className="font-display font-bold text-lg text-foreground">
-                Tarifs Dégressifs B2B
+                {t('landing.events.card2Title')}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Jusqu&apos;à 30% de remise sur volume immédiate. Formats 500ml individuels et 1L de partage. Estimation et validation de devis instantanées.
+                {t('landing.events.card2Desc')}
               </p>
             </div>
 
@@ -593,10 +629,10 @@ const RootIndex: PageComponent = () => {
                 <Package className="size-6" />
               </div>
               <h3 className="font-display font-bold text-lg text-foreground">
-                Logistique Clé en Main
+                {t('landing.events.card3Title')}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Glacières isothermes 12h pour une fraîcheur absolue sans prise de courant, gobelets écologiques compostables et service barman FYS sur site.
+                {t('landing.events.card3Desc')}
               </p>
             </div>
           </div>
@@ -615,15 +651,15 @@ const RootIndex: PageComponent = () => {
             <div className="relative z-10 p-8 sm:p-12 md:p-16 max-w-2xl text-white space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 backdrop-blur-xs">
                 <ShieldCheck className="size-3.5 text-secondary" />
-                Devis & Réservation Immédiats
+                {t('landing.events.card3Title')}
               </div>
 
               <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight">
-                Prêt à faire rayonner votre événement ?
+                {t('landing.events.title')}
               </h3>
 
               <p className="text-sm sm:text-base text-white/80 leading-relaxed">
-                Connectez-vous à votre espace FYS pour configurer votre commande d&apos;entreprise, ajuster vos quantités et recevoir votre confirmation sans délai.
+                {t('landing.events.subtitle')}
               </p>
 
               <div className="pt-2">
@@ -632,11 +668,11 @@ const RootIndex: PageComponent = () => {
                   className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
                   <Building2 className="size-5" />
-                  Accéder à l&apos;espace FYS Event
+                  {t('landing.events.cta')}
                   <ArrowRight className="size-4" />
                 </Link>
                 <p className="text-[11px] text-white/60 mt-2 font-medium">
-                  Redirection automatique vers votre espace événement après connexion.
+                  {t('landing.events.card3Desc')}
                 </p>
               </div>
             </div>
@@ -650,10 +686,10 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              Nos <span style={{ color: '#3F6D4E' }}>créations</span>
+              {t('landing.creations.title')}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Chaque bouteille est une œuvre unique, composée avec les meilleurs fruits du terroir camerounais.
+              {t('landing.creations.subtitle')}
             </p>
           </div>
 
@@ -703,23 +739,23 @@ const RootIndex: PageComponent = () => {
               <div className="order-1 lg:order-2 space-y-8 scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: '#F2694A20', color: '#F2694A' }}>
                   <Sparkles className="w-3.5 h-3.5" />
-                  Assistant Nutritionniste
+                  {t('landing.nutrifys.badge')}
                 </div>
 
                 <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-                  Rencontrez <span className="text-primary">NutriFYS</span>
+                  {t('landing.nutrifys.title')}
                 </h2>
 
                 <p className="text-lg text-muted-foreground leading-relaxed font-medium">
-                  NutriFYS est votre assistant nutritionniste personnel. Dites-lui ce que vous ressentez, vos envies, vos contraintes. Il compose un cocktail adapté, valide chaque ingrédient, et vous fournit une fiche nutritionnelle complète.
+                  {t('landing.nutrifys.subtitle')}
                 </p>
 
                 <ul className="space-y-4">
                   {[
-                    'Analyse en temps réel de votre mélange',
-                    'Prise en compte de vos allergies et conditions',
-                    'Score de santé et bénéfices ciblés',
-                    'Fiche nutritionnelle téléchargeable en PDF',
+                    t('home.customer.featureAIAnalysis'),
+                    t('nutrifys.cardDietary', 'Prise en compte de vos allergies et conditions'),
+                    t('nutrifys.cardScore', 'Score de santé et bénéfices ciblés'),
+                    t('orders.exportNutritionPDF', 'Fiche nutritionnelle téléchargeable en PDF'),
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-background/50 border border-border/40 hover:border-primary/30 hover:shadow-md transition-all">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -735,7 +771,7 @@ const RootIndex: PageComponent = () => {
                     to="/lab?tab=nutrifys"
                     className="inline-flex h-14 px-8 items-center gap-3 rounded-full text-sm font-bold active:scale-95 transition-all shadow-xl bg-[#F2694A] hover:bg-[#e05f41] text-white"
                   >
-                    Parler à NutriFYS
+                    {t('landing.nutrifys.cta')}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </div>
@@ -756,10 +792,10 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              Fruits & <span className="text-primary">Suppléments</span>
+              {t('nav.fruits')} & <span className="text-primary">{t('landing.fruitModal.vitamins')}</span>
             </h2>
             <p className="text-muted-foreground text-lg">
-              Découvrez la liste de nos ingrédients 100% naturels, soigneusement sélectionnés pour vos cocktails.
+              {t('fruits.description')}
             </p>
           </div>
 
@@ -781,7 +817,7 @@ const RootIndex: PageComponent = () => {
                     <div className="w-full aspect-square rounded-[1.25rem] overflow-hidden mb-3 relative bg-muted">
                       {unavailable && (
                         <span className="absolute top-2 right-2 z-10 text-[8px] font-bold uppercase tracking-widest bg-black/70 text-white px-2 py-0.5 rounded-full backdrop-blur-md">
-                          ÉPUISÉ
+                          {t('catalogue.unavailable')}
                         </span>
                       )}
                       <img 
@@ -819,12 +855,7 @@ const RootIndex: PageComponent = () => {
           {/* Main Section Title */}
           <div className="w-full text-center mb-12 md:mb-20 scroll-animate opacity-0" style={{ animationDelay: '50ms' }}>
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              À propos de <span className="text-primary relative inline-block">
-                nous
-                <svg className="absolute -bottom-2 left-0 w-full h-3 text-secondary/40" viewBox="0 0 100 20" preserveAspectRatio="none">
-                  <path d="M0,10 Q50,20 100,10" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                </svg>
-              </span>
+              {t('landing.about.title')}
             </h2>
           </div>
 
@@ -881,7 +912,7 @@ const RootIndex: PageComponent = () => {
           <div className="max-w-4xl text-center space-y-8 md:space-y-10 scroll-animate opacity-0 px-2" style={{ animationDelay: '400ms' }}>
             <div className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ background: '#3F6D4E15', color: '#3F6D4E' }}>
               <Heart className="w-4 h-4" />
-              L'Histoire de FYS
+              {t('landing.about.badge')}
             </div>
             
             <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] md:leading-[1.05]" style={{ fontFamily: 'var(--font-display)' }}>
@@ -890,11 +921,11 @@ const RootIndex: PageComponent = () => {
             
             <div className="space-y-6 md:space-y-8 relative px-4 md:px-12 bg-card/30 backdrop-blur-sm border border-border/30 p-8 md:p-10 rounded-[2rem] shadow-sm">
               <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground leading-relaxed font-medium">
-                FYS (For Your Self) est une startup FoodTech camerounaise née d'une vision forte : <strong className="text-foreground font-extrabold">allier la richesse inexploitée de notre terroir à la puissance de l'intelligence artificielle.</strong>
+                {t('landing.about.subtitle')}
               </p>
               <div className="w-12 md:w-16 h-1 bg-primary/30 rounded-full mx-auto" />
               <p className="text-base sm:text-lg md:text-xl text-muted-foreground/80 leading-relaxed font-medium">
-                Animés par le "patriotisme numérique", nous avons créé NutriFYS, un assistant nutritionnel personnel capable de valider rigoureusement chaque cocktail pour respecter votre profil de santé unique. Plus qu'un jus, c'est une promesse de confiance.
+                {t('landing.features.subtitle')}
               </p>
             </div>
           </div>
@@ -921,17 +952,17 @@ const RootIndex: PageComponent = () => {
           
           <div className="relative z-10 max-w-2xl mx-auto space-y-8">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              Prêt à créer <span className="text-primary brightness-110 dark:brightness-125">votre premier jus</span> ?
+              {t('landing.hero.title1')} <span className="text-primary brightness-110 dark:brightness-125">{t('landing.hero.titleHighlight')}</span> ?
             </h2>
             <p className="text-lg md:text-xl text-foreground/80 font-medium">
-              Rejoignez la communauté FYS et découvrez une nouvelle façon de prendre soin de votre santé, un cocktail à la fois.
+              {t('landing.hero.subtitle')}
             </p>
             <div className="pt-4 flex justify-center">
               <Link
                 to="/lab"
                 className="inline-flex h-16 px-12 items-center justify-center gap-3 rounded-full text-lg font-bold active:scale-95 transition-all shadow-xl bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                Commencer gratuitement
+                {t('landing.nav.startNow')}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
@@ -948,12 +979,12 @@ const RootIndex: PageComponent = () => {
               <span className="text-xl font-extrabold font-display tracking-tight text-foreground">FYS</span>
             </div>
             <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
-              Le premier bar à jus santé du Cameroun, piloté par un assistant nutritionniste. Des recettes 100% naturelles, pressées à froid, qui répondent vraiment à votre corps.
+              {t('landing.footer.tagline')}
             </p>
           </div>
           
           <div className="lg:col-span-4 space-y-6 lg:ml-auto">
-            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Contact & Aide</h4>
+            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">{t('landing.footer.contact')}</h4>
             <ul className="text-sm md:text-base text-muted-foreground space-y-4">
               <li className="flex flex-col gap-1.5 hover:text-foreground transition-colors cursor-pointer">
                 <div className="flex items-center gap-3 font-bold text-foreground/90">
@@ -974,20 +1005,20 @@ const RootIndex: PageComponent = () => {
           </div>
           
           <div className="lg:col-span-3 space-y-6 lg:ml-auto">
-            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Liens Rapides</h4>
+            <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">{t('landing.footer.navigation')}</h4>
             <ul className="text-sm md:text-base text-muted-foreground space-y-4">
               <li><Link to="/lab" className="hover:text-primary transition-colors flex items-center gap-2">FYS Lab</Link></li>
-              <li><Link to="/board/catalogue" className="hover:text-primary transition-colors flex items-center gap-2">Notre Catalogue</Link></li>
-              <li><Link to="/board/profile" className="hover:text-primary transition-colors flex items-center gap-2">Mon Profil Santé</Link></li>
+              <li><Link to="/board/catalogue" className="hover:text-primary transition-colors flex items-center gap-2">{t('nav.catalogue')}</Link></li>
+              <li><Link to="/board/profile" className="hover:text-primary transition-colors flex items-center gap-2">{t('nav.profile')}</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-muted-foreground font-medium">
-          <p>© {new Date().getFullYear()} FYS · Du made in Cameroun</p>
+          <p>© {new Date().getFullYear()} FYS · {t('landing.footer.rights')}</p>
           <div className="flex items-center gap-6">
-            <span className="cursor-pointer hover:text-foreground transition-colors">Mentions Légales</span>
-            <span className="cursor-pointer hover:text-foreground transition-colors">Politique de Confidentialité</span>
+            <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.terms')}</span>
+            <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.privacy')}</span>
           </div>
         </div>
       </footer>

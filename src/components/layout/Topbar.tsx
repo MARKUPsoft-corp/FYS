@@ -113,11 +113,11 @@ export function Topbar() {
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25',
               )}
-              aria-label="Gestion FYS Programme"
-              title="Gestion FYS Programme"
+              aria-label={t('topbar.managePrograms')}
+              title={t('topbar.managePrograms')}
             >
               <CalendarCheck className="size-4 shrink-0" />
-              <span className="hidden sm:inline">Gestion Cures</span>
+              <span className="hidden sm:inline">{t('topbar.managePrograms')}</span>
             </Link>
           ) : (
             <Link
@@ -128,13 +128,25 @@ export function Topbar() {
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25',
               )}
-              aria-label="FYS Programme"
-              title="FYS Programme"
+              aria-label={t('topbar.programs')}
+              title={t('topbar.programs')}
             >
               <CalendarCheck className="size-4 shrink-0" />
-              <span className="hidden sm:inline">FYS Programme</span>
+              <span className="hidden sm:inline">{t('topbar.programs')}</span>
             </Link>
           )}
+
+          {/* Commutateur de langue rapide visible pour tous */}
+          <button
+            type="button"
+            onClick={() => i18n.changeLanguage(i18n.language?.startsWith('fr') ? 'en' : 'fr')}
+            className="flex items-center gap-1.5 h-10 px-2.5 rounded-xl border border-border/70 hover:bg-muted/60 text-xs font-black text-foreground transition-all cursor-pointer"
+            title={i18n.language?.startsWith('fr') ? 'Switch to English' : 'Passer en Français'}
+            aria-label="Toggle language"
+          >
+            <Globe className="size-4 text-primary" />
+            <span className="uppercase">{i18n.language?.startsWith('fr') ? 'EN' : 'FR'}</span>
+          </button>
 
           <NotificationBell />
 
@@ -164,8 +176,8 @@ export function Topbar() {
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
                 )}
-                aria-label="FYS Management"
-                title="FYS Management"
+                aria-label={t('topbar.management')}
+                title={t('topbar.management')}
               >
                 <CircleDollarSign className="size-5" />
               </Link>
@@ -226,14 +238,14 @@ export function Topbar() {
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1.5">
                       <span className="font-extrabold text-xs text-foreground group-hover:text-primary transition-colors">
-                        FYS Event
+                        {t('topbar.events')}
                       </span>
                       <span className="text-[9px] font-black uppercase tracking-wider bg-primary/25 text-primary px-1.5 py-0.5 rounded-md border border-primary/20">
                         B2B & PRO
                       </span>
                     </div>
                     <span className="text-[11px] text-muted-foreground leading-tight truncate">
-                      Traiteur & Événements
+                      {t('topbar.eventsSubtitle')}
                     </span>
                   </div>
                   <ChevronRight className="size-4 text-primary/70 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -247,14 +259,14 @@ export function Topbar() {
                       className="gap-2.5 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/10 rounded-lg py-2"
                     >
                       <Building2 className="size-4 text-primary" />
-                      Gestion FYS Event Pro
+                      {t('topbar.eventsAdmin')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate('/board/programs-admin')}
                       className="gap-2.5 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/10 rounded-lg py-2"
                     >
                       <CalendarCheck className="size-4 text-primary" />
-                      Gestion FYS Programme
+                      {t('topbar.managePrograms')}
                     </DropdownMenuItem>
                   </>
                 )}

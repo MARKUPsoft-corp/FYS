@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PageComponent } from 'rasengan';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { CategoryList } from '@/components/features/categories/CategoryList';
@@ -10,6 +11,7 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '@
 import type { Category } from '@/entities';
 
 const Categories: PageComponent = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -30,7 +32,7 @@ const Categories: PageComponent = () => {
   }
 
   async function handleDelete(category: Category) {
-    if (!confirm(`Delete category "${category.name}"?`)) return;
+    if (!confirm(`${t('categories.deleteConfirm', 'Supprimer cette catégorie ?')} "${category.name}"`)) return;
     await deleteCategory(category.id);
     queryClient.invalidateQueries({ queryKey: ['categories'] });
   }
@@ -47,12 +49,12 @@ const Categories: PageComponent = () => {
   return (
     <>
       <BoardPageShell
-        eyebrow="Structure"
-        titleBefore="Les"
-        titleHighlight="Catégories"
-        sectionBefore="Types"
-        sectionHighlight="nutritionnels"
-        subtitle="Classez vos fruits en grands types pour le Lab et le catalogue."
+        eyebrow={t('categories.structure', 'Structure')}
+        titleBefore={t('categories.the', 'Les')}
+        titleHighlight={t('categories.highlight', 'Catégories')}
+        sectionBefore={t('categories.types', 'Types')}
+        sectionHighlight={t('categories.nutritional', 'nutritionnels')}
+        subtitle={t('categories.subtitle', 'Classez vos fruits en grands types pour le Lab et le catalogue.')}
         imageUrl="https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=1200"
         actions={
           <Button
@@ -61,14 +63,16 @@ const Categories: PageComponent = () => {
             className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
           >
             <Plus className="size-5" />
-            Ajouter une catégorie
+            {t('categories.addCategory', 'Ajouter une catégorie')}
           </Button>
         }
       >
         <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm p-4 md:p-6 overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
-              <p className="text-sm font-semibold text-muted-foreground animate-pulse">Chargement en cours…</p>
+              <p className="text-sm font-semibold text-muted-foreground animate-pulse">
+                {t('common.loading', 'Chargement en cours…')}
+              </p>
             </div>
           ) : (
             <CategoryList

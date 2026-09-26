@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { PageComponent } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard,
   CheckCircle2,
@@ -99,6 +100,7 @@ function ProviderBadge({ provider }: { provider?: string }) {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: KPayStatus }) {
+  const { t } = useTranslation();
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
   const Icon = cfg.icon;
   return (
@@ -107,7 +109,7 @@ function StatusBadge({ status }: { status: KPayStatus }) {
       cfg.bg, cfg.text, cfg.border,
     )}>
       <Icon className="size-3" />
-      {cfg.label}
+      {t(`payments.status.${status}`, cfg.label)}
     </span>
   );
 }
@@ -162,18 +164,22 @@ function formatPhone(phone: string) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const STATUS_FILTERS: { label: string; value: KPayStatus | 'ALL' }[] = [
-  { label: 'Tous', value: 'ALL' },
-  { label: 'Payés', value: 'COMPLETED' },
-  { label: 'En attente', value: 'PENDING' },
-  { label: 'Échoués', value: 'FAILED' },
-  { label: 'Annulés', value: 'CANCELLED' },
-];
-
 const Payments: PageComponent = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<KPayStatus | 'ALL'>('ALL');
   const [search, setSearch] = useState('');
+
+  const statusFilters = useMemo(
+    () => [
+      { label: t('payments.tabs.all', 'Tous'), value: 'ALL' as const },
+      { label: t('payments.status.COMPLETED', 'Payés'), value: 'COMPLETED' as const },
+      { label: t('payments.status.PENDING', 'En attente'), value: 'PENDING' as const },
+      { label: t('payments.status.FAILED', 'Échoués'), value: 'FAILED' as const },
+      { label: t('payments.status.CANCELLED', 'Annulés'), value: 'CANCELLED' as const },
+    ],
+    [t],
+  );
 
   const { data: transactions = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['kpay-transactions'],
@@ -209,12 +215,12 @@ const Payments: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="Administration"
-      titleBefore="Paiements"
+      eyebrow={t('payments.eyebrow', 'Administration')}
+      titleBefore={t('payments.title', 'Paiements')}
       titleHighlight="K-Pay"
-      sectionBefore="Historique des"
-      sectionHighlight="Transactions"
-      subtitle="Toutes les transactions Mobile Money reçues via K-Pay en temps réel"
+      sectionBefore={t('payments.table.date', 'Historique des')}
+      sectionHighlight={t('payments.title', 'Transactions')}
+      subtitle={t('payments.subtitle', 'Toutes les transactions Mobile Money reçues via K-Pay en temps réel')}
       imageUrl="https://images.pexels.com/photos/4386431/pexels-photo-4386431.jpeg?auto=compress&cs=tinysrgb&w=1200"
       heroExtra={
         <Button
@@ -225,36 +231,36 @@ const Payments: PageComponent = () => {
           className="gap-2 text-sm font-semibold bg-white/10 border-white/30 text-white hover:bg-white/20"
         >
           <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
-          Actualiser
+          {t('payments.refresh', 'Actualiser')}
         </Button>
       }
     >
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         <StatCard
-          label="Volume total encaissé"
+          label={t('payments.statsVolume', 'Volume total encaissé')}
           value={formatAmount(stats.total)}
-          sub={`${stats.completed} transaction(s) réussie(s)`}
+          sub={t('payments.successfulTransactions', { count: stats.completed, defaultValue: `${stats.completed} transaction(s) réussie(s)` })}
           icon={TrendingUp}
           color="text-emerald-500"
           bg="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100"
         />
         <StatCard
-          label="Paiements réussis"
+          label={t('payments.statsSuccessful', 'Paiements réussis')}
           value={stats.completed}
           icon={CheckCircle2}
           color="text-primary"
           bg="bg-primary/10 border-primary/20"
         />
         <StatCard
-          label="En attente"
+          label={t('payments.statsPending', 'En attente')}
           value={stats.pending}
           icon={Clock}
           color="text-amber-500"
           bg="bg-amber-50 dark:bg-amber-950/30 border-amber-100"
         />
         <StatCard
-          label="Échoués / Annulés"
+          label={t('payments.statsFailed', 'Échoués / Annulés')}
           value={stats.failed}
           icon={AlertCircle}
           color="text-red-500"
@@ -265,7 +271,7 @@ const Payments: PageComponent = () => {
       {/* Filtres & Recherche */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {STATUS_FILTERS.map((f) => (
+          {statusFilters.map((f) => (
             <button
               key={f.value}
               type="button"
@@ -289,7 +295,7 @@ const Payments: PageComponent = () => {
         <div className="relative flex-1 max-w-sm ml-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par téléphone, ID..."
+            placeholder={t('payments.searchPlaceholder', 'Rechercher par téléphone, ID...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9 text-sm rounded-xl"
@@ -308,8 +314,8 @@ const Payments: PageComponent = () => {
             <CreditCard className="size-10 opacity-20" />
             <p className="text-sm font-medium">
               {transactions.length === 0
-                ? 'Aucune transaction reçue pour le moment'
-                : 'Aucun résultat pour ce filtre'}
+                ? t('payments.noTransactions', 'Aucune transaction reçue pour le moment')
+                : t('payments.noFilteredResults', 'Aucun résultat pour ce filtre')}
             </p>
           </div>
         ) : (
@@ -317,13 +323,13 @@ const Payments: PageComponent = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-muted/30">
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Date</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Montant</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Opérateur</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Téléphone</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Statut</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Commande</th>
-                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">Référence</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.date', 'Date')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.table.amount', 'Montant')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.operator', 'Opérateur')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.table.phone', 'Téléphone')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.table.status', 'Statut')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.order', 'Commande')}</th>
+                  <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-3">{t('payments.reference', 'Référence')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -341,7 +347,7 @@ const Payments: PageComponent = () => {
       </div>
 
       <p className="text-xs text-muted-foreground mt-3 text-right">
-        {filtered.length} transaction(s) affichée(s) · URL Webhook :{' '}
+        {t('payments.transactionsDisplayed', { count: filtered.length, defaultValue: `${filtered.length} transaction(s) affichée(s)` })} · {t('payments.webhookUrl', 'URL Webhook :')}{' '}
         <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">
           https://fys-app.com/api/webhooks/kpay
         </code>

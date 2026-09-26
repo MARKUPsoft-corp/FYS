@@ -64,11 +64,11 @@ import { NutrifysCustomProgramModal } from '@/components/features/programs/Nutri
 
 type ProgramTab = 'discover' | 'active' | 'saved' | 'history';
 
-const GOAL_FILTERS: { key: string; label: string; icon: any }[] = [
-  { key: 'all', label: 'Toutes les cures', icon: Sparkles },
-  { key: 'detox', label: 'Détox', icon: Leaf },
-  { key: 'immunity', label: 'Immunité', icon: Shield },
-  { key: 'digestion', label: 'Digestion', icon: HeartPulse },
+const GOAL_FILTERS: { key: string; labelKey: string; defaultLabel: string; icon: any }[] = [
+  { key: 'all', labelKey: 'programs.goals.all', defaultLabel: 'Toutes les cures', icon: Sparkles },
+  { key: 'detox', labelKey: 'programs.goals.detox', defaultLabel: 'Détox', icon: Leaf },
+  { key: 'immunity', labelKey: 'programs.goals.immunity', defaultLabel: 'Immunité', icon: Shield },
+  { key: 'digestion', labelKey: 'programs.goals.digestion', defaultLabel: 'Digestion', icon: HeartPulse },
 ];
 
 const FALLBACK_IMAGE =
@@ -448,8 +448,8 @@ const ProgramsPage: PageComponent = () => {
             }`}
           >
             <Sparkles className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Découvrir & Sur-Mesure</span>
-            <span className="sm:hidden">Découvrir</span>
+            <span className="hidden sm:inline">{t('programs.tabs.discover', 'Découvrir les cures')}</span>
+            <span className="sm:hidden">{t('programs.tabs.discoverShort', 'Découvrir')}</span>
           </button>
 
           {/* Tab 2: Cures en cours */}
@@ -463,8 +463,8 @@ const ProgramsPage: PageComponent = () => {
             }`}
           >
             <Activity className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Cures en cours</span>
-            <span className="sm:hidden">En cours</span>
+            <span className="hidden sm:inline">{t('programs.tabs.active', 'Ma cure active')}</span>
+            <span className="sm:hidden">{t('programs.tabs.activeShort', 'En cours')}</span>
 
             {activePrograms.length > 0 && (
               <span
@@ -494,8 +494,8 @@ const ProgramsPage: PageComponent = () => {
             }`}
           >
             <Bookmark className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Cures enregistrées</span>
-            <span className="sm:hidden">Enregistrées</span>
+            <span className="hidden sm:inline">{t('programs.tabs.saved', 'Mes cures sauvegardées')}</span>
+            <span className="sm:hidden">{t('programs.tabs.savedShort', 'Enregistrées')}</span>
 
             {savedPrograms.length > 0 && (
               <span
@@ -521,8 +521,8 @@ const ProgramsPage: PageComponent = () => {
             }`}
           >
             <History className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Cures déjà faites</span>
-            <span className="sm:hidden">Déjà faites</span>
+            <span className="hidden sm:inline">{t('programs.tabs.history', 'Historique')}</span>
+            <span className="sm:hidden">{t('programs.tabs.historyShort', 'Déjà faites')}</span>
 
             {pastPrograms.length > 0 && (
               <span
@@ -758,7 +758,7 @@ const ProgramsPage: PageComponent = () => {
                       }`}
                     >
                       <Icon className="size-3.5" />
-                      {f.label}
+                      {t(f.labelKey, f.defaultLabel)}
                     </button>
                   );
                 })}

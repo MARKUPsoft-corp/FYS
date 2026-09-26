@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PageComponent } from 'rasengan';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { FruitTable } from '@/components/features/fruits/FruitTable';
@@ -11,6 +12,7 @@ import { getCategories } from '@/services/category';
 import { isUsableFruit, type Fruit } from '@/entities';
 
 const Fruits: PageComponent = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Fruit | null>(null);
@@ -38,7 +40,7 @@ const Fruits: PageComponent = () => {
   }
 
   async function handleDelete(fruit: Fruit) {
-    if (!confirm(`Delete "${fruit.name}"?`)) return;
+    if (!confirm(`${t('fruits.deleteConfirm', 'Supprimer ce fruit ?')} "${fruit.name}"`)) return;
     await deleteFruit(fruit.id, fruit.imageUrl);
     queryClient.invalidateQueries({ queryKey: ['fruits'] });
   }
@@ -64,12 +66,12 @@ const Fruits: PageComponent = () => {
   return (
     <>
       <BoardPageShell
-        eyebrow="Ingrédients"
-        titleBefore="Fruits &"
-        titleHighlight="suppléments"
-        sectionBefore="Le"
-        sectionHighlight="Catalogue"
-        subtitle="Gérez les fruits principaux, les suppléments, ou les deux."
+        eyebrow={t('fruits.eyebrow', 'Ingrédients')}
+        titleBefore={t('fruits.titleBefore', 'Fruits &')}
+        titleHighlight={t('fruits.titleHighlight', 'suppléments')}
+        sectionBefore={t('fruits.sectionBefore', 'Le')}
+        sectionHighlight={t('fruits.sectionHighlight', 'Catalogue')}
+        subtitle={t('fruits.subtitle', 'Gérez les fruits principaux, les suppléments, ou les deux.')}
         imageUrl="https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=1200"
         actions={
           <Button
@@ -78,13 +80,15 @@ const Fruits: PageComponent = () => {
             className="w-full rounded-[2rem] h-14 bg-primary text-white font-bold text-base gap-3 shadow-[0_8px_30px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
           >
             <Plus className="size-5" />
-            Ajouter un fruit
+            {t('fruits.addFruit', 'Ajouter un fruit')}
           </Button>
         }
       >
         {loading ? (
           <div className="flex items-center justify-center py-20 rounded-[2rem] border border-border/40 bg-card shadow-sm">
-            <p className="text-sm font-semibold text-muted-foreground animate-pulse">Chargement en cours…</p>
+            <p className="text-sm font-semibold text-muted-foreground animate-pulse">
+              {t('common.loading', 'Chargement en cours…')}
+            </p>
           </div>
         ) : (
           <div className="bg-card rounded-[2rem] border border-border/40 shadow-sm overflow-hidden">

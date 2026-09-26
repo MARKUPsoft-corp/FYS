@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import {
   Building2,
   CalendarCheck,
@@ -168,7 +169,46 @@ const STATUS_CONFIG: Record<
   },
 };
 
+const getEventTypeLabel = (type: FysEventType, t: (k: string, fallback?: string) => string) => {
+  return t(`events.types.${type}`, EVENT_TYPE_LABELS[type] || type);
+};
+
+const getStatusConfig = (status: FysEventStatus, t: (k: string, fallback?: string) => string) => {
+  const base = STATUS_CONFIG[status] || STATUS_CONFIG.submitted;
+  return {
+    ...base,
+    label: t(`events.status.${status}`, base.label),
+    description: t(`events.statusDescriptions.${status}`, base.description),
+  };
+};
+
+const getWizardSteps = (t: (k: string, fallback?: string) => string) => [
+  {
+    step: 1,
+    title: t('events.wizard.step1Title', 'Entreprise & Cadre'),
+    shortTitle: t('events.wizard.step1Short', 'Entreprise'),
+    subtitle: t('events.wizard.step1Sub', 'Coordonnées & date'),
+    icon: Building2,
+  },
+  {
+    step: 2,
+    title: t('events.wizard.step2Title', 'Sélection des Jus'),
+    shortTitle: t('events.wizard.step2Short', 'Catalogue'),
+    subtitle: t('events.wizard.step2Sub', 'Formats & remises'),
+    icon: GlassWater,
+  },
+  {
+    step: 3,
+    title: t('events.wizard.step3Title', 'Devis & Validation'),
+    shortTitle: t('events.wizard.step3Short', 'Confirmation'),
+    subtitle: t('events.wizard.step3Sub', 'Récapitulatif final'),
+    icon: FileText,
+  },
+];
+
 const EventsPage: PageComponent = () => {
+  const { t } = useTranslation();
+  const wizardSteps = getWizardSteps(t);
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -663,14 +703,14 @@ const EventsPage: PageComponent = () => {
     if (loadingSelectedEvent) {
       return (
         <BoardPageShell
-          eyebrow="FYS EVENT • DÉTAIL COMMANDE"
-          titleBefore="Événement"
-          titleHighlight="En chargement"
+          eyebrow={t('events.eyebrow', 'B2B & Réceptions')}
+          titleBefore={t('events.title', 'FYS Event')}
+          titleHighlight={t('events.loadingDetails', 'Chargement...')}
           imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
         >
           <div className="max-w-5xl mx-auto py-16 text-center space-y-4">
             <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground font-medium text-sm">Chargement des détails de l&apos;événement...</p>
+            <p className="text-muted-foreground font-medium text-sm">{t('events.loadingDetails', "Chargement des détails de l'événement...")}</p>
           </div>
         </BoardPageShell>
       );
@@ -679,7 +719,7 @@ const EventsPage: PageComponent = () => {
     if (!selectedEvent) {
       return (
         <BoardPageShell
-          eyebrow="FYS EVENT • INTROUVABLE"
+          eyebrow={t('events.eyebrow', 'B2B & Réceptions')}
           titleBefore="Événement"
           titleHighlight="Non trouvé"
           imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
@@ -687,24 +727,22 @@ const EventsPage: PageComponent = () => {
           <div className="max-w-xl mx-auto py-16 text-center space-y-6 bg-card border border-border/60 rounded-3xl p-8 shadow-sm">
             <AlertCircle className="size-12 text-muted-foreground mx-auto" />
             <div className="space-y-2">
-              <h2 className="text-xl font-bold font-display">Événement introuvable</h2>
-              <p className="text-sm text-muted-foreground">
-                L&apos;événement demandé n&apos;existe pas ou vous n&apos;avez pas les autorisations nécessaires pour le consulter.
-              </p>
+              <h2 className="text-xl font-bold font-display">{t('events.notFound', 'Événement introuvable')}</h2>
+              <p className="text-sm text-muted-foreground">{t('events.notFoundMessage', "L'événement demandé n'existe pas ou vous n'avez pas les autorisations nécessaires pour le consulter.")}</p>
             </div>
             <Button
               onClick={() => navigate('/board/events')}
               className="rounded-xl font-bold bg-primary text-primary-foreground"
             >
               <ArrowLeft className="size-4 mr-2" />
-              Retour à mes événements
+              {t('events.backToEvents', 'Retour à mes événements')}
             </Button>
           </div>
         </BoardPageShell>
       );
     }
 
-    const statusObj = STATUS_CONFIG[selectedEvent.status] || STATUS_CONFIG.submitted;
+    const statusObj = getStatusConfig(selectedEvent.status, t);
     const StatusIcon = statusObj.icon;
 
     return (
@@ -723,7 +761,7 @@ const EventsPage: PageComponent = () => {
               className="rounded-xl font-semibold gap-2 border-border/80"
             >
               <ArrowLeft className="size-4" />
-              Retour à la liste
+              {t('events.backToListBtn', 'Retour à la liste')}
             </Button>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -739,7 +777,7 @@ const EventsPage: PageComponent = () => {
                 className="rounded-xl font-semibold text-xs gap-1.5 border-border/80 cursor-pointer"
               >
                 <Download className="size-3.5" />
-                {selectedEvent.status === 'draft' || selectedEvent.status === 'submitted' ? 'Devis PDF' : 'Facture PDF'}
+                {selectedEvent.status === 'draft' || selectedEvent.status === 'submitted' ? t('events.devisPdf', 'Devis PDF') : t('events.facturePdf', 'Facture PDF')}
               </Button>
 
               <a
@@ -759,7 +797,7 @@ const EventsPage: PageComponent = () => {
                   className="rounded-xl font-bold text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
                 >
                   <Edit3 className="size-3.5" />
-                  Modifier
+                  {t('events.editEvent', "Modifier l'événement")}
                 </Button>
               )}
 
@@ -778,14 +816,14 @@ const EventsPage: PageComponent = () => {
             <StatusIcon className={`size-5 mt-0.5 shrink-0 ${statusObj.text}`} />
             <div>
               <h4 className={`text-sm font-bold ${statusObj.text}`}>
-                Statut actuel : {statusObj.label}
+                {t('events.currentStatus', 'Statut actuel')} : {statusObj.label}
               </h4>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                 {statusObj.description}
               </p>
               {selectedEvent.statusNotes && (
                 <p className="text-xs font-medium text-foreground mt-2 bg-background/60 p-2.5 rounded-xl border border-border/50">
-                  Note FYS : {selectedEvent.statusNotes}
+                  {t('events.fysNote', 'Note FYS')} : {selectedEvent.statusNotes}
                 </p>
               )}
             </div>
@@ -800,38 +838,38 @@ const EventsPage: PageComponent = () => {
                 <div className="flex items-center gap-2 pb-4 border-b border-border/50">
                   <Building2 className="size-5 text-primary" />
                   <h3 className="font-display font-bold text-lg text-foreground">
-                    Informations Générales
+                    {t('events.generalInfo', 'Informations Générales')}
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Entreprise / Organisation</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.companyOrOrg', 'Entreprise / Organisation')}</span>
                     <span className="font-bold text-foreground text-base">{selectedEvent.companyName}</span>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Intitulé de l&apos;événement</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.eventTitleLabel', "Intitulé de l'événement")}</span>
                     <span className="font-semibold text-foreground">{selectedEvent.eventTitle}</span>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Type d&apos;événement</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.step1.eventType', "Type d'événement")}</span>
                     <span className="font-semibold text-foreground">
-                      {EVENT_TYPE_LABELS[selectedEvent.eventType] || selectedEvent.eventType}
+                      {getEventTypeLabel(selectedEvent.eventType, t)}
                       {selectedEvent.customEventType ? ` (${selectedEvent.customEventType})` : ''}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Convives attendus</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.expectedGuests', 'Convives attendus')}</span>
                     <span className="font-semibold text-foreground">{selectedEvent.guestCount} personnes</span>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Date & Heure souhaitées</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.desiredDateTime', 'Date & Heure souhaitées')}</span>
                     <span className="font-bold text-primary">
                       {selectedEvent.eventDate} {selectedEvent.deliveryTime ? `à ${selectedEvent.deliveryTime}` : ''}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground block">Lieu de livraison</span>
+                    <span className="text-xs font-medium text-muted-foreground block">{t('events.deliveryLocation', 'Lieu de livraison')}</span>
                     <span className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
                       <MapPin className="size-3.5 text-muted-foreground shrink-0" />
                       {selectedEvent.location}
@@ -841,15 +879,15 @@ const EventsPage: PageComponent = () => {
 
                 <div className="pt-4 border-t border-border/50 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div>
-                    <span className="text-muted-foreground block">Responsable sur place</span>
+                    <span className="text-muted-foreground block">{t('events.onsiteManager', 'Responsable sur place')}</span>
                     <span className="font-semibold text-foreground">{selectedEvent.contactPerson}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block">Téléphone contact</span>
+                    <span className="text-muted-foreground block">{t('events.contactPhoneShort', 'Téléphone contact')}</span>
                     <span className="font-semibold text-foreground">{selectedEvent.contactPhone}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block">Email</span>
+                    <span className="text-muted-foreground block">{t('events.step1.contactEmail', 'Email')}</span>
                     <span className="font-semibold text-foreground truncate block">{selectedEvent.contactEmail}</span>
                   </div>
                 </div>
@@ -861,7 +899,7 @@ const EventsPage: PageComponent = () => {
                   <div className="flex items-center gap-2">
                     <GlassWater className="size-5 text-primary" />
                     <h3 className="font-display font-bold text-lg text-foreground">
-                      Jus Frais Sélectionnés
+                      {t('events.selectedFreshJuices', 'Jus Frais Sélectionnés')}
                     </h3>
                   </div>
                   <div className="flex items-center gap-3 text-xs font-bold">
@@ -916,14 +954,14 @@ const EventsPage: PageComponent = () => {
                   <div className="flex items-center gap-2 pb-4 border-b border-border/50">
                     <Package className="size-5 text-primary" />
                     <h3 className="font-display font-bold text-lg text-foreground">
-                      Logistique & Matériel Associé
+                      {t('events.associatedLogistics', 'Logistique & Matériel Associé')}
                     </h3>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {selectedEvent.logistics.needCoolerBoxes && (
                       <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground block">Glacières isothermes</span>
+                        <span className="text-xs font-medium text-muted-foreground block">{t('events.coolerBoxes', 'Glacières isothermes')}</span>
                         <span className="font-bold text-foreground text-sm">
                           {selectedEvent.logistics.coolerBoxesCount} glacière(s) ({((selectedEvent.logistics.coolerBoxFee) || 0).toLocaleString()} XAF)
                         </span>
@@ -932,7 +970,7 @@ const EventsPage: PageComponent = () => {
 
                     {selectedEvent.logistics.needEcoCups && (
                       <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground block">Gobelets écologiques</span>
+                        <span className="text-xs font-medium text-muted-foreground block">{t('events.ecoCups', 'Gobelets écologiques')}</span>
                         <span className="font-bold text-foreground text-sm">
                           {selectedEvent.logistics.ecoCupsCount} gobelets ({((selectedEvent.logistics.ecoCupsFee) || 0).toLocaleString()} XAF)
                         </span>
@@ -941,7 +979,7 @@ const EventsPage: PageComponent = () => {
 
                     {selectedEvent.logistics.needBartenderService && (
                       <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground block">Service Barman FYS</span>
+                        <span className="text-xs font-medium text-muted-foreground block">{t('events.bartenderService', 'Service Barman FYS')}</span>
                         <span className="font-bold text-foreground text-sm">
                           {selectedEvent.logistics.bartenderHours}h sur site ({((selectedEvent.logistics.bartenderFee) || 0).toLocaleString()} XAF)
                         </span>
@@ -951,7 +989,7 @@ const EventsPage: PageComponent = () => {
 
                   {selectedEvent.logistics.notes && (
                     <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 text-xs">
-                      <span className="font-semibold text-muted-foreground block mb-1">Consignes spécifiques :</span>
+                      <span className="font-semibold text-muted-foreground block mb-1">{t('events.specificInstructions', 'Consignes spécifiques :')}</span>
                       <p className="text-foreground italic">{selectedEvent.logistics.notes}</p>
                     </div>
                   )}
@@ -971,7 +1009,7 @@ const EventsPage: PageComponent = () => {
 
                 <div className="space-y-3.5 text-sm">
                   <div className="flex items-center justify-between text-muted-foreground">
-                    <span>Sous-total jus brut</span>
+                    <span>{t('events.rawJuiceSubtotal', 'Sous-total jus brut')}</span>
                     <span className="font-medium text-foreground">
                       {(selectedEvent.rawJuiceTotal || 0).toLocaleString()} XAF
                     </span>
@@ -979,19 +1017,19 @@ const EventsPage: PageComponent = () => {
 
                   {(selectedEvent.discountPercent || 0) > 0 ? (
                     <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
-                      <span>Remise sur volume ({selectedEvent.discountPercent}%)</span>
+                      <span>{t('events.volumeDiscountLabel', { percent: selectedEvent.discountPercent, defaultValue: 'Remise sur volume (' + selectedEvent.discountPercent + '%)' })}</span>
                       <span>-{(selectedEvent.discountAmount || 0).toLocaleString()} XAF</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between text-muted-foreground text-xs">
-                      <span>Remise sur volume</span>
+                      <span>{t('events.step3.discountVolume', 'Remise sur volume')}</span>
                       <span>0%</span>
                     </div>
                   )}
 
                   {(selectedEvent.totalLogisticsFee ?? 0) > 0 && (
                     <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Prestations & logistique</span>
+                      <span>{t('events.step3.logisticsSubtotal', 'Prestations & logistique')}</span>
                       <span className="font-medium text-foreground">
                         {(selectedEvent.totalLogisticsFee || 0).toLocaleString()} XAF
                       </span>
@@ -999,7 +1037,7 @@ const EventsPage: PageComponent = () => {
                   )}
 
                   <div className="pt-4 border-t border-border/60 flex items-center justify-between">
-                    <span className="font-display font-extrabold text-base text-foreground">Total Net</span>
+                    <span className="font-display font-extrabold text-base text-foreground">{t('events.totalToPay', 'Total Net')}</span>
                     <span className="font-display font-black text-2xl text-primary">
                       {selectedEvent.totalAmount.toLocaleString()} XAF
                     </span>
@@ -1009,10 +1047,10 @@ const EventsPage: PageComponent = () => {
                 <div className="pt-2 text-xs text-muted-foreground leading-relaxed bg-muted/40 p-4 rounded-2xl border border-border/50 space-y-2">
                   <div className="flex items-center gap-1.5 font-bold text-foreground">
                     <ShieldCheck className="size-4 text-primary" />
-                    Engagement Fraîcheur 100% Garantie
+                    {t('events.freshnessCommitment', 'Engagement Fraîcheur 100% Garantie')}
                   </div>
                   <p>
-                    Nos recettes sont pressées à froid quelques heures avant l&apos;événement pour préserver l&apos;intégralité des enzymes et nutriments.
+                    {t('events.freshnessDesc', "Nos recettes sont pressées à froid quelques heures avant l'événement pour préserver l'intégralité des enzymes et nutriments.")}
                   </p>
                 </div>
 
@@ -1025,7 +1063,7 @@ const EventsPage: PageComponent = () => {
                     className="w-full flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98"
                   >
                     <MessageCircle className="size-4 shrink-0" />
-                    <span>Discuter sur WhatsApp avec le service client</span>
+                    <span>{t('events.chatWithSupport', 'Discuter sur WhatsApp avec le service client')}</span>
                   </a>
 
                   <Button
@@ -1034,7 +1072,7 @@ const EventsPage: PageComponent = () => {
                     className="w-full h-11 rounded-xl font-bold text-xs border-primary/40 text-primary hover:bg-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Download className="size-4 shrink-0" />
-                    <span>Télécharger le Devis (PDF)</span>
+                    <span>{t('events.downloadQuoteBtn', 'Télécharger le Devis (PDF)')}</span>
                   </Button>
 
                   {selectedEvent.status !== 'delivered' && selectedEvent.status !== 'cancelled' && (
@@ -1044,7 +1082,7 @@ const EventsPage: PageComponent = () => {
                       className="w-full h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Edit3 className="size-3.5" />
-                      <span>Modifier cette commande</span>
+                      <span>{t('events.editThisOrder', 'Modifier cette commande')}</span>
                     </Button>
                   )}
                 </div>
@@ -1061,9 +1099,9 @@ const EventsPage: PageComponent = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <BoardPageShell
-      eyebrow="FYS EVENT • CORPORATE CATERING"
-      titleBefore="Événements"
-      titleHighlight="& Entreprises"
+      eyebrow={t('events.eyebrow', 'B2B & Réceptions')}
+      titleBefore={t('events.title', 'FYS Event')}
+      titleHighlight={t('events.eyebrow', '& Entreprises')}
       imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
     >
       <div className="max-w-6xl mx-auto space-y-8 pb-36 sm:pb-24">
@@ -1082,7 +1120,7 @@ const EventsPage: PageComponent = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Mes Événements ({myEvents.length})
+              {t('events.myEvents', 'Mes Événements')} ({myEvents.length})
             </button>
             <button
               type="button"
@@ -1099,17 +1137,17 @@ const EventsPage: PageComponent = () => {
               {editingEventId ? (
                 <>
                   <Edit3 className="size-3.5" />
-                  <span>Modifier l&apos;Événement</span>
+                  <span>{t('events.editEvent', "Modifier l'événement")}</span>
                 </>
               ) : (
-                <span>+ Nouvel Événement</span>
+                <span>+ {t('events.newEvent', 'Nouvel Événement')}</span>
               )}
             </button>
           </div>
 
           <div className="text-xs text-muted-foreground font-medium flex items-center gap-2">
             <ShieldCheck className="size-4 text-primary" />
-            <span>Catalogue officiel FYS • Remises dégressives jusqu&apos;à 30%</span>
+            <span>{t('events.corporateCatering', "Catalogue officiel FYS • Remises dégressives jusqu'à 30%")}</span>
           </div>
         </div>
 
@@ -1119,7 +1157,7 @@ const EventsPage: PageComponent = () => {
             {loadingEvents ? (
               <div className="py-16 text-center space-y-4">
                 <div className="size-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-muted-foreground font-medium">Chargement de vos événements...</p>
+                <p className="text-xs text-muted-foreground font-medium">{t('events.loadingYourEvents', 'Chargement de vos événements...')}</p>
               </div>
             ) : myEvents.length === 0 ? (
               <div className="py-16 text-center max-w-xl mx-auto space-y-6 bg-card border border-border/70 rounded-3xl p-8 shadow-xs">
@@ -1128,25 +1166,22 @@ const EventsPage: PageComponent = () => {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold font-display text-foreground">
-                    Aucun événement pour le moment
+                    {t('events.emptyTitle', 'Aucun événement pour le moment')}
                   </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Vous organisez un séminaire, une réunion de direction ou une soirée d&apos;entreprise ?
-                    Configurez vos jus frais au tarif dégressif avec livraison sur site.
-                  </p>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{t('events.emptyEventsDesc', 'Vous organisez un séminaire, une réunion de direction ou une soirée d\'entreprise ? Configurez vos jus frais au tarif dégressif avec livraison sur site.')}</p>
                 </div>
                 <Button
                   onClick={() => setViewMode('wizard')}
                   className="rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7"
                 >
                   <Plus className="size-4 mr-2" />
-                  Créer mon premier événement
+                  {t('events.createFirstEvent', 'Créer mon premier événement')}
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {myEvents.map((ev) => {
-                  const statusObj = STATUS_CONFIG[ev.status] || STATUS_CONFIG.submitted;
+                  const statusObj = getStatusConfig(ev.status, t);
                   const StatusIcon = statusObj.icon;
 
                   return (
@@ -1175,17 +1210,17 @@ const EventsPage: PageComponent = () => {
                             {ev.eventTitle}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType} • {ev.guestCount} convives
+                            {getEventTypeLabel(ev.eventType, t)} • {ev.guestCount} convives
                           </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
                           <div className="bg-muted/40 p-2.5 rounded-xl border border-border/40">
-                            <span className="text-muted-foreground block text-[10px]">Date prévue</span>
+                            <span className="text-muted-foreground block text-[10px]">{t('events.plannedDate', 'Date prévue')}</span>
                             <span className="font-semibold text-foreground">{ev.eventDate}</span>
                           </div>
                           <div className="bg-muted/40 p-2.5 rounded-xl border border-border/40">
-                            <span className="text-muted-foreground block text-[10px]">Volume commandé</span>
+                            <span className="text-muted-foreground block text-[10px]">{t('events.orderedVolume', 'Volume commandé')}</span>
                             <span className="font-semibold text-foreground">{ev.totalBottles} bouteille{ev.totalBottles > 1 ? 's' : ''} ({(ev.totalLiters ?? (ev.totalBottles * 0.5)).toFixed(1)}L)</span>
                           </div>
                         </div>
@@ -1193,7 +1228,7 @@ const EventsPage: PageComponent = () => {
 
                       <div className="pt-4 border-t border-border/50 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] text-muted-foreground block uppercase font-medium">Montant total</span>
+                          <span className="text-[10px] text-muted-foreground block uppercase font-medium">{t('events.totalAmountLabel', 'Montant total')}</span>
                           <span className="font-display font-extrabold text-lg text-foreground">
                             {ev.totalAmount.toLocaleString()} XAF
                           </span>
@@ -1226,7 +1261,7 @@ const EventsPage: PageComponent = () => {
                           )}
 
                           <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:translate-x-1 transition-transform ml-1">
-                            Détails
+                            {t('events.detailsBtn', 'Détails')}
                             <ChevronRight className="size-4" />
                           </span>
                         </div>
@@ -1250,10 +1285,10 @@ const EventsPage: PageComponent = () => {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">
-                      Mode Modification Activé : {eventTitle || 'Votre événement'}
+                      {t('events.editModeActive', 'Mode Modification Activé')} : {eventTitle || t('events.title')}
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Ajustez les informations générales ou le nombre de bouteilles. Les modifications mettront à jour votre commande existante.
+                      {t('events.editModeDesc', 'Ajustez les informations générales ou le nombre de bouteilles. Les modifications mettront à jour votre commande existante.')}
                     </p>
                   </div>
                 </div>
@@ -1263,7 +1298,7 @@ const EventsPage: PageComponent = () => {
                   onClick={handleCancelEdit}
                   className="rounded-xl font-semibold text-xs shrink-0 cursor-pointer"
                 >
-                  Annuler la modification
+                  {t('events.cancelEditBtn', 'Annuler la modification')}
                 </Button>
               </div>
             )}
@@ -1282,7 +1317,7 @@ const EventsPage: PageComponent = () => {
                         Étape {wizardStep} sur 3
                       </span>
                       <h4 className="text-sm font-extrabold text-foreground leading-tight truncate">
-                        {WIZARD_STEPS[wizardStep - 1]?.title}
+                        {wizardSteps[wizardStep - 1]?.title}
                       </h4>
                     </div>
                   </div>
@@ -1301,7 +1336,7 @@ const EventsPage: PageComponent = () => {
 
                 {/* Mobile 3-step Pills */}
                 <div className="grid grid-cols-3 gap-1.5 pt-1">
-                  {WIZARD_STEPS.map((s) => {
+                  {wizardSteps.map((s) => {
                     const isCompleted = s.step < wizardStep;
                     const isCurrent = wizardStep === s.step;
                     const isUnlocked = s.step <= maxUnlockedStep;
@@ -1341,7 +1376,7 @@ const EventsPage: PageComponent = () => {
               {/* Desktop Stepper: Connecting Track & Interactive Cards */}
               <div className="hidden sm:block">
                 <div className="grid grid-cols-3 gap-3.5">
-                  {WIZARD_STEPS.map((s) => {
+                  {wizardSteps.map((s) => {
                     const isCompleted = s.step < wizardStep;
                     const isCurrent = wizardStep === s.step;
                     const isUnlocked = s.step <= maxUnlockedStep;
@@ -1423,20 +1458,20 @@ const EventsPage: PageComponent = () => {
               <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-xs space-y-6">
                 <div className="space-y-1 pb-4 border-b border-border/50">
                   <h3 className="text-xl font-bold font-display text-foreground">
-                    1. Votre Entreprise & Votre Événement
+                    {t('events.step1SectionTitle', '1. Votre Entreprise & Votre Événement')}
                   </h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Renseignez les coordonnées de l&apos;entreprise hôte et le cadre de la réception.
+                    {t('events.step1SectionDesc', "Renseignez les coordonnées de l'entreprise hôte et le cadre de la réception.")}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Entreprise / Organisation *
+                      {t('events.step1.companyName', 'Entreprise / Organisation')} *
                     </label>
                     <Input
-                      placeholder="Ex: Orange Cameroun, MTN, Cabinet Deloitte..."
+                      placeholder={t('events.companyPlaceholder', 'Ex: Orange Cameroun, MTN, Cabinet Deloitte...')}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       className={cn(
@@ -1448,7 +1483,7 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Type d&apos;événement *
+                      {t('events.step1.eventType', "Type d'événement")} *
                     </label>
                     <select
                       value={eventType}
@@ -1466,10 +1501,10 @@ const EventsPage: PageComponent = () => {
                   {eventType === 'autre' && (
                     <div className="space-y-2 sm:col-span-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Précisez le type d&apos;événement *
+                        {t('events.customTypePrompt', "Précisez le type d'événement *")}
                       </label>
                       <Input
-                        placeholder="Ex: Assemblée générale des actionnaires"
+                        placeholder={t('events.customTypePlaceholder', 'Ex: Assemblée générale des actionnaires')}
                         value={customEventType}
                         onChange={(e) => setCustomEventType(e.target.value)}
                         className={cn(
@@ -1482,10 +1517,10 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Titre de l&apos;événement *
+                      {t('events.eventTitleLabel', "Titre de l'événement")} *
                     </label>
                     <Input
-                      placeholder="Ex: Séminaire Annuel Q4 & Stratégie"
+                      placeholder={t('events.eventTitlePlaceholder', 'Ex: Séminaire Annuel Q4 & Stratégie')}
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
                       className={cn(
@@ -1497,7 +1532,7 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Nombre de convives attendus *
+                      {t('events.step1.guestsCount', 'Nombre de convives attendus')} *
                     </label>
                     <Input
                       type="number"
@@ -1510,7 +1545,7 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Date de l&apos;événement *
+                      {t('events.step1.date', "Date de l'événement")} *
                     </label>
                     <input
                       type="date"
@@ -1527,7 +1562,7 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Heure de livraison souhaitée sur site
+                      {t('events.desiredDeliveryTime', 'Heure de livraison souhaitée sur site')}
                     </label>
                     <input
                       type="time"
@@ -1539,10 +1574,10 @@ const EventsPage: PageComponent = () => {
 
                   <div className="space-y-2 sm:col-span-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Lieu / Adresse précise de livraison *
+                      {t('events.exactLocationLabel', 'Lieu / Adresse précise de livraison *')}
                     </label>
                     <Input
-                      placeholder="Ex: Douala, Bonanjo, Immeuble Krystal Palace, 3ème étage"
+                      placeholder={t('events.exactLocationPlaceholder', 'Ex: Douala, Bonanjo, Immeuble Krystal Palace, 3ème étage')}
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       className={cn(
@@ -1554,10 +1589,10 @@ const EventsPage: PageComponent = () => {
                 </div>
 
                 <div className="pt-4 border-t border-border/50 space-y-4">
-                  <h4 className="text-sm font-bold text-foreground">Contact Responsable sur Place</h4>
+                  <h4 className="text-sm font-bold text-foreground">{t('events.onsiteContactTitle', 'Contact Responsable sur Place')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Nom & Prénom *</label>
+                      <label className="text-xs font-medium text-muted-foreground">{t('events.fullNameLabel', 'Nom & Prénom *')}</label>
                       <Input
                         placeholder="Ex: Jean Dupont"
                         value={contactPerson}
@@ -1569,7 +1604,7 @@ const EventsPage: PageComponent = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Téléphone direct *</label>
+                      <label className="text-xs font-medium text-muted-foreground">{t('events.directPhoneLabel', 'Téléphone direct *')}</label>
                       <Input
                         placeholder="Ex: +237 690 00 00 00"
                         value={contactPhone}
@@ -1581,7 +1616,7 @@ const EventsPage: PageComponent = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Email de contact</label>
+                      <label className="text-xs font-medium text-muted-foreground">{t('events.contactEmailLabel', 'Email de contact')}</label>
                       <Input
                         placeholder="Ex: contact@entreprise.com"
                         value={contactEmail}
@@ -1597,7 +1632,7 @@ const EventsPage: PageComponent = () => {
                     onClick={handleValidateAndProceedStep1}
                     className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                   >
-                    <span>Valider & Choisir les Jus</span>
+                    <span>{t('events.step1NextBtn', 'Valider & Choisir les Jus')}</span>
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </div>
@@ -1612,7 +1647,7 @@ const EventsPage: PageComponent = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
-                        Barème Dégressif B2B
+                        {t('events.b2bScale', 'Barème Dégressif B2B')}
                       </span>
                       <h4 className="font-display font-bold text-lg text-foreground">
                         {financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''} sélectionnée{financials.totalBottles > 1 ? 's' : ''} ({financials.totalLiters.toFixed(1)} Litres)
@@ -1623,11 +1658,11 @@ const EventsPage: PageComponent = () => {
                       {financials.discountPercent > 0 ? (
                         <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5">
                           <Sparkles className="size-3.5" />
-                          Remise appliquée : {financials.discountPercent}%
+                          {t('events.discountAppliedBanner', { percent: financials.discountPercent, defaultValue: 'Remise appliquée : ' + financials.discountPercent + '%' })}
                         </span>
                       ) : (
                         <span className="bg-muted text-muted-foreground font-semibold px-3 py-1 rounded-full text-xs">
-                          Aucune remise pour l&apos;instant
+                          {t('events.noDiscountBanner', "Aucune remise pour l'instant")}
                         </span>
                       )}
                     </div>
@@ -1671,16 +1706,16 @@ const EventsPage: PageComponent = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-bold font-display text-foreground">
-                        2. Sélection des Recettes FYS
+                        {t('events.step2SectionTitle', '2. Sélection des Recettes FYS')}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Choisissez le contenant et la quantité pour chaque recette — pressées le jour J.
+                        {t('events.step2SectionDesc', 'Choisissez le contenant et la quantité pour chaque recette — pressées le jour J.')}
                       </p>
                     </div>
                     <div className="relative shrink-0 w-full sm:w-64">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                       <Input
-                        placeholder="Rechercher une recette…"
+                        placeholder={t('events.searchPlaceholder', 'Rechercher une recette…')}
                         value={cocktailSearch}
                         onChange={(e) => setCocktailSearch(e.target.value)}
                         className="pl-9 h-10 rounded-xl text-sm"
@@ -1691,11 +1726,11 @@ const EventsPage: PageComponent = () => {
                   {loadingCatalogue ? (
                     <div className="py-12 text-center space-y-3">
                       <div className="size-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs text-muted-foreground font-medium">Chargement du catalogue FYS...</p>
+                      <p className="text-xs text-muted-foreground font-medium">{t('events.loadingCatalog', 'Chargement du catalogue FYS...')}</p>
                     </div>
                   ) : catalogueCocktails.length === 0 ? (
                     <div className="py-12 text-center text-muted-foreground text-sm">
-                      Aucune recette publique disponible dans le catalogue.
+                      {t('events.noPublicRecipes', 'Aucune recette publique disponible dans le catalogue.')}
                     </div>
                   ) : (
                     (() => {
@@ -1707,7 +1742,7 @@ const EventsPage: PageComponent = () => {
                         : catalogueCocktails;
                       return filtered.length === 0 ? (
                         <div className="py-10 text-center text-muted-foreground text-sm">
-                          Aucune recette ne correspond à votre recherche.
+                          {t('events.noMatchingRecipes', 'Aucune recette ne correspond à votre recherche.')}
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -1913,13 +1948,13 @@ const EventsPage: PageComponent = () => {
                       className="w-full sm:w-auto rounded-2xl font-semibold cursor-pointer"
                     >
                       <ArrowLeft className="size-4 mr-2" />
-                      Précédent : Entreprise & Cadre
+                      {t('events.step2PrevBtn', 'Précédent : Entreprise & Cadre')}
                     </Button>
                     <Button
                       onClick={handleValidateAndProceedStep2}
                       className="w-full sm:w-auto rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-7 shadow-sm transition-all active:scale-98 cursor-pointer"
                     >
-                      <span>Récapitulatif & Devis ({financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''})</span>
+                      <span>{t('events.step2NextBtn', { count: financials.totalBottles, defaultValue: 'Récapitulatif & Devis (' + financials.totalBottles + ' bouteilles)' })}</span>
                       <ArrowRight className="size-4 ml-2" />
                     </Button>
                   </div>
@@ -2021,12 +2056,12 @@ const EventsPage: PageComponent = () => {
                 <div className="space-y-6">
                   <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border/70 shadow-sm space-y-6">
                     <h3 className="font-display font-bold text-lg text-foreground pb-3 border-b border-border/50">
-                      Devis en Temps Réel
+                      {t('events.realtimeQuoteTitle', 'Devis en Temps Réel')}
                     </h3>
 
                     <div className="space-y-3.5 text-sm">
                       <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Total brut jus</span>
+                        <span>{t('events.rawJuiceSubtotal', 'Total brut jus')}</span>
                         <span className="font-medium text-foreground">
                           {financials.rawJuiceTotal.toLocaleString()} XAF
                         </span>
@@ -2034,13 +2069,13 @@ const EventsPage: PageComponent = () => {
 
                       {financials.discountPercent > 0 && (
                         <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
-                          <span>Remise dégressive ({financials.discountPercent}%)</span>
+                          <span>{t('events.volumeDiscountLabel', { percent: financials.discountPercent, defaultValue: 'Remise dégressive (' + financials.discountPercent + '%)' })}</span>
                           <span>-{financials.discountAmount.toLocaleString()} XAF</span>
                         </div>
                       )}
 
                       <div className="pt-4 border-t border-border/60 flex items-center justify-between">
-                        <span className="font-display font-extrabold text-base text-foreground">Total à régler</span>
+                        <span className="font-display font-extrabold text-base text-foreground">{t('events.totalToPay', 'Total à régler')}</span>
                         <span className="font-display font-black text-2xl text-primary">
                           {financials.totalAmount.toLocaleString()} XAF
                         </span>
@@ -2058,7 +2093,7 @@ const EventsPage: PageComponent = () => {
                         ) : (
                           <>
                             <CheckCircle2 className="size-4 mr-2" />
-                            {editingEventId ? 'Enregistrer les modifications' : 'Confirmer & Transmettre la commande'}
+                            {editingEventId ? t('events.saveChangesBtn', 'Enregistrer les modifications') : t('events.confirmAndSend', 'Confirmer & Transmettre la commande')}
                           </>
                         )}
                       </Button>
@@ -2095,7 +2130,7 @@ const EventsPage: PageComponent = () => {
                         className="w-full rounded-2xl font-semibold text-xs h-11 border-primary/30 text-primary hover:bg-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Download className="size-3.5" />
-                        Télécharger le Devis (PDF)
+                        {t('events.downloadQuoteBtn', 'Télécharger le Devis (PDF)')}
                       </Button>
 
                       <a
@@ -2107,7 +2142,7 @@ const EventsPage: PageComponent = () => {
                         className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all"
                       >
                         <MessageCircle className="size-4" />
-                        Discuter sur WhatsApp avec le service client
+                        {t('events.chatWithSupport', 'Discuter sur WhatsApp avec le service client')}
                       </a>
 
                       <Button
@@ -2121,13 +2156,11 @@ const EventsPage: PageComponent = () => {
                         className="w-full rounded-2xl font-semibold text-xs h-10 text-muted-foreground hover:text-foreground cursor-pointer"
                       >
                         <ArrowLeft className="size-3.5 mr-2" />
-                        Modifier la sélection des jus
+                        {t('events.editJuiceSelectionBtn', 'Modifier la sélection des jus')}
                       </Button>
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                      En validant, votre commande est directement transmise à l&apos;équipe FYS. Un récapitulatif vous sera envoyé et vous pourrez suivre l&apos;état en temps réel.
-                    </p>
+                    <p className="text-[11px] text-muted-foreground text-center leading-relaxed">{t('events.orderConfirmationNotice', "En validant, votre commande est directement transmise à l'équipe FYS. Un récapitulatif vous sera envoyé et vous pourrez suivre l'état en temps réel.")}</p>
                   </div>
                 </div>
               </div>

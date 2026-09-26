@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageComponent, useNavigate } from 'rasengan';
+import { useTranslation } from 'react-i18next';
 import {
   Building2,
   CalendarCheck,
@@ -134,6 +135,7 @@ const STATUS_CONFIG: Record<
 };
 
 const EventsAdminPage: PageComponent = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -481,9 +483,10 @@ const EventsAdminPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow="GESTION CORPORATE • B2B"
+      eyebrow={t('eventsAdmin.eyebrow', 'Administration B2B')}
       titleBefore="FYS Event"
       titleHighlight="Pro"
+      subtitle={t('eventsAdmin.subtitle', 'Suivi des événements, fiches ateliers de pressage et configuration des tarifs.')}
       imageUrl="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
     >
       <div className="max-w-7xl mx-auto space-y-8 pb-16">
@@ -500,7 +503,7 @@ const EventsAdminPage: PageComponent = () => {
               }`}
             >
               <Building2 className="size-4" />
-              Commandes Événements ({events.length})
+              {t('eventsAdmin.tabs.events', 'Événements & Devis')} ({events.length})
             </button>
 
             <button
@@ -513,7 +516,7 @@ const EventsAdminPage: PageComponent = () => {
               }`}
             >
               <ChefHat className="size-4" />
-              Fiche Production ({productionAggregation.grandTotalLiters.toFixed(0)}L)
+              {t('eventsAdmin.tabs.production', 'Fiche de Production')} ({productionAggregation.grandTotalLiters.toFixed(0)}L)
             </button>
 
             <button
@@ -526,13 +529,13 @@ const EventsAdminPage: PageComponent = () => {
               }`}
             >
               <Sliders className="size-4" />
-              Tarifs & Barèmes
+              {t('eventsAdmin.tabs.pricing', 'Configuration & Tarifs')}
             </button>
           </div>
 
           <div className="text-xs text-muted-foreground font-semibold flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
-            <span>Gestion temps réel des prestations B2B</span>
+            <span>{t('eventsAdmin.subtitle', 'Suivi des événements, fiches ateliers de pressage et configuration des tarifs.')}</span>
           </div>
         </div>
 
@@ -544,7 +547,7 @@ const EventsAdminPage: PageComponent = () => {
               <div className="relative flex-1 max-w-md">
                 <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher entreprise, titre, contact, ville..."
+                  placeholder={t('eventsAdmin.filters.search', 'Rechercher par entreprise, contact, lieu…')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-11 rounded-xl bg-background"
@@ -553,12 +556,12 @@ const EventsAdminPage: PageComponent = () => {
 
               <div className="flex flex-wrap items-center gap-2">
                 {[
-                  { id: 'all', label: 'Tous' },
-                  { id: 'submitted', label: 'Transmises' },
-                  { id: 'confirmed', label: 'Confirmées' },
-                  { id: 'in_preparation', label: 'En préparation' },
-                  { id: 'delivered', label: 'Livrées' },
-                  { id: 'cancelled', label: 'Annulées' },
+                  { id: 'all', label: t('eventsAdmin.filters.all', 'Tous') },
+                  { id: 'submitted', label: t('eventsAdmin.filters.submitted', 'Transmises') },
+                  { id: 'confirmed', label: t('eventsAdmin.filters.confirmed', 'Confirmées') },
+                  { id: 'in_preparation', label: t('eventsAdmin.filters.in_preparation', 'En préparation') },
+                  { id: 'delivered', label: t('eventsAdmin.filters.delivered', 'Livrées') },
+                  { id: 'cancelled', label: t('eventsAdmin.filters.cancelled', 'Annulées') },
                 ].map((st) => (
                   <button
                     key={st.id}
@@ -619,25 +622,25 @@ const EventsAdminPage: PageComponent = () => {
                             {ev.eventTitle}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType} • {ev.guestCount} convives
+                            {t(`events.types.${ev.eventType}`, EVENT_TYPE_LABELS[ev.eventType] || ev.eventType)} • {ev.guestCount} convives
                           </p>
                         </div>
 
                         <div className="bg-muted/40 p-3 rounded-2xl border border-border/40 space-y-1.5 text-xs">
                           <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Date & Heure :</span>
+                            <span>{t('eventsAdmin.quickDetail.dateAndTime', 'Date & Heure :')}</span>
                             <strong className="text-foreground">{ev.eventDate} {ev.deliveryTime ? `à ${ev.deliveryTime}` : ''}</strong>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Volume :</span>
+                            <span>{t('eventsAdmin.quickDetail.volume', 'Volume :')}</span>
                             <strong className="text-foreground">{ev.totalBottles} flacons ({ev.totalLiters.toFixed(1)}L)</strong>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Lieu :</span>
+                            <span>{t('eventsAdmin.quickDetail.location', 'Lieu :')}</span>
                             <span className="text-foreground font-medium truncate max-w-[180px]">{ev.location}</span>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Contact :</span>
+                            <span>{t('eventsAdmin.quickDetail.contact', 'Contact :')}</span>
                             <span className="text-foreground font-medium truncate max-w-[180px]">{ev.contactPerson} ({ev.contactPhone})</span>
                           </div>
                         </div>
@@ -645,7 +648,7 @@ const EventsAdminPage: PageComponent = () => {
 
                       <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
                         <div>
-                          <span className="text-[10px] text-muted-foreground block uppercase font-medium">Total Facturé</span>
+                          <span className="text-[10px] text-muted-foreground block uppercase font-medium">{t('eventsAdmin.quickDetail.totalInvoiced', 'Total Facturé')}</span>
                           <span className="font-display font-extrabold text-base text-primary">
                             {ev.totalAmount.toLocaleString()} XAF
                           </span>
@@ -660,7 +663,7 @@ const EventsAdminPage: PageComponent = () => {
                             className="rounded-xl font-bold text-xs h-9 px-2.5 sm:px-3 gap-1.5 border-border/80 text-foreground hover:border-primary/50 cursor-pointer"
                           >
                             <Printer className="size-3.5 text-primary" />
-                            <span className="hidden sm:inline">Facture</span>
+                            <span className="hidden sm:inline">{t('eventsAdmin.quickDetail.invoice', 'Facture')}</span>
                           </Button>
 
                           <Button
@@ -671,7 +674,7 @@ const EventsAdminPage: PageComponent = () => {
                             }}
                             className="rounded-xl font-bold bg-primary text-primary-foreground text-xs h-9 px-3.5 cursor-pointer"
                           >
-                            Gérer
+                            {t('eventsAdmin.quickDetail.manage', 'Gérer')}
                             <ChevronRight className="size-3.5 ml-1" />
                           </Button>
                         </div>
@@ -711,7 +714,7 @@ const EventsAdminPage: PageComponent = () => {
                   {/* Status update controller */}
                   <div className="p-5 rounded-2xl bg-muted/40 border border-border/50 space-y-4">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      Mise à Jour du Statut
+                      {t('eventsAdmin.quickDetail.title', 'Mise à Jour du Statut')}
                     </h4>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -740,10 +743,10 @@ const EventsAdminPage: PageComponent = () => {
 
                     <div className="space-y-1.5 pt-2">
                       <label className="text-[11px] font-semibold text-muted-foreground block">
-                        Note ou consigne pour le client (visible sur son interface)
+                        {t('eventsAdmin.quickDetail.clientNoteLabel', 'Note ou consigne pour le client (visible sur son interface)')}
                       </label>
                       <Input
-                        placeholder="Ex: Équipe de livraison en route. Chauffeur: Paul (690...)"
+                        placeholder={t('eventsAdmin.quickDetail.clientNotePlaceholder', 'Ex: Équipe de livraison en route. Chauffeur: Paul (690...)')}
                         value={adminStatusNotes}
                         onChange={(e) => setAdminStatusNotes(e.target.value)}
                         className="h-10 rounded-xl bg-background text-xs"
@@ -754,7 +757,7 @@ const EventsAdminPage: PageComponent = () => {
                   {/* Juice Items List */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Jus commandés ({detailEvent.totalBottles} flacons • {detailEvent.totalLiters.toFixed(1)}L)
+                      {t('eventsAdmin.quickDetail.orderedJuices', { bottles: detailEvent.totalBottles, liters: detailEvent.totalLiters.toFixed(1), defaultValue: 'Jus commandés (' + detailEvent.totalBottles + ' flacons • ' + detailEvent.totalLiters.toFixed(1) + 'L)' })}
                     </h4>
                     <div className="max-h-48 overflow-y-auto divide-y divide-border/40 pr-2">
                       {detailEvent.items.map((item, i) => (
@@ -777,27 +780,27 @@ const EventsAdminPage: PageComponent = () => {
                   {detailEvent.logistics && (
                     <div className="p-4 rounded-2xl bg-muted/20 border border-border/40 grid grid-cols-3 gap-2 text-xs text-center">
                       <div>
-                        <span className="text-muted-foreground block text-[10px]">Glacières</span>
+                        <span className="text-muted-foreground block text-[10px]">{t('eventsAdmin.quickDetail.coolers', 'Glacières')}</span>
                         <strong className="text-foreground">
                           {detailEvent.logistics.needCoolerBoxes
                             ? `${detailEvent.logistics.coolerBoxesCount} pcs`
-                            : 'Aucune'}
+                            : t('eventsAdmin.quickDetail.none', 'Aucune')}
                         </strong>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block text-[10px]">Gobelets</span>
+                        <span className="text-muted-foreground block text-[10px]">{t('eventsAdmin.quickDetail.cups', 'Gobelets')}</span>
                         <strong className="text-foreground">
                           {detailEvent.logistics.needEcoCups
                             ? `${detailEvent.logistics.ecoCupsCount} pcs`
-                            : 'Aucun'}
+                            : t('eventsAdmin.quickDetail.none', 'Aucun')}
                         </strong>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block text-[10px]">Service Barman</span>
+                        <span className="text-muted-foreground block text-[10px]">{t('eventsAdmin.quickDetail.bartender', 'Service Barman')}</span>
                         <strong className="text-foreground">
                           {detailEvent.logistics.needBartenderService
                             ? `${detailEvent.logistics.bartenderHours}h`
-                            : 'Non'}
+                            : t('eventsAdmin.quickDetail.no', 'Non')}
                         </strong>
                       </div>
                     </div>
@@ -811,7 +814,7 @@ const EventsAdminPage: PageComponent = () => {
                         className="rounded-xl font-bold text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
                       >
                         <Download className="size-3.5" />
-                        Télécharger Facture (PDF)
+                        {t('events.downloadFacturePdf', 'Télécharger Facture (PDF)')}
                       </Button>
 
                       <Button
@@ -820,7 +823,7 @@ const EventsAdminPage: PageComponent = () => {
                         className="rounded-xl font-bold text-xs gap-1.5 border-border/80 text-foreground hover:border-primary/50 cursor-pointer"
                       >
                         <Printer className="size-3.5 text-primary" />
-                        Imprimer
+                        {t('events.printPdf', 'Imprimer')}
                       </Button>
                     </div>
 
@@ -830,14 +833,14 @@ const EventsAdminPage: PageComponent = () => {
                         onClick={() => navigate(`/board/events?id=${detailEvent.id}`)}
                         className="rounded-xl font-bold text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                       >
-                        Vue client
+                        {t('eventsAdmin.quickDetail.clientView', 'Vue client')}
                       </Button>
 
                       <Button
                         onClick={() => setDetailEvent(null)}
                         className="rounded-xl font-bold bg-primary text-primary-foreground text-xs cursor-pointer"
                       >
-                        Fermer
+                        {t('eventsAdmin.quickDetail.close', 'Fermer')}
                       </Button>
                     </div>
                   </div>
@@ -854,10 +857,10 @@ const EventsAdminPage: PageComponent = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
                 <div>
                   <h3 className="text-xl font-bold font-display text-foreground">
-                    Fiche de Production & Pressage
+                    {t('eventsAdmin.productionSheet.title', 'Fiche de Production & Pressage')}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Volumes cumulés à préparer pour les {productionAggregation.activeEventsCount} événements en cours / confirmés.
+                    {t('eventsAdmin.productionSheet.subtitle', { count: productionAggregation.activeEventsCount, defaultValue: 'Volumes cumulés à préparer pour les ' + productionAggregation.activeEventsCount + ' événements en cours / confirmés.' })}
                   </p>
                 </div>
 
@@ -867,7 +870,7 @@ const EventsAdminPage: PageComponent = () => {
                   className="rounded-xl font-bold text-xs gap-2"
                 >
                   <Printer className="size-4" />
-                  Imprimer la fiche atelier
+                  {t('eventsAdmin.productionSheet.printSheet', 'Imprimer la fiche atelier')}
                 </Button>
               </div>
 
@@ -875,7 +878,7 @@ const EventsAdminPage: PageComponent = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-5 rounded-2xl bg-primary/10 border border-primary/20 space-y-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                    Volume Total à Presser
+                    {t('eventsAdmin.productionSheet.totalVolumeToPress', 'Volume Total à Presser')}
                   </span>
                   <p className="font-display font-black text-3xl text-primary">
                     {productionAggregation.grandTotalLiters.toFixed(1)} Litres
@@ -884,7 +887,7 @@ const EventsAdminPage: PageComponent = () => {
 
                 <div className="p-5 rounded-2xl bg-muted/50 border border-border/50 space-y-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Flacons Totaux
+                    {t('eventsAdmin.productionSheet.totalBottlesCount', 'Flacons Totaux')}
                   </span>
                   <p className="font-display font-black text-3xl text-foreground">
                     {productionAggregation.grandTotalBottles} flacons
@@ -893,7 +896,7 @@ const EventsAdminPage: PageComponent = () => {
 
                 <div className="p-5 rounded-2xl bg-muted/50 border border-border/50 space-y-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Événements Rattachés
+                    {t('eventsAdmin.productionSheet.linkedEventsCount', 'Événements Rattachés')}
                   </span>
                   <p className="font-display font-black text-3xl text-foreground">
                     {productionAggregation.activeEventsCount} commandes
@@ -904,20 +907,20 @@ const EventsAdminPage: PageComponent = () => {
               {/* Table of recipes */}
               {productionAggregation.items.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground text-sm">
-                  Aucun événement actif nécessitant une préparation pour l&apos;instant.
+                  {t('eventsAdmin.productionSheet.noActiveEvents', "Aucun événement actif nécessitant une préparation pour l'instant.")}
                 </div>
               ) : (
                 <div className="divide-y divide-border/40 pt-2 overflow-x-auto">
                   <div className="py-3 min-w-[600px] flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">
-                    <span className="flex-1">Recette Catalogue FYS</span>
+                    <span className="flex-1">{t('eventsAdmin.productionSheet.catalogRecipe', 'Recette Catalogue FYS')}</span>
                     <div className="flex items-center gap-4 sm:gap-8 mr-4">
                       {productionAggregation.formatKeys.map((fmtKey) => (
                         <span key={fmtKey} className="min-w-[80px] text-center">
-                          Flacons {fmtKey}
+                          {t('eventsAdmin.productionSheet.bottlesFmt', { fmt: fmtKey, defaultValue: 'Flacons ' + fmtKey })}
                         </span>
                       ))}
                     </div>
-                    <span className="w-24 text-right">Volume Total (L)</span>
+                    <span className="w-24 text-right">{t('eventsAdmin.productionSheet.totalVolumeL', 'Volume Total (L)')}</span>
                   </div>
 
                   {productionAggregation.items.map((item, idx) => (
@@ -961,10 +964,10 @@ const EventsAdminPage: PageComponent = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
                 <div>
                   <h3 className="text-xl font-bold font-display text-foreground">
-                    Barèmes Dégressifs & Tarifs Logistique
+                    {t('eventsAdmin.pricingConfig.title', 'Barèmes Dégressifs & Tarifs Logistique')}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Modifiez les paliers de remises sur volume et les forfaits logistiques facturés aux entreprises.
+                    {t('eventsAdmin.pricingConfig.subtitle', 'Modifiez les paliers de remises sur volume et les forfaits logistiques facturés aux entreprises.')}
                   </p>
                 </div>
 
@@ -972,7 +975,7 @@ const EventsAdminPage: PageComponent = () => {
                   {pricingSuccess && (
                     <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5">
                       <CheckCircle2 className="size-4" />
-                      Tarifs enregistrés avec succès !
+                      {t('eventsAdmin.pricingConfig.savedSuccess', 'Tarifs enregistrés avec succès !')}
                     </span>
                   )}
                   <Button
@@ -985,12 +988,12 @@ const EventsAdminPage: PageComponent = () => {
                     ) : (
                       <Save className="size-4 mr-2" />
                     )}
-                    Enregistrer les Tarifs
+                    {t('eventsAdmin.pricingConfig.saveRates', 'Enregistrer les Tarifs')}
                   </Button>
                 </div>
               </div>
 
-              {/* Section 1: Formats de Bouteilles Disponibles pour le Catalogue */}
+              {/* Section 1: {t('eventsAdmin.pricingConfig.formatsTitle', 'Formats de Bouteilles Disponibles pour le Catalogue')} */}
               <div className="space-y-4 pb-6 border-b border-border/50">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
@@ -999,7 +1002,7 @@ const EventsAdminPage: PageComponent = () => {
                       Formats de Bouteilles Disponibles pour le Catalogue
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Définissez les formats proposés aux entreprises dans le catalogue. Activez ou désactivez chaque format en un clic.
+                      {t('eventsAdmin.pricingConfig.formatsDesc', 'Définissez les formats proposés aux entreprises dans le catalogue. Activez ou désactivez chaque format en un clic.')}
                     </p>
                   </div>
 
@@ -1010,7 +1013,7 @@ const EventsAdminPage: PageComponent = () => {
                     className="rounded-xl font-bold text-xs border-primary/40 text-primary hover:bg-primary/10 cursor-pointer shrink-0"
                   >
                     <Plus className="size-3.5 mr-1" />
-                    Ajouter un format
+                    {t('eventsAdmin.pricingConfig.addFormat', 'Ajouter un format')}
                   </Button>
                 </div>
 
@@ -1057,17 +1060,17 @@ const EventsAdminPage: PageComponent = () => {
                               ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
                               : 'bg-muted text-muted-foreground border border-border/50'
                           }`}>
-                            {fmt.isActive ? 'Actif' : 'Inactif'}
+                            {fmt.isActive ? t('eventsAdmin.pricingConfig.active', 'Actif') : t('eventsAdmin.pricingConfig.inactive', 'Inactif')}
                           </span>
                         </div>
 
                         <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
                           <div className="space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                              Tarification (coef. {fmt.priceMultiplier}×)
+                              {t('eventsAdmin.pricingConfig.pricingMultiplier', { coef: fmt.priceMultiplier, defaultValue: 'Tarification (coef. ' + fmt.priceMultiplier + '×)' })}
                             </span>
                             <span className="text-xs font-semibold text-foreground">
-                              Ex. base 1 500 XAF → <strong className="text-primary font-bold">{sampleCalcPrice.toLocaleString()} XAF</strong>
+                              {t('eventsAdmin.pricingConfig.exampleBase', 'Ex. base 1 500 XAF →')} <strong className="text-primary font-bold">{sampleCalcPrice.toLocaleString()} XAF</strong>
                             </span>
                           </div>
 
@@ -1078,7 +1081,7 @@ const EventsAdminPage: PageComponent = () => {
                               onClick={() => handleToggleFormatActive(fmt.id)}
                               className="h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer"
                             >
-                              {fmt.isActive ? 'Désactiver' : 'Activer'}
+                              {fmt.isActive ? t('eventsAdmin.pricingConfig.deactivate', 'Désactiver') : t('eventsAdmin.pricingConfig.activate', 'Activer')}
                             </Button>
 
                             <Button
@@ -1125,7 +1128,7 @@ const EventsAdminPage: PageComponent = () => {
                     className="rounded-xl font-bold text-xs border-primary/40 text-primary hover:bg-primary/10"
                   >
                     <Plus className="size-3.5 mr-1" />
-                    Ajouter un palier
+                    {t('eventsAdmin.pricingConfig.addTier', 'Ajouter un palier')}
                   </Button>
                 </div>
 
@@ -1461,7 +1464,7 @@ const EventsAdminPage: PageComponent = () => {
               onClick={() => setFormatModalOpen(false)}
               className="rounded-xl cursor-pointer"
             >
-              Annuler
+              {t('eventsAdmin.pricingConfig.cancelBtn', 'Annuler')}
             </Button>
             <Button
               type="button"
