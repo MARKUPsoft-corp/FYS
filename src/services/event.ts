@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   query,
   where,
@@ -544,4 +545,9 @@ export async function updateFysEvent(
     message: `${company} a mis à jour sa commande pour "${title}".`,
     link: `/board/events-admin?event=${eventId}`,
   }).catch(console.error);
+}
+
+export async function deleteFysEvent(eventId: string): Promise<void> {
+  const eventRef = doc(db, COLLECTIONS.EVENTS, eventId);
+  await deleteDoc(eventRef);
 }

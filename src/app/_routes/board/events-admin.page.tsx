@@ -67,6 +67,7 @@ import {
   subscribeToFysEventPricingSettings,
   updateFysEventPricingSettings,
   normalizeWhatsAppNumber,
+  deleteFysEvent,
 } from '@/services/event';
 
 const EVENT_TYPE_LABELS: Record<FysEventType, string> = {
@@ -364,6 +365,21 @@ const EventsAdminPage: PageComponent = () => {
     });
   };
 
+  const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la commande "${eventTitle}" ? Cette action est irréversible.`)) {
+      return;
+    }
+    try {
+      await deleteFysEvent(eventId);
+      if (detailEvent && detailEvent.id === eventId) {
+        setDetailEvent(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      alert('Une erreur est survenue lors de la suppression.');
+    }
+  };
+
   // Handle status update
   const handleUpdateStatus = async (eventId: string, newStatus: FysEventStatus) => {
     setUpdatingStatus(true);
@@ -658,6 +674,16 @@ const EventsAdminPage: PageComponent = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleDeleteEvent(ev.id, ev.eventTitle)}
+                            title="Supprimer la commande"
+                            className="rounded-xl h-9 w-9 p-0 border-border/80 text-destructive/70 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer transition-colors"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => downloadEventFacturePdf(ev, pricingSettings?.whatsappNumber, 'facture')}
                             title="Télécharger la Facture PDF"
                             className="rounded-xl font-bold text-xs h-9 px-2.5 sm:px-3 gap-1.5 border-border/80 text-foreground hover:border-primary/50 cursor-pointer"
@@ -828,6 +854,15 @@ const EventsAdminPage: PageComponent = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleDeleteEvent(detailEvent.id, detailEvent.eventTitle)}
+                        className="rounded-xl font-bold text-xs text-destructive hover:bg-destructive/10 cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5 mr-1.5" />
+                        Supprimer
+                      </Button>
+
                       <Button
                         variant="ghost"
                         onClick={() => navigate(`/board/events?id=${detailEvent.id}`)}
