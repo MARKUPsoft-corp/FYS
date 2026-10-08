@@ -232,11 +232,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.conditionsSubtitle'),
       none: t('onboarding.conditionsNone'),
       placeholder: t('onboarding.customConditionsPlaceholder', 'Autre condition… (ex: gastrite, ulcère, asthme)'),
-      chips: [
-        'Diabète de type 2', 'Hypertension', 'Maladie cardiovasculaire',
-        'Grossesse', 'Insuffisance rénale', 'Problèmes thyroïdiens',
-        'Anémie', 'Côlon irritable', 'Obésité',
-      ],
+      chips: t('onboarding.conditionsChips', { returnObjects: true }) as string[],
     },
     {
       key: 'allergies',
@@ -245,10 +241,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.allergiesSubtitle'),
       none: t('profile.noAllergies'),
       placeholder: t('onboarding.customAllergiesPlaceholder', 'Autre allergie… (ex: mangue, pêche, kiwi)'),
-      chips: [
-        'Kiwi', 'Fraise', 'Ananas', 'Arachides',
-        'Noix de coco', 'Agrumes', 'Gluten', 'Soja', 'Lactose',
-      ],
+      chips: t('onboarding.allergiesChips', { returnObjects: true }) as string[],
     },
     {
       key: 'goals',
@@ -257,11 +250,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.goalsSubtitle'),
       none: t('onboarding.goalsNone'),
       placeholder: t('onboarding.customGoalsPlaceholder', 'Autre objectif… (ex: concentration, vitalité)'),
-      chips: [
-        'Perdre du poids', 'Booster mon énergie', 'Mieux digérer',
-        'Renforcer l\'immunité', 'Santé cardiaque', 'Récupération sportive',
-        'Belle peau', 'Meilleur sommeil', 'Réduire le stress', 'Grossesse saine',
-      ],
+      chips: t('onboarding.goalsChips', { returnObjects: true }) as string[],
     },
   ];
 

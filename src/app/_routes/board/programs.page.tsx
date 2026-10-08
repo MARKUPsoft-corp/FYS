@@ -273,16 +273,14 @@ const ProgramsPage: PageComponent = () => {
       setIsNutrifysModalOpen(false);
       setStatusMessage({
         type: 'success',
-        text: `Félicitations ! Vous suivez la cure "${program.title}". Démarrage ${
-          startingToday ? 'aujourd’hui' : 'demain matin'
-        }.`,
+        text: t('programs.enrollment.success', { title: program.title, start: startingToday ? t('programs.enrollment.today') : t('programs.enrollment.tomorrow') }),
       });
       setActiveTab('active');
     } catch (err: any) {
       console.error('Enrollment error:', err);
       setStatusMessage({
         type: 'error',
-        text: "Impossible de s'inscrire au programme. Veuillez réessayer.",
+        text: t('programs.enrollment.error'),
       });
     } finally {
       setIsEnrolling(false);
@@ -543,10 +541,10 @@ const ProgramsPage: PageComponent = () => {
 
   return (
     <BoardPageShell
-      eyebrow={pageSettings.eyebrow || 'CURES & PROTOCOLES BIEN-ÊTRE'}
-      titleBefore={pageSettings.titleBefore || 'FYS '}
-      titleHighlight={pageSettings.titleHighlight || 'Program'}
-      titleAfter={pageSettings.titleAfter || ''}
+      eyebrow={pageSettings.eyebrow || t('programs.eyebrow')}
+      titleBefore={pageSettings.titleBefore || t('programs.titleBefore')}
+      titleHighlight={pageSettings.titleHighlight || t('programs.titleHighlight')}
+      titleAfter={pageSettings.titleAfter || t('programs.titleAfter', '')}
       imageUrl={
         pageSettings.heroImageUrl ||
         'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1600'
@@ -560,7 +558,7 @@ const ProgramsPage: PageComponent = () => {
               className="rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 text-xs font-bold h-10 px-4 shadow-sm cursor-pointer gap-1.5"
             >
               <Settings2 className="size-4" />
-              Gérer les Cures & Vitrine (Admin)
+              {t('programs.admin.manageBtn', 'Gérer les Cures & Vitrine (Admin)')}
             </Button>
           </div>
         ) : undefined
@@ -587,7 +585,7 @@ const ProgramsPage: PageComponent = () => {
             <button
               onClick={() => setStatusMessage(null)}
               className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
-              aria-label="Fermer"
+              aria-label={t('common.close', 'Fermer')}
             >
               <X className="size-4" />
             </button>
@@ -606,16 +604,16 @@ const ProgramsPage: PageComponent = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
                       <Sparkles className="size-3.5" />
-                      NutriFYS Intelligence
+                      {t('programs.discover.nutrifysBadge1', 'NutriFYS Intelligence')}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                       <ShieldCheck className="size-3.5" />
-                      100% Adapté à votre santé
+                      {t('programs.discover.nutrifysBadge2', '100% Adapté à votre santé')}
                     </span>
                   </div>
 
                   <h3 className="text-lg sm:text-2xl font-bold font-display text-foreground leading-tight">
-                    Une cure sur-mesure conçue pour vous.
+                    {t('programs.discover.nutrifysTitle', 'Une cure sur-mesure conçue pour vous.')}
                   </h3>
 
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
@@ -624,7 +622,7 @@ const ProgramsPage: PageComponent = () => {
                           ...activeConditions,
                           ...activeAllergies.map((a) => `sans ${a}`),
                         ].join(', ')}).`
-                      : 'Laissez notre IA nutritionnelle élaborer votre cure personnalisée de 3, 5 ou 7 jours selon vos objectifs et les fruits frais disponibles.'}
+                      : t('programs.discover.nutrifysDescDefault', 'Laissez notre IA nutritionnelle élaborer votre cure personnalisée de 3, 5 ou 7 jours selon vos objectifs et les fruits frais disponibles.')}
                   </p>
                 </div>
 
@@ -634,7 +632,7 @@ const ProgramsPage: PageComponent = () => {
                     className="w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-11 px-6 shadow-md transition-all active:scale-98 cursor-pointer gap-2"
                   >
                     <Sparkles className="size-4" />
-                    Concevoir ma cure avec NutriFYS
+                    {t('programs.discover.customCta', 'Concevoir ma cure avec NutriFYS')}
                     <ArrowRight className="size-4" />
                   </Button>
                 </div>
@@ -654,7 +652,7 @@ const ProgramsPage: PageComponent = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary text-secondary-foreground shadow-xs">
-                        Recommandation du chef
+                        {t('programs.discover.chefRecommendation', 'Recommandation du chef')}
                       </span>
                     </div>
                     <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -699,7 +697,7 @@ const ProgramsPage: PageComponent = () => {
                     <div className="pt-4 border-t border-border/60 flex items-center justify-between gap-4">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          Tarif cure complète
+                          {t('programs.discover.fullPrice', 'Tarif cure complète')}
                         </span>
                         <span className="text-lg font-bold font-display text-primary">
                           {(flagshipProgram.bundlePrice || flagshipProgram.price).toLocaleString()} XAF
@@ -710,7 +708,7 @@ const ProgramsPage: PageComponent = () => {
                         onClick={() => setSelectedProgram(flagshipProgram)}
                         className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm font-bold h-10 px-5 cursor-pointer shadow-xs gap-1.5"
                       >
-                        Voir la cure
+                        {t('programs.discover.viewCure', 'Voir la cure')}
                         <ArrowRight className="size-4" />
                       </Button>
                     </div>
@@ -723,10 +721,10 @@ const ProgramsPage: PageComponent = () => {
             <section className="space-y-6 pt-2">
               <div className="text-center space-y-1">
                 <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">
-                  Cures Signatures FYS
+                  {t('programs.discover.signaturesTitle', 'Cures Signatures FYS')}
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
-                  Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme.
+                  {t('programs.discover.signaturesDesc', 'Des protocoles de 3 à 7 jours conçus avec rigueur pour purifier votre organisme.')}
                 </p>
               </div>
 
@@ -839,7 +837,7 @@ const ProgramsPage: PageComponent = () => {
                       <div className="p-4 pt-3 bg-muted/20 border-t border-border/50 flex items-center justify-between gap-2">
                         <div>
                           <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                            Pack complet
+                            {t('programs.discover.fullPack', 'Pack complet')}
                           </span>
                           <span className="text-base font-bold font-display text-primary">
                             {currentPrice.toLocaleString()} XAF
@@ -863,10 +861,10 @@ const ProgramsPage: PageComponent = () => {
                 <div className="text-center py-12 p-6 rounded-3xl border border-dashed border-border bg-card/40 space-y-2">
                   <Sparkles className="size-8 text-muted-foreground mx-auto opacity-50" />
                   <h4 className="text-sm font-bold text-foreground">
-                    Aucune cure trouvée
+                    {t('programs.discover.notFoundTitle', 'Aucune cure trouvée')}
                   </h4>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                    Modifiez vos critères de recherche ou sélectionnez une autre catégorie.
+                    {t('programs.discover.notFoundDesc', 'Modifiez vos critères de recherche ou sélectionnez une autre catégorie.')}
                   </p>
                 </div>
               )}
@@ -892,14 +890,14 @@ const ProgramsPage: PageComponent = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm sm:text-base font-bold text-foreground">
-                              Vos cures en simultané
+                              {t('programs.active.simultaneousTitle', 'Vos cures en simultané')}
                             </h3>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
                               {activePrograms.length} actives en parallèle
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Sélectionnez un programme ci-dessous pour afficher sa journée en cours et valider vos jus.
+                            {t('programs.active.simultaneousDesc', 'Sélectionnez un programme ci-dessous pour afficher sa journée en cours et valider vos jus.')}
                           </p>
                         </div>
                       </div>
@@ -932,11 +930,11 @@ const ProgramsPage: PageComponent = () => {
                                 {isSelected ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
                                     <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Coaching affiché
+                                    {t('programs.active.coachingDisplayed', 'Coaching affiché')}
                                   </span>
                                 ) : (
                                   <span className="text-[10px] text-muted-foreground font-medium shrink-0">
-                                    Cliquer pour afficher
+                                    {t('programs.active.clickToDisplay', 'Cliquer pour afficher')}
                                   </span>
                                 )}
                               </div>
@@ -951,7 +949,7 @@ const ProgramsPage: PageComponent = () => {
                             {/* Mini Progress Bar */}
                             <div className="space-y-1 w-full pt-1">
                               <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
-                                <span>Progression</span>
+                                <span>{t('programs.active.progress', 'Progression')}</span>
                                 <span>{pct}%</span>
                               </div>
                               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
@@ -1001,7 +999,7 @@ const ProgramsPage: PageComponent = () => {
                     className="w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-11 px-6 shadow-sm cursor-pointer gap-2"
                   >
                     <Sparkles className="size-4" />
-                    Concevoir ma cure avec NutriFYS
+                    {t('programs.discover.customCta', 'Concevoir ma cure avec NutriFYS')}
                   </Button>
                   <Button
                     variant="outline"

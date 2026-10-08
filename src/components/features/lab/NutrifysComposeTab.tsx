@@ -708,7 +708,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                             {t('nutrifys.conversations')}
                           </SheetTitle>
                           <SheetDescription className="text-[11px] mt-1">
-                            Cliquez sur une conversation pour la rouvrir.
+                            {t('nutrifys.clickToReopen')}
                           </SheetDescription>
                         </div>
 
@@ -804,7 +804,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                                         setEditingSessionId(session.id);
                                       }}
                                       className="size-7 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                                      title="Renommer la conversation"
+                                      title={t('nutrifys.renameConversation')}
                                     >
                                       <Edit2 className="size-3.5" />
                                     </Button>
@@ -816,7 +816,7 @@ export function NutrifysComposeTab({ onAnalyzeProposal, maxMainFruits, maxSupple
                                         handleDeleteSession(session.id);
                                       }}
                                       className="size-7 text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                      title="Supprimer la conversation"
+                                      title={t('nutrifys.deleteConversation')}
                                     >
                                       <Trash2 className="size-3.5" />
                                     </Button>

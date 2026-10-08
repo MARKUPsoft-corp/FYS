@@ -97,8 +97,8 @@ const Pricing: PageComponent = () => {
 
   const handleShareWhatsApp = () => {
     if (!generatedPublicUrl) return;
-    const discountText = promoFlyer ? `${Number(promoFlyer).toLocaleString()} XAF` : 'une réduction';
-    const message = `🌟 Offre Spéciale FYS ! Profitez de ${discountText} de réduction sur votre première commande de jus 100% naturels et personnalisés en utilisant ce lien : ${generatedPublicUrl}`;
+    const discountText = promoFlyer ? `${Number(promoFlyer).toLocaleString()} XAF` : t('pricing.promo.someDiscount');
+    const message = t('pricing.promo.whatsappMessage', { discountText, url: generatedPublicUrl });
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -178,7 +178,7 @@ const Pricing: PageComponent = () => {
           <div className="grid sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="bottle-500" className="text-sm font-semibold">
-                Contenant {BOTTLE_VOLUME_LABELS['500ml']}
+                {t('pricing.bottle500Label', { volume: BOTTLE_VOLUME_LABELS['500ml'] })}
               </Label>
               <div className="relative">
                 <Input
@@ -200,7 +200,7 @@ const Pricing: PageComponent = () => {
 
             <div className="space-y-2">
               <Label htmlFor="bottle-1l" className="text-sm font-semibold">
-                Contenant {BOTTLE_VOLUME_LABELS['1L']}
+                {t('pricing.bottle1LLabel', { volume: BOTTLE_VOLUME_LABELS['1L'] })}
               </Label>
               <div className="relative">
                 <Input
@@ -246,17 +246,17 @@ const Pricing: PageComponent = () => {
           <div className="pt-4 pb-2 border-t border-border/30 space-y-4">
             <div>
               <h4 className="text-sm font-bold text-foreground">
-                Coûts d&apos;achat des bouteilles vides avec étiquette (FYS Management)
+                {t('pricing.bottleCostTitle')}
               </h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ces montants de base sont automatiquement pré-remplis pour chaque commande dans l&apos;espace FYS Management pour déduire les coûts du conditionnement.
+                {t('pricing.bottleCostDesc')}
               </p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="bottle-cost-500" className="text-sm font-semibold">
-                  Coût Bouteille vide 500ml + étiquette
+                  {t('pricing.bottleCost500Label')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -272,12 +272,12 @@ const Pricing: PageComponent = () => {
                     XAF
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">Coût unitaire d&apos;approvisionnement (défaut : 250 XAF)</p>
+                <p className="text-[11px] text-muted-foreground">{t('pricing.bottleCost500Hint')}</p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="bottle-cost-1l" className="text-sm font-semibold">
-                  Coût Bouteille vide 1L + étiquette
+                  {t('pricing.bottleCost1LLabel')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -293,7 +293,7 @@ const Pricing: PageComponent = () => {
                     XAF
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">Coût unitaire d&apos;approvisionnement (défaut : 450 XAF)</p>
+                <p className="text-[11px] text-muted-foreground">{t('pricing.bottleCost1LHint')}</p>
               </div>
             </div>
           </div>
@@ -304,9 +304,9 @@ const Pricing: PageComponent = () => {
               <Beaker className="size-5 text-indigo-500" />
             </div>
             <div className="flex-1">
-              <h3 className="font-display font-bold text-lg text-foreground">Limites de composition FYS Lab</h3>
+              <h3 className="font-display font-bold text-lg text-foreground">{t('pricing.labLimitsTitle')}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Configurez le nombre maximum d'ingrédients que les clients peuvent sélectionner.
+                {t('pricing.labLimitsDesc')}
               </p>
             </div>
           </div>
@@ -314,7 +314,7 @@ const Pricing: PageComponent = () => {
           <div className="grid sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="max-main-fruits" className="text-sm font-semibold">
-                Fruits Principaux Max
+                {t('pricing.maxMainFruitsLabel')}
               </Label>
               <Input
                 id="max-main-fruits"
@@ -326,12 +326,12 @@ const Pricing: PageComponent = () => {
                 className="h-11 rounded-xl"
                 required
               />
-              <p className="text-[11px] text-muted-foreground">Ex: 5 fruits maximum par mix.</p>
+              <p className="text-[11px] text-muted-foreground">{t('pricing.maxMainFruitsHint')}</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="max-supplements" className="text-sm font-semibold">
-                Suppléments Max
+                {t('pricing.maxSupplementsLabel')}
               </Label>
               <Input
                 id="max-supplements"
@@ -343,7 +343,7 @@ const Pricing: PageComponent = () => {
                 className="h-11 rounded-xl"
                 required
               />
-              <p className="text-[11px] text-muted-foreground">Ex: 3 boosters maximum par mix.</p>
+              <p className="text-[11px] text-muted-foreground">{t('pricing.maxSupplementsHint')}</p>
             </div>
           </div>
 
@@ -354,7 +354,7 @@ const Pricing: PageComponent = () => {
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="font-display font-bold text-lg text-foreground">Promotions & Liens de Réduction</h3>
+                <h3 className="font-display font-bold text-lg text-foreground">{t('pricing.promo.sectionTitle')}</h3>
                 <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
                   promoFlyerActive && !isFlyerExpired
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
@@ -362,11 +362,11 @@ const Pricing: PageComponent = () => {
                     ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                     : 'bg-muted/60 border-border/40 text-muted-foreground'
                 }`}>
-                  {promoFlyerActive && !isFlyerExpired ? '● Lien Public Actif' : isFlyerExpired ? '● Lien Expiré' : '○ Inactif'}
+                  {promoFlyerActive && !isFlyerExpired ? t('pricing.promo.statusActive') : isFlyerExpired ? t('pricing.promo.statusExpired') : t('pricing.promo.statusInactive')}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Générez un lien partageable (WhatsApp, réseaux sociaux) et un QR code synchronisés pour offrir une réduction à vos clients.
+                {t('pricing.promo.sectionDesc')}
               </p>
             </div>
           </div>

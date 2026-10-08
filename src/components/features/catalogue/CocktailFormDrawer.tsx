@@ -200,9 +200,10 @@ export function CocktailFormDrawer({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tag, setTag] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [displayTab, setDisplayTab] = useState<'official' | 'community' | 'private'>('official');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([{ fruitId: '', quantityGrams: '' }]);
+  const [containers, setContainers] = useState<{ label: string; price: string }[]>([{ label: '', price: '' }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -216,7 +217,13 @@ export function CocktailFormDrawer({
       setName(cocktail.name);
       setDescription(cocktail.description ?? '');
       setTag(cocktail.tag ?? '');
-      setIsPublic(cocktail.isPublic);
+      setDisplayTab(
+        cocktail.type === CocktailType.CATALOG
+          ? 'official'
+          : cocktail.isPublic
+          ? 'community'
+          : 'private',
+      );
       setImageFile(null);
       setIngredientRows(
         cocktail.ingredients.length > 0
@@ -226,10 +233,16 @@ export function CocktailFormDrawer({
             }))
           : [{ fruitId: '', quantityGrams: '' }],
       );
+      setContainers(
+        cocktail.containers && cocktail.containers.length > 0
+          ? cocktail.containers.map((c) => ({ label: c.label, price: c.price != null ? String(c.price) : '' }))
+          : [{ label: '', price: '' }],
+      );
     } else {
-      setName(''); setDescription(''); setTag(''); setIsPublic(true);
+      setName(''); setDescription(''); setTag(''); setDisplayTab('official');
       setImageFile(null);
       setIngredientRows([{ fruitId: '', quantityGrams: '' }]);
+      setContainers([{ label: '', price: '' }]);
     }
     setError('');
   }, [cocktail, open]);
@@ -275,13 +288,19 @@ export function CocktailFormDrawer({
       description: description.trim() || undefined,
       imageUrl: cocktail?.imageUrl,
       tag: tag.trim() || undefined,
-      type: CocktailType.CATALOG,
+      type: displayTab === 'official' ? CocktailType.CATALOG : CocktailType.CUSTOM,
       createdBy,
       isActive: cocktail?.isActive ?? true,
-      isPublic,
+      isPublic: displayTab !== 'private',
       ingredients,
       basePrice: BASE_COCKTAIL_PRICE,
       totalPrice,
+      containers: containers
+        .filter((c) => c.label.trim())
+        .map((c) => ({
+          label: c.label.trim(),
+          ...(c.price ? { price: parseInt(c.price, 10) } : {}),
+        })),
     };
 
     setLoading(true);
@@ -355,16 +374,25 @@ export function CocktailFormDrawer({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Visibility</Label>
-                <Select value={isPublic ? 'public' : 'private'} onValueChange={(v) => setIsPublic(v === 'public')}>
+                <Label className="text-xs text-muted-foreground">Onglet d'affichage</Label>
+                <Select
+                  value={displayTab}
+                  onValueChange={(v) => setDisplayTab(v as 'official' | 'community' | 'private')}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="official">🍹 Nos Créations (officiel)</SelectItem>
+                    <SelectItem value="community">🌍 Public (communauté)</SelectItem>
+                    <SelectItem value="private">🔒 Privé</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground pt-0.5">
+                  {displayTab === 'official' && "Apparaît dans « Nos Créations » côté client."}
+                  {displayTab === 'community' && "Apparaît dans l'onglet « Public » communautaire."}
+                  {displayTab === 'private' && "Non visible par les clients."}
+                </p>
               </div>
             </div>
           </section>
@@ -419,30 +447,63 @@ export function CocktailFormDrawer({
             )}
           </section>
 
-          {/* ── Price breakdown ── */}
+          
+          {/* ── Contenants & Prix ── */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Price breakdown</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Contenants & Prix</h3>
+              <button
+                type="button"
+                onClick={() => setContainers((prev) => [...prev, { label: '', price: '' }])}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                + Ajouter
+              </button>
+            </div>
             <Separator />
+            <p className="text-xs text-muted-foreground">
+              Ajoutez autant de contenants que vous voulez (ex: 250ml, 1 Litre, Carafe 75cl…). Le prix est optionnel — s'il est vide, le prix sera calculé dynamiquement.
+            </p>
 
-            <div className="rounded-xl bg-muted/40 border border-border px-4 py-3 space-y-2 text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Base (50cl)</span>
-                <span>{BASE_COCKTAIL_PRICE.toLocaleString()} XAF</span>
-              </div>
-              {ingredients.map((ing) => (
-                <div key={ing.fruitId} className="flex justify-between text-muted-foreground">
-                  <span>{ing.fruitName}</span>
-                  <span>+ {ing.priceSnapshot.toLocaleString()} XAF</span>
+            <div className="space-y-2">
+              {containers.map((c, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    placeholder="Contenant (ex: 500ml, 1 Litre…)"
+                    value={c.label}
+                    onChange={(e) =>
+                      setContainers((prev) =>
+                        prev.map((row, idx) => idx === i ? { ...row, label: e.target.value } : row)
+                      )
+                    }
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Prix XAF (optionnel)"
+                    value={c.price}
+                    onChange={(e) =>
+                      setContainers((prev) =>
+                        prev.map((row, idx) => idx === i ? { ...row, price: e.target.value } : row)
+                      )
+                    }
+                    className="w-36"
+                  />
+                  {containers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setContainers((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-destructive hover:text-destructive/80 text-lg leading-none px-1"
+                      aria-label="Supprimer"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ))}
-              <Separator />
-              <div className="flex justify-between font-semibold text-foreground">
-                <span>Cocktail total</span>
-                <span className="text-primary">{totalPrice.toLocaleString()} XAF</span>
-              </div>
-              <p className="text-xs text-muted-foreground">+ 500 XAF delivery if applicable</p>
             </div>
           </section>
+
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </form>

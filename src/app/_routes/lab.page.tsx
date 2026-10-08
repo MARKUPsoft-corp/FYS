@@ -834,7 +834,7 @@ const FysLab: PageComponent = () => {
                     disabled={selectedIngredients.size === 0}
                     onClick={() => handleStepChange(2)}
                   >
-                    Suivant : Suppléments <ChevronRight className="size-5" />
+                    {t('lab.nextSupplements')} <ChevronRight className="size-5" />
                   </Button>
                 </div>
               )
@@ -865,8 +865,8 @@ const FysLab: PageComponent = () => {
 };
 
 FysLab.metadata = {
-  title: 'FYS Lab — Créez votre cocktail santé sur mesure',
-  description: "Composez votre jus de fruits santé idéal. Notre intelligence artificielle NutriFYS l'analyse en temps réel selon votre profil médical.",
+  title: 'FYS Lab — Create your custom health cocktail',
+  description: 'Compose your ideal health fruit juice. Our NutriFYS artificial intelligence analyses it in real time based on your medical profile.',
 };
 
 export default FysLab;

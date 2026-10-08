@@ -1260,6 +1260,27 @@ const EventsAdminPage: PageComponent = () => {
                       Taux horaire de l&apos;animateur / barman sur site
                     </span>
                   </div>
+
+                  <div className="space-y-2 p-5 rounded-2xl bg-muted/20 border border-border/50">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                      Frais de livraison de base (XAF)
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={pricingSettings?.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee ?? 3000}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          baseEventDeliveryFee: val,
+                        }));
+                      }}
+                      className="h-11 rounded-xl font-bold text-sm bg-background"
+                    />
+                    <span className="text-[11px] text-muted-foreground block">
+                    </span>
+                  </div>
                 </div>
               </div>
 

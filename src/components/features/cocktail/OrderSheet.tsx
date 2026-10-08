@@ -19,6 +19,7 @@ import {
   partitionCocktailIngredients,
   type BottleSize,
   type Cocktail,
+  CocktailType,
   type AIAnalysis,
   type Fruit,
 } from '@/entities';
@@ -68,6 +69,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const [analyzing, setAnalyzing] = useState(false);
   const [quantity500ml, setQuantity500ml] = useState(0);
   const [quantity1L, setQuantity1L] = useState(0);
+  // For cocktails with custom containers defined by admin
+  const [containerQtys, setContainerQtys] = useState<number[]>([]);
   const [ordering, setOrdering] = useState(false);
   const [ordered, setOrdered] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'momo'>('cod');
@@ -157,18 +160,40 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const analysis = hasLocalAnalysis ? localAnalysis : (!forceFreshAnalysis ? cocktail.aiAnalysis : null);
   const verdictCfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
 
-  const price500 = pricing
-    ? pricePerBottle(pricing, '500ml', cocktail.ingredients)
-    : cocktail.totalPrice;
-  const price1L = pricing
-    ? pricePerBottle(pricing, '1L', cocktail.ingredients)
-    : Math.round(cocktail.totalPrice * 1.6);
+  // ── Container mode (when admin defines custom containers) ─────────────────
+  const hasContainers = cocktail.containers && cocktail.containers.length > 0;
+
+  // Keep containerQtys in sync with the number of containers
+  useEffect(() => {
+    if (cocktail?.containers?.length) {
+      setContainerQtys(Array(cocktail.containers.length).fill(0));
+    }
+  }, [cocktail?.id]);
+
+  const containerTotalBottles = containerQtys.reduce((sum, q) => sum + q, 0);
+  const containerSubtotal = hasContainers
+    ? (cocktail.containers ?? []).reduce((sum, c, i) => {
+        const unitPrice = c.price ?? (pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice);
+        return sum + unitPrice * (containerQtys[i] ?? 0);
+      }, 0)
+    : 0;
+
+  // ── Legacy 2-size price computation (used when no custom containers) ───────
+  const price500 = pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice;
+  const price1L = pricing ? pricePerBottle(pricing, '1L', cocktail.ingredients) : Math.round(cocktail.totalPrice * 1.6);
+
 
   const deliveryFee = pricing?.deliveryFee ?? 500;
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
-  const subtotal = subtotal500 + subtotal1L;
-  const totalBottles = quantity500ml + quantity1L;
+  const subtotal = hasContainers ? containerSubtotal : (subtotal500 + subtotal1L);
+  const totalBottles = hasContainers ? containerTotalBottles : (quantity500ml + quantity1L);
+
+  const isCatalog = cocktail.type === CocktailType.CATALOG;
+  const referencePrice = hasContainers
+    ? (cocktail.containers?.find(c => c.price != null)?.price ?? cocktail.totalPrice)
+    : price500;
+  const minBottlesRequired = isCatalog ? (referencePrice < 1000 ? 5 : 3) : 1;
 
   const promoValidation = validatePromoCode(activePromoCode, pricing);
   const discountAmount = totalBottles > 0 && promoValidation?.isValid
@@ -211,7 +236,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   }
 
   async function handleOrder() {
-    if (!pricing || totalBottles === 0) return;
+    if (!pricing || totalBottles < minBottlesRequired) return;
     if (!cocktail || !user) return;
     if (user && profileFetched && !isProfileComplete(profile)) {
       setActionToResume('order');
@@ -251,22 +276,38 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
         pricePerBottle: number;
       }> = [];
 
-      if (quantity500ml > 0) {
-        orderLines.push({
-          bottleSize: '500ml',
-          quantity: quantity500ml,
-          bottleBasePrice: getBottleBasePrice(pricing, '500ml'),
-          pricePerBottle: price500,
+      if (hasContainers) {
+        // Custom container mode: build lines from cocktail.containers
+        (cocktail.containers ?? []).forEach((container, i) => {
+          const qty = containerQtys[i] ?? 0;
+          if (qty > 0) {
+            const unitPrice = container.price ?? (pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice);
+            orderLines.push({
+              bottleSize: container.label as BottleSize, // store label as bottleSize string
+              quantity: qty,
+              bottleBasePrice: unitPrice,
+              pricePerBottle: unitPrice,
+            });
+          }
         });
-      }
+      } else {
+        if (quantity500ml > 0) {
+          orderLines.push({
+            bottleSize: '500ml',
+            quantity: quantity500ml,
+            bottleBasePrice: getBottleBasePrice(pricing, '500ml'),
+            pricePerBottle: price500,
+          });
+        }
 
-      if (quantity1L > 0) {
-        orderLines.push({
-          bottleSize: '1L',
-          quantity: quantity1L,
-          bottleBasePrice: getBottleBasePrice(pricing, '1L'),
-          pricePerBottle: price1L,
-        });
+        if (quantity1L > 0) {
+          orderLines.push({
+            bottleSize: '1L',
+            quantity: quantity1L,
+            bottleBasePrice: getBottleBasePrice(pricing, '1L'),
+            pricePerBottle: price1L,
+          });
+        }
       }
 
       const isOwnerCheck = isOwner;
@@ -733,8 +774,50 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   {t('orders.chooseContainer')}
                 </p>
+
+                {hasContainers ? (
+                  /* ── Custom containers defined by admin ── */
+                  <div className="space-y-2">
+                    {(cocktail.containers ?? []).map((container, i) => {
+                      const unitPrice = container.price ?? (pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice);
+                      const qty = containerQtys[i] ?? 0;
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center justify-between rounded-xl border-2 px-4 py-3 transition-all ${
+                            qty > 0 ? 'border-primary bg-primary/5' : 'border-border/60 bg-card'
+                          }`}
+                        >
+                          <div>
+                            <p className={`text-sm font-bold ${qty > 0 ? 'text-primary' : 'text-foreground'}`}>{container.label}</p>
+                            <p className="text-xs text-muted-foreground tabular-nums">{unitPrice.toLocaleString()} XAF</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setContainerQtys((prev) => prev.map((q, idx) => idx === i ? Math.max(0, q - 1) : q))}
+                              disabled={qty === 0}
+                              className="size-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
+                            >
+                              <Minus className="size-3.5" />
+                            </button>
+                            <span className="font-bold text-lg tabular-nums min-w-[2ch] text-center">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => setContainerQtys((prev) => prev.map((q, idx) => idx === i ? q + 1 : q))}
+                              className="size-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                            >
+                              <Plus className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Card 500ml */}
+                  {(!cocktail.availableSizes || cocktail.availableSizes.includes('500ml')) && (
+
                   <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
                     quantity500ml > 0
                       ? 'border-primary bg-primary/5 shadow-[0_8px_24px_rgba(63,109,78,0.18)]'
@@ -810,7 +893,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     </div>
                   </div>
 
-                  {/* Card 1L */}
+                  )}
+                  {(!cocktail.availableSizes || cocktail.availableSizes.includes('1L')) && (
+                  
                   <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
                     quantity1L > 0
                       ? 'border-primary bg-primary/5 shadow-[0_8px_24px_rgba(63,109,78,0.18)]'
@@ -885,7 +970,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
+                )} {/* end hasContainers ternary */}
               </div>
 
               {/* Informations de livraison */}
@@ -1052,6 +1139,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     </span>
                   </div>
                 )}
+                {totalBottles > 0 && totalBottles < minBottlesRequired && (
+                  <div className="px-4 py-3 text-center text-sm font-semibold text-destructive bg-destructive/10">
+                    Minimum de commande : {minBottlesRequired} bouteilles
+                  </div>
+                )}
                 {totalBottles === 0 && (
                   <div className="px-4 py-4 text-center text-sm text-muted-foreground">
                     {t('orders.selectBottle')}
@@ -1075,7 +1167,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
               <Button
                 size="lg"
                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-base gap-2 shadow-[0_8px_25px_rgba(63,109,78,0.3)] disabled:opacity-50 active:scale-95 transition-all"
-                disabled={ordering || !deliveryOk || !pricing || totalBottles === 0 || (paymentMethod === 'momo' && detectOperator(phone) === null)}
+                disabled={ordering || !deliveryOk || !pricing || totalBottles < minBottlesRequired || (paymentMethod === 'momo' && detectOperator(phone) === null)}
                 onClick={handleOrder}
               >
                 {ordering ? (
@@ -1084,6 +1176,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   <>{t('orders.fillAddress')}</>
                 ) : totalBottles === 0 ? (
                   <>{t('orders.selectBottle')}</>
+                ) : totalBottles < minBottlesRequired ? (
+                  <>Minimum : {minBottlesRequired} bouteilles</>
                 ) : paymentMethod === 'momo' && detectOperator(phone) === null ? (
                   <>Vérifiez votre numéro (MTN/Orange)</>
                 ) : (

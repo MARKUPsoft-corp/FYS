@@ -54,6 +54,12 @@ export interface AIAnalysis {
   analyzedAt: Timestamp;
 }
 
+/** Un contenant libre défini par l'admin: libellé + prix fixe optionnel */
+export interface ContainerOption {
+  label: string;   // ex: "500ml", "1 Litre", "Bouteille 2L", "Carafe 75cl"
+  price?: number;  // prix fixe pour ce contenant en XAF (si absent, prix calculé dynamiquement)
+}
+
 export interface Cocktail {
   id: string;
   name: string;
@@ -67,6 +73,8 @@ export interface Cocktail {
   ingredients: CocktailIngredient[];
   basePrice: number;      // prix de base 50cl — BASE_COCKTAIL_PRICE (1500 XAF)
   totalPrice: number;     // basePrice + sum(ingredients[].priceSnapshot)
+  /** Optionnel: contenants libres définis par l'admin (ex: "250ml", "1 Litre", "Bouteille 2L", etc.) */
+  containers?: ContainerOption[];
   aiAnalysis?: AIAnalysis; // absent tant que l'IA n'a pas encore analysé
   parentCocktailId?: string; // présent si ce cocktail est un clone d'un cocktail du catalogue
   /** Option d'ajout de sucre (false ou undefined = 100% naturel sans sucre) */

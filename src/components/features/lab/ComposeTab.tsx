@@ -583,7 +583,7 @@ export function ComposeTab({
                 disabled={(!canGoStep2) ? true : undefined}
                 onClick={() => onStepChange(2)}
               >
-                Suivant : Suppléments <ChevronRight className="size-4" />
+                {t('lab.nextSupplements')} <ChevronRight className="size-4" />
               </Button>
             </div>
           </>
@@ -776,7 +776,7 @@ export function SavePanel({
                 disabled={!canAnalyze ? true : undefined}
                 onClick={() => onStepChange(2)}
               >
-                Suivant : Suppléments <ChevronRight className="size-4" />
+                {t('lab.nextSupplements')} <ChevronRight className="size-4" />
               </Button>
             ) : (
               <Button

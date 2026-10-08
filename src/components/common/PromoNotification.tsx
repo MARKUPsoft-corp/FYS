@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkles, X, TimerOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getPricingSettings } from '@/services/settings';
 import { capturePromoCodeFromUrl, validatePromoCode } from '@/utils/promo';
 
 export function PromoNotification() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [promoCode, setPromoCode] = useState<string | null>(null);
   const [justCaptured, setJustCaptured] = useState(false);
@@ -86,7 +88,7 @@ export function PromoNotification() {
   return (
     <aside
       role="status"
-      aria-label="Notification de réduction"
+      aria-label={t('promo.notification.ariaLabel')}
       className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 max-w-[94vw] sm:max-w-lg pointer-events-auto transition-all duration-300 animate-in fade-in slide-in-from-top-4"
     >
       {validation.isValid ? (
@@ -97,7 +99,7 @@ export function PromoNotification() {
 
           <div className="flex items-center gap-1.5 min-w-0 text-xs sm:text-sm font-semibold truncate">
             <span>
-              Réduction de <strong className="text-amber-600 dark:text-amber-400 font-bold">{validation.discountAmount.toLocaleString()} XAF</strong> activée !
+              {t('promo.notification.discountActive', { amount: validation.discountAmount.toLocaleString() })}
             </span>
             <span className="font-mono font-bold text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded-md hidden sm:inline-block shrink-0">
               {promoCode}
@@ -107,7 +109,7 @@ export function PromoNotification() {
           <button
             type="button"
             onClick={handleDismiss}
-            aria-label="Fermer la notification"
+            aria-label={t('promo.notification.close')}
             className="size-6 rounded-full hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 transition-colors ml-1"
           >
             <X className="size-3.5" />
@@ -126,7 +128,7 @@ export function PromoNotification() {
           <button
             type="button"
             onClick={handleDismiss}
-            aria-label="Fermer la notification"
+            aria-label={t('promo.notification.close')}
             className="size-6 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 transition-colors ml-1"
           >
             <X className="size-3.5" />

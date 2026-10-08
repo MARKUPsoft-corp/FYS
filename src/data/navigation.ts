@@ -83,7 +83,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.programs',
     path: '/board/programs',
     icon: CalendarCheck,
-    roles: [UserRole.CUSTOMER, UserRole.ADMIN],
+    roles: [UserRole.CUSTOMER],
     showInMobileTab: false,
     showInDesktopNav: true,
   },
@@ -93,7 +93,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.events',
     path: '/board/events',
     icon: Building2,
-    roles: [UserRole.CUSTOMER, UserRole.ADMIN],
+    roles: [UserRole.CUSTOMER],
     showInMobileTab: false,
     showInDesktopNav: true,
   },
@@ -216,7 +216,13 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export function getNavItemsForRole(role: UserRole): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role) && item.showInDesktopNav !== false);
+  const seen = new Set<string>();
+  return NAV_ITEMS.filter((item) => {
+    if (!item.roles.includes(role) || item.showInDesktopNav === false) return false;
+    if (seen.has(item.path)) return false;
+    seen.add(item.path);
+    return true;
+  });
 }
 
 export function getMobileNavItems(role: UserRole): NavItem[] {

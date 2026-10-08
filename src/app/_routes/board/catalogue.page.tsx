@@ -9,7 +9,7 @@ import {
   DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/auth';
-import { UserRole, type Cocktail } from '@/entities';
+import { UserRole, CocktailType, type Cocktail } from '@/entities';
 import { 
   getCocktails, 
   getPublicCocktails, 
@@ -55,15 +55,9 @@ const Catalogue: PageComponent = () => {
   const [publishError, setPublishError] = useState<string | null>(null);
 
   // Fetch données
-  const { data: officialCocktails = [], isLoading: officialLoading } = useQuery({
+  const { data: allCocktails = [], isLoading: cocktailsLoading } = useQuery({
     queryKey: ['cocktails', isAdmin ? 'all' : 'public'],
     queryFn: isAdmin ? getCocktails : getPublicCocktails,
-  });
-
-  const { data: publicCocktails = [], isLoading: publicLoading } = useQuery({
-    queryKey: ['cocktails', 'public'],
-    queryFn: getPublicCocktails,
-    enabled: !isAdmin,
   });
 
   const { data: myCocktails = [], isLoading: myLoading } = useQuery({
@@ -196,19 +190,18 @@ const Catalogue: PageComponent = () => {
   };
 
   const visibleOfficial = useMemo(() => {
-    return [...officialCocktails]
-      .filter((c) => c.isActive && c.isPublic && c.name.toLowerCase().includes(query.toLowerCase()))
+    return [...allCocktails]
+      .filter((c) => c.type === CocktailType.CATALOG && c.isActive && (isAdmin || c.isPublic) && c.name.toLowerCase().includes(query.toLowerCase()))
       .sort(sortByDate);
-  }, [officialCocktails, query]);
+  }, [allCocktails, query, isAdmin]);
 
   const communityPublic = useMemo(() => {
     if (isAdmin) return [];
     const mineIds = new Set(myCocktails.map((c) => c.id));
-    const officialIds = new Set(officialCocktails.map((c) => c.id));
-    return [...publicCocktails]
-      .filter((c) => !mineIds.has(c.id) && !officialIds.has(c.id) && c.name.toLowerCase().includes(query.toLowerCase()))
+    return [...allCocktails]
+      .filter((c) => c.type === CocktailType.CUSTOM && c.isActive && c.isPublic && !mineIds.has(c.id) && c.name.toLowerCase().includes(query.toLowerCase()))
       .sort(sortByDate);
-  }, [isAdmin, publicCocktails, myCocktails, officialCocktails, query]);
+  }, [isAdmin, allCocktails, myCocktails, query]);
 
   const visibleMine = useMemo(() => {
     return [...myCocktails]
@@ -216,10 +209,10 @@ const Catalogue: PageComponent = () => {
       .sort(sortByDate);
   }, [myCocktails, query]);
 
-  const isLoading = tab === 'official' ? publicLoading : tab === 'public' ? officialLoading : myLoading;
-  const currentCocktails = tab === 'official' ? communityPublic : tab === 'public' ? visibleOfficial : visibleMine;
+  const isLoading = tab === 'official' ? cocktailsLoading : tab === 'public' ? cocktailsLoading : myLoading;
+  const currentCocktails = tab === 'official' ? visibleOfficial : tab === 'public' ? communityPublic : visibleMine;
 
-  const sortedOfficial = useMemo(() => [...officialCocktails].sort(sortByDate), [officialCocktails]);
+  const sortedOfficial = useMemo(() => [...allCocktails].filter(c => c.type === CocktailType.CATALOG).sort(sortByDate), [allCocktails]);
 
   // Rendu Admin
   if (isAdmin) {
@@ -227,7 +220,7 @@ const Catalogue: PageComponent = () => {
       <>
         <AdminCatalogue
           cocktails={sortedOfficial}
-          loading={officialLoading}
+          loading={cocktailsLoading}
           onEdit={openEdit}
           onDelete={handleDeleteAdmin}
           onToggleActive={handleToggleActive}
@@ -400,8 +393,8 @@ const Catalogue: PageComponent = () => {
 };
 
 Catalogue.metadata = {
-  title: 'Catalogue des cocktails FYS — Recettes santé',
-  description: "Découvrez notre catalogue officiel de cocktails santé FYS, ou explorez les créations de la communauté validées par NutriFYS.",
+  title: 'FYS Cocktail Catalogue — Healthy recipes',
+  description: 'Discover our official catalogue of FYS health cocktails, or explore community creations validated by NutriFYS.',
 };
 
 export default Catalogue;

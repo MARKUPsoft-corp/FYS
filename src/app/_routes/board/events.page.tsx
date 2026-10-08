@@ -49,6 +49,7 @@ import {
   type FysEventPricingSettings,
   type FysEventFormat,
   type Cocktail,
+  CocktailType,
   type Fruit,
   DEFAULT_FYS_EVENT_PRICING,
   DEFAULT_FYS_EVENT_FORMATS,
@@ -277,7 +278,7 @@ const EventsPage: PageComponent = () => {
   // Logistics
   const [needCoolerBoxes, setNeedCoolerBoxes] = useState(false);
   const [coolerBoxesCount, setCoolerBoxesCount] = useState(2);
-  const [needEcoCups, setNeedEcoCups] = useState(true);
+  const [needEcoCups, setNeedEcoCups] = useState(false);
   const [ecoCupsCount, setEcoCupsCount] = useState(50);
   const [needBartenderService, setNeedBartenderService] = useState(false);
   const [bartenderHours, setBartenderHours] = useState(4);
@@ -349,7 +350,7 @@ const EventsPage: PageComponent = () => {
     setLoadingCatalogue(true);
     Promise.all([getPublicCocktails(), getFruits()])
       .then(([cocktails, loadedFruits]) => {
-        setCatalogueCocktails(cocktails);
+        setCatalogueCocktails(cocktails.filter(c => c.type === CocktailType.CATALOG));
         setFruits(loadedFruits);
       })
       .catch(console.error)
@@ -420,17 +421,33 @@ const EventsPage: PageComponent = () => {
       const cocktail = catalogueCocktails.find((c) => c.id === cocktailId);
       if (!cocktail) continue;
 
-      const matchedFormat =
-        allFormats.find(
-          (f) => f.id === formatId || f.shortLabel === formatId || f.name === formatId
-        ) ||
-        allFormats.find((f) => f.id === defaultFormat.id) ||
-        defaultFormat;
+      let unitPrice = 0;
+      let bottleLabel = formatId;
+      let volumeLiters = 0.5;
 
-      const basePrice = cocktail.totalPrice || 1500;
-      const unitPrice = getFormatPrice(basePrice, matchedFormat);
-      const bottleLabel = matchedFormat.shortLabel || matchedFormat.name || formatId;
-      const volumeLiters = matchedFormat.volumeLiters || 0.5;
+      const customContainers = cocktail.containers || [];
+      const customContainer = customContainers.find(c => c.label === formatId);
+
+      if (customContainer) {
+        unitPrice = customContainer.price ?? (cocktail.totalPrice || 1500);
+        bottleLabel = customContainer.label;
+        const parsed = parseFloat(bottleLabel.replace(/[^0-9.]/g, ''));
+        volumeLiters = !isNaN(parsed) ? parsed : 0.5;
+        if (bottleLabel.toLowerCase().includes('ml')) volumeLiters /= 1000;
+        else if (bottleLabel.toLowerCase().includes('cl')) volumeLiters /= 100;
+      } else {
+        const matchedFormat =
+          allFormats.find(
+            (f) => f.id === formatId || f.shortLabel === formatId || f.name === formatId
+          ) ||
+          allFormats.find((f) => f.id === defaultFormat.id) ||
+          defaultFormat;
+
+        const basePrice = cocktail.totalPrice || 1500;
+        unitPrice = getFormatPrice(basePrice, matchedFormat);
+        bottleLabel = matchedFormat.shortLabel || matchedFormat.name || formatId;
+        volumeLiters = matchedFormat.volumeLiters || 0.5;
+      }
 
       items.push({
         cocktailId,
@@ -560,10 +577,10 @@ const EventsPage: PageComponent = () => {
     customEventType,
   ]);
 
-  // Step 2 Validation logic (at least 1 juice bottle selected)
+  // Step 2 Validation logic (bottles must match guest count)
   const isStep2Valid = useMemo(() => {
-    return financials.totalBottles > 0;
-  }, [financials.totalBottles]);
+    return financials.totalBottles === guestCount;
+  }, [financials.totalBottles, guestCount]);
 
   const handleValidateAndProceedStep1 = () => {
     setTouchedStep1(true);
@@ -588,7 +605,14 @@ const EventsPage: PageComponent = () => {
 
   const handleValidateAndProceedStep2 = () => {
     if (!isStep2Valid) {
-      setSubmitError('Veuillez sélectionner au moins une bouteille de jus dans le catalogue pour votre événement.');
+      const diff = financials.totalBottles - guestCount;
+      if (financials.totalBottles === 0) {
+        setSubmitError('Veuillez sélectionner au moins une recette dans le catalogue.');
+      } else if (diff > 0) {
+        setSubmitError(`Vous avez sélectionné ${diff} bouteille${diff > 1 ? 's' : ''} en trop. Le total doit être exactement ${guestCount} bouteille${guestCount > 1 ? 's' : ''} (= nombre d'invités).`);
+      } else {
+        setSubmitError(`Il manque ${Math.abs(diff)} bouteille${Math.abs(diff) > 1 ? 's' : ''}. Le total doit être exactement ${guestCount} bouteille${guestCount > 1 ? 's' : ''} (= nombre d'invités).`);
+      }
       return;
     }
     setSubmitError(null);
@@ -643,7 +667,7 @@ const EventsPage: PageComponent = () => {
           contactPerson: contactPerson.trim(),
           contactPhone: contactPhone.trim(),
           contactEmail: contactEmail.trim() || user.email || '',
-          guestCount: Number(guestCount) || 1,
+          guestCount: Math.max(10, Number(guestCount) || 10),
           items: juiceItems,
           totalBottles: financials.totalBottles,
           totalLiters: financials.totalLiters,
@@ -673,7 +697,7 @@ const EventsPage: PageComponent = () => {
           contactPerson: contactPerson.trim(),
           contactPhone: contactPhone.trim(),
           contactEmail: contactEmail.trim() || user.email || '',
-          guestCount: Number(guestCount) || 1,
+          guestCount: Math.max(10, Number(guestCount) || 10),
           items: juiceItems,
           totalBottles: financials.totalBottles,
           totalLiters: financials.totalLiters,
@@ -1536,9 +1560,9 @@ const EventsPage: PageComponent = () => {
                     </label>
                     <Input
                       type="number"
-                      min={1}
+                      min={10}
                       value={guestCount}
-                      onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => setGuestCount(Math.max(10, parseInt(e.target.value) || 10))}
                       className="h-11 rounded-xl"
                     />
                   </div>
@@ -1649,8 +1673,23 @@ const EventsPage: PageComponent = () => {
                       <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                         {t('events.b2bScale', 'Barème Dégressif B2B')}
                       </span>
-                      <h4 className="font-display font-bold text-lg text-foreground">
-                        {financials.totalBottles} bouteille{financials.totalBottles > 1 ? 's' : ''} sélectionnée{financials.totalBottles > 1 ? 's' : ''} ({financials.totalLiters.toFixed(1)} Litres)
+                      <h4 className="font-display font-bold text-lg text-foreground flex items-center gap-2 flex-wrap">
+                        <span className={financials.totalBottles === guestCount ? 'text-primary' : financials.totalBottles > guestCount ? 'text-destructive' : 'text-foreground'}>
+                          {financials.totalBottles}/{guestCount} bouteille{guestCount > 1 ? 's' : ''}
+                        </span>
+                        {financials.totalBottles === guestCount && (
+                          <span className="text-[12px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">✓ Quota atteint</span>
+                        )}
+                        {financials.totalBottles > guestCount && (
+                          <span className="text-[12px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                            {financials.totalBottles - guestCount} en trop
+                          </span>
+                        )}
+                        {financials.totalBottles < guestCount && financials.totalBottles > 0 && (
+                          <span className="text-[12px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
+                            {guestCount - financials.totalBottles} manquante{guestCount - financials.totalBottles > 1 ? 's' : ''}
+                          </span>
+                        )}
                       </h4>
                     </div>
 
@@ -1748,13 +1787,27 @@ const EventsPage: PageComponent = () => {
                         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                           {filtered.map((cocktail) => {
                             const basePrice = cocktail.totalPrice || 1500;
-                            const currentFmtId = cardVolumes[cocktail.id] || defaultFormat.id;
-                            const currentFmt = activeFormats.find((f) => f.id === currentFmtId) || defaultFormat;
-                            const currentQty = selectedBottles[`${cocktail.id}_${currentFmt.id}`] || 0;
-                            const currentPrice = getFormatPrice(basePrice, currentFmt);
+                            const customContainers = cocktail.containers || [];
+                            const availableOptions = customContainers.length > 0
+                              ? customContainers.map((c) => ({
+                                  id: c.label,
+                                  shortLabel: c.label,
+                                  name: c.label,
+                                  price: c.price ?? basePrice,
+                                }))
+                              : activeFormats.map((fmt) => ({
+                                  id: fmt.id,
+                                  shortLabel: fmt.shortLabel || fmt.name,
+                                  name: fmt.name,
+                                  price: getFormatPrice(basePrice, fmt),
+                                }));
+
+                            const currentFmtId = cardVolumes[cocktail.id] || availableOptions[0]?.id;
+                            const currentFmt = availableOptions.find((f) => f.id === currentFmtId) || availableOptions[0];
+                            const currentQty = selectedBottles[`${cocktail.id}_${currentFmt?.id}`] || 0;
 
                             // Total bottles across all formats for this cocktail
-                            const totalCocktailBottles = activeFormats.reduce((acc, fmt) => {
+                            const totalCocktailBottles = availableOptions.reduce((acc, fmt) => {
                               return acc + (selectedBottles[`${cocktail.id}_${fmt.id}`] || 0);
                             }, 0);
 
@@ -1831,11 +1884,11 @@ const EventsPage: PageComponent = () => {
                                     </p>
                                   </div>
 
-                                  {/* Container selector (Dynamic Formats configured by Admin) */}
+                                  {/* Container selector */}
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    {activeFormats.map((fmt) => {
-                                      const isSelected = fmt.id === currentFmt.id;
-                                      const fmtPrice = getFormatPrice(basePrice, fmt);
+                                    {availableOptions.map((fmt) => {
+                                      const isSelected = fmt.id === currentFmt?.id;
+                                      const fmtPrice = fmt.price;
                                       const fmtQty = selectedBottles[`${cocktail.id}_${fmt.id}`] || 0;
 
                                       return (
@@ -1882,7 +1935,7 @@ const EventsPage: PageComponent = () => {
                                     <div className="flex items-center justify-center gap-1.5">
                                       <button
                                         type="button"
-                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt.id, -1)}
+                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt?.id as string, -1)}
                                         disabled={currentQty === 0}
                                         className="size-9 rounded-xl bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 disabled:opacity-30 cursor-pointer transition-colors shrink-0"
                                         title="Retirer 1"
@@ -1893,12 +1946,12 @@ const EventsPage: PageComponent = () => {
                                         type="number"
                                         min={0}
                                         value={currentQty}
-                                        onChange={(e) => setExplicitQuantity(cocktail.id, currentFmt.id, parseInt(e.target.value) || 0)}
+                                        onChange={(e) => setExplicitQuantity(cocktail.id, currentFmt?.id as string, parseInt(e.target.value) || 0)}
                                         className="w-10 h-8 text-center rounded-lg border border-input bg-background text-foreground text-xs font-bold outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
-                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt.id, 1)}
+                                        onClick={() => handleQuantityChange(cocktail.id, currentFmt?.id as string, 1)}
                                         className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 cursor-pointer transition-colors shrink-0"
                                         title="Ajouter 1"
                                       >
@@ -1908,7 +1961,7 @@ const EventsPage: PageComponent = () => {
 
                                     {/* Price row — with discount applied live */}
                                     {currentQty > 0 && (() => {
-                                      const rawTotal = currentPrice * currentQty;
+                                      const rawTotal = (currentFmt?.price ?? 0) * currentQty;
                                       const disc = financials.discountPercent;
                                       const discountedTotal = disc > 0 ? Math.round(rawTotal * (1 - disc / 100)) : rawTotal;
                                       return (
@@ -2071,6 +2124,15 @@ const EventsPage: PageComponent = () => {
                         <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
                           <span>{t('events.volumeDiscountLabel', { percent: financials.discountPercent, defaultValue: 'Remise dégressive (' + financials.discountPercent + '%)' })}</span>
                           <span>-{financials.discountAmount.toLocaleString()} XAF</span>
+                        </div>
+                      )}
+
+                      {(financials.deliveryFee || 0) > 0 && (
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Frais de livraison</span>
+                          <span className="font-medium text-foreground">
+                            {financials.deliveryFee.toLocaleString()} XAF
+                          </span>
                         </div>
                       )}
 

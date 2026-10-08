@@ -119,8 +119,8 @@ export default {
     "adminSubtitle": "Set which cocktails are visible to customers.",
     "adminEyebrow": "Creations",
     "customerEyebrow": "Our Creations",
-    "customerSubtitle": "Inspired by nature, validated by your taste.",
-    "tab_official_subtitle": "Creations shared by the FYS community.",
+    "customerSubtitle": "Unique creations shared by the FYS community.",
+    "tab_official_subtitle": "Official recipes validated and prepared by the FYS team.",
     "tab_mine_subtitle": "Your personalized saved mixes.",
     "eyebrow_customer": "Discover",
     "title_before": "The",
@@ -931,9 +931,9 @@ export default {
     },
     "hero": {
       "badge": "Next-Generation Juice Bar",
-      "title1": "Juices ",
-      "titleHighlight": "100% natural",
-      "title2": " cold-pressed for your daily vitality",
+      "title1": "Cameroon's 1st juice bar ",
+      "titleHighlight": "managed by AI",
+      "title2": "",
       "subtitle": "Design your tailored cocktail guided by our smart health assistant, or order our exclusive signature creations delivered to your door.",
       "ctaPrimary": "Blend My Juice",
       "ctaSecondary": "Explore Catalogue",
@@ -1389,44 +1389,48 @@ export default {
     }
   },
   "programs": {
-    "eyebrow": "Health & Vitality",
-    "title": "FYS Program",
-    "subtitle": "Cold-pressed juice cleanses designed to detox, re-energize, and rebalance your body.",
+    "eyebrow": "FYS Program",
+    "titleBefore": "Space",
+    "titleHighlight": "Cures",
+    "sectionBefore": "&",
+    "sectionHighlight": "Tracking",
+    "subtitle": "Follow our detox programs or create your custom cure to reach your health goals.",
     "tabs": {
-      "discover": "Browse Cleanses",
-      "active": "My Active Cleanse",
-      "saved": "Saved Cleanses",
-      "history": "History"
+      "discover": "Discover",
+      "active": "Active",
+      "saved": "Saved"
     },
-    "goals": {
-      "all": "All Cleanses",
-      "detox": "Detox",
-      "immunity": "Immunity",
-      "digestion": "Digestion",
-      "energy": "Energy",
-      "weight_loss": "Weight Loss"
+    "discover": {
+      "goals": "Goals",
+      "signaturesTitle": "Signature Cures",
+      "signaturesDesc": "Our programs created by nutritionists for targeted results.",
+      "customTitle": "Custom-made",
+      "customDesc": "AI composes your program according to your profile",
+      "customCta": "Create with NutriFYS"
     },
-    "filterDuration": "Duration:",
-    "daysCount": "{{count}} days",
-    "bottlesPerDay": "{{count}} bottles / day",
-    "totalBottles": "{{count}} bottles total",
-    "subscribeCta": "Start This Cleanse",
-    "viewSchedule": "View Daily Schedule",
-    "dailyScheduleTitle": "Daily Consumption Schedule",
-    "morning": "Morning (Empty Stomach)",
-    "midday": "Noon (Wholesome Lunch)",
-    "afternoon": "Afternoon (Vitality Snack)",
-    "evening": "Evening (Light Dinner)",
-    "benefits": "Health Benefits & Claims",
-    "activeCureTitle": "Your Current Cleanse",
-    "activeCureDay": "Day {{current}} of {{total}}",
-    "checkinDay": "Complete Today",
-    "dayCompleted": "Day Completed!",
-    "completedBadge": "Completed",
-    "remainingDays": "{{count}} day(s) left",
-    "noActiveCure": "You do not have any active cleanse currently.",
-    "startNewCure": "Browse Cleanses",
-    "coachAdvice": "NutriFYS Coach Tip"
+    "active": {
+      "emptyTitle": "No active cure at the moment",
+      "emptyDesc": "You don't have any program currently active. Start a signature cure or compose your custom formula with NutriFYS to activate your daily coaching.",
+      "createCta": "Design my cure with NutriFYS",
+      "exploreCta": "Explore signature cures"
+    },
+    "saved": {
+      "status": {
+        "completed": "Successfully completed",
+        "cancelled": "Interrupted",
+        "paused": "Paused"
+      },
+      "days": "Days",
+      "period": "Period:",
+      "to": "to",
+      "assiduity": "Assiduity ({{validatedCount}}/{{totalDays}} days)",
+      "delete": "Delete from history",
+      "details": "Details",
+      "relaunch": "Relaunch",
+      "emptyTitle": "No cure history",
+      "emptyDesc": "As soon as you have completed or followed a protocol, you will find your cure summaries, your assiduity statistics and the possibility to relaunch your cure in one click here.",
+      "discoverCta": "Discover our cures"
+    }
   },
   "programsAdmin": {
     "eyebrow": "Health Administration",

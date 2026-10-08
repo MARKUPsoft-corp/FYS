@@ -34,7 +34,7 @@ export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = user ? getNavItemsForRole(user.role) : getGuestNavItems();
+
 
   const initials = user?.name
     .split(' ')
@@ -62,7 +62,7 @@ export function Topbar() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-30 pt-safe',
+        'fixed top-0 left-0 right-0 z-30 pt-safe lg:hidden',
         'bg-background/70 backdrop-blur-[48px] saturate-[180%]',
         'border-b border-white/40 dark:border-white/10',
         'shadow-[0_8px_32px_rgba(0,0,0,0.10)]',
@@ -76,31 +76,7 @@ export function Topbar() {
           </Link>
         </div>
 
-        <nav  className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-10">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/board' && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.key}
-                to={item.path}
-                className={cn(
-                  'relative py-2 text-[15px] font-semibold transition-colors duration-300 group',
-                  isActive
-                    ? 'text-primary'
-                    : 'text-foreground/70 hover:text-foreground',
-                )}
-              >
-                  <span>{t(item.labelKey)}</span>
-                <span
-                  className={cn(
-                    'absolute -bottom-1 left-0 h-[2px] bg-primary transition-all duration-300 rounded-full',
-                    isActive ? 'w-full' : 'w-0 group-hover:w-full',
-                  )}
-                />
-              </Link>
-            );
-          })}
-        </nav>
+
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Accès rapide à la gestion de FYS Programme */}

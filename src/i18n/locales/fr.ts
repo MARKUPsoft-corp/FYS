@@ -119,8 +119,8 @@ export default {
     "adminSubtitle": "Définissez les cocktails visibles par les clients.",
     "adminEyebrow": "Créations",
     "customerEyebrow": "Nos créations",
-    "customerSubtitle": "Inspirés par la nature, validés par votre goût.",
-    "tab_official_subtitle": "Les créations partagées par la communauté FYS.",
+    "customerSubtitle": "Les créations uniques partagées par la communauté FYS.",
+    "tab_official_subtitle": "Les recettes officielles validées et préparées par l'équipe FYS.",
     "tab_mine_subtitle": "Vos mélanges personnalisés sauvegardés.",
     "eyebrow_customer": "Découvrez",
     "title_before": "Le",
@@ -931,9 +931,9 @@ export default {
     },
     "hero": {
       "badge": "Le bar à jus nouvelle génération",
-      "title1": "Des jus ",
-      "titleHighlight": "100% naturels",
-      "title2": " pressés à froid pour votre vitalité",
+      "title1": "Le 1ᵉʳ bar à jus ",
+      "titleHighlight": "géré par une IA",
+      "title2": " au Cameroun",
       "subtitle": "Créez votre cocktail sur mesure guidé par notre assistant santé intelligent ou commandez nos créations exclusives livrées chez vous.",
       "ctaPrimary": "Composer mon jus",
       "ctaSecondary": "Découvrir le catalogue",
@@ -1389,44 +1389,48 @@ export default {
     }
   },
   "programs": {
-    "eyebrow": "Santé & Vitalité",
-    "title": "FYS Programme",
-    "subtitle": "Des cures de jus pressés à froid pensées pour détoxifier, revitaliser et équilibrer votre corps.",
+    "eyebrow": "FYS Programme",
+    "titleBefore": "Espace",
+    "titleHighlight": "Cures",
+    "sectionBefore": "&",
+    "sectionHighlight": "Suivi",
+    "subtitle": "Suivez nos programmes détox ou créez votre cure sur-mesure pour atteindre vos objectifs santé.",
     "tabs": {
-      "discover": "Découvrir les cures",
-      "active": "Ma cure active",
-      "saved": "Mes cures sauvegardées",
-      "history": "Historique"
+      "discover": "Découvrir",
+      "active": "En cours",
+      "saved": "Enregistrées"
     },
-    "goals": {
-      "all": "Toutes les cures",
-      "detox": "Détox",
-      "immunity": "Immunité",
-      "digestion": "Digestion",
-      "energy": "Énergie",
-      "weight_loss": "Minceur"
+    "discover": {
+      "goals": "Objectifs",
+      "signaturesTitle": "Cures Signatures",
+      "signaturesDesc": "Nos programmes créés par des nutritionnistes pour des résultats ciblés.",
+      "customTitle": "Sur-mesure",
+      "customDesc": "L'IA compose votre programme selon votre profil",
+      "customCta": "Créer avec NutriFYS"
     },
-    "filterDuration": "Durée :",
-    "daysCount": "{{count}} jours",
-    "bottlesPerDay": "{{count}} bouteilles / jour",
-    "totalBottles": "{{count}} bouteilles au total",
-    "subscribeCta": "Démarrer cette cure",
-    "viewSchedule": "Voir le programme quotidien",
-    "dailyScheduleTitle": "Planning Quotidien de Prise",
-    "morning": "Matin (À jeun)",
-    "midday": "Midi (Déjeuner sain)",
-    "afternoon": "Après-midi (Collation énergisante)",
-    "evening": "Soir (Dîner léger)",
-    "benefits": "Bienfaits & Allégations santé",
-    "activeCureTitle": "Votre Cure en Cours",
-    "activeCureDay": "Jour {{current}} sur {{total}}",
-    "checkinDay": "Valider ma journée d'aujourd'hui",
-    "dayCompleted": "Journée validée avec succès !",
-    "completedBadge": "Terminée",
-    "remainingDays": "{{count}} jour(s) restant(s)",
-    "noActiveCure": "Vous n'avez pas de cure active pour le moment.",
-    "startNewCure": "Découvrir nos cures",
-    "coachAdvice": "Conseil du Coach NutriFYS"
+    "active": {
+      "emptyTitle": "Aucune cure active pour le moment",
+      "emptyDesc": "Vous n'avez pas de programme en cours de suivi. Démarrez une cure signature ou composez votre formule sur-mesure avec NutriFYS pour activer votre coaching quotidien.",
+      "createCta": "Concevoir ma cure avec NutriFYS",
+      "exploreCta": "Explorer les cures signatures"
+    },
+    "saved": {
+      "status": {
+        "completed": "Terminée avec succès",
+        "cancelled": "Interrompue",
+        "paused": "En pause"
+      },
+      "days": "Jours",
+      "period": "Période :",
+      "to": "au",
+      "assiduity": "Assiduité ({{validatedCount}}/{{totalDays}} jours)",
+      "delete": "Supprimer de l'historique",
+      "details": "Détails",
+      "relaunch": "Relancer",
+      "emptyTitle": "Aucun historique de cure",
+      "emptyDesc": "Dès que vous aurez achevé ou suivi un protocole, vous retrouverez ici vos bilans de cure, vos statistiques d'assiduité et la possibilité de relancer votre cure en un clic.",
+      "discoverCta": "Découvrir nos cures"
+    }
   },
   "programsAdmin": {
     "eyebrow": "Administration Santé",

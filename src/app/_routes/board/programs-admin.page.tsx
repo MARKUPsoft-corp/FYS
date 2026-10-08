@@ -114,7 +114,7 @@ const ProgramsAdminPage: PageComponent = () => {
       setFruits(fetchedFruits);
     } catch (e: any) {
       console.error('[ProgramsAdmin] Error loading initial data:', e);
-      showFeedback('error', 'Erreur lors du chargement des données.');
+      showFeedback('error', t('programsAdmin.errorLoading', 'Erreur lors du chargement des données.'));
     } finally {
       setSettingsLoading(false);
       setProgramsLoading(false);
@@ -158,9 +158,9 @@ const ProgramsAdminPage: PageComponent = () => {
     try {
       const adminName = user?.displayName || user?.email || 'Administrateur FYS';
       await adminValidateProgramDay(userProgramId, dayNumber, adminName);
-      showFeedback('success', `Jour ${dayNumber} validé avec succès.`);
+      showFeedback('success', t('programsAdmin.dayValidated', { day: dayNumber, defaultValue: `Jour ${dayNumber} validé avec succès.` }));
     } catch (err: any) {
-      showFeedback('error', err.message || 'Erreur lors de la validation du jour.');
+      showFeedback('error', err.message || t('programsAdmin.errorValidating', 'Erreur lors de la validation du jour.'));
     } finally {
       setActionLoadingDay(null);
     }
@@ -170,9 +170,9 @@ const ProgramsAdminPage: PageComponent = () => {
     setActionLoadingDay(dayNumber);
     try {
       await adminUnvalidateProgramDay(userProgramId, dayNumber);
-      showFeedback('success', `Validation du jour ${dayNumber} annulée.`);
+      showFeedback('success', t('programsAdmin.dayUnvalidated', { day: dayNumber, defaultValue: `Validation du jour ${dayNumber} annulée.` }));
     } catch (err: any) {
-      showFeedback('error', err.message || 'Erreur lors de l’annulation.');
+      showFeedback('error', err.message || t('programsAdmin.errorUnvalidating', "Erreur lors de l'annulation."));
     } finally {
       setActionLoadingDay(null);
     }
@@ -188,11 +188,11 @@ const ProgramsAdminPage: PageComponent = () => {
     try {
       const url = await uploadProgramImage(`hero-${Date.now()}`, file);
       setSettings((prev) => ({ ...prev, heroImageUrl: url }));
-      showFeedback('success', 'Image de couverture téléversée avec succès.');
+      showFeedback('success', t('programsAdmin.heroUploaded', 'Image de couverture téléversée avec succès.'));
     } catch (err: any) {
       showFeedback(
         'error',
-        err.message || 'Échec du téléversement de l’image.'
+        err.message || t('programsAdmin.heroUploadError', "Échec du téléversement de l'image.")
       );
     } finally {
       setUploadingHero(false);
@@ -206,10 +206,10 @@ const ProgramsAdminPage: PageComponent = () => {
     try {
       await updateProgramsSettings(settings);
       setSettingsSaved(true);
-      showFeedback('success', 'Paramètres de la vitrine enregistrés avec succès.');
+      showFeedback('success', t('programsAdmin.settingsSaved', 'Paramètres de la vitrine enregistrés avec succès.'));
       setTimeout(() => setSettingsSaved(false), 3000);
     } catch (e: any) {
-      showFeedback('error', e.message || 'Erreur lors de la sauvegarde.');
+      showFeedback('error', e.message || t('programsAdmin.errorSaving', 'Erreur lors de la sauvegarde.'));
     } finally {
       setSettingsSaving(false);
     }
@@ -219,7 +219,7 @@ const ProgramsAdminPage: PageComponent = () => {
   const handleSeedDefaults = async () => {
     if (
       !window.confirm(
-        'Voulez-vous synchroniser les 3 cures officielles FYS dans la base de données ?'
+        t('programsAdmin.confirmSync', 'Voulez-vous synchroniser les 3 cures officielles FYS dans la base de données ?')
       )
     ) {
       return;
@@ -229,9 +229,9 @@ const ProgramsAdminPage: PageComponent = () => {
       const count = await seedDefaultPrograms();
       const updated = await getAllPrograms(true);
       setPrograms(updated);
-      showFeedback('success', `${count} cures FYS synchronisées avec succès.`);
+      showFeedback('success', t('programsAdmin.syncSuccess', { count, defaultValue: `${count} cures FYS synchronisées avec succès.` }));
     } catch (e: any) {
-      showFeedback('error', 'Erreur lors de la synchronisation.');
+      showFeedback('error', t('programsAdmin.errorSync', 'Erreur lors de la synchronisation.'));
     } finally {
       setProgramsLoading(false);
     }
@@ -247,26 +247,26 @@ const ProgramsAdminPage: PageComponent = () => {
       );
       showFeedback(
         'success',
-        nextActive ? 'Cure publiée en ligne.' : 'Cure masquée du catalogue.'
+        nextActive ? t('programsAdmin.curePublished', 'Cure publiée en ligne.') : t('programsAdmin.cureHidden', 'Cure masquée du catalogue.')
       );
     } catch (e: any) {
-      showFeedback('error', 'Erreur lors du changement de statut.');
+      showFeedback('error', t('programsAdmin.errorStatus', 'Erreur lors du changement de statut.'));
     }
   };
 
   // Delete Program
   const handleDeleteProgram = async (progId: string, title: string) => {
     if (
-      !window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la cure "${title}" ?`)
+      !window.confirm(t('programsAdmin.confirmDelete', { title, defaultValue: `Êtes-vous sûr de vouloir supprimer définitivement la cure "${title}" ?` }))
     ) {
       return;
     }
     try {
       await deleteProgram(progId);
       setPrograms((prev) => prev.filter((p) => p.id !== progId));
-      showFeedback('success', 'Cure supprimée avec succès.');
+      showFeedback('success', t('programsAdmin.cureDeleted', 'Cure supprimée avec succès.'));
     } catch (e: any) {
-      showFeedback('error', 'Erreur lors de la suppression.');
+      showFeedback('error', t('programsAdmin.errorDelete', 'Erreur lors de la suppression.'));
     }
   };
 
@@ -280,12 +280,12 @@ const ProgramsAdminPage: PageComponent = () => {
       setPrograms((prev) =>
         prev.map((p) => (p.id === existingId ? ({ ...p, ...data } as Program) : p))
       );
-      showFeedback('success', 'Cure mise à jour avec succès.');
+      showFeedback('success', t('programsAdmin.cureUpdated', 'Cure mise à jour avec succès.'));
     } else {
       const id = await createProgram(data as Omit<Program, 'id'>);
       const updated = await getAllPrograms(true);
       setPrograms(updated);
-      showFeedback('success', 'Nouvelle cure créée avec succès.');
+      showFeedback('success', t('programsAdmin.cureCreated', 'Nouvelle cure créée avec succès.'));
     }
   };
 

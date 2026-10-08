@@ -285,7 +285,7 @@ export function CocktailProposalCard({
           onClick={() => onAnalyze(activeProposal)}
           className="flex-1 rounded-xl h-11 p-4 font-bold text-sm gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_rgba(63,109,78,0.25)] disabled:opacity-40"
         >
-          <Sparkles className="size-4" /> Analyser ce mélange
+          <Sparkles className="size-4" /> {t('lab.analyzeMix')}
         </Button>
       </div>
     </div>

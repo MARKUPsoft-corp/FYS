@@ -104,9 +104,11 @@ export function CocktailTable({ cocktails, onEdit, onDelete, onToggleActive }: P
 
               {/* Price */}
               <td className="px-4 py-3 hidden sm:table-cell text-foreground font-medium tabular-nums">
-                {cocktail.totalPrice > 0
-                  ? `${cocktail.totalPrice.toLocaleString()} XAF`
-                  : <span className="text-muted-foreground">—</span>}
+                {(() => {
+                  const firstContainerPrice = cocktail.containers?.find(c => c.price != null)?.price;
+                  const price = firstContainerPrice ?? cocktail.totalPrice;
+                  return price > 0 ? `${price.toLocaleString()} XAF` : <span className="text-muted-foreground">—</span>;
+                })()}
               </td>
 
               {/* Visibility */}

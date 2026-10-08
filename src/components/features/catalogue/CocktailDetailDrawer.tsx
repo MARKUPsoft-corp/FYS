@@ -20,15 +20,18 @@ type Props = {
   onClose: () => void;
 };
 
-const VERDICT_CONFIG: Record<AIVerdict, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-  [AIVerdict.BENEFICIAL]:       { label: 'Beneficial',        variant: 'success' },
-  [AIVerdict.NEUTRAL]:          { label: 'Neutral',           variant: 'outline' },
-  [AIVerdict.CAUTION]:          { label: 'Caution',           variant: 'warning' },
-  [AIVerdict.NOT_RECOMMENDED]:  { label: 'Not recommended',   variant: 'destructive' },
-};
+function useVerdictConfig(t: (key: string) => string): Record<AIVerdict, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> {
+  return {
+    [AIVerdict.BENEFICIAL]:       { label: t('nutrition.verdictBeneficial'),      variant: 'success' },
+    [AIVerdict.NEUTRAL]:          { label: t('nutrition.verdictNeutral'),          variant: 'outline' },
+    [AIVerdict.CAUTION]:          { label: t('nutrition.verdictCaution'),          variant: 'warning' },
+    [AIVerdict.NOT_RECOMMENDED]:  { label: t('nutrition.verdictNotRecommended'),   variant: 'destructive' },
+  };
+}
 
 export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
   const { t } = useTranslation();
+  const VERDICT_CONFIG = useVerdictConfig(t);
   const { data: fruits = [] } = useQuery({
     queryKey: ['fruits'],
     queryFn: getFruits,
@@ -88,7 +91,7 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">AI Analysis</span>
+                <span className="text-sm font-semibold text-foreground">{t('catalogue.aiAnalysis')}</span>
                 <Badge variant={verdict.variant} className="ml-auto">{verdict.label}</Badge>
               </div>
               <div className="flex items-center gap-2">
@@ -186,7 +189,11 @@ export function CocktailDetailDrawer({ cocktail, open, onClose }: Props) {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">{t('catalogue.from')}</span>
               <span className="text-lg font-bold text-primary">
-                {cocktail.totalPrice.toLocaleString()} XAF
+                {(() => {
+                  const firstContainerPrice = cocktail.containers?.find(c => c.price != null)?.price;
+                  const price = firstContainerPrice ?? cocktail.totalPrice;
+                  return `${price.toLocaleString()} XAF`;
+                })()}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">

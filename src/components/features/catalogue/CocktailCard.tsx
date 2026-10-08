@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Flame, Globe, Lock, MoreVertical, Trash2, ArrowRight } from 'lucide-react';
+import { Flame, Globe, Lock, MoreVertical, Trash2, ArrowRight, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -164,12 +164,14 @@ export function CocktailCard({ cocktail, onView, showActions, onTogglePublish, o
         </div>
 
         {/* Price + CTA row */}
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="text-base font-bold text-primary leading-none">
-              {cocktail.totalPrice > 0 ? `${cocktail.totalPrice.toLocaleString()} XAF` : '—'}
-            </p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">+ 500 {t('catalogue.delivery')}</p>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Formats & Prix
+            </span>
+            <span className="text-xs text-primary font-medium flex items-center gap-1 mt-0.5">
+              <Sparkles className="size-3" /> Personnalisable
+            </span>
           </div>
           {onView && (
             <Button
