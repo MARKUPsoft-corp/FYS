@@ -13,6 +13,8 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useQuery } from '@tanstack/react-query';
 import { getLandingImagesSettings, getPricingSettings } from '@/services/settings';
+import { getPublicCocktails } from '@/services/cocktail';
+import { CocktailType, type Cocktail } from '@/entities/cocktail';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
 
 /* ─────────────────────────────────────────────
@@ -31,6 +33,15 @@ const RootIndex: PageComponent = () => {
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeSection, setActiveSection] = useState('home');
+
+  const { data: catalogCocktails = [] } = useQuery({
+    queryKey: ['catalog-cocktails', 'public'],
+    queryFn: async () => {
+      const cocktails = await getPublicCocktails();
+      return cocktails.filter((c) => c.type === CocktailType.CATALOG);
+    },
+    staleTime: 1000 * 60 * 5,
+  });
 
   // Suivi de la section active
   useEffect(() => {
@@ -501,6 +512,80 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
 
+
+      {/* ━━━ NOS CRÉATIONS / CATALOGUE ━━━ */}
+      {catalogCocktails.length > 0 && (
+        <section id="catalogue" className="py-20 px-5 md:px-8 relative overflow-hidden bg-background scroll-mt-24">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-sm">
+                <GlassWater className="size-4" />
+                Notre Carte
+              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
+                Découvrez notre catalogue
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Des recettes exclusives créées par nos experts, prêtes à être commandées et livrées chez vous.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {catalogCocktails.map((cocktail) => (
+                <div key={cocktail.id} className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                  <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
+                    {cocktail.imageUrl ? (
+                      <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
+                        <GlassWater className="size-16 mb-4 opacity-20" />
+                        <span className="text-sm font-medium">Image à venir</span>
+                      </div>
+                    )}
+                    {cocktail.tag && (
+                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10">
+                        {cocktail.tag}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 md:opacity-80 z-0" />
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                      <h3 className="text-white font-display font-bold text-xl md:text-2xl mb-1 drop-shadow-sm">{cocktail.name}</h3>
+                      {cocktail.description && (
+                        <p className="text-white/80 text-sm line-clamp-2 leading-relaxed mb-4">
+                          {cocktail.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-auto">
+                        <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
+                          {cocktail.containers && cocktail.containers.length > 0 
+                            ? 'Dès ' + (cocktail.containers.find(c => c.price != null)?.price ?? cocktail.totalPrice) + ' XAF'
+                            : cocktail.totalPrice + ' XAF'
+                          }
+                        </span>
+                        
+                        <Button onClick={() => navigate('/auth/login')} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
+                          <Plus className="size-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-12 flex justify-center">
+               <Button onClick={() => navigate('/auth/login')} size="lg" className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground">
+                 Voir tout le catalogue
+                 <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+               </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      
 
       {/* ━━━ FEATURES ━━━ */}
       <div className="w-full overflow-hidden leading-none relative z-0">
