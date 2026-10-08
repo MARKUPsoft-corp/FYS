@@ -947,7 +947,7 @@ export default {
     },
     "howItWorks": {
       "badge": "Seamless Experience",
-      "title": "How It Works",
+      "title": "How <span class=\"text-[#E0982E]\">It Works</span>",
       "subtitle": "In 3 simple steps, design your recipe or let our AI health assistant guide your blend.",
       "step1Title": "Select your fruits",
       "step1Desc": "Choose from our wide variety of local and tropical fruits harvested at peak ripeness.",
@@ -959,7 +959,7 @@ export default {
     },
     "features": {
       "badge": "Why FYS?",
-      "title": "A New Way to Care for Your Body",
+      "title": "A New Way to <span class=\"text-[#3F6D4E]\">Care for Your Body</span>",
       "subtitle": "We blend the purest nature with intelligent nutritional diagnostics.",
       "naturalTitle": "100% Raw & Natural",
       "naturalDesc": "Zero added sugar, zero preservatives, zero heat pasteurization. Pure fresh fruit integrity.",
@@ -985,7 +985,7 @@ export default {
     },
     "nutrifys": {
       "badge": "AI Health Assistant",
-      "title": "Meet NutriFYS",
+      "title": "Meet <span class=\"text-primary\">NutriFYS</span>",
       "subtitle": "Your pocket nutritionist for beverages calibrated to your exact physiological needs.",
       "aiBadge": "Nutritional Intelligence",
       "inputPlaceholder": "E.g., I feel exhausted and need an afternoon vitality boost...",

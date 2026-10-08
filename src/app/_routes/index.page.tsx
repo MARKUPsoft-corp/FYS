@@ -405,9 +405,7 @@ const RootIndex: PageComponent = () => {
         <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#E0982E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.howItWorks.title')}
-            </h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.howItWorks.title') }} />
             <p className="text-muted-foreground text-lg">
               {t('landing.howItWorks.subtitle')}
             </p>
@@ -523,7 +521,7 @@ const RootIndex: PageComponent = () => {
                 Notre Carte
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-                Découvrez notre catalogue
+                Découvrez notre <span className="text-primary">catalogue</span>
               </h2>
               <p className="text-muted-foreground text-lg">
                 Des recettes exclusives créées par nos experts, prêtes à être commandées et livrées chez vous.
@@ -597,9 +595,7 @@ const RootIndex: PageComponent = () => {
         <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.features.title')}
-            </h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.features.title') }} />
             <p className="text-muted-foreground text-lg">
               {t('landing.features.subtitle')}
             </p>
@@ -674,9 +670,7 @@ const RootIndex: PageComponent = () => {
               {t('landing.events.badge')}
             </div>
 
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.events.title')}
-            </h2>
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.events.title') }} />
 
             <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {t('landing.events.subtitle')}
@@ -739,9 +733,7 @@ const RootIndex: PageComponent = () => {
                 {t('landing.events.card3Title')}
               </div>
 
-              <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight">
-                {t('landing.events.title')}
-              </h3>
+              <h3 className="text-2xl sm:text-4xl font-extrabold font-display leading-tight" dangerouslySetInnerHTML={{ __html: t('landing.events.title') }} />
 
               <p className="text-sm sm:text-base text-white/80 leading-relaxed">
                 {t('landing.events.subtitle')}
@@ -827,9 +819,7 @@ const RootIndex: PageComponent = () => {
                   {t('landing.nutrifys.badge')}
                 </div>
 
-                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-                  {t('landing.nutrifys.title')}
-                </h2>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.nutrifys.title') }} />
 
                 <p className="text-lg text-muted-foreground leading-relaxed font-medium">
                   {t('landing.nutrifys.subtitle')}
@@ -939,9 +929,7 @@ const RootIndex: PageComponent = () => {
           
           {/* Main Section Title */}
           <div className="w-full text-center mb-12 md:mb-20 scroll-animate opacity-0" style={{ animationDelay: '50ms' }}>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.about.title')}
-            </h2>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.about.title') }} />
           </div>
 
           {/* Founders Visuals (Top) */}

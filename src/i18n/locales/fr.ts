@@ -947,7 +947,7 @@ export default {
     },
     "howItWorks": {
       "badge": "Expérience fluide",
-      "title": "Comment ça marche ?",
+      "title": "Comment <span class=\"text-[#E0982E]\">ça marche ?</span>",
       "subtitle": "En 3 étapes simples, composez votre recette ou laissez notre assistant santé vous guider.",
       "step1Title": "Choisissez vos fruits",
       "step1Desc": "Sélectionnez parmi notre large variété de fruits frais locaux et tropicaux récoltés à maturité.",
@@ -959,7 +959,7 @@ export default {
     },
     "features": {
       "badge": "Pourquoi FYS ?",
-      "title": "Une nouvelle façon de prendre soin de soi",
+      "title": "Une nouvelle façon de <span class=\"text-[#3F6D4E]\">prendre soin de soi</span>",
       "subtitle": "Nous combinons le meilleur de la nature camerounaise avec une technologie d'analyse santé sur mesure.",
       "naturalTitle": "100% Naturel & Brut",
       "naturalDesc": "Zéro sucre ajouté, zéro conservateur, zéro pasteurisation thermique. Juste la pureté des fruits frais.",
@@ -972,7 +972,7 @@ export default {
     },
     "events": {
       "badge": "Offre Entreprises & Particuliers",
-      "title": "Sublimez vos événements avec FYS Event",
+      "title": "Sublimez vos événements avec <span class=\"text-[#F2694A]\">FYS Event</span>",
       "subtitle": "Séminaires, mariages, lancements de produit : offrez à vos invités une animation saine, moderne et inoubliable.",
       "card1Title": "Bar à jus éphémère & Barmen",
       "card1Desc": "Installation d'un comptoir élégant avec barmen professionnels pour une animation cocktail spectaculaire.",
@@ -985,7 +985,7 @@ export default {
     },
     "nutrifys": {
       "badge": "Assistant Santé IA",
-      "title": "Rencontrez NutriFYS",
+      "title": "Rencontrez <span class=\"text-primary\">NutriFYS</span>",
       "subtitle": "Votre nutritionniste de poche pour des boissons parfaitement alignées avec vos besoins.",
       "aiBadge": "Intelligence Nutritionnelle",
       "inputPlaceholder": "Ex: Je me sens fatigué et j'ai besoin d'un coup de boost...",
@@ -996,7 +996,7 @@ export default {
     },
     "about": {
       "badge": "Notre Engagement",
-      "title": "La passion du fruit sain et local",
+      "title": "La passion du fruit <span class=\"text-[#E0982E]\">sain et local</span>",
       "subtitle": "FYS est né d'une conviction simple : le bien-être commence dans votre verre.",
       "item1Title": "Agriculture locale",
       "item1Desc": "Nous privilégions les petits producteurs de la région du Centre et du Littoral camerounais.",
