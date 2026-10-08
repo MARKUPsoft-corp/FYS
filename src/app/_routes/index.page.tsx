@@ -563,7 +563,7 @@ const RootIndex: PageComponent = () => {
                           }
                         </span>
                         
-                        <Button onClick={() => navigate('/auth/login')} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
+                        <Button onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
                           <Plus className="size-5" />
                         </Button>
                       </div>
@@ -574,7 +574,7 @@ const RootIndex: PageComponent = () => {
             </div>
             
             <div className="mt-12 flex justify-center">
-               <Button onClick={() => navigate('/auth/login')} size="lg" className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground">
+               <Button onClick={() => navigate('/auth/login?redirect=/board/catalogue')} size="lg" className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground">
                  Voir tout le catalogue
                  <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
                </Button>
