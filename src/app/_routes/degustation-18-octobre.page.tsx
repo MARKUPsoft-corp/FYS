@@ -85,7 +85,7 @@ const TastingPage: PageComponent = () => {
         {/* Motif traditionnel discret */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '30px 30px' }} />
         
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#3F6D4E]/20 z-10 animate-pop-in-cute">
+        <div className="max-w-md w-full bg-white dark:bg-[#151916] rounded-3xl shadow-2xl overflow-hidden border border-[#3F6D4E]/20 z-10 animate-pop-in-cute">
           <div className="bg-[#3F6D4E] text-white p-8 text-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-20">
                <Sparkles className="size-16" />
@@ -95,7 +95,7 @@ const TastingPage: PageComponent = () => {
           </div>
           
           <div className="p-8 flex flex-col items-center">
-            <div className="w-40 h-40 bg-white p-2 rounded-xl border border-gray-100 shadow-sm mb-6">
+            <div className="w-40 h-40 bg-white dark:bg-[#151916] p-2 rounded-xl border border-gray-100 shadow-sm mb-6">
               {/* QR Code dynamique */}
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticketId}`} alt="QR Code" className="w-full h-full" />
             </div>
@@ -121,7 +121,7 @@ const TastingPage: PageComponent = () => {
             </div>
           </div>
           
-          <div className="bg-gray-50 p-6 flex flex-col gap-3">
+          <div className="bg-gray-50 dark:bg-[#151916] p-6 flex flex-col gap-3">
              <Link to="/lab?mode=degustation" className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white h-14 font-bold shadow-md hover:shadow-lg transition-all animate-pulse hover:animate-none">
                <Sparkles className="size-5" /> Créer mon jus VIP (1000F)
              </Link>
@@ -130,7 +130,7 @@ const TastingPage: PageComponent = () => {
                  <Download className="mr-2 size-4" /> Télécharger l'invitation
                </Button>
              </a>
-             <Link to="/" className="w-full flex justify-center py-2 text-[#3F6D4E] font-semibold hover:underline">
+             <Link to="/" className="w-full flex justify-center py-2 text-[#3F6D4E] dark:text-[#88b698] font-semibold hover:underline">
                Retour à l'accueil
              </Link>
           </div>
@@ -140,13 +140,14 @@ const TastingPage: PageComponent = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF9F6] text-[#1a1f1b] overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)' }}>
+    <div className="min-h-dvh bg-[#FAF9F6] dark:bg-[#0f1210] text-[#1a1f1b] dark:text-[#FAF9F6] dark:text-white overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)' }}>
       {/* ── Topbar discrète ── */}
       <div className="w-full p-6 z-50 flex justify-between items-center relative">
-        <Link to="/" className="flex items-center gap-2 text-[#3F6D4E] hover:text-[#2c3e32] transition-colors font-bold text-sm">
+        <Link to="/" className="flex items-center gap-2 text-[#3F6D4E] dark:text-[#88b698] hover:text-[#2c3e32] dark:hover:text-[#a0cba0] transition-colors font-bold text-sm">
           <ArrowLeft className="size-4" /> Retour
         </Link>
-        <img src="/logos/Logo_fys.png" alt="FYS" className="h-12 w-auto opacity-80 object-contain" />
+        <img src="/logos/Logo_fys.png" alt="FYS" className="h-12 w-auto opacity-80 object-contain dark:hidden" />
+        <img src="/logos/Logo_fys_creme.png" alt="FYS" className="h-12 w-auto opacity-90 object-contain hidden dark:block" />
       </div>
 
       {/* ── HERO SECTION ── */}
@@ -155,17 +156,17 @@ const TastingPage: PageComponent = () => {
         <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper-2.png')]" />
         
         <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center w-full">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#3F6D4E]/20 text-[#3F6D4E] font-bold text-xs mb-8 bg-white/50 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#3F6D4E]/20 dark:border-[#88b698]/20 text-[#3F6D4E] dark:text-[#88b698] font-bold text-xs mb-8 bg-white dark:bg-[#151916]/50 shadow-sm">
             <Sparkles className="size-4 text-[#E0982E]" />
             Événement Exclusif
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-[#3F6D4E] mb-6 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#88b698] mb-6 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
             Le goût de nos fruits.<br/>
             <span className="text-[#E0982E]">L'âme de notre terroir.</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-xl mx-auto leading-relaxed">
             FYS présente une dégustation privée de créations pressées à froid. Une expérience intime autour des saveurs du Cameroun.
           </p>
 
@@ -180,7 +181,7 @@ const TastingPage: PageComponent = () => {
               <div key={i} className="flex flex-col items-center p-3 md:p-4 rounded-2xl shadow-lg border border-white/20 min-w-[70px] md:min-w-[90px] relative overflow-hidden">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Texture verte forestière pour compte à rebours-2.png')" }} />
                 <div className="absolute inset-0 bg-[#3F6D4E]/40 mix-blend-multiply" />
-                <div className="relative z-10 text-3xl md:text-4xl font-black text-[#FAF9F6] font-display mb-1 drop-shadow-md">
+                <div className="relative z-10 text-3xl md:text-4xl font-black text-[#FAF9F6] dark:text-white font-display mb-1 drop-shadow-md">
                   {unit.value.toString().padStart(2, '0')}
                 </div>
                 <div className="relative z-10 text-[10px] md:text-xs uppercase tracking-widest text-[#E0982E] font-extrabold">{unit.label}</div>
@@ -190,7 +191,7 @@ const TastingPage: PageComponent = () => {
 
           <div className="w-full max-w-md mx-auto">
             <p className="text-[#E0982E] font-bold text-base mb-5 italic bg-[#E0982E]/10 py-2 rounded-full">"{getDynamicMessage()}"</p>
-            <Button onClick={() => document.getElementById('rsvp')?.scrollIntoView({ behavior: 'smooth' })} className="w-full h-14 rounded-2xl text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all">
+            <Button onClick={() => document.getElementById('rsvp')?.scrollIntoView({ behavior: 'smooth' })} className="w-full h-14 rounded-2xl text-lg font-bold bg-[#3F6D4E] dark:bg-[#4a805a] hover:bg-[#2c3e32] dark:hover:bg-[#3F6D4E] text-white shadow-xl hover:-translate-y-1 transition-all">
               Réserver ma place (Places limitées)
             </Button>
           </div>
@@ -200,52 +201,52 @@ const TastingPage: PageComponent = () => {
       {/* ── CONCEPT ── */}
       <div className="w-full overflow-hidden leading-none relative z-0">
         <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,64L80,53.3C160,43,320,21,480,26.7C640,32,800,64,960,74.7C1120,85,1280,75,1360,69.3L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#3F6D4E]/[0.05]"></path>
+          <path d="M0,64L80,53.3C160,43,320,21,480,26.7C640,32,800,64,960,74.7C1120,85,1280,75,1360,69.3L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#3F6D4E]/[0.05] dark:fill-[#88b698]/[0.05]"></path>
         </svg>
       </div>
-      <section className="py-20 px-6 relative z-0 bg-[#3F6D4E]/[0.05]">
+      <section className="py-20 px-6 relative z-0 bg-[#3F6D4E]/[0.05] dark:bg-[#88b698]/[0.05]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12 lg:gap-20">
           <div className="w-full md:w-1/2 rounded-3xl overflow-hidden shadow-2xl relative">
-            <div className="absolute inset-0 bg-[#3F6D4E]/20 mix-blend-overlay z-10" />
+            <div className="absolute inset-0 bg-[#3F6D4E]/20 dark:bg-[#88b698]/20 mix-blend-overlay z-10" />
             <img src="/degustation/Découpe artisanale d’ananas et de papaye-3.png" alt="Préparation FYS" className="w-full h-full object-cover aspect-[4/5] md:aspect-square hover:scale-105 transition-transform duration-700" />
           </div>
           
           <div className="w-full md:w-1/2 flex flex-col gap-10">
             <div className="flex gap-6 items-start">
-              <div className="size-14 shrink-0 rounded-2xl bg-white shadow-md flex items-center justify-center border border-[#3F6D4E]/10">
+              <div className="size-14 shrink-0 rounded-2xl bg-white dark:bg-[#1a1f1b] shadow-md dark:shadow-none flex items-center justify-center border border-[#3F6D4E]/10 dark:border-[#88b698]/20">
                 <Sparkles className="size-6 text-[#E0982E]" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#3F6D4E] mb-2 font-display">Découvrir</h3>
-                <p className="text-gray-700 leading-relaxed font-medium">Des associations inattendues de fruits locaux, cueillis à maturité pour révéler tout leur potentiel.</p>
+                <h3 className="text-2xl font-bold text-[#3F6D4E] dark:text-[#88b698] mb-2 font-display">Découvrir</h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">Des associations inattendues de fruits locaux, cueillis à maturité pour révéler tout leur potentiel.</p>
               </div>
             </div>
             
             <div className="flex gap-6 items-start">
-              <div className="size-14 shrink-0 rounded-2xl bg-white shadow-md flex items-center justify-center border border-[#3F6D4E]/10">
+              <div className="size-14 shrink-0 rounded-2xl bg-white dark:bg-[#1a1f1b] shadow-md dark:shadow-none flex items-center justify-center border border-[#3F6D4E]/10 dark:border-[#88b698]/20">
                 <GlassWater className="size-6 text-[#3F6D4E]" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#3F6D4E] mb-2 font-display">Déguster</h3>
-                <p className="text-gray-700 leading-relaxed font-medium">Une pureté absolue : zéro sucre ajouté, zéro pasteurisation. Juste le fruit, pressé à froid.</p>
+                <h3 className="text-2xl font-bold text-[#3F6D4E] dark:text-[#88b698] mb-2 font-display">Déguster</h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">Une pureté absolue : zéro sucre ajouté, zéro pasteurisation. Juste le fruit, pressé à froid.</p>
               </div>
             </div>
             
             <div className="flex gap-6 items-start">
-              <div className="size-14 shrink-0 rounded-2xl bg-white shadow-md flex items-center justify-center border border-[#3F6D4E]/10">
+              <div className="size-14 shrink-0 rounded-2xl bg-white dark:bg-[#1a1f1b] shadow-md dark:shadow-none flex items-center justify-center border border-[#3F6D4E]/10 dark:border-[#88b698]/20">
                 <Users className="size-6 text-[#F2694A]" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#3F6D4E] mb-2 font-display">Partager</h3>
-                <p className="text-gray-700 leading-relaxed font-medium">Une ambiance chaleureuse, des discussions passionnantes, l'esprit de l'hospitalité camerounaise.</p>
+                <h3 className="text-2xl font-bold text-[#3F6D4E] dark:text-[#88b698] mb-2 font-display">Partager</h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">Une ambiance chaleureuse, des discussions passionnantes, l'esprit de l'hospitalité camerounaise.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
-      <div className="w-full overflow-hidden leading-none bg-[#3F6D4E]/[0.05] relative z-0">
+      <div className="w-full overflow-hidden leading-none bg-[#3F6D4E]/[0.05] dark:bg-[#88b698]/[0.05] relative z-0">
         <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#FAF9F6]"></path>
+          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#FAF9F6] dark:fill-[#0f1210]"></path>
         </svg>
       </div>
 
@@ -253,8 +254,8 @@ const TastingPage: PageComponent = () => {
       <section className="py-24 px-6 relative z-0">
         <div className="max-w-6xl mx-auto">
 <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#3F6D4E] font-display mb-4">À la carte ce jour-là</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-12">Laissez-vous guider par nos classiques ou composez votre propre jus. Préparé sous vos yeux.</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#3F6D4E] dark:text-[#88b698] font-display mb-4">À la carte ce jour-là</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-12">Laissez-vous guider par nos classiques ou composez votre propre jus. Préparé sous vos yeux.</p>
           </div>
           
           <CataloguePreview />
@@ -266,42 +267,42 @@ const TastingPage: PageComponent = () => {
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Dégustation FYS ananas-gingembre-4.png')" }} />
         <div className="absolute inset-0 bg-[#1a1f1b]/80 backdrop-blur-sm" />
         
-        <div className="max-w-2xl mx-auto bg-white/95 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative z-10 border border-white/20">
+        <div className="max-w-2xl mx-auto bg-white dark:bg-[#151916]/95 dark:bg-[#1a1f1b]/95 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative z-10 border border-white/20">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#3F6D4E] font-display mb-4">Rejoignez-nous</h2>
-            <p className="text-gray-600 font-medium">Remplissez ce formulaire pour recevoir votre billet numérique VIP.</p>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#3F6D4E] dark:text-[#88b698] font-display mb-4">Rejoignez-nous</h2>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">Remplissez ce formulaire pour recevoir votre billet numérique VIP.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nom et Prénom *</label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Nom et Prénom *</label>
               <Input 
                 required 
                 value={name} 
                 onChange={e => setName(e.target.value)}
                 placeholder="Ex: Paul Atangana"
-                className="h-14 rounded-xl bg-gray-50/50 border-gray-200 focus:bg-white"
+                className="h-14 rounded-xl bg-gray-50 dark:bg-[#151916]/50 border-gray-200 focus:bg-white dark:bg-[#151916]"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Numéro WhatsApp *</label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Numéro WhatsApp *</label>
               <Input 
                 required 
                 type="tel"
                 value={whatsapp} 
                 onChange={e => setWhatsapp(e.target.value)}
                 placeholder="Ex: +237 6XX XX XX XX"
-                className="h-14 rounded-xl bg-gray-50/50 border-gray-200 focus:bg-white"
+                className="h-14 rounded-xl bg-gray-50 dark:bg-[#151916]/50 border-gray-200 focus:bg-white dark:bg-[#151916]"
               />
               <p className="text-xs text-gray-500 mt-2 font-medium">Nous l'utiliserons pour vous envoyer l'adresse secrète.</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Personnes *</label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Personnes *</label>
                 <select 
-                  className="w-full h-14 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white px-4 text-sm font-medium"
+                  className="w-full h-14 rounded-xl border border-gray-200 bg-gray-50 dark:bg-[#151916]/50 focus:bg-white dark:bg-[#151916] px-4 text-sm font-medium"
                   value={guests}
                   onChange={e => setGuests(e.target.value)}
                 >
@@ -313,12 +314,12 @@ const TastingPage: PageComponent = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Préférence ou Allergie (Optionnel)</label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Préférence ou Allergie (Optionnel)</label>
               <Input 
                 value={preferences} 
                 onChange={e => setPreferences(e.target.value)}
                 placeholder="Ex: Pas de gingembre..."
-                className="h-14 rounded-xl bg-gray-50/50 border-gray-200 focus:bg-white"
+                className="h-14 rounded-xl bg-gray-50 dark:bg-[#151916]/50 border-gray-200 focus:bg-white dark:bg-[#151916]"
               />
             </div>
 
@@ -383,7 +384,7 @@ function CataloguePreview() {
             </p>
             
             <div className="flex items-center justify-between mt-auto">
-              <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
+              <span className="text-white font-bold text-sm bg-white dark:bg-[#151916]/20 backdrop-blur-md px-3 py-1 rounded-xl">
                 1000 XAF
               </span>
               <Link to="/lab?mode=degustation" className="inline-block">
@@ -424,7 +425,7 @@ function CataloguePreview() {
               )}
               
               <div className="flex items-center justify-between mt-auto">
-                <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
+                <span className="text-white font-bold text-sm bg-white dark:bg-[#151916]/20 backdrop-blur-md px-3 py-1 rounded-xl">
                   1000 XAF
                 </span>
                 
