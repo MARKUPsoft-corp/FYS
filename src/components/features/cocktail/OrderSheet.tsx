@@ -188,7 +188,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
   const subtotal = hasContainers ? containerSubtotal : (subtotal500 + subtotal1L);
-  const finalTotal = isEventMode ? subtotal - (discountAmount || 0) : (subtotal + deliveryFee - (discountAmount || 0));
+
   const totalBottles = hasContainers ? containerTotalBottles : (quantity500ml + quantity1L);
 
   const isCatalog = cocktail.type === CocktailType.CATALOG;
