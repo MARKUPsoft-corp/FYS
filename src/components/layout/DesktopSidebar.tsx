@@ -45,7 +45,8 @@ export function DesktopSidebar() {
       {/* Header - Logo */}
       <div className="h-20 flex items-center px-6 border-b border-white/10 shrink-0">
         <Link to="/board" className="flex items-center hover:opacity-80 transition-opacity">
-          <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain" />
+          <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain dark:hidden" />
+          <img src="/logos/Logo_fys_creme.png" alt="FYS Logo" className="h-12 w-auto object-contain hidden dark:block" />
         </Link>
       </div>
 
