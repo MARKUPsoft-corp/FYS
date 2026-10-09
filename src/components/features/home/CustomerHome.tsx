@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'rasengan';
-import { Beaker, ChevronRight, GlassWater, Banknote, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
+import { Beaker, ChevronLeft, ChevronRight, GlassWater, Banknote, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useState, useEffect } from 'react';
@@ -88,6 +88,20 @@ export function CustomerHome(_props: Props) {
   });
 
   const [suggestedProgram, setSuggestedProgram] = useState<Program | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 50 && currentSlide === 0) setCurrentSlide(1);
+    if (distance < -50 && currentSlide === 1) setCurrentSlide(0);
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   useEffect(() => {
     if (!allPrograms || allPrograms.length === 0) return;
@@ -254,10 +268,22 @@ export function CustomerHome(_props: Props) {
           </div>
         </div>
 
-        {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (CHARTE FYS, IMAGES VÉRIFIÉES & ZÉRO EMOJI) ── */}
+
+        {/* ── CAROUSEL : ÉVÉNEMENT VIP + PROGRAMME ACTIF ── */}
+        <div 
+          className="relative rounded-[2.5rem] overflow-hidden mb-6 group"
+          onTouchStart={activeProgram ? handleTouchStart : undefined}
+          onTouchMove={activeProgram ? handleTouchMove : undefined}
+          onTouchEnd={activeProgram ? handleTouchEnd : undefined}
+        >
+          <div 
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+                    {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (CHARTE FYS, IMAGES VÉRIFIÉES & ZÉRO EMOJI) ── */}
         
         {/* ── EVENEMENT VIP (TOUJOURS VISIBLE) ── */}
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group mb-6">
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group w-full shrink-0">
             {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
@@ -308,11 +334,7 @@ export function CustomerHome(_props: Props) {
               </div>
             </div>
           </div>
-
-
-        {/* ── FYS PROGRAM WIDGET ── */}
-        {activeProgram && (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group">
+            {activeProgram && (<div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group w-full shrink-0">
 
             {/* Background photo with subtle zoom */}
             <div className="absolute inset-0 bg-muted">
@@ -359,6 +381,41 @@ export function CustomerHome(_props: Props) {
             </div>
           </div>
         )}
+          </div>
+
+          {activeProgram && (
+            <>
+              {/* Pagination Dots */}
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                <button 
+                  onClick={() => setCurrentSlide(0)} 
+                  className={`size-2.5 rounded-full transition-colors ${currentSlide === 0 ? 'bg-white' : 'bg-white/40'}`} 
+                  aria-label="Slide 1"
+                />
+                <button 
+                  onClick={() => setCurrentSlide(1)} 
+                  className={`size-2.5 rounded-full transition-colors ${currentSlide === 1 ? 'bg-white' : 'bg-white/40'}`} 
+                  aria-label="Slide 2"
+                />
+              </div>
+              
+              {/* Arrows for Desktop (Hidden on mobile by default but good to have) */}
+              <button 
+                onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+              <button 
+                onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="size-5" />
+              </button>
+            </>
+          )}
+        </div>
+
 
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
