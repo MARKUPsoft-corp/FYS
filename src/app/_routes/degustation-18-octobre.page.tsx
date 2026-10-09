@@ -150,7 +150,7 @@ const TastingPage: PageComponent = () => {
       </div>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative flex flex-col justify-center items-center px-6 py-12 md:py-20 overflow-hidden text-center">
+      <section className="relative w-full min-h-[calc(100dvh-88px)] flex flex-col justify-center items-center px-6 py-12 md:py-20 overflow-hidden text-center">
         {/* Subtle texture instead of heavy dots */}
         <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper-2.png')]" />
         
