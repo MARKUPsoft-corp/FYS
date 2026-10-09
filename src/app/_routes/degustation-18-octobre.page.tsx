@@ -198,7 +198,12 @@ const TastingPage: PageComponent = () => {
       </section>
 
       {/* ── CONCEPT ── */}
-      <section className="py-20 px-6 relative z-10">
+      <div className="w-full overflow-hidden leading-none relative z-0">
+        <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,64L80,53.3C160,43,320,21,480,26.7C640,32,800,64,960,74.7C1120,85,1280,75,1360,69.3L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#3F6D4E]/[0.05]"></path>
+        </svg>
+      </div>
+      <section className="py-20 px-6 relative z-0 bg-[#3F6D4E]/[0.05]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12 lg:gap-20">
           <div className="w-full md:w-1/2 rounded-3xl overflow-hidden shadow-2xl relative">
             <div className="absolute inset-0 bg-[#3F6D4E]/20 mix-blend-overlay z-10" />
@@ -238,9 +243,14 @@ const TastingPage: PageComponent = () => {
           </div>
         </div>
       </section>
+      <div className="w-full overflow-hidden leading-none bg-[#3F6D4E]/[0.05] relative z-0">
+        <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#FAF9F6]"></path>
+        </svg>
+      </div>
 
       {/* ── RECIPES ── */}
-      <section className="py-24 px-6 relative z-10">
+      <section className="py-24 px-6 relative z-0">
         <div className="max-w-6xl mx-auto">
 <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-extrabold text-[#3F6D4E] font-display mb-4">À la carte ce jour-là</h2>
