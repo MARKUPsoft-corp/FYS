@@ -146,7 +146,7 @@ const TastingPage: PageComponent = () => {
         <Link to="/" className="flex items-center gap-2 text-[#3F6D4E] hover:text-[#2c3e32] transition-colors font-bold text-sm">
           <ArrowLeft className="size-4" /> Retour
         </Link>
-        <img src="/logos/Logo_fys.png" alt="FYS" className="h-10 opacity-80 object-contain" />
+        <img src="/logos/Logo_fys.png" alt="FYS" className="h-12 w-auto opacity-80 object-contain" />
       </div>
 
       {/* ── HERO SECTION ── */}

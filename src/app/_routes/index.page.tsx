@@ -203,7 +203,7 @@ const RootIndex: PageComponent = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-5 md:px-8">
           <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <img src="/logos/Logo_fys.png" alt="FYS" className="h-10 w-auto object-contain" />
+            <img src="/logos/Logo_fys.png" alt="FYS" className="h-12 w-auto object-contain" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
@@ -257,7 +257,7 @@ const RootIndex: PageComponent = () => {
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background dark:bg-background/80 dark:backdrop-blur-[48px] dark:saturate-[180%] border-l border-border dark:border-white/10 p-6 flex flex-col gap-6 shadow-2xl">
                   <div className="flex items-center gap-3 pt-4">
-                    <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-10 w-auto object-contain" />
+                    <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain" />
                     
                   </div>
                   
@@ -1154,7 +1154,7 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
           <div className="lg:col-span-5 space-y-6">
             <div className="flex items-center gap-3">
-              <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-10 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
               
             </div>
             <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
