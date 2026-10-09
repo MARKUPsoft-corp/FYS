@@ -369,7 +369,7 @@ function CataloguePreview() {
       <div className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
         <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
           <img 
-            src="/degustation/Dégustation FYS ananas-gingembre-1.png" 
+            src="/degustation/Création sur-mesure, ananas et gingembre.png" 
             alt="FYS Lab" 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
           />
@@ -385,7 +385,7 @@ function CataloguePreview() {
             </p>
             
             <div className="flex items-center justify-between mt-auto">
-              <span className="text-white font-bold text-sm bg-white dark:bg-[#151916]/20 backdrop-blur-md px-3 py-1 rounded-xl">
+              <span className="text-white font-bold text-sm bg-black/40 backdrop-blur-md px-3 py-1 rounded-xl border border-white/20">
                 1000 XAF
               </span>
               <Link to="/lab?mode=degustation" className="inline-block">
