@@ -140,7 +140,7 @@ const TastingPage: PageComponent = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF9F6] text-[#1a1f1b] overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)', backgroundImage: "url('/degustation/Fond crème FYS avec textile artisanal-5.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>\n      <div className="absolute inset-0 bg-white/40 pointer-events-none" />
+    <div className="min-h-dvh bg-[#FAF9F6] text-[#1a1f1b] overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)' }}>
       {/* ── Topbar discrète ── */}
       <div className="w-full p-6 z-50 flex justify-between items-center relative">
         <Link to="/" className="flex items-center gap-2 text-[#3F6D4E] hover:text-[#2c3e32] transition-colors font-bold text-sm">
