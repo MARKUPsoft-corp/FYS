@@ -1,6 +1,6 @@
 import { useTranslation, Trans } from 'react-i18next';
 import {
-  Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil,
+  Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil, CheckCircle2,
   MapPin, Phone, MessageSquare, TimerOff, Smartphone, Banknote, Clock,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
