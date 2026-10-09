@@ -204,7 +204,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
 
   const total = Math.max(0, subtotal + deliveryFee - discountAmount);
 
-  const deliveryOk = district.trim().length > 0 && phone.trim().length > 0;
+  const deliveryOk = isEventMode
+    ? phone.trim().length > 0
+    : district.trim().length > 0 && phone.trim().length > 0;
 
   async function runAnalysis(): Promise<AIAnalysis | null> {
     if (fruits.length === 0) return null;
@@ -817,10 +819,10 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     })}
                   </div>
                 ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className={isEventMode ? "flex flex-col gap-3" : "grid grid-cols-2 gap-3"}>
                   {(!cocktail.availableSizes || cocktail.availableSizes.includes('500ml')) && (
 
-                  <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
+                  <div className={`relative rounded-2xl border-2 p-4 transition-all ${
                     quantity500ml > 0
                       ? 'border-primary bg-primary/5 shadow-[0_8px_24px_rgba(63,109,78,0.18)]'
                       : 'border-border/60 bg-card'
@@ -831,68 +833,111 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       </span>
                     )}
 
-                    {/* Bottle SVG */}
-                    <div className="relative flex items-end justify-center h-[130px] sm:h-[150px] transform scale-[0.88]">
-                      {quantity500ml > 0 && (
-                        <div className="absolute bottom-2 inset-x-4 h-8 rounded-full bg-primary/20 blur-xl" />
-                      )}
-                      {!isEventMode && <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
-                        <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} />
-                        <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
-                        <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
-                        <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-500ml-order)" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
-                        <path d="M18 95 L16 138 Q16 148 40 150 Q64 148 64 138 L62 95 Q40 100 18 95 Z" fill={quantity500ml > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
-                        <ellipse cx="40" cy="96" rx="22" ry="4" fill="#fff" opacity="0.25" />
-                        <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
-                        <defs>
-                          <linearGradient id="glassGrad-500ml-order" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="#F7FAF7" />
-                            <stop offset="100%" stopColor="#D5E6D9" />
-                          </linearGradient>
-                        </defs>
-                      </svg>}
-                    </div>
-
-                    <div className="mt-2 text-center space-y-0.5">
-                      <p className={`text-sm font-bold ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
-                        {isEventMode ? 'Verre de dégustation' : t('settings.halfLiter')}
-                      </p>
-                      {!isEventMode && <p className="text-[11px] text-muted-foreground font-medium">{t('settings.volume50cl')}</p>}
-                      <p className={`text-[15px] font-bold tabular-nums pt-1 ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
-                        {price500.toLocaleString()} <span className="text-[11px] font-semibold">XAF</span>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{t('pricing.perBottle')}</p>
-
-                      {/* Counter */}
-                      <div className="flex items-center justify-center gap-2 pt-3">
-                        <button
-                          type="button"
-                          onClick={() => setQuantity500ml(q => Math.max(0, q - 1))}
-                          disabled={quantity500ml === 0}
-                          className="size-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
-                        >
-                          <Minus className="size-3.5" />
-                        </button>
-                        <span className="font-bold text-lg tabular-nums min-w-[2ch] text-center">{quantity500ml}</span>
-                        <button
-                          type="button"
-                          onClick={() => setQuantity500ml(q => q + 1)}
-                          className="size-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
-                        >
-                          <Plus className="size-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Subtotal */}
-                      {quantity500ml > 0 && (
-                        <div className="pt-2 mt-2 border-t border-border/40">
-                          <p className="text-[11px] text-muted-foreground">{t('orders.subtotal')}</p>
-                          <p className="text-[14px] font-bold text-primary tabular-nums">
-                            {(price500 * quantity500ml).toLocaleString()} XAF
+                    {isEventMode ? (
+                      /* ── Mode Événement : layout horizontal ── */
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-base font-bold ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                            Verre de dégustation
                           </p>
+                          <p className={`text-xl font-bold tabular-nums mt-0.5 ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                            {price500.toLocaleString()} <span className="text-sm font-semibold">XAF</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">{t('pricing.perBottle')}</p>
+                          {quantity500ml > 0 && (
+                            <p className="text-[12px] font-bold text-primary mt-1">
+                              Total : {(price500 * quantity500ml).toLocaleString()} XAF
+                            </p>
+                          )}
                         </div>
-                      )}
-                    </div>
+
+                        {/* Counter horizontal */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setQuantity500ml(q => Math.max(0, q - 1))}
+                            disabled={quantity500ml === 0}
+                            className="size-10 rounded-xl bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
+                          >
+                            <Minus className="size-4" />
+                          </button>
+                          <span className="font-bold text-2xl tabular-nums min-w-[2ch] text-center">{quantity500ml}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQuantity500ml(q => q + 1)}
+                            className="size-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                          >
+                            <Plus className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── Mode Normal : layout vertical avec SVG ── */
+                      <>
+                        {/* Bottle SVG */}
+                        <div className="relative flex items-end justify-center h-[130px] sm:h-[150px] transform scale-[0.88]">
+                          {quantity500ml > 0 && (
+                            <div className="absolute bottom-2 inset-x-4 h-8 rounded-full bg-primary/20 blur-xl" />
+                          )}
+                          <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
+                            <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} />
+                            <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
+                            <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
+                            <path d="M28 52 Q18 58 16 72 L14 138 Q14 150 40 152 Q66 150 66 138 L64 72 Q62 58 52 52 Z" fill="url(#glassGrad-500ml-order)" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.8" />
+                            <path d="M18 95 L16 138 Q16 148 40 150 Q64 148 64 138 L62 95 Q40 100 18 95 Z" fill={quantity500ml > 0 ? '#3F6D4E' : '#AECBB2'} opacity="0.92" />
+                            <ellipse cx="40" cy="96" rx="22" ry="4" fill="#fff" opacity="0.25" />
+                            <path d="M24 70 L22 130" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
+                            <defs>
+                              <linearGradient id="glassGrad-500ml-order" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#F7FAF7" />
+                                <stop offset="100%" stopColor="#D5E6D9" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+
+                        <div className="mt-2 text-center space-y-0.5">
+                          <p className={`text-sm font-bold ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                            {t('settings.halfLiter')}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground font-medium">{t('settings.volume50cl')}</p>
+                          <p className={`text-[15px] font-bold tabular-nums pt-1 ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
+                            {price500.toLocaleString()} <span className="text-[11px] font-semibold">XAF</span>
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{t('pricing.perBottle')}</p>
+
+                          {/* Counter */}
+                          <div className="flex items-center justify-center gap-2 pt-3">
+                            <button
+                              type="button"
+                              onClick={() => setQuantity500ml(q => Math.max(0, q - 1))}
+                              disabled={quantity500ml === 0}
+                              className="size-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center disabled:opacity-30 transition-all"
+                            >
+                              <Minus className="size-3.5" />
+                            </button>
+                            <span className="font-bold text-lg tabular-nums min-w-[2ch] text-center">{quantity500ml}</span>
+                            <button
+                              type="button"
+                              onClick={() => setQuantity500ml(q => q + 1)}
+                              className="size-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                            >
+                              <Plus className="size-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Subtotal */}
+                          {quantity500ml > 0 && (
+                            <div className="pt-2 mt-2 border-t border-border/40">
+                              <p className="text-[11px] text-muted-foreground">{t('orders.subtotal')}</p>
+                              <p className="text-[14px] font-bold text-primary tabular-nums">
+                                {(price500 * quantity500ml).toLocaleString()} XAF
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   )}
