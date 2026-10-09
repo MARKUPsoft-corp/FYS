@@ -1389,6 +1389,10 @@ export default {
     }
   },
   "programs": {
+    "activeCureTitle": "ACTIVE PROGRAM",
+    "activeCureDay": "Day {{current}}/{{total}}",
+    "dayCompleted": "days completed",
+    "viewSchedule": "View my schedule",
     "eyebrow": "FYS Program",
     "titleBefore": "Space",
     "titleHighlight": "Cures",

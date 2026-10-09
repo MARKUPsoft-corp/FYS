@@ -1389,6 +1389,10 @@ export default {
     }
   },
   "programs": {
+    "activeCureTitle": "PROGRAMME EN COURS",
+    "activeCureDay": "Jour {{current}}/{{total}}",
+    "dayCompleted": "jours complétés",
+    "viewSchedule": "Voir mon suivi",
     "eyebrow": "FYS Programme",
     "titleBefore": "Espace",
     "titleHighlight": "Cures",

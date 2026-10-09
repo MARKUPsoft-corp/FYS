@@ -255,54 +255,9 @@ export function CustomerHome(_props: Props) {
         </div>
 
         {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (CHARTE FYS, IMAGES VÉRIFIÉES & ZÉRO EMOJI) ── */}
-        {activeProgram ? (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group">
-            {/* Background photo with subtle zoom */}
-            <div className="absolute inset-0 bg-muted">
-              <img
-                src={activeProgram.programSnapshot?.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
-                alt={activeProgram.programTitle}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                }}
-                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#142219]/95 via-[#1F3326]/85 to-black/60" />
-            </div>
-
-            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
-                    <CalendarCheck className="size-3.5" />
-                    {t('programs.activeCureTitle')}
-                  </span>
-                  <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    {t('programs.activeCureDay', { current: activeProgram.currentDay, total: activeProgram.durationDays })}
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
-                  {activeProgram.programTitle}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-                  {activeProgram.checkins?.length || 0} / {activeProgram.durationDays} {t('programs.dayCompleted')}
-                </p>
-              </div>
-
-              <div className="relative z-10 shrink-0">
-                <Link to="/board/programs">
-                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
-                    {t('programs.viewSchedule')}
-                    <ArrowRight className="size-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group">
+        
+        {/* ── EVENEMENT VIP (TOUJOURS VISIBLE) ── */}
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group mb-6">
             {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
@@ -353,7 +308,58 @@ export function CustomerHome(_props: Props) {
               </div>
             </div>
           </div>
+
+
+        {/* ── FYS PROGRAM WIDGET ── */}
+        {activeProgram && (
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group">
+
+            {/* Background photo with subtle zoom */}
+            <div className="absolute inset-0 bg-muted">
+              <img
+                src={activeProgram.programSnapshot?.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+                alt={activeProgram.programTitle}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
+                }}
+                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#142219]/95 via-[#1F3326]/85 to-black/60" />
+            </div>
+
+            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
+                    <CalendarCheck className="size-3.5" />
+                    {t('programs.activeCureTitle')}
+                  </span>
+                  <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                    {t('programs.activeCureDay', { current: activeProgram.currentDay, total: activeProgram.durationDays })}
+                  </span>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
+                  {activeProgram.programTitle}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+                  {activeProgram.checkins?.length || 0} / {activeProgram.durationDays} {t('programs.dayCompleted')}
+                </p>
+              </div>
+
+              <div className="relative z-10 shrink-0">
+                <Link to="/board/programs">
+                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
+                    {t('programs.viewSchedule')}
+                    <ArrowRight className="size-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         )}
+
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
         <div className="space-y-8 pt-6">
