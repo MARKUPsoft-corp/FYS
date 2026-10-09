@@ -13,10 +13,15 @@ const firebaseConfig = {
   measurementId: import.meta.env.RASENGAN_FIREBASE_MEASUREMENT_ID,
 };
 
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+
 
 // Initialise Firebase Analytics de manière sécurisée (côté client uniquement)
 export const analytics = typeof window !== 'undefined' 

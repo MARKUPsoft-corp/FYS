@@ -50,7 +50,7 @@ export function CustomerHome(_props: Props) {
     || t('orders.launchDeliveryNotice');
 
   // Computations for real stats
-  const uniqueCocktailsCreated = new Set(orders.map(o => o.cocktailId)).size;
+  const uniqueCocktailsCreated = new Set((orders || []).map(o => o.cocktailId)).size;
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const aiExchangesCount = sessions.reduce((acc, s) => acc + (s.messageCount || 0), 0);
   const preparingCount = orders.filter(o => ['confirmed', 'preparing', 'ready'].includes(o.status)).length;
@@ -517,13 +517,13 @@ export function CustomerHome(_props: Props) {
             </div>
           ) : recentOrders.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {recentOrders.map(order => {
+                {(recentOrders || []).map(order => {
                   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG[OrderStatus.PENDING];
                   const Icon = cfg.icon;
                   const orderDate = order.createdAt ? new Date(order.createdAt.toMillis()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
                   
                   const orderFruits = order.ingredientImageSnapshots?.length 
-                    ? order.ingredientImageSnapshots.map(url => ({ imageUrl: url }))
+                    ? order.ingredientImageSnapshots?.map(url => ({ imageUrl: url }))
                     : order.cocktailImageSnapshot 
                       ? [{ imageUrl: order.cocktailImageSnapshot }] 
                       : [];
@@ -564,12 +564,12 @@ export function CustomerHome(_props: Props) {
                               <div className="text-[11px] text-muted-foreground truncate mb-2 flex items-center gap-1.5 flex-wrap">
                                 {mainFruits.length > 0 && (
                                   <span className="font-medium text-foreground/80">
-                                    🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                                    🍓 {(mainFruits || []).map((m) => m.fruitName).join(', ')}
                                   </span>
                                 )}
                                 {supplements.length > 0 && (
                                   <span className="text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-0.5 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 text-[10px]">
-                                    🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                                    🌿 + {(supplements || []).map((s) => s.fruitName).join(', ')}
                                   </span>
                                 )}
                               </div>
@@ -626,7 +626,7 @@ export function CustomerHome(_props: Props) {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 pb-8">
-            {storeFruits.map((fruit) => {
+            {(storeFruits || []).map((fruit) => {
               const unavailable = !isUsableFruit(fruit);
               return (
                 <div
@@ -694,7 +694,7 @@ export function CustomerHome(_props: Props) {
                       {t('nutrition.targetedBenefits')}
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedFruit.healthProfile.benefitBadges.map((b, i) => (
+                      {selectedFruit.healthProfile.benefitBadges?.map((b, i) => (
                         <span key={i} className="text-[11px] bg-secondary/10 text-secondary font-bold px-2.5 py-1 rounded-lg border border-secondary/20">
                           {b}
                         </span>
@@ -756,7 +756,7 @@ export function CustomerHome(_props: Props) {
                       Précautions
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedFruit.warnings.map((w, i) => (
+                      {selectedFruit.warnings?.map((w, i) => (
                         <span key={i} className="text-[11px] bg-destructive/10 text-destructive font-semibold px-2.5 py-1 rounded-lg border border-destructive/20">
                           {w}
                         </span>

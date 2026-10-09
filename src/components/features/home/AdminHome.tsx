@@ -392,7 +392,7 @@ export function AdminHome({ name }: Props) {
              </div>
            ) : stats?.recentOrders?.length ? (
              <div className="space-y-2.5">
-               {stats.recentOrders.map((order) => (
+               {(stats?.recentOrders || []).map((order) => (
                  <div key={order.id} className="bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl p-3.5 border border-border/30 min-w-0 overflow-hidden">
                    <RecentOrderRow order={order} />
                  </div>

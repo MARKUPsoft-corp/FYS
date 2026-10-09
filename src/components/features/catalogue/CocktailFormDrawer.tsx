@@ -208,7 +208,7 @@ export function CocktailFormDrawer({
   const [error, setError] = useState('');
 
   // Category map for display
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  const categoryMap = Object.fromEntries((categories || []).map((c) => [c.id, c.name]));
 
   // Populate form when editing
   useEffect(() => {
