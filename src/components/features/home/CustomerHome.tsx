@@ -325,9 +325,9 @@ export function CustomerHome(_props: Props) {
               </div>
 
               <div className="relative z-10 shrink-0">
-                <Link to="/lab?mode=degustation">
+                <Link to="/degustation-18-octobre">
                   <Button className="rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer animate-pulse hover:animate-none">
-                    Créer mon jus VIP
+                    En savoir plus
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>

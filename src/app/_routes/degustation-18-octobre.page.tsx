@@ -400,10 +400,10 @@ function CataloguePreview() {
 
       {/* 2. Cocktails du Catalogue */}
       {catalogList.map((cocktail) => (
-        <div key={cocktail.id} className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+        <div key={cocktail.id} className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm">
           <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
             {cocktail.imageUrl ? (
-              <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
                 <GlassWater className="size-16 mb-4 opacity-20" />
@@ -425,16 +425,10 @@ function CataloguePreview() {
                 </p>
               )}
               
-              <div className="flex items-center justify-between mt-auto">
-                <span className="text-white font-bold text-sm bg-white dark:bg-[#151916]/20 backdrop-blur-md px-3 py-1 rounded-xl">
+              <div className="flex items-center mt-auto">
+                <span className="text-white font-bold text-sm bg-black/40 backdrop-blur-md px-3 py-1 rounded-xl border border-white/20">
                   1000 XAF
                 </span>
-                
-                <Link to={"/board/catalogue?mode=degustation&cocktail=" + cocktail.id} className="inline-block">
-                  <Button className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
-                    <Plus className="size-5" />
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
