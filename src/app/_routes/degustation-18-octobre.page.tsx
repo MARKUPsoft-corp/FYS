@@ -140,9 +140,9 @@ const TastingPage: PageComponent = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF9F6] dark:bg-[#0f1210] text-[#1a1f1b] dark:text-[#FAF9F6] dark:text-white overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)' }}>
+    <div className="min-h-dvh bg-[#FAF9F6] dark:bg-[#0f1210] text-[#1a1f1b] dark:text-[#FAF9F6] overflow-x-hidden relative" style={{ fontFamily: 'var(--font-body)' }}>
       {/* ── Topbar discrète ── */}
-      <div className="w-full p-6 z-50 flex justify-between items-center relative">
+      <div className="absolute top-0 left-0 w-full p-6 z-50 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2 text-[#3F6D4E] dark:text-[#88b698] hover:text-[#2c3e32] dark:hover:text-[#a0cba0] transition-colors font-bold text-sm">
           <ArrowLeft className="size-4" /> Retour
         </Link>
@@ -151,9 +151,10 @@ const TastingPage: PageComponent = () => {
       </div>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative w-full min-h-[calc(100dvh-88px)] flex flex-col justify-center items-center px-6 py-12 md:py-20 overflow-hidden text-center">
+      <section className="relative w-full min-h-dvh flex flex-col justify-center items-center px-6 py-12 md:py-20 overflow-hidden text-center">
         {/* Subtle texture instead of heavy dots */}
-        <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper-2.png')]" />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Bouteille FYS, ananas et gingembre-1.png')" }} />
+        <div className="absolute inset-0 bg-[#FAF9F6]/80 dark:bg-[#0f1210]/85 backdrop-blur-[2px]" />
         
         <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center w-full">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#3F6D4E]/20 dark:border-[#88b698]/20 text-[#3F6D4E] dark:text-[#88b698] font-bold text-xs mb-8 bg-white dark:bg-[#151916]/50 shadow-sm">

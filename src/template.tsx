@@ -16,7 +16,8 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
 
         {/* ── PWA manifest & theme ── */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#FDFBF7" />
+        <meta name="theme-color" content="#FDFBF7" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0f1210" media="(prefers-color-scheme: dark)" />
         <meta name="color-scheme" content="light dark" />
 
         {/* ── PWA standalone (iOS) ── */}
