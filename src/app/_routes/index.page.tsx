@@ -1,6 +1,6 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
-import { useEffect, useState, useRef } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package, Globe } from 'lucide-react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronLeft, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package, Globe } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -32,7 +32,38 @@ const RootIndex: PageComponent = () => {
   const [activeProcessStep, setActiveProcessStep] = useState(0);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const [activeSection, setActiveSection] = useState('home');
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  
+  // Countdown state
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const targetDate = useMemo(() => new Date('2026-10-18T15:00:00'), []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const difference = targetDate.getTime() - now.getTime();
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  const nextSlide = () => setCurrentHeroSlide((prev) => (prev + 1) % 2);
+  const prevSlide = () => setCurrentHeroSlide((prev) => (prev === 0 ? 1 : 0));
+
+  useEffect(() => {
+    const timer = setInterval(nextSlide, 8000);
+    return () => clearInterval(timer);
+  }, [currentHeroSlide]);
+
 
   const { data: catalogCocktails = [] } = useQuery({
     queryKey: ['catalog-cocktails', 'public'],
@@ -155,7 +186,7 @@ const RootIndex: PageComponent = () => {
   if (loading) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
-        <img src="/logos/fys_logo.png" alt="FYS" className="h-16 w-auto animate-pulse" />
+        <img src="/logos/Logo_fys.png" alt="FYS" className="h-20 w-auto object-contain animate-pulse" />
       </div>
     );
   }
@@ -172,7 +203,7 @@ const RootIndex: PageComponent = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-5 md:px-8">
           <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <img src="/logos/fys_logo.png" alt="FYS" className="h-9 w-auto" />
+            <img src="/logos/Logo_fys.png" alt="FYS" className="h-10 w-auto object-contain" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
@@ -226,8 +257,8 @@ const RootIndex: PageComponent = () => {
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background dark:bg-background/80 dark:backdrop-blur-[48px] dark:saturate-[180%] border-l border-border dark:border-white/10 p-6 flex flex-col gap-6 shadow-2xl">
                   <div className="flex items-center gap-3 pt-4">
-                    <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-8 w-auto" />
-                    <span className="text-xl font-extrabold tracking-tight text-foreground font-display">FYS</span>
+                    <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-10 w-auto object-contain" />
+                    
                   </div>
                   
                   <div className="flex flex-col gap-1 mt-6">
@@ -306,76 +337,151 @@ const RootIndex: PageComponent = () => {
         </div>
       </nav>
 
-      {/* ━━━ HERO ━━━ */}
-      <section className="relative w-full h-dvh min-h-[500px] flex flex-col justify-center bg-card overflow-hidden border-b border-border/40">
+      
+      
+      {/* ━━━ HERO SLIDER ━━━ */}
+      <section className="relative w-full h-dvh min-h-[500px] bg-card overflow-hidden border-b border-border/40 group">
         
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
-        
-        {/* Subtle Background Image */}
-        <div 
-          className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-[0.25] dark:opacity-[0.10] transition-opacity"
-          style={{ 
-            backgroundImage: `url('${landingImages.hero}')`,
-            WebkitMaskImage: 'linear-gradient(to right, transparent, black 60%)',
-            maskImage: 'linear-gradient(to right, transparent, black 60%)' 
-          }} 
-        />
-
-        {/* Mobile contrast overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
-          <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
-            {/* Launch delivery notice pill */}
-            {isNoticeActive && (
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs opacity-0 animate-pop-in-cute" style={{ animationDelay: '50ms' }}>
-                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>{launchNoticeContent}</span>
-              </div>
-            )}
-
-            <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground opacity-0 animate-pop-in-cute" style={{ fontFamily: 'var(--font-display)', animationDelay: '100ms' }}>
-              {t('landing.hero.title1')} <br className="hidden md:block"/>
-              <span className="text-primary brightness-110 dark:brightness-125">{t('landing.hero.titleHighlight')}</span>
-              {t('landing.hero.title2')}
+        {/* Slide 1: EVENT */}
+        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center bg-[#FAF9F6] ${currentHeroSlide === 0 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Bouteille FYS, ananas et gingembre-1.png')" }} />
+          <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[2px]" />
+          
+          <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16 flex flex-col items-center text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#3F6D4E]/30 text-[#3F6D4E] dark:text-[#AECBB2] font-bold text-xs mb-6 md:mb-8 bg-white/50 dark:bg-black/20 shadow-sm animate-pop-in-cute">
+              <Sparkles className="size-4 text-[#E0982E]" />
+              Événement FYS
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              Le goût de nos fruits.<br/>
+              <span className="text-[#E0982E]">L'âme de notre terroir.</span>
             </h1>
-
-            <p className="text-sm font-bold uppercase tracking-wider text-secondary opacity-0 animate-pop-in-cute" style={{ animationDelay: '250ms' }}>
-              {t('landing.hero.badge')}
+            
+            <p className="text-base md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Une dégustation privée de créations pressées à froid. <br className="hidden md:block" />
+              Une expérience intime autour des saveurs du Cameroun.
             </p>
 
-            <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium opacity-0 animate-pop-in-cute" style={{ animationDelay: '400ms' }}>
-              {t('landing.hero.subtitle')}
-            </p>
+            {/* Countdown in Hero */}
+            <div className="flex gap-3 md:gap-4 mb-8 justify-center w-full">
+              {[
+                { label: 'Jours', value: timeLeft.days },
+                { label: 'Heures', value: timeLeft.hours },
+                { label: 'Minutes', value: timeLeft.minutes },
+                { label: 'Secondes', value: timeLeft.seconds }
+              ].map((unit, i) => (
+                <div key={i} className="flex flex-col items-center bg-white/60 dark:bg-black/40 backdrop-blur-sm p-3 md:p-4 rounded-2xl border border-[#3F6D4E]/20 min-w-[70px] md:min-w-[90px] shadow-sm">
+                  <div className="text-3xl md:text-4xl font-black text-[#3F6D4E] dark:text-[#AECBB2] font-display leading-none mb-1">
+                    {unit.value.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">{unit.label}</div>
+                </div>
+              ))}
+            </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4 opacity-0 animate-pop-in-cute" style={{ animationDelay: '550ms' }}>
-              <Link
-                to="/lab"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
-              >
-                {t('landing.hero.ctaPrimary')}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/lab?tab=nutrifys"
-                className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
-              >
-                <Sparkles className="w-4 h-4 text-secondary" />
-                {t('landing.nutrifys.cta')}
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link to="/degustation-18-octobre" className="h-14 px-8 rounded-2xl text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
+                Découvrir l'événement
+                <ArrowRight className="size-5" />
               </Link>
             </div>
           </div>
         </div>
 
+        {/* Slide 2: STANDARD HERO */}
+        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center ${currentHeroSlide === 1 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
+          
+          {/* Subtle Background Image */}
+          <div 
+            className="absolute right-0 top-0 w-full lg:w-2/3 h-full bg-cover bg-center pointer-events-none opacity-[0.25] dark:opacity-[0.10] transition-opacity"
+            style={{ 
+              backgroundImage: `url('${landingImages.hero}')`,
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 60%)',
+              maskImage: 'linear-gradient(to right, transparent, black 60%)' 
+            }} 
+          />
+
+          {/* Mobile contrast overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
+
+          <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16">
+            <div className="w-full max-w-2xl space-y-6 text-center lg:text-left mx-auto lg:mx-0">
+              {/* Launch delivery notice pill */}
+              {isNoticeActive && (
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs sm:text-sm font-semibold shadow-xs">
+                  <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>{launchNoticeContent}</span>
+                </div>
+              )}
+
+              <h1 className="text-[2.2rem] md:text-[3rem] lg:text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
+                {t('landing.hero.title1')} <br className="hidden md:block"/>
+                <span className="text-primary brightness-110 dark:brightness-125">{t('landing.hero.titleHighlight')}</span>
+                {t('landing.hero.title2')}
+              </h1>
+
+              <p className="text-sm font-bold uppercase tracking-wider text-secondary">
+                {t('landing.hero.badge')}
+              </p>
+
+              <p className="text-base md:text-lg text-foreground/90 dark:text-foreground/80 leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
+                {t('landing.hero.subtitle')}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start pt-4">
+                <Link
+                  to="/lab"
+                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all shadow-md bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
+                >
+                  {t('landing.hero.ctaPrimary')}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/lab?tab=nutrifys"
+                  className="h-12 px-7 rounded-full text-sm font-bold flex items-center gap-2.5 active:scale-[0.97] transition-all bg-background border border-border/80 hover:bg-muted/50 text-foreground shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <Sparkles className="w-4 h-4 text-secondary" />
+                  {t('landing.nutrifys.cta')}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Slider Controls & Arrows */}
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-6 z-40 bg-background/30 dark:bg-background/50 backdrop-blur-md px-4 py-2.5 rounded-full border border-border/30 shadow-sm">
+          <button onClick={prevSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Précédent">
+            <ChevronLeft className="size-5" />
+          </button>
+
+          <div className="flex gap-3 items-center">
+            <button 
+              onClick={() => setCurrentHeroSlide(0)} 
+              className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 0 ? 'bg-[#3F6D4E] w-6' : 'bg-[#3F6D4E]/30 dark:bg-white/30 hover:bg-[#3F6D4E]/50'}`}
+              aria-label="Slide Événement"
+            />
+            <button 
+              onClick={() => setCurrentHeroSlide(1)} 
+              className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 1 ? 'bg-primary w-6' : 'bg-primary/30 dark:bg-white/30 hover:bg-primary/50'}`}
+              aria-label="Slide Bar à jus"
+            />
+          </div>
+
+          <button onClick={nextSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Suivant">
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-0 animate-fade-in hover:opacity-100 transition-opacity cursor-pointer z-20" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} style={{ animationDelay: '800ms' }}>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-0 animate-fade-in hover:opacity-100 transition-opacity cursor-pointer z-30" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} style={{ animationDelay: '800ms' }}>
           <Mouse className="w-5 h-5 text-foreground animate-bounce" />
           <ChevronDown className="w-4 h-4 text-foreground/70 -mt-2 animate-pulse" />
         </div>
       </section>
-
-      {/* ━━━ STATS BAR ━━━ */}
+{/* ━━━ STATS BAR ━━━ */}
       <section className="py-12 md:py-16 px-5 md:px-8 relative z-10">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
           {[
@@ -1048,8 +1154,8 @@ const RootIndex: PageComponent = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
           <div className="lg:col-span-5 space-y-6">
             <div className="flex items-center gap-3">
-              <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-8 w-auto grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
-              <span className="text-xl font-extrabold font-display tracking-tight text-foreground">FYS</span>
+              <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-10 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+              
             </div>
             <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
               {t('landing.footer.tagline')}

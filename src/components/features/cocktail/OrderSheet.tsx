@@ -179,14 +179,16 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
     : 0;
 
   // ── Legacy 2-size price computation (used when no custom containers) ───────
-  const price500 = pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice;
-  const price1L = pricing ? pricePerBottle(pricing, '1L', cocktail.ingredients) : Math.round(cocktail.totalPrice * 1.6);
+  const isEventMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'degustation';
+  const price500 = isEventMode ? 1000 : (pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice);
+  const price1L = isEventMode ? 1000 : (pricing ? pricePerBottle(pricing, '1L', cocktail.ingredients) : Math.round(cocktail.totalPrice * 1.6));
 
 
-  const deliveryFee = pricing?.deliveryFee ?? 500;
+  const deliveryFee = isEventMode ? 0 : (pricing?.deliveryFee ?? 500);
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
   const subtotal = hasContainers ? containerSubtotal : (subtotal500 + subtotal1L);
+  const finalTotal = isEventMode ? subtotal - (discountAmount || 0) : (subtotal + deliveryFee - (discountAmount || 0));
   const totalBottles = hasContainers ? containerTotalBottles : (quantity500ml + quantity1L);
 
   const isCatalog = cocktail.type === CocktailType.CATALOG;
@@ -504,13 +506,13 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   <div className="text-[12px] mt-1 space-y-0.5">
                     {mainFruits.length > 0 && (
                       <p className="text-muted-foreground font-medium truncate">
-                        🍓 {mainFruits.map((i) => i.fruitName).join(' · ')}
+                        {mainFruits.map((i) => i.fruitName).join(' · ')}
                       </p>
                     )}
                     {supplements.length > 0 && (
                       <p className="text-amber-700 dark:text-amber-400 font-semibold truncate flex items-center gap-1.5 pt-0.5">
                         <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 shrink-0">
-                          🌿 {t('orders.supplementBadge', 'Supplément')}
+                          {t('orders.supplementBadge', 'Supplément')}
                         </span>
                         <span className="truncate">{supplements.map((i) => i.fruitName).join(' · ')}</span>
                       </p>
@@ -834,7 +836,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       {quantity500ml > 0 && (
                         <div className="absolute bottom-2 inset-x-4 h-8 rounded-full bg-primary/20 blur-xl" />
                       )}
-                      <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
+                      {!isEventMode && <svg viewBox="0 0 80 160" className="h-full w-auto drop-shadow-md relative z-10" aria-hidden>
                         <rect x="30" y="4" width="20" height="14" rx="3" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} />
                         <rect x="28" y="16" width="24" height="6" rx="2" fill={quantity500ml > 0 ? '#F2694A' : '#C4B5A8'} opacity="0.85" />
                         <path d="M32 22 L32 42 Q32 48 28 52 L52 52 Q48 48 48 42 L48 22 Z" fill="#E8F0EA" stroke={quantity500ml > 0 ? '#28422F' : '#9CA3AF'} strokeWidth="1.5" />
@@ -848,14 +850,14 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                             <stop offset="100%" stopColor="#D5E6D9" />
                           </linearGradient>
                         </defs>
-                      </svg>
+                      </svg>}
                     </div>
 
                     <div className="mt-2 text-center space-y-0.5">
                       <p className={`text-sm font-bold ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
-                        {t('settings.halfLiter')}
+                        {isEventMode ? 'Verre de dégustation' : t('settings.halfLiter')}
                       </p>
-                      <p className="text-[11px] text-muted-foreground font-medium">{t('settings.volume50cl')}</p>
+                      {!isEventMode && <p className="text-[11px] text-muted-foreground font-medium">{t('settings.volume50cl')}</p>}
                       <p className={`text-[15px] font-bold tabular-nums pt-1 ${quantity500ml > 0 ? 'text-primary' : 'text-foreground'}`}>
                         {price500.toLocaleString()} <span className="text-[11px] font-semibold">XAF</span>
                       </p>
@@ -894,7 +896,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   </div>
 
                   )}
-                  {(!cocktail.availableSizes || cocktail.availableSizes.includes('1L')) && (
+                  {!isEventMode && (!cocktail.availableSizes || cocktail.availableSizes.includes('1L')) && (
                   
                   <div className={`relative rounded-2xl border-2 p-3 pt-4 transition-all ${
                     quantity1L > 0
@@ -979,15 +981,16 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {t('orders.delivery')}
+                    {isEventMode ? 'Informations' : t('orders.delivery')}
                   </p>
-                  <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                  {!isEventMode && <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
                     <Clock className="size-3" />
                     {t('orders.deliveryDelayBadge')}
-                  </span>
+                  </span>}
                 </div>
                 <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-4">
-                  <div className="space-y-1.5">
+                  {!isEventMode && (
+<div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <MapPin className="size-3.5 text-primary" /> {t('orders.districtExact')}
                     </label>
@@ -1003,6 +1006,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       className="mt-2"
                     />
                   </div>
+)}
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <Phone className="size-3.5 text-primary" /> {t('orders.phone')}
@@ -1033,7 +1037,8 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       )}
                     </div>
                   </div>
-                  <div className="space-y-1.5">
+                  {!isEventMode && (
+<div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5 uppercase">
                       <MessageSquare className="size-3.5 text-primary" /> {t('orders.instructions')}
                     </label>
@@ -1044,10 +1049,34 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                       onChange={(e) => setInstructions(e.target.value)}
                     />
                   </div>
+)}
                 </div>
               </div>
 
-              {/* Mode de paiement */}
+              
+              {isEventMode ? (
+                <div className="space-y-3 mb-6 mt-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      Paiement
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Banknote className="size-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground">Paiement sur place</p>
+                        <p className="text-xs text-primary font-bold">1000 FCFA</p>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="size-5 text-primary" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                {/* Mode de paiement */}
               <div className="space-y-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Mode de paiement
@@ -1088,13 +1117,16 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                   </button>
                 </div>
               </div>
+                </>
+              )}
+    
 
               {/* Récap total */}
               <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
                 {quantity500ml > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] text-muted-foreground">
-                      {quantity500ml} × {t('settings.halfLiter')} · {price500.toLocaleString()} XAF
+                      {quantity500ml} × {isEventMode ? 'Verre(s)' : t('settings.halfLiter')} · {price500.toLocaleString()} XAF
                     </span>
                     <span className="text-[13px] font-semibold text-foreground">
                       {(price500 * quantity500ml).toLocaleString()} XAF
@@ -1111,7 +1143,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     </span>
                   </div>
                 )}
-                {totalBottles > 0 && (
+                {!isEventMode && totalBottles > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
                       <Truck className="size-3.5" /> {t('orders.delivery')}

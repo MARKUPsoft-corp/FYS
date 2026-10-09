@@ -72,7 +72,7 @@ export function Topbar() {
       <div className="h-20 flex items-center justify-between px-3 md:px-6 lg:px-12">
         <div className="flex shrink-0">
           <Link to="/board" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src="/logos/fys_logo.png" alt="FYS Logo" className="h-10 w-auto object-contain" />
+            <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain" />
           </Link>
         </div>
 

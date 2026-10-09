@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'rasengan';
-import { Beaker, ChevronRight, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
+import { Beaker, ChevronRight, GlassWater, Banknote, Leaf, Package, ShieldCheck, Clock, CheckCircle2, ChefHat, Droplets, XCircle, Sparkles, ArrowRight, ChevronDown, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useState, useEffect } from 'react';
@@ -301,70 +301,59 @@ export function CustomerHome(_props: Props) {
               </div>
             </div>
           </div>
-        ) : displayProgram ? (
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-primary/30 text-white group">
+        ) : (
+          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group">
             {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
-                src={displayProgram.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
-                alt={displayProgram.title}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/109275/pexels-photo-109275.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                }}
+                src="/degustation/Bouteille FYS, ananas et gingembre-1.png"
+                alt="Événement Dégustation"
                 className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1F3326]/85 to-black/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1a1f1b]/85 to-black/60" />
             </div>
 
             <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-3 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-xs">
-                    <Sparkles className="size-3.5 text-secondary" />
-                    {t('programs.suggestedCureBadge')}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E0982E] text-white shadow-xs">
+                    <Sparkles className="size-3.5 text-white" />
+                    Événement VIP
                   </span>
                   <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    {t('programs.cureDuration', { duration: displayProgram.durationDays, bottles: displayProgram.bottlesTotal })}
+                    18 Octobre 2026
                   </span>
-                  {displayProgram.badge && (
-                    <span className="text-xs text-secondary font-bold bg-secondary/15 px-3 py-1 rounded-full backdrop-blur-xs border border-secondary/30">
-                      {displayProgram.badge}
-                    </span>
-                  )}
                 </div>
 
                 <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
-                  {displayProgram.title} : {displayProgram.subtitle}
+                  Dégustation Privée FYS : L'expérience sur mesure
                 </h3>
 
                 <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
-                  {displayProgram.description}
+                  Vous êtes invité(e) ! En tant qu'utilisateur de l'application, créez dès maintenant votre propre jus exclusif à 1000 FCFA. Votre création sera préparée en direct sous vos yeux lors de l'événement.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Leaf className="size-3 text-primary" /> {displayProgram.goalLabel}
+                    <GlassWater className="size-3 text-[#E0982E]" /> Cocktail Personnalisé
                   </span>
                   <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Package className="size-3 text-secondary" /> {t('programs.pricePerPack', { price: displayProgram.price.toLocaleString() })}
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Sparkles className="size-3 text-secondary" /> {t('programs.dailyFollowup')}
+                    <Banknote className="size-3 text-[#3F6D4E]" /> Tarif spécial : 1000 XAF
                   </span>
                 </div>
               </div>
 
               <div className="relative z-10 shrink-0">
-                <Link to={`/board/programs?program=${displayProgram.id}`}>
-                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer">
-                    {t('programs.discoverCure')}
+                <Link to="/lab?mode=degustation">
+                  <Button className="rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer animate-pulse hover:animate-none">
+                    Créer mon jus VIP
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>
               </div>
             </div>
           </div>
-        ) : null}
+        )}
 
         {/* 2. STATISTIQUES (SECTION DÉDIÉE ET LUDIQUE) */}
         <div className="space-y-8 pt-6">

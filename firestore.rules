@@ -136,6 +136,20 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------------------------
+    
+    // ------------------------------------------------------------------------
+    // Réservations VIP (Dégustation)
+    // ------------------------------------------------------------------------
+    
+    match /fys_tasting_rsvps/{rsvpId} {
+      // Tout le monde peut s'inscrire (créer)
+      allow create: if true;
+      
+      // Seul l'admin peut lire, modifier ou supprimer la liste complète
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------------
     // FYS Events (Événements d'Entreprise & Traiteur B2B)
     // ------------------------------------------------------------------------
     

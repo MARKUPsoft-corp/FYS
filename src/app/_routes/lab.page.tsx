@@ -54,6 +54,7 @@ const FysLab: PageComponent = () => {
   }, [user, profile, profileLoading, fetchProfile]);
 
 
+  const isEventMode = searchParams.get('mode') === 'degustation';
   const tabParam = searchParams.get('tab');
   const stepParam = searchParams.get('step');
   const sheetParam = searchParams.get('sheet');
@@ -80,7 +81,12 @@ const FysLab: PageComponent = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const recommendKeyRef = useRef<string>('');
 
-  const { fruits, isLoading: fruitsLoading } = useFruitsRealtime();
+    const { fruits: allFruits, isLoading: fruitsLoading } = useFruitsRealtime();
+  const fruits = useMemo(() => {
+    if (!isEventMode) return allFruits;
+    const eventFruits = ['ananas', 'papaye', 'orange', 'gingembre', 'menthe', 'bissap'];
+    return allFruits.filter(f => eventFruits.some(ef => f.name.toLowerCase().includes(ef)));
+  }, [allFruits, isEventMode]);
 
   const { data: pricing } = useQuery({
     queryKey: ['pricing-settings'],
