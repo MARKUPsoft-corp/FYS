@@ -269,9 +269,11 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
         }
       }
 
-      const deliveryDetails = district.trim()
-        ? { district: district.trim(), phone: phone.trim(), instructions: instructions.trim(), ...(coordinates ? { coordinates } : {}) }
-        : undefined;
+      const deliveryDetails = isEventMode
+        ? { district: 'Événement Dégustation - 18 Octobre 2026', phone: phone.trim(), instructions: '' }
+        : district.trim()
+          ? { district: district.trim(), phone: phone.trim(), instructions: instructions.trim(), ...(coordinates ? { coordinates } : {}) }
+          : undefined;
 
       const orderLines: Array<{
         bottleSize: BottleSize;
@@ -1250,7 +1252,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 {ordering ? (
                   <><Loader2 className="size-5 animate-spin" /> {t('orders.ordering')}</>
                 ) : !deliveryOk ? (
-                  <>{t('orders.fillAddress')}</>
+                  <>{isEventMode ? 'Entrez votre numéro de téléphone' : t('orders.fillAddress')}</>
                 ) : totalBottles === 0 ? (
                   <>{t('orders.selectBottle')}</>
                 ) : totalBottles < minBottlesRequired ? (
