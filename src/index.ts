@@ -45,8 +45,15 @@ const isSecureEnvironment =
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator && isSecureEnvironment) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/firebase-messaging-sw.js', { scope: '/' })
+      .register('/sw.js', { scope: '/' })
       .then((reg) => {
+        // Force check for updates every time the app becomes visible
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            reg.update();
+          }
+        });
+
         // Auto-update: when a new SW is waiting, activate it immediately
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
