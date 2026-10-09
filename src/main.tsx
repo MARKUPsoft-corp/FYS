@@ -19,20 +19,34 @@ function ThemeWatcher() {
 
   useEffect(() => {
     const root = document.documentElement;
-    let themeMeta = document.querySelector('meta[name="theme-color"]');
     
+    // Manage theme-color
+    let themeMeta = document.querySelector('meta[name="theme-color"]');
     if (!themeMeta) {
       themeMeta = document.createElement('meta');
       themeMeta.setAttribute('name', 'theme-color');
       document.head.appendChild(themeMeta);
     }
 
+    // Manage color-scheme
+    let colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+    if (!colorSchemeMeta) {
+      colorSchemeMeta = document.createElement('meta');
+      colorSchemeMeta.setAttribute('name', 'color-scheme');
+      document.head.appendChild(colorSchemeMeta);
+    }
+
     if (actualTheme === 'dark') {
       root.classList.add('dark');
       themeMeta.setAttribute('content', '#1A1F1B');
+      colorSchemeMeta.setAttribute('content', 'dark');
+      // For some Android browsers, forcing the body bg can help Edge-to-Edge calculations
+      document.body.style.backgroundColor = '#1A1F1B';
     } else {
       root.classList.remove('dark');
       themeMeta.setAttribute('content', '#FDFBF7');
+      colorSchemeMeta.setAttribute('content', 'light');
+      document.body.style.backgroundColor = '#FDFBF7';
     }
   }, [actualTheme]);
 

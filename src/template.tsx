@@ -16,14 +16,14 @@ export default function Template({ Head, Body, Script }: TemplateProps) {
 
         {/* ── PWA manifest & theme ── */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#FDFBF7" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#0f1210" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#FDFBF7" id="theme-color-meta" />
+        
         <meta name="color-scheme" content="light dark" />
 
         {/* ── PWA standalone (iOS) ── */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        
         <meta name="apple-mobile-web-app-title" content="FYS" />
 
         {/* ── Icons ── */}
