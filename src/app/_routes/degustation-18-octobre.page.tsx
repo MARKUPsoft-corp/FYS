@@ -125,9 +125,11 @@ const TastingPage: PageComponent = () => {
              <Link to="/lab?mode=degustation" className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white h-14 font-bold shadow-md hover:shadow-lg transition-all animate-pulse hover:animate-none">
                <Sparkles className="size-5" /> Créer mon jus VIP (1000F)
              </Link>
-             <Button className="w-full rounded-xl bg-[#3F6D4E] hover:bg-[#3F6D4E]/90 text-white h-12 mt-2">
-               <Download className="mr-2 size-4" /> Sauvegarder mon billet
-             </Button>
+             <a href="/degustation/Invitation FYS au tissu ndop indigo.png" download="Invitation_FYS_VIP.png" className="w-full block">
+               <Button type="button" className="w-full rounded-xl bg-[#3F6D4E] hover:bg-[#3F6D4E]/90 text-white h-12 mt-2 pointer-events-none">
+                 <Download className="mr-2 size-4" /> Télécharger l'invitation
+               </Button>
+             </a>
              <Link to="/" className="w-full flex justify-center py-2 text-[#3F6D4E] font-semibold hover:underline">
                Retour à l'accueil
              </Link>
