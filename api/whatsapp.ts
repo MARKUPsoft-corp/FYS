@@ -13,19 +13,27 @@ const WHATSAPP_PHONE_NUMBER_ID =
 const GEMINI_API_KEY =
   process.env.GEMINI_API_KEY || process.env.RASENGAN_GEMINI_API_KEY;
 
-// ── Firebase Admin (lazy singleton) ───────────────────────────────────────────
+// ── Firebase Admin (optionnel & sécurisé) ────────────────────────────────────
 
 function getAdminDb() {
-  const app = getApps().length
-    ? getApps()[0]
-    : initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID!,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
-  return getFirestore(app);
+  try {
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      return null;
+    }
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp({
+          credential: cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          }),
+        });
+    return getFirestore(app);
+  } catch (e) {
+    console.warn('[whatsapp-webhook] Firebase Admin init bypassed:', e);
+    return null;
+  }
 }
 
 // ── Envoi de message WhatsApp via Meta Graph API ──────────────────────────────
@@ -46,22 +54,23 @@ async function sendWhatsAppMessage(to: string, text: string) {
     text: { preview_url: false, body: text },
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    console.error('[whatsapp] Failed to send message:', errorData);
+    const data = await response.text();
+    console.log('[whatsapp] Meta send response status:', response.status, data);
+    return response.ok;
+  } catch (fetchErr) {
+    console.error('[whatsapp] Network error calling Meta API:', fetchErr);
     return false;
   }
-
-  return true;
 }
 
 // ── Prompt Système NutriFYS WhatsApp (Chaleureux & Adapté aux seniors) ────────
@@ -117,9 +126,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 2. Traitement des messages entrants (POST)
   if (req.method === 'POST') {
-    // Répondre immédiatement 200 OK à Meta pour éviter les timeouts
-    res.status(200).json({ status: 'received' });
-
     try {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
@@ -127,105 +133,111 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Vérifier si un message texte est présent
       const message = changes?.messages?.[0];
       if (!message || message.type !== 'text') {
-        return;
+        return res.status(200).json({ status: 'ignored_not_text' });
       }
 
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
       const senderText = message.text?.body?.trim();
       const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
 
-      if (!senderPhone || !senderText) return;
-
-      console.log(`[whatsapp-webhook] Message from ${senderPhone} (${senderName}): "${senderText}"`);
-
-      // Initialiser la base Firestore
-      let userProfileContext = '';
-      try {
-        const db = getAdminDb();
-        const usersRef = db.collection('users');
-
-        // Rechercher si l'utilisateur existe déjà par son numéro
-        const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
-        let userDocRef;
-
-        if (!querySnap.empty) {
-          const userData = querySnap.docs[0].data();
-          userDocRef = querySnap.docs[0].ref;
-          if (userData.healthConditions?.length) {
-            userProfileContext += `\nConditions médicales connues du client : ${userData.healthConditions.join(', ')}`;
-          }
-          if (userData.allergies?.length) {
-            userProfileContext += `\nAllergies connues : ${userData.allergies.join(', ')}`;
-          }
-        } else {
-          // Créer une fiche utilisateur légère pour ce contact WhatsApp
-          const newDoc = await usersRef.add({
-            name: senderName,
-            phone: senderPhone,
-            role: 'customer',
-            channel: 'whatsapp',
-            createdAt: FieldValue.serverTimestamp(),
-          });
-          userDocRef = newDoc;
-        }
-
-        // Sauvegarder le message reçu dans l'historique
-        if (userDocRef) {
-          await userDocRef.collection('whatsapp_messages').add({
-            sender: 'user',
-            text: senderText,
-            timestamp: FieldValue.serverTimestamp(),
-          });
-        }
-      } catch (dbErr) {
-        console.warn('[whatsapp-webhook] Firebase storage warning:', dbErr);
+      if (!senderPhone || !senderText) {
+        return res.status(200).json({ status: 'ignored_empty' });
       }
 
-      // Appeler le modèle Gemini avec le profil
+      console.log(`[whatsapp-webhook] Processing message from ${senderPhone} (${senderName}): "${senderText}"`);
+
+      // Initialiser la base Firestore (si disponible)
+      let userProfileContext = '';
+      const db = getAdminDb();
+      if (db) {
+        try {
+          const usersRef = db.collection('users');
+          const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
+          let userDocRef;
+
+          if (!querySnap.empty) {
+            const userData = querySnap.docs[0].data();
+            userDocRef = querySnap.docs[0].ref;
+            if (userData.healthConditions?.length) {
+              userProfileContext += `\nConditions médicales connues du client : ${userData.healthConditions.join(', ')}`;
+            }
+            if (userData.allergies?.length) {
+              userProfileContext += `\nAllergies connues : ${userData.allergies.join(', ')}`;
+            }
+          } else {
+            const newDoc = await usersRef.add({
+              name: senderName,
+              phone: senderPhone,
+              role: 'customer',
+              channel: 'whatsapp',
+              createdAt: FieldValue.serverTimestamp(),
+            });
+            userDocRef = newDoc;
+          }
+
+          if (userDocRef) {
+            await userDocRef.collection('whatsapp_messages').add({
+              sender: 'user',
+              text: senderText,
+              timestamp: FieldValue.serverTimestamp(),
+            });
+          }
+        } catch (dbErr) {
+          console.warn('[whatsapp-webhook] Firestore write skipped:', dbErr);
+        }
+      }
+
+      // Appeler le modèle Gemini avec le prompt NutriFYS
       if (!GEMINI_API_KEY) {
         console.error('[whatsapp-webhook] GEMINI_API_KEY missing');
         await sendWhatsAppMessage(
           senderPhone,
-          `Bonjour ${senderName} ! Bienvenue chez FYS. Notre assistant NutriFYS est en cours de mise à jour. Nous revenons vers vous dans un instant.`,
+          `Bonjour ${senderName} ! Bienvenue chez FYS. Notre assistant NutriFYS est en cours d'initialisation. Nous vous répondons dans un instant.`,
         );
-        return;
+        return res.status(200).json({ status: 'no_gemini_key' });
       }
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-2.5-flash',
         systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}`,
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 500,
+          maxOutputTokens: 600,
         },
       });
 
+      console.log('[whatsapp-webhook] Calling Gemini for NutriFYS answer...');
       const result = await model.generateContent(senderText);
       const aiReply = result.response.text();
+      console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
 
-      // Envoyer la réponse sur WhatsApp
-      await sendWhatsAppMessage(senderPhone, aiReply);
+      // Envoyer la réponse sur WhatsApp (await obligatoire avant res.status(200))
+      const sent = await sendWhatsAppMessage(senderPhone, aiReply);
+      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', sent);
 
-      // Enregistrer la réponse de l'IA dans Firestore
-      try {
-        const db = getAdminDb();
-        const usersRef = db.collection('users');
-        const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
-        if (!querySnap.empty) {
-          await querySnap.docs[0].ref.collection('whatsapp_messages').add({
-            sender: 'nutrifys',
-            text: aiReply,
-            timestamp: FieldValue.serverTimestamp(),
-          });
+      // Enregistrer la réponse de l'IA dans Firestore si actif
+      if (db) {
+        try {
+          const usersRef = db.collection('users');
+          const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
+          if (!querySnap.empty) {
+            await querySnap.docs[0].ref.collection('whatsapp_messages').add({
+              sender: 'nutrifys',
+              text: aiReply,
+              timestamp: FieldValue.serverTimestamp(),
+            });
+          }
+        } catch (saveErr) {
+          console.warn('[whatsapp-webhook] Error saving AI reply:', saveErr);
         }
-      } catch (saveErr) {
-        console.warn('[whatsapp-webhook] Error saving AI reply:', saveErr);
       }
-    } catch (err) {
+
+      return res.status(200).json({ status: 'success', sent });
+    } catch (err: any) {
       console.error('[whatsapp-webhook] Processing error:', err);
+      return res.status(500).json({ error: err?.message || 'Internal Error' });
     }
-    return;
   }
 
   return res.status(405).json({ error: 'Method Not Allowed' });
