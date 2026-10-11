@@ -8,31 +8,33 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 // ── Chip selector ─────────────────────────────────────────────────────────────
 
 function ChipSelector({
-  chips,
+  chips = [],
   noneLabel,
-  selected,
+  selected = [],
   onChange,
   customInput,
   onCustomInputChange,
   placeholder,
 }: {
-  chips: readonly string[];
+  chips?: readonly string[];
   noneLabel: string;
-  selected: string[];
+  selected?: string[];
   onChange: (v: string[]) => void;
   customInput: string;
   onCustomInputChange: (v: string) => void;
   placeholder?: string;
 }) {
   const { t } = useTranslation();
+  const safeChips = Array.isArray(chips) ? chips : [];
+  const safeSelected = Array.isArray(selected) ? selected : [];
 
   function toggle(value: string) {
     if (value === noneLabel) {
       onCustomInputChange('');
-      onChange(selected.includes(noneLabel) ? [] : [noneLabel]);
+      onChange(safeSelected.includes(noneLabel) ? [] : [noneLabel]);
       return;
     }
-    const withoutNone = selected.filter((s) => s !== noneLabel);
+    const withoutNone = safeSelected.filter((s) => s !== noneLabel);
     if (withoutNone.includes(value)) {
       onChange(withoutNone.filter((s) => s !== value));
     } else {
@@ -49,24 +51,24 @@ function ChipSelector({
       .filter(Boolean);
 
     if (items.length === 0) return;
-    const withoutNone = selected.filter((s) => s !== noneLabel);
+    const withoutNone = safeSelected.filter((s) => s !== noneLabel);
     const updated = Array.from(new Set([...withoutNone, ...items]));
     onChange(updated);
     onCustomInputChange('');
   }
 
   function removeCustom(value: string) {
-    onChange(selected.filter((s) => s !== value));
+    onChange(safeSelected.filter((s) => s !== value));
   }
 
-  const customValues = selected.filter((s) => !chips.includes(s) && s !== noneLabel);
+  const customValues = safeSelected.filter((s) => !safeChips.includes(s) && s !== noneLabel);
 
   return (
     <div className="space-y-4">
       {/* Puces prédéfinies */}
       <div className="flex flex-wrap gap-2">
-        {chips.map((chip) => {
-          const active = selected.includes(chip);
+        {safeChips.map((chip) => {
+          const active = safeSelected.includes(chip);
           return (
             <button
               key={chip}
@@ -224,6 +226,46 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
   const customInputs = [customCondition, customAllergy, customGoal];
   const setCustomInputs = [setCustomCondition, setCustomAllergy, setCustomGoal];
 
+  const getChips = (key: string, fallback: string[]): string[] => {
+    const res = t(key, { returnObjects: true });
+    return Array.isArray(res) ? (res as string[]) : fallback;
+  };
+
+  const DEFAULT_CONDITIONS = [
+    'Diabète de type 2',
+    'Hypertension',
+    'Maladie cardiovasculaire',
+    'Grossesse',
+    'Insuffisance rénale',
+    'Problèmes thyroïdiens',
+    'Anémie',
+    'Côlon irritable',
+    'Obésité',
+  ];
+  const DEFAULT_ALLERGIES = [
+    'Kiwi',
+    'Fraise',
+    'Ananas',
+    'Arachides',
+    'Noix de coco',
+    'Agrumes',
+    'Gluten',
+    'Soja',
+    'Lactose',
+  ];
+  const DEFAULT_GOALS = [
+    'Perdre du poids',
+    'Booster mon énergie',
+    'Mieux digérer',
+    'Renforcer l\'immunité',
+    'Santé cardiaque',
+    'Récupération sportive',
+    'Belle peau',
+    'Meilleur sommeil',
+    'Réduire le stress',
+    'Grossesse saine',
+  ];
+
   const STEPS = [
     {
       key: 'conditions',
@@ -232,7 +274,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.conditionsSubtitle'),
       none: t('onboarding.conditionsNone'),
       placeholder: t('onboarding.customConditionsPlaceholder', 'Autre condition… (ex: gastrite, ulcère, asthme)'),
-      chips: t('onboarding.conditionsChips', { returnObjects: true }) as string[],
+      chips: getChips('onboarding.conditionsChips', DEFAULT_CONDITIONS),
     },
     {
       key: 'allergies',
@@ -241,7 +283,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.allergiesSubtitle'),
       none: t('profile.noAllergies'),
       placeholder: t('onboarding.customAllergiesPlaceholder', 'Autre allergie… (ex: mangue, pêche, kiwi)'),
-      chips: t('onboarding.allergiesChips', { returnObjects: true }) as string[],
+      chips: getChips('onboarding.allergiesChips', DEFAULT_ALLERGIES),
     },
     {
       key: 'goals',
@@ -250,7 +292,7 @@ export function OnboardingModal({ open, onSkip, onComplete }: Props) {
       subtitle: t('onboarding.goalsSubtitle'),
       none: t('onboarding.goalsNone'),
       placeholder: t('onboarding.customGoalsPlaceholder', 'Autre objectif… (ex: concentration, vitalité)'),
-      chips: t('onboarding.goalsChips', { returnObjects: true }) as string[],
+      chips: getChips('onboarding.goalsChips', DEFAULT_GOALS),
     },
   ];
 

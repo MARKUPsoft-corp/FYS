@@ -710,7 +710,41 @@ export default {
     "customAllergiesPlaceholder": "Other allergy… (e.g. mango, peach, kiwi)",
     "customGoalsPlaceholder": "Other goal… (e.g. focus, vitality)",
     "customAddedTitle": "Your custom additions:",
-    "customHelper": "Type your condition if not listed above, then continue."
+    "customHelper": "Type your condition if not listed above, then continue.",
+    "conditionsChips": [
+      "Type 2 Diabetes",
+      "Hypertension",
+      "Cardiovascular disease",
+      "Pregnancy",
+      "Kidney disease",
+      "Thyroid disorders",
+      "Anemia",
+      "Irritable bowel syndrome",
+      "Obesity"
+    ],
+    "allergiesChips": [
+      "Kiwi",
+      "Strawberry",
+      "Pineapple",
+      "Peanuts",
+      "Coconut",
+      "Citrus",
+      "Gluten",
+      "Soy",
+      "Lactose"
+    ],
+    "goalsChips": [
+      "Lose weight",
+      "Boost energy",
+      "Better digestion",
+      "Boost immunity",
+      "Heart health",
+      "Sports recovery",
+      "Glowing skin",
+      "Better sleep",
+      "Reduce stress",
+      "Healthy pregnancy"
+    ]
   },
   "language": {
     "switchTo": "English",

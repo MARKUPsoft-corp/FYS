@@ -710,7 +710,41 @@ export default {
     "customAllergiesPlaceholder": "Autre allergie… (ex: mangue, pêche, kiwi)",
     "customGoalsPlaceholder": "Autre objectif… (ex: concentration, vitalité)",
     "customAddedTitle": "Vos ajouts personnalisés :",
-    "customHelper": "Saisissez votre situation si elle n'apparaît pas dans la liste ci-dessus, puis continuez."
+    "customHelper": "Saisissez votre situation si elle n'apparaît pas dans la liste ci-dessus, puis continuez.",
+    "conditionsChips": [
+      "Diabète de type 2",
+      "Hypertension",
+      "Maladie cardiovasculaire",
+      "Grossesse",
+      "Insuffisance rénale",
+      "Problèmes thyroïdiens",
+      "Anémie",
+      "Côlon irritable",
+      "Obésité"
+    ],
+    "allergiesChips": [
+      "Kiwi",
+      "Fraise",
+      "Ananas",
+      "Arachides",
+      "Noix de coco",
+      "Agrumes",
+      "Gluten",
+      "Soja",
+      "Lactose"
+    ],
+    "goalsChips": [
+      "Perdre du poids",
+      "Booster mon énergie",
+      "Mieux digérer",
+      "Renforcer l'immunité",
+      "Santé cardiaque",
+      "Récupération sportive",
+      "Belle peau",
+      "Meilleur sommeil",
+      "Réduire le stress",
+      "Grossesse saine"
+    ]
   },
   "language": {
     "switchTo": "Français",
