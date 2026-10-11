@@ -9,7 +9,7 @@ const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN || 'fys_secret_verify_token_2026';
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID =
-  process.env.WHATSAPP_PHONE_NUMBER_ID || '1470269892828772';
+  process.env.WHATSAPP_PHONE_NUMBER_ID || '1420693941130535';
 const GEMINI_API_KEY =
   process.env.GEMINI_API_KEY || process.env.RASENGAN_GEMINI_API_KEY;
 
