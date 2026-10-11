@@ -147,13 +147,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[whatsapp-webhook] Processing message from ${senderPhone} (${senderName}): "${senderText}"`);
 
       // Initialiser la base Firestore (si disponible)
+      // Initialiser la base Firestore et charger l'historique de discussion
       let userProfileContext = '';
+      const chatHistoryForGemini: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
       const db = getAdminDb();
+      let userDocRef: any = null;
+
       if (db) {
         try {
           const usersRef = db.collection('users');
           const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
-          let userDocRef;
 
           if (!querySnap.empty) {
             const userData = querySnap.docs[0].data();
@@ -163,6 +166,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
             if (userData.allergies?.length) {
               userProfileContext += `\nAllergies connues : ${userData.allergies.join(', ')}`;
+            }
+
+            // Récupérer les 8 derniers messages pour garder le fil naturel
+            const historySnap = await userDocRef
+              .collection('whatsapp_messages')
+              .orderBy('timestamp', 'desc')
+              .limit(8)
+              .get();
+
+            if (!historySnap.empty) {
+              const rawHistory = historySnap.docs.map((d: any) => d.data()).reverse();
+              for (const m of rawHistory) {
+                if (m.text) {
+                  chatHistoryForGemini.push({
+                    role: m.sender === 'user' ? 'user' : 'model',
+                    parts: [{ text: m.text }],
+                  });
+                }
+              }
             }
           } else {
             const newDoc = await usersRef.add({
@@ -183,11 +205,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
           }
         } catch (dbErr) {
-          console.warn('[whatsapp-webhook] Firestore write skipped:', dbErr);
+          console.warn('[whatsapp-webhook] Firestore history retrieval skipped:', dbErr);
         }
       }
 
-      // Appeler le modèle Gemini avec le prompt NutriFYS
+      // Appeler le modèle Gemini avec le prompt NutriFYS et tout l'historique
       if (!GEMINI_API_KEY) {
         console.error('[whatsapp-webhook] GEMINI_API_KEY missing');
         await sendWhatsAppMessage(
@@ -197,27 +219,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ status: 'no_gemini_key' });
       }
 
+      const hasHistory = chatHistoryForGemini.length > 0;
+      const conversationRules = hasHistory
+        ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.`
+        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
+
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
+
+      // Construction du payload multi-tours
+      const contentsPayload = [
+        ...chatHistoryForGemini,
+        { role: 'user' as const, parts: [{ text: senderText }] },
+      ];
+
       try {
         const model = genAI.getGenerativeModel({
           model: 'gemini-3.1-flash-lite',
-          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}`,
+          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${conversationRules}`,
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 600,
           },
         });
-        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite for NutriFYS answer...');
-        const result = await model.generateContent(senderText);
+        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite with conversation history...');
+        const result = await model.generateContent({ contents: contentsPayload });
         aiReply = result.response.text();
       } catch (geminiErr: any) {
         console.warn('[whatsapp-webhook] Gemini error, fallback to gemini-2.0-flash:', geminiErr?.message);
         const modelFallback = genAI.getGenerativeModel({
           model: 'gemini-2.0-flash',
-          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}`,
+          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${conversationRules}`,
         });
-        const result = await modelFallback.generateContent(senderText);
+        const result = await modelFallback.generateContent({ contents: contentsPayload });
         aiReply = result.response.text();
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
