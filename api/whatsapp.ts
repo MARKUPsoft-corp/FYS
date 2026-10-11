@@ -7,9 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN || 'fys_secret_verify_token_2026';
-const WHATSAPP_API_TOKEN =
-  process.env.WHATSAPP_API_TOKEN ||
-  'EAAt5jvmbxgABSloc9kWUmnmKWjtKLAzFiHZCCs2QN5toFvfbBW6lZBYBSDUnmZBhgpqZCKTMmanmlmBkAyZABnag8K4RAGN0DVme0km4UagoR9BvZC7wah7IoJz0T2ZCx8G5EkGONks5Dhky1Ed0c32AWtr3IBI674lKkN9adiG2IezwgYfB1w7z3ErbiImgkI1i6eg0Hy4wFSfLIiyrbMkeiTMM27TSVvJs5yBug4ogKSHRhU9vebNkyXYoJvqJ2TkB6eUjlzrIz0nQYi2hsvB8wRV';
+const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID =
   process.env.WHATSAPP_PHONE_NUMBER_ID || '1420693941130535';
 const GEMINI_API_KEY =
