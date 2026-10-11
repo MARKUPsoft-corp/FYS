@@ -201,20 +201,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let aiReply = '';
       try {
         const model = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3.1-flash-lite',
           systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}`,
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 600,
           },
         });
-        console.log('[whatsapp-webhook] Calling Gemini 2.0 Flash for NutriFYS answer...');
+        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite for NutriFYS answer...');
         const result = await model.generateContent(senderText);
         aiReply = result.response.text();
       } catch (geminiErr: any) {
-        console.warn('[whatsapp-webhook] Gemini 2.0 Flash fallback to 1.5:', geminiErr?.message);
+        console.warn('[whatsapp-webhook] Gemini error, fallback to gemini-2.0-flash:', geminiErr?.message);
         const modelFallback = genAI.getGenerativeModel({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash',
           systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}`,
         });
         const result = await modelFallback.generateContent(senderText);
