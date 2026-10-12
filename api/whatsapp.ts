@@ -73,6 +73,56 @@ async function sendWhatsAppMessage(to: string, text: string) {
   }
 }
 
+// ── Marquer le message comme lu (Accusé de réception avec double coche bleue) ──
+
+async function markWhatsAppMessageAsRead(messageId: string): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN || !messageId) return false;
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        status: 'read',
+        message_id: messageId,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[whatsapp] Could not mark message as read:', err);
+    return false;
+  }
+}
+
+// ── Indicateur visuel "en train d'\''écrire..." (Typing indicator) ─────────────
+
+async function sendWhatsAppTypingIndicator(to: string): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN || !to) return false;
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        sender_action: 'typing_on',
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── Téléchargement de média binaire WhatsApp (Note vocale client) ──────────────
 
 async function downloadWhatsAppMedia(mediaId: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
@@ -473,6 +523,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.warn(`[whatsapp-webhook] Message ${messageId} already processed (Meta retry). Ignoring duplicate.`);
           return res.status(200).json({ status: 'already_processed', messageId });
         }
+      }
+
+      // RÉTROACTION VISUELLE INSTANTANÉE (Double coche bleue + Indicateur d'écriture)
+      if (messageId) {
+        markWhatsAppMessageAsRead(messageId).catch(() => {});
+        sendWhatsAppTypingIndicator(senderPhone).catch(() => {});
       }
 
       let bottle500Base = 1500;
