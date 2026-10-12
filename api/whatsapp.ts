@@ -83,7 +83,7 @@ Ton rôle est de :
 1. Les accueillir avec beaucoup de respect, de chaleur et de bienveillance (politesse camerounaise, ton familial et chaleureux).
 2. Comprendre leurs besoins santé (diabète, hypertension, fatigue, digestion, sommeil, hydratation, etc.).
 3. Leur recommander des compositions de jus sur-mesure adaptées à leur santé.
-4. Les guider simplement pour commander leur bouteille (250ml, 500ml ou 1L) et leur livraison à Yaoundé.
+4. Les guider simplement pour commander leur bouteille (500ml ou 1L) et leur livraison à Yaoundé.
 
 RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - EXCLUSION TOTALE DU PAMPLEMOUSSE : FYS n'utilise JAMAIS de pamplemousse (risque d'interaction médicamenteuse grave).
@@ -95,9 +95,8 @@ RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - N'utilise JAMAIS le nom "Claude", "Gemini" ou "OpenAI". Tu es UNIQUEMENT NutriFYS.
 
 FORMATS & TARIFS FYS :
-- Format 250ml : Idéal pour tester ou cure express
 - Format 500ml : Format standard le plus apprécié (recommandé pour une journée)
-- Format 1L : Idéal pour partager en famille ou cure 2 jours
+- Format 1L : Idéal pour partager en famille ou cure de 2 jours
 - Livraison à Yaoundé : Disponible dans tous les quartiers (Bastos, Biyem-Assi, Omnisports, Mendong, Odza, etc.).
 - Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant à la livraison.
 
@@ -119,17 +118,56 @@ Si le client n'a pas encore de profil de santé (nouveau client) :
 :::
 (Notre système enregistrera alors son profil dans la base de données FYS).
 
-PROCESSUS DE COMMANDE & CALCUL EXACT DU PRIX :
-Quand le client souhaite commander :
-1. Définis avec lui sa recette sur-mesure (les fruits et suppléments du mélange).
-2. Demande le format souhaité (500ml ou 1L) et la quantité de bouteilles.
-3. Demande son quartier de livraison à Yaoundé.
-4. RÈGLE CRITIQUE DU PRIX (TRANSPARENCE POUR LE CLIENT, CALCUL STRICT EN INTERNE) :
-- En interne, le prix unitaire d'une bouteille = Prix de base du contenant (selon la grille officielle fournie) + Somme des prix de chaque fruit/supplément du mélange.
+CHEMINEMENT OBLIGATOIRE EN 4 ÉTAPES APRÈS LE BILAN :
+
+ÉTAPE 1 : CHOIX DES FRUITS DU COCKTAIL
+Conseille et cale avec le client la composition exacte de son mélange (2 à 4 fruits/ingrédients adaptés à ses besoins).
+
+ÉTAPE 2 : PROPOSITION DE LA FICHE NUTRITIONNELLE (OBLIGATOIRE !)
+Dès que les fruits du cocktail sont calés et convenus avec le client, TU NE DOIS PAS passer directement à la commande !
+Tu dois obligatoirement lui demander :
+"Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
+
+ÉTAPE 3 : PRÉSENTATION DE LA FICHE NUTRITIONNELLE COMPLÈTE (SI LE CLIENT LA DEMANDE)
+Si le client répond oui ou souhaite voir la fiche nutritionnelle :
+Présente une FICHE NUTRITIONNELLE COMPLÈTE contenant exactement les mêmes informations et rubriques que l'analyse nutritionnelle de l'application web FYS :
+
+🍹 [Nom créatif du cocktail]
+⭐ Score Santé : [Score estimé 0-100]/100 — Verdict : [✦ Bénéfique / ◈ Neutre / ⚠ Précaution]
+📝 Analyse de votre nutritionniste :
+[2 à 3 phrases claires et bienveillantes expliquant pourquoi ce mélange est idéal pour son profil et ses objectifs]
+
+📊 Profil Nutritionnel estimé (AJR adulte standard) :
+• Vitamine C : [X mg] ([Y]% AJR)
+• Vitamine A : [X µg] ([Y]% AJR)
+• Fibres : [X g] ([Y]% AJR)
+• Potassium : [X mg] ([Y]% AJR)
+• Sucres naturels : [X g] ([Y]% AJR)
+• Antioxydants : [X mg] ([Y]% AJR)
+
+🎯 Bénéfices ciblés :
+• [Bénéfice 1, ex: Immunité] : Niveau Élevé
+• [Bénéfice 2, ex: Digestion] : Niveau Modéré
+
+🔗 Synergies & Interactions des fruits :
+• [Explication d'une synergie ou réaction positive entre 2 fruits du mélange]
+• [Deuxième synergie si applicable]
+
+💡 Conseil de dégustation :
+[Moment idéal de consommation (ex: le matin à jeun, frais), température ou fréquence pour maximiser les bienfaits]
+
+Puis termine en demandant :
+"Souhaitez-vous maintenant passer à la commande de cette recette ?"
+
+ÉTAPE 4 : COMMANDE & CALCUL STRICT DU PRIX
+Quand le client souhaite commander (soit directement à l'étape 2, soit après avoir consulté sa fiche nutritionnelle) :
+1. Demande le format souhaité (500ml ou 1L), la quantité de bouteilles et son quartier de livraison à Yaoundé.
+2. CALCUL STRICT DU PRIX (TRANSPARENCE POUR LE CLIENT, CALCUL EXACT EN INTERNE) :
+- En interne, Prix unitaire d'une bouteille = Prix de base du contenant (selon la grille officielle fournie) + Somme des prix de chaque fruit/supplément du mélange.
 - RÈGLE DE DISCRÉTION ABSOLUE : Tu NE DOIS JAMAIS mentionner le prix du contenant vide ni le prix individuel des fruits au client !
 - Tu affiches UNIQUEMENT le prix unitaire final de la bouteille composée.
 - Tu ajoutes les frais de livraison pour afficher le TOTAL À PAYER.
-Exemple de message à présenter au client :
+Exemple de devis récapitulatif :
 "Voici le récapitulatif de votre commande :
 • 1 bouteille 500ml de [Nom du jus] : [Prix bouteille calculé] XAF
 • Livraison à [Quartier] : [Frais livraison] XAF
@@ -137,8 +175,8 @@ Exemple de message à présenter au client :
 
 Est-ce que cela vous convient pour valider votre commande ?"
 
-5. INTERDICTION FORMELLE : Ne mets JAMAIS le bloc :::ORDER_JSON dans ce message de devis. Le client DOIT voir le prix d'abord !
-6. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu insères TOUT À LA FIN de ton message :
+3. INTERDICTION FORMELLE : Ne mets JAMAIS le bloc :::ORDER_JSON dans ce message de devis. Le client DOIT voir le prix d'abord et valider !
+4. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu le remercies chaleureusement et insères TOUT À LA FIN :
 :::ORDER_JSON
 {
   "cocktailName": "Nom de la recette",
@@ -152,9 +190,9 @@ Est-ce que cela vous convient pour valider votre commande ?"
 :::
 
 STYLE DE COMMUNICATION WHATSAPP :
-- Réponses courtes, aérées, faciles à lire sur un écran de téléphone (utilise des puces et des émojis sobres).
-- Phrases claires, sans jargon scientifique pompeux.
-- Pose UNE seule question à la fois pour ne pas submerger le client.`;
+- Réponses aérées, faciles à lire sur un écran de smartphone (puces claires, émojis sobres).
+- Phrases chaleureuses, empathiques et accessibles sans jargon médical hermétique.
+- Pose UNE seule question à la fois pour laisser le client respirer et répondre aisément.`;
 
 // ── Handler principal ─────────────────────────────────────────────────────────
 
@@ -186,6 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ status: 'ignored_not_text' });
       }
 
+      const messageId = message.id;
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
       const senderText = message.text?.body?.trim();
       const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
@@ -194,13 +233,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ status: 'ignored_empty' });
       }
 
-      console.log(`[whatsapp-webhook] Processing message from ${senderPhone} (${senderName}): "${senderText}"`);
+      console.log(`[whatsapp-webhook] Processing message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
 
       // Initialiser la base Firestore (si disponible) et charger le contexte client & tarifaire
       let userProfileContext = '';
       const chatHistoryForGemini: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
       const db = getAdminDb();
       let userDocRef: any = null;
+
+      // DÉDUPLICATION 1 (META RETRIES) : Ignorer les retries réseau automatiques de Meta sur le même message ID
+      if (db && messageId) {
+        try {
+          const processedRef = db.collection('processed_whatsapp_messages').doc(messageId);
+          await processedRef.create({
+            senderPhone,
+            messageId,
+            processedAt: FieldValue.serverTimestamp(),
+          });
+        } catch (alreadyProcessedErr) {
+          console.warn(`[whatsapp-webhook] Message ${messageId} already processed (Meta retry). Ignoring duplicate.`);
+          return res.status(200).json({ status: 'already_processed', messageId });
+        }
+      }
 
       let bottle500Base = 1500;
       let bottle1LBase = 2500;
@@ -450,80 +504,102 @@ Exemple :
           const orderData = JSON.parse(rawOrderJson);
           console.log('[whatsapp-webhook] Order detected from WhatsApp:', orderData);
 
-          const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
-          const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
-          const quantity = Math.max(1, Number(orderData.quantity) || 1);
+          // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
+          // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
+          const recentOrdersSnap = await db.collection('orders')
+            .where('userPhoneSnapshot', '==', senderPhone)
+            .limit(5)
+            .get();
 
-          // Retrouver les fruits sélectionnés et leurs prix réels en base de données
-          const chosenFruitNames: string[] = Array.isArray(orderData.fruits) ? orderData.fruits : [];
-          const matchedIngredients = chosenFruitNames.map((fName: string) => {
-            const clean = fName.trim().toLowerCase();
-            const found = availableFruits.find(
-              (af) => af.name.toLowerCase() === clean || af.id.toLowerCase() === clean
-            );
-            return {
-              fruitId: found ? found.id : fName.toLowerCase().replace(/\s+/g, '_'),
-              fruitName: found ? found.name : fName,
-              quantityGrams: 100,
-              priceSnapshot: found ? found.price : 0,
-              role: 'fruit' as const,
-            };
+          const isDuplicateOrder = recentOrdersSnap.docs.some((doc: any) => {
+            const d = doc.data();
+            if (d.source !== 'whatsapp') return false;
+            if (messageId && d.whatsappMessageId === messageId) return true;
+            const createdAtMs = d.createdAt?.toMillis
+              ? d.createdAt.toMillis()
+              : (d.createdAt?._seconds ? d.createdAt._seconds * 1000 : 0);
+            return Date.now() - createdAtMs < 120 * 1000;
           });
 
-          // Calcul fidèle FYS : prix bouteille = prix contenant de base + somme des prix des fruits du mélange
-          const ingredientsPriceSum = matchedIngredients.reduce((sum, ing) => sum + (ing.priceSnapshot || 0), 0);
-          const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
-          const lineTotal = pricePerBottle * quantity;
-          const finalDeliveryFee = deliveryFee;
-          const totalPrice = lineTotal + finalDeliveryFee;
+          if (isDuplicateOrder) {
+            console.warn(`[whatsapp-webhook] ⚠️ Duplicate order blocked for ${senderPhone}: an order was already registered in the last 120 seconds.`);
+          } else {
+            const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
+            const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
+            const quantity = Math.max(1, Number(orderData.quantity) || 1);
 
-          const orderRef = db.collection('orders').doc();
-          const newOrderDoc = {
-            id: orderRef.id,
-            type: 'classic',
-            source: 'whatsapp',
-            status: 'pending',
-            userId: userDocRef?.id || 'whatsapp_customer',
-            userNameSnapshot: senderName,
-            userPhoneSnapshot: senderPhone,
-            userEmailSnapshot: '',
-            cocktailId: 'whatsapp-custom',
-            cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
-            cocktailIngredientsSnapshot: matchedIngredients,
-            hasAddedSugar: !!orderData.hasAddedSugar,
-            orderLines: [
-              {
-                bottleSize,
-                bottleSizeLabel: bottleSize === '1L' ? '1 L' : '500 ml',
-                quantity,
-                bottleBasePriceSnapshot: baseBottlePrice,
-                pricePerBottle,
-                lineTotal,
+            // Retrouver les fruits sélectionnés et leurs prix réels en base de données
+            const chosenFruitNames: string[] = Array.isArray(orderData.fruits) ? orderData.fruits : [];
+            const matchedIngredients = chosenFruitNames.map((fName: string) => {
+              const clean = fName.trim().toLowerCase();
+              const found = availableFruits.find(
+                (af) => af.name.toLowerCase() === clean || af.id.toLowerCase() === clean
+              );
+              return {
+                fruitId: found ? found.id : fName.toLowerCase().replace(/\s+/g, '_'),
+                fruitName: found ? found.name : fName,
+                quantityGrams: 100,
+                priceSnapshot: found ? found.price : 0,
+                role: 'fruit' as const,
+              };
+            });
+
+            // Calcul fidèle FYS : prix bouteille = prix contenant de base + somme des prix des fruits du mélange
+            const ingredientsPriceSum = matchedIngredients.reduce((sum, ing) => sum + (ing.priceSnapshot || 0), 0);
+            const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
+            const lineTotal = pricePerBottle * quantity;
+            const finalDeliveryFee = deliveryFee;
+            const totalPrice = lineTotal + finalDeliveryFee;
+
+            const orderRef = db.collection('orders').doc();
+            const newOrderDoc = {
+              id: orderRef.id,
+              type: 'classic',
+              source: 'whatsapp',
+              whatsappMessageId: messageId || null,
+              status: 'pending',
+              userId: userDocRef?.id || 'whatsapp_customer',
+              userNameSnapshot: senderName,
+              userPhoneSnapshot: senderPhone,
+              userEmailSnapshot: '',
+              cocktailId: 'whatsapp-custom',
+              cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
+              cocktailIngredientsSnapshot: matchedIngredients,
+              hasAddedSugar: !!orderData.hasAddedSugar,
+              orderLines: [
+                {
+                  bottleSize,
+                  bottleSizeLabel: bottleSize === '1L' ? '1 L' : '500 ml',
+                  quantity,
+                  bottleBasePriceSnapshot: baseBottlePrice,
+                  pricePerBottle,
+                  lineTotal,
+                },
+              ],
+              deliveryFee: finalDeliveryFee,
+              totalPrice,
+              deliveryDetails: {
+                district: orderData.district || 'Yaoundé',
+                phone: senderPhone,
+                instructions: orderData.instructions || 'Commande directe WhatsApp',
               },
-            ],
-            deliveryFee: finalDeliveryFee,
-            totalPrice,
-            deliveryDetails: {
-              district: orderData.district || 'Yaoundé',
-              phone: senderPhone,
-              instructions: orderData.instructions || 'Commande directe WhatsApp',
-            },
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          };
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
+            };
 
-          await orderRef.set(newOrderDoc);
-          console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
+            await orderRef.set(newOrderDoc);
+            console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
 
-          // Notifier les administrateurs
-          await db.collection('notifications').add({
-            title: 'Nouvelle commande WhatsApp !',
-            message: `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice} XAF).`,
-            link: `/board/orders?order=${orderRef.id}`,
-            audience: 'admins',
-            read: false,
-            createdAt: FieldValue.serverTimestamp(),
-          });
+            // Notifier les administrateurs
+            await db.collection('notifications').add({
+              title: 'Nouvelle commande WhatsApp !',
+              message: `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice} XAF).`,
+              link: `/board/orders?order=${orderRef.id}`,
+              audience: 'admins',
+              read: false,
+              createdAt: FieldValue.serverTimestamp(),
+            });
+          }
         } catch (orderErr) {
           console.error('[whatsapp-webhook] Error creating WhatsApp order in Firestore:', orderErr);
         } finally {
