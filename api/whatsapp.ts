@@ -73,6 +73,173 @@ async function sendWhatsAppMessage(to: string, text: string) {
   }
 }
 
+// ── Téléchargement de média binaire WhatsApp (Note vocale client) ──────────────
+
+async function downloadWhatsAppMedia(mediaId: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  if (!WHATSAPP_API_TOKEN) return null;
+  try {
+    const metaRes = await fetch(`https://graph.facebook.com/v22.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${WHATSAPP_API_TOKEN}` },
+    });
+    if (!metaRes.ok) {
+      console.error('[whatsapp] Failed to get media URL from Meta:', metaRes.status, await metaRes.text());
+      return null;
+    }
+    const metaData = await metaRes.json();
+    const mediaUrl = metaData.url;
+    if (!mediaUrl) return null;
+
+    const fileRes = await fetch(mediaUrl, {
+      headers: { Authorization: `Bearer ${WHATSAPP_API_TOKEN}` },
+    });
+    if (!fileRes.ok) {
+      console.error('[whatsapp] Failed to download media binary:', fileRes.status);
+      return null;
+    }
+    const arrayBuffer = await fileRes.arrayBuffer();
+    return {
+      buffer: Buffer.from(arrayBuffer),
+      mimeType: metaData.mime_type || 'audio/ogg',
+    };
+  } catch (err) {
+    console.error('[whatsapp] Error downloading WhatsApp media:', err);
+    return null;
+  }
+}
+
+// ── Encodage PCM -> MP3 100% JS (compatible Vercel Serverless) ────────────────
+
+async function pcmToMp3(pcmBuffer: Buffer, sampleRate = 24000, channels = 1): Promise<Buffer> {
+  const { Mp3Encoder } = await import('@breezystack/lamejs');
+  const encoder = new Mp3Encoder(channels, sampleRate, 64);
+  const samples = new Int16Array(pcmBuffer.buffer, pcmBuffer.byteOffset, pcmBuffer.length / 2);
+  const mp3Chunks: Buffer[] = [];
+  const chunkSize = 1152;
+  for (let i = 0; i < samples.length; i += chunkSize) {
+    const chunk = samples.subarray(i, i + chunkSize);
+    const encoded = encoder.encodeBuffer(chunk);
+    if (encoded.length > 0) mp3Chunks.push(Buffer.from(encoded));
+  }
+  const end = encoder.flush();
+  if (end.length > 0) mp3Chunks.push(Buffer.from(end));
+  return Buffer.concat(mp3Chunks);
+}
+
+// ── Téléversement d'audio vers l'API Media de Meta ───────────────────────────
+
+async function uploadWhatsAppAudio(mp3Buffer: Buffer): Promise<string | null> {
+  if (!WHATSAPP_API_TOKEN) return null;
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/media`;
+  try {
+    const formData = new FormData();
+    formData.append('messaging_product', 'whatsapp');
+    formData.append('type', 'audio/mpeg');
+    const blob = new Blob([mp3Buffer], { type: 'audio/mpeg' });
+    formData.append('file', blob, 'nutrifys_voice.mp3');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WHATSAPP_API_TOKEN}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      console.error('[whatsapp] Upload audio media failed:', response.status, await response.text());
+      return null;
+    }
+    const data = await response.json();
+    console.log('[whatsapp] Voice uploaded to Meta with media ID:', data.id);
+    return data.id || null;
+  } catch (err) {
+    console.error('[whatsapp] Error uploading audio to Meta:', err);
+    return null;
+  }
+}
+
+// ── Envoi de message Vocal WhatsApp ──────────────────────────────────────────
+
+async function sendWhatsAppAudio(to: string, mediaId: string): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN) return false;
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'audio',
+    audio: { id: mediaId },
+  };
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.text();
+    console.log('[whatsapp] Meta send audio response status:', response.status, data);
+    return response.ok;
+  } catch (err) {
+    console.error('[whatsapp] Network error sending audio to WhatsApp:', err);
+    return false;
+  }
+}
+
+// ── Synthèse Vocale NutriFYS via Google Gemini Audio Natif ───────────────────
+
+async function generateGeminiSpeech(text: string, apiKey: string): Promise<Buffer | null> {
+  try {
+    const cleanText = text
+      .replace(/:::PROFILE_JSON[\s\S]*?:::?/g, '')
+      .replace(/:::ORDER_JSON[\s\S]*?:::?/g, '')
+      .replace(/[*_~`#]/g, '')
+      .replace(/•/g, ', ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return null;
+
+    // Prendre jusqu'à 450 caractères pour un message vocal naturel et percutant
+    const spokenText = cleanText.length > 500
+      ? cleanText.substring(0, 480) + '... Je vous ai mis tous les détails par écrit juste en dessous !'
+      : cleanText;
+
+    const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+    const res = await fetch(ttsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: spokenText }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: 'Kore',
+              },
+            },
+          },
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn('[whatsapp-voice] Gemini TTS returned status:', res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const base64Audio = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!base64Audio) return null;
+
+    const pcmBuffer = Buffer.from(base64Audio, 'base64');
+    return await pcmToMp3(pcmBuffer, 24000, 1);
+  } catch (err) {
+    console.error('[whatsapp-voice] Failed to generate Gemini speech:', err);
+    return null;
+  }
+}
+
 // ── Prompt Système NutriFYS WhatsApp (Chaleureux & Adapté aux seniors) ────────
 
 const NUTRIFYS_WHATSAPP_SYSTEM_PROMPT = `Tu es NutriFYS, l'assistant nutritionniste officiel de FYS (For Your Self), une marque artisanale de cocktails et jus de fruits 100% naturels santé basée à Yaoundé, Cameroun.
@@ -218,22 +385,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
 
-      // Vérifier si un message texte est présent
+      // Vérifier si un message texte ou audio est présent
       const message = changes?.messages?.[0];
-      if (!message || message.type !== 'text') {
-        return res.status(200).json({ status: 'ignored_not_text' });
+      const isAudioMessage = message?.type === 'audio' || message?.type === 'voice';
+      const isTextMessage = message?.type === 'text';
+
+      if (!message || (!isTextMessage && !isAudioMessage)) {
+        return res.status(200).json({ status: 'ignored_unsupported_type' });
       }
 
       const messageId = message.id;
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
-      const senderText = message.text?.body?.trim();
+      let senderText = message.text?.body?.trim() || '';
       const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
 
-      if (!senderPhone || !senderText) {
+      // Télécharger le fichier audio si le client a envoyé un vocal
+      let audioBuffer: Buffer | null = null;
+      let audioMimeType = 'audio/ogg';
+      if (isAudioMessage) {
+        const audioMediaId = message.audio?.id || message.voice?.id;
+        if (audioMediaId) {
+          console.log(`[whatsapp-webhook] Downloading customer voice note ${audioMediaId}...`);
+          const downloaded = await downloadWhatsAppMedia(audioMediaId);
+          if (downloaded) {
+            audioBuffer = downloaded.buffer;
+            audioMimeType = downloaded.mimeType;
+            senderText = '[Note vocale reçue du client]';
+          }
+        }
+      }
+
+      if (!senderPhone || (!senderText && !audioBuffer)) {
         return res.status(200).json({ status: 'ignored_empty' });
       }
 
-      console.log(`[whatsapp-webhook] Processing message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
+      console.log(`[whatsapp-webhook] Processing ${isAudioMessage ? 'audio' : 'text'} message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
 
       // Initialiser la base Firestore (si disponible) et charger le contexte client & tarifaire
       let userProfileContext = '';
@@ -424,10 +610,25 @@ Exemple :
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
 
-      // Construction du payload multi-tours
+      // Construction du payload multi-tours multimodal
+      const currentUserParts: any[] = [];
+      if (audioBuffer) {
+        currentUserParts.push({
+          inlineData: {
+            mimeType: audioMimeType.split(';')[0] || 'audio/ogg',
+            data: audioBuffer.toString('base64'),
+          },
+        });
+        currentUserParts.push({
+          text: "L'utilisateur a envoyé cette note vocale. Écoute attentivement sa voix et ses propos, comprends ses besoins santé, et réponds-lui avec chaleur et bienveillance selon les consignes NutriFYS.",
+        });
+      } else {
+        currentUserParts.push({ text: senderText });
+      }
+
       const contentsPayload = [
         ...chatHistoryForGemini,
-        { role: 'user' as const, parts: [{ text: senderText }] },
+        { role: 'user' as const, parts: currentUserParts },
       ];
 
       const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
@@ -445,9 +646,9 @@ Exemple :
         const result = await model.generateContent({ contents: contentsPayload });
         aiReply = result.response.text();
       } catch (geminiErr: any) {
-        console.warn('[whatsapp-webhook] Gemini error, fallback to gemini-2.0-flash:', geminiErr?.message);
+        console.warn('[whatsapp-webhook] Gemini 3.1 Flash Lite error, fallback to gemini-3.8-flash:', geminiErr?.message);
         const modelFallback = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3.8-flash',
           systemInstruction: fullSystemPrompt,
         });
         const result = await modelFallback.generateContent({ contents: contentsPayload });
@@ -610,9 +811,27 @@ Exemple :
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
       }
 
-      // Envoyer la réponse sur WhatsApp (await obligatoire avant res.status(200))
+      // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
+      let sentAudio = false;
+      if (isAudioMessage && GEMINI_API_KEY) {
+        try {
+          console.log('[whatsapp-webhook] 🎙️ Synthesizing Gemini voice response for customer...');
+          const mp3Buffer = await generateGeminiSpeech(aiReply, GEMINI_API_KEY);
+          if (mp3Buffer) {
+            const uploadedMediaId = await uploadWhatsAppAudio(mp3Buffer);
+            if (uploadedMediaId) {
+              sentAudio = await sendWhatsAppAudio(senderPhone, uploadedMediaId);
+              console.log('[whatsapp-webhook] ✅ Voice note successfully sent to WhatsApp!');
+            }
+          }
+        } catch (audioErr) {
+          console.warn('[whatsapp-webhook] Voice reply generation skipped or failed:', audioErr);
+        }
+      }
+
+      // Envoyer le récapitulatif textuel (toujours présent pour garder la trace des recettes/prix)
       const sent = await sendWhatsAppMessage(senderPhone, aiReply);
-      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', sent);
+      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio });
 
       // Enregistrer la réponse de l'IA dans Firestore si actif
       if (db) {
