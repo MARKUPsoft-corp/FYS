@@ -356,6 +356,22 @@ Est-ce que cela vous convient pour valider votre commande ?"
 }
 :::
 
+VISION & ANALYSE D'IMAGES REÇUES DU CLIENT (MULTIMODALITÉ PHOTO) :
+Quand le client t'envoie une image ou photo :
+1. Ordonnance médicale / Bilan de santé / Résultats d'analyses :
+   - Analyse attentivement la photo avec empathie et respect de la confidentialité.
+   - Identifie les antécédents, pathologies ou contre-indications (ex: glycémie élevée, hypertension, cholestérol, gastrite/ulcère, anémie).
+   - RASSURE le client avec chaleur : FYS adapte ses jus naturels à sa condition, mais ne remplace pas son médecin traitant.
+   - Si son profil de santé n'est pas encore enregistré, résume ses conditions et intègre TOUT À LA FIN le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer automatiquement son bilan dans FYS.
+   - Propose-lui une recette de jus parfaitement adaptée aux indications de son ordonnance (en respectant les exclusions : pas de pamplemousse, pas d'acidité en cas d'ulcère, etc.).
+2. Fruits frais ou ingrédients photographiés :
+   - Reconnais précisément les fruits présents sur l'image.
+   - Félicite le client pour ses fruits et explique leurs vertus santé.
+   - Suggère-lui comment les marier au mieux pour sa santé, ou propose-lui de commander une recette personnalisée FYS enrichie de ces ingrédients.
+3. Reçu de paiement Mobile Money (MTN MoMo, Orange Money) :
+   - Lis la capture d'écran du reçu (montant en XAF, référence ou ID de transaction).
+   - Remercie chaleureusement le client et confirme-lui que son paiement a bien été reçu et que sa commande part en préparation pour sa livraison à Yaoundé.
+
 STYLE DE COMMUNICATION WHATSAPP :
 - Réponses aérées, faciles à lire sur un écran de smartphone (puces claires, émojis sobres).
 - Phrases chaleureuses, empathiques et accessibles sans jargon médical hermétique.
@@ -385,18 +401,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
 
-      // Vérifier si un message texte ou audio est présent
+      // Vérifier si un message texte, audio ou image est présent
       const message = changes?.messages?.[0];
       const isAudioMessage = message?.type === 'audio' || message?.type === 'voice';
+      const isImageMessage = message?.type === 'image';
       const isTextMessage = message?.type === 'text';
 
-      if (!message || (!isTextMessage && !isAudioMessage)) {
+      if (!message || (!isTextMessage && !isAudioMessage && !isImageMessage)) {
         return res.status(200).json({ status: 'ignored_unsupported_type' });
       }
 
       const messageId = message.id;
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
-      let senderText = message.text?.body?.trim() || '';
+      let senderText = message.text?.body?.trim() || message.image?.caption?.trim() || '';
       const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
 
       // Télécharger le fichier audio si le client a envoyé un vocal
@@ -415,11 +432,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      if (!senderPhone || (!senderText && !audioBuffer)) {
+      // Télécharger le fichier image si le client a envoyé une photo
+      let imageBuffer: Buffer | null = null;
+      let imageMimeType = 'image/jpeg';
+      if (isImageMessage && message.image?.id) {
+        console.log(`[whatsapp-webhook] Downloading customer image ${message.image.id}...`);
+        const downloaded = await downloadWhatsAppMedia(message.image.id);
+        if (downloaded) {
+          imageBuffer = downloaded.buffer;
+          imageMimeType = downloaded.mimeType || 'image/jpeg';
+          if (!senderText) {
+            senderText = '[Photo reçue du client]';
+          }
+        }
+      }
+
+      if (!senderPhone || (!senderText && !audioBuffer && !imageBuffer)) {
         return res.status(200).json({ status: 'ignored_empty' });
       }
 
-      console.log(`[whatsapp-webhook] Processing ${isAudioMessage ? 'audio' : 'text'} message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
+      const messageKind = isAudioMessage ? 'audio' : isImageMessage ? 'image' : 'text';
+      console.log(`[whatsapp-webhook] Processing ${messageKind} message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
 
       // Initialiser la base Firestore (si disponible) et charger le contexte client & tarifaire
       let userProfileContext = '';
@@ -610,7 +643,7 @@ Exemple :
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
 
-      // Construction du payload multi-tours multimodal
+      // Construction du payload multi-tours multimodal (Texte, Audio, Image)
       const currentUserParts: any[] = [];
       if (audioBuffer) {
         currentUserParts.push({
@@ -622,6 +655,17 @@ Exemple :
         currentUserParts.push({
           text: "L'utilisateur a envoyé cette note vocale. Écoute attentivement sa voix et ses propos, comprends ses besoins santé, et réponds-lui avec chaleur et bienveillance selon les consignes NutriFYS.",
         });
+      } else if (imageBuffer) {
+        currentUserParts.push({
+          inlineData: {
+            mimeType: imageMimeType.split(';')[0] || 'image/jpeg',
+            data: imageBuffer.toString('base64'),
+          },
+        });
+        const promptIntro = senderText && senderText !== '[Photo reçue du client]'
+          ? `L'utilisateur a envoyé cette photo accompagnée du message suivant : "${senderText}". Analyse attentivement l'image (ordonnance médicale, analyse, fruits ou reçu Mobile Money) et réponds-lui de manière claire, empathique et personnalisée.`
+          : `L'utilisateur a envoyé cette photo. Analyse attentivement ce qu'elle contient (ordonnance médicale, bilan de santé, fruits frais ou reçu de paiement Mobile Money) et réponds-lui chaleureusement selon tes consignes NutriFYS.`;
+        currentUserParts.push({ text: promptIntro });
       } else {
         currentUserParts.push({ text: senderText });
       }
