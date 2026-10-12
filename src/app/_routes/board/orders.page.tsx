@@ -168,6 +168,12 @@ function OrderCard({
                 ? (order.programTitleSnapshot || order.cocktailNameSnapshot || 'Cure FYS Programme')
                 : order.cocktailNameSnapshot}
             </p>
+            {order.source === 'whatsapp' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                💬 WhatsApp
+              </span>
+            )}
             {isProgram && (
               <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
                 <Sparkles className="size-3" /> FYS Programme · {t('orders.program.days', { count: order.programDurationDays || 7 })}
@@ -1313,7 +1319,15 @@ function AdminOrderSheet({
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-bold text-foreground">{order.userNameSnapshot}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[13px] font-bold text-foreground">{order.userNameSnapshot}</p>
+                    {order.source === 'whatsapp' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        💬 WhatsApp
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
                     {order.orderLines?.length ? (
                       order.orderLines.map((line, i) => (
@@ -1846,6 +1860,10 @@ const Orders: PageComponent = () => {
     }, { replace: true });
   }
 
+  const sourceParam = searchParams.get('source');
+  const [filterSource, setFilterSource] = useState<'all' | 'web' | 'whatsapp'>(
+    sourceParam === 'whatsapp' ? 'whatsapp' : sourceParam === 'web' ? 'web' : 'all'
+  );
   const [filterStatus, setFilterStatus] = useState<'all' | OrderStatus>('all');
   const [periodType, setPeriodType] = useState<PeriodType>('all');
   const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
@@ -1915,6 +1933,15 @@ const Orders: PageComponent = () => {
     [periodOrders]
   );
 
+  const whatsappOrdersCount = useMemo(
+    () => periodOrders.filter((o) => o.source === 'whatsapp').length,
+    [periodOrders]
+  );
+  const webOrdersCount = useMemo(
+    () => periodOrders.filter((o) => (o.source || 'web') === 'web').length,
+    [periodOrders]
+  );
+
   const visible = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return periodOrders.filter((o) => {
@@ -1922,6 +1949,7 @@ const Orders: PageComponent = () => {
       if (orderTypeTab === 'program' && !isProg) return false;
       if (orderTypeTab === 'classic' && isProg) return false;
 
+      if (filterSource !== 'all' && (o.source || 'web') !== filterSource) return false;
       if (filterStatus !== 'all' && o.status !== filterStatus) return false;
       if (!q) return true;
       return (
@@ -1934,7 +1962,7 @@ const Orders: PageComponent = () => {
         o.id.toLowerCase().includes(q)
       );
     });
-  }, [periodOrders, orderTypeTab, filterStatus, searchQuery]);
+  }, [periodOrders, orderTypeTab, filterSource, filterStatus, searchQuery]);
 
   const periodLabel = formatPeriodLabel(periodType, periodAnchor);
 
@@ -2083,6 +2111,50 @@ const Orders: PageComponent = () => {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Canal / Source filter (Admin only) */}
+          {isAdmin && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Canal</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterSource('all')}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+                    filterSource === 'all'
+                      ? 'bg-foreground text-background border-foreground shadow-sm'
+                      : 'bg-card text-muted-foreground border-border/60 hover:text-foreground'
+                  }`}
+                >
+                  Tous les canaux <span className="ml-1 opacity-60">({periodOrders.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterSource('web')}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+                    filterSource === 'web'
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border/60 hover:text-foreground'
+                  }`}
+                >
+                  🌐 Web <span className="ml-1 opacity-60">({webOrdersCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterSource('whatsapp')}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+                    filterSource === 'whatsapp'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-card text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:border-emerald-500'
+                  }`}
+                >
+                  💬 WhatsApp <span className="ml-1 opacity-80">({whatsappOrdersCount})</span>
+                </button>
+              </div>
             </div>
           )}
 

@@ -99,6 +99,7 @@ export async function createOrder(
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
     type: 'classic',
+    source: 'web',
     userId: user.uid,
     userNameSnapshot: user.name,
     userEmailSnapshot: user.email,
@@ -471,6 +472,7 @@ export async function orderProgramJuice(
     const newOrder: Omit<Order, 'createdAt' | 'updatedAt'> = {
       id: ref.id,
       type: 'program',
+      source: 'web',
       userId: user.uid,
       userNameSnapshot: user.name,
       userEmailSnapshot: user.email,

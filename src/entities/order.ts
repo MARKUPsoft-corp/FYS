@@ -90,6 +90,8 @@ export interface Order {
   aiAnalysisSnapshot?: AIAnalysis;
   /** Option sucre (false ou undefined = 100% naturel sans sucre) */
   hasAddedSugar?: boolean;
+  /** Canal ou origine de la commande : 'web' (site web) ou 'whatsapp' (assistant NutriFYS WhatsApp) */
+  source?: 'web' | 'whatsapp';
   /** Type de commande : 'classic' (cocktails à la carte) ou 'program' (cure FYS Programme) */
   type?: 'classic' | 'program';
   /** Référence du programme si type === 'program' */

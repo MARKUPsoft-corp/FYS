@@ -315,6 +315,7 @@ function ComposeStepper({
             <div key={s.n} className="flex items-center flex-1 min-w-0">
               <button
                 type="button"
+                suppressHydrationWarning
                 disabled={!clickable}
                 onClick={() => clickable && onStepChange(s.n)}
                 className={cn(
@@ -333,7 +334,7 @@ function ComposeStepper({
                 >
                   {done && !active ? <Check className="size-4" /> : s.n}
                 </span>
-                <span className="min-w-0">
+                <span className="min-w-0" suppressHydrationWarning>
                   <span className={cn(
                     'block text-[11px] font-bold uppercase tracking-widest',
                     active ? 'text-primary' : 'text-muted-foreground',

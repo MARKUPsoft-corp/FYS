@@ -9,6 +9,7 @@ export interface AdminStats {
   fruitsCount: number;
   catalogueCocktailsCount: number;
   ordersCount: number;
+  whatsappOrdersCount: number;
   ordersByStatus: Partial<Record<OrderStatus, number>>;
   usersCount: number;
   totalRevenue: number;
@@ -41,6 +42,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     fruitsCount: fruitsSnap.size,
     catalogueCocktailsCount: catalogueSnap.size,
     ordersCount: orders.length,
+    whatsappOrdersCount: orders.filter((o) => o.source === 'whatsapp').length,
     ordersByStatus,
     usersCount: usersSnap.size,
     totalRevenue,

@@ -62,7 +62,15 @@ function RecentOrderRow({ order }: { order: Order }) {
         </span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground truncate">{order.userNameSnapshot}</p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-sm font-semibold text-foreground truncate">{order.userNameSnapshot}</p>
+          {order.source === 'whatsapp' && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              WhatsApp
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground truncate">{order.cocktailNameSnapshot}</p>
       </div>
       <div className="shrink-0 text-right space-y-0.5 hidden sm:block">
@@ -111,6 +119,7 @@ export function AdminHome({ name }: Props) {
     {
       label: t('home.admin.stats.orders'),
       value: stats?.ordersCount ?? 0,
+      subLabel: stats?.whatsappOrdersCount ? `${stats.whatsappOrdersCount} via WhatsApp 💬` : undefined,
       icon: ShoppingBag,
       path: '/board/orders',
       color: 'text-secondary',
@@ -232,6 +241,9 @@ export function AdminHome({ name }: Props) {
                     <p className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-1 truncate">{s.value}</p>
                   )}
                   <p className="text-sm font-semibold text-muted-foreground">{s.label}</p>
+                  {(s as any).subLabel && (
+                    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{(s as any).subLabel}</p>
+                  )}
                 </div>
               </div>
             </Link>

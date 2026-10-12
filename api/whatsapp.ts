@@ -99,7 +99,57 @@ FORMATS & TARIFS FYS :
 - Format 500ml : Format standard le plus apprécié (recommandé pour une journée)
 - Format 1L : Idéal pour partager en famille ou cure 2 jours
 - Livraison à Yaoundé : Disponible dans tous les quartiers (Bastos, Biyem-Assi, Omnisports, Mendong, Odza, etc.).
-- Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant.
+- Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant à la livraison.
+
+GESTION DU PROFIL DE SANTÉ (EXPÉRIENCE IDENTIQUE AU WEB FYS) :
+Si le client a déjà un profil de santé enregistré :
+- Utilise ses objectifs, ses conditions médicales et ses allergies pour personnaliser tes recommandations. Ne lui redemande pas son profil.
+Si le client n'a pas encore de profil de santé (nouveau client) :
+- Ton rôle est de faire son bilan de santé avec douceur, tact et bienveillance, exactement comme le questionnaire web de FYS :
+  1. Ses objectifs bien-être actuels (énergie, détox, digestion, sommeil, immunité, perte de poids, etc.).
+  2. Ses éventuelles conditions médicales (diabète, hypertension, ulcère, problèmes cardiaques, ou préciser s'il n'en a aucune).
+  3. Ses allergies ou intolérances alimentaires (ou préciser s'il n'en a aucune).
+- Dès que le client a répondu et que son profil est complété, félicite-le chaleureusement et inclus TOUT À LA FIN de ton message le bloc technique :
+:::PROFILE_JSON
+{
+  "healthConditions": ["..."],
+  "allergies": ["..."],
+  "goals": ["..."]
+}
+:::
+(Notre système enregistrera alors son profil dans la base de données FYS).
+
+PROCESSUS DE COMMANDE & CALCUL EXACT DU PRIX :
+Quand le client souhaite commander :
+1. Définis avec lui sa recette sur-mesure (les fruits et suppléments du mélange).
+2. Demande le format souhaité (500ml ou 1L) et la quantité de bouteilles.
+3. Demande son quartier de livraison à Yaoundé.
+4. RÈGLE CRITIQUE DU PRIX (TRANSPARENCE POUR LE CLIENT, CALCUL STRICT EN INTERNE) :
+- En interne, le prix unitaire d'une bouteille = Prix de base du contenant (selon la grille officielle fournie) + Somme des prix de chaque fruit/supplément du mélange.
+- RÈGLE DE DISCRÉTION ABSOLUE : Tu NE DOIS JAMAIS mentionner le prix du contenant vide ni le prix individuel des fruits au client !
+- Tu affiches UNIQUEMENT le prix unitaire final de la bouteille composée.
+- Tu ajoutes les frais de livraison pour afficher le TOTAL À PAYER.
+Exemple de message à présenter au client :
+"Voici le récapitulatif de votre commande :
+• 1 bouteille 500ml de [Nom du jus] : [Prix bouteille calculé] XAF
+• Livraison à [Quartier] : [Frais livraison] XAF
+👉 TOTAL À PAYER : [Total] XAF (Paiement par Mobile Money ou au comptant à la livraison).
+
+Est-ce que cela vous convient pour valider votre commande ?"
+
+5. INTERDICTION FORMELLE : Ne mets JAMAIS le bloc :::ORDER_JSON dans ce message de devis. Le client DOIT voir le prix d'abord !
+6. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu insères TOUT À LA FIN de ton message :
+:::ORDER_JSON
+{
+  "cocktailName": "Nom de la recette",
+  "fruits": ["Fruit1", "Fruit2", "Fruit3"],
+  "bottleSize": "500ml",
+  "quantity": 1,
+  "district": "Quartier de livraison",
+  "instructions": "Précisions particulières",
+  "hasAddedSugar": false
+}
+:::
 
 STYLE DE COMMUNICATION WHATSAPP :
 - Réponses courtes, aérées, faciles à lire sur un écran de téléphone (utilise des puces et des émojis sobres).
@@ -146,26 +196,88 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       console.log(`[whatsapp-webhook] Processing message from ${senderPhone} (${senderName}): "${senderText}"`);
 
-      // Initialiser la base Firestore (si disponible)
-      // Initialiser la base Firestore et charger l'historique de discussion
+      // Initialiser la base Firestore (si disponible) et charger le contexte client & tarifaire
       let userProfileContext = '';
       const chatHistoryForGemini: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
       const db = getAdminDb();
       let userDocRef: any = null;
 
+      let bottle500Base = 1500;
+      let bottle1LBase = 2500;
+      let deliveryFee = 500;
+      const availableFruits: { id: string; name: string; price: number }[] = [];
+
       if (db) {
         try {
+          // Charger en parallèle la tarification et le catalogue de fruits
+          const [pricingDoc, fruitsSnap] = await Promise.all([
+            db.collection('settings').doc('pricing').get().catch(() => null),
+            db.collection('fruits').get().catch(() => null),
+          ]);
+
+          if (pricingDoc && pricingDoc.exists) {
+            const p = pricingDoc.data();
+            if (typeof p?.bottle500mlBase === 'number') bottle500Base = p.bottle500mlBase;
+            if (typeof p?.bottle1LBase === 'number') bottle1LBase = p.bottle1LBase;
+            if (typeof p?.deliveryFee === 'number') deliveryFee = p.deliveryFee;
+          }
+
+          if (fruitsSnap) {
+            fruitsSnap.docs.forEach((doc: any) => {
+              const d = doc.data();
+              if (d.isActive !== false) {
+                availableFruits.push({
+                  id: doc.id,
+                  name: d.name || doc.id,
+                  price: typeof d.price === 'number' ? d.price : 0,
+                });
+              }
+            });
+          }
+
           const usersRef = db.collection('users');
           const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
 
           if (!querySnap.empty) {
             const userData = querySnap.docs[0].data();
             userDocRef = querySnap.docs[0].ref;
-            if (userData.healthConditions?.length) {
-              userProfileContext += `\nConditions médicales connues du client : ${userData.healthConditions.join(', ')}`;
+
+            let conditions: string[] = [];
+            let allergies: string[] = [];
+            let goals: string[] = [];
+
+            try {
+              const profileSnap = await userDocRef.collection('profile').doc('main').get();
+              if (profileSnap.exists) {
+                const p = profileSnap.data();
+                if (p?.healthConditions?.length) conditions = p.healthConditions;
+                if (p?.allergies?.length) allergies = p.allergies;
+                if (p?.goals?.length) goals = p.goals;
+              }
+            } catch (pErr) {
+              console.warn('[whatsapp-webhook] Subcollection profile check skipped:', pErr);
             }
-            if (userData.allergies?.length) {
-              userProfileContext += `\nAllergies connues : ${userData.allergies.join(', ')}`;
+
+            if (!conditions.length && userData?.healthConditions?.length) {
+              conditions = userData.healthConditions;
+            }
+            if (!allergies.length && userData?.allergies?.length) {
+              allergies = userData.allergies;
+            }
+            if (!goals.length && userData?.goals?.length) {
+              goals = userData.goals;
+            }
+
+            const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
+            if (hasProfile) {
+              userProfileContext = `\n\nPROFIL DE SANTÉ COMPLET DU CLIENT (DÉJÀ ENREGISTRÉ DANS FYS) :
+- Objectifs bien-être : ${goals.length ? goals.join(', ') : 'Général'}
+- Conditions médicales / Antécédents : ${conditions.length ? conditions.join(', ') : 'Aucune condition particulière'}
+- Allergies & Intolérances : ${allergies.length ? allergies.join(', ') : 'Aucune allergie signalée'}
+CONSIGNE PROFIL : Ce profil est déjà complet. Travaille avec ces données tout au long de la discussion pour lui recommander les meilleurs jus et respecter toutes ses contre-indications. Ne lui repose pas le questionnaire.`;
+            } else {
+              userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : AUCUN PROFIL ENREGISTRÉ (NOUVEAU CLIENT).
+CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur et empathie (ses objectifs bien-être, ses conditions de santé comme diabète/tension/ulcère ou s'il n'en a aucune, et ses allergies). Dès que tu as ses réponses, valide son profil et ajoute :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour qu'il soit enregistré dans FYS.`;
             }
 
             // Récupérer les 8 derniers messages pour garder le fil naturel
@@ -195,6 +307,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               createdAt: FieldValue.serverTimestamp(),
             });
             userDocRef = newDoc;
+            userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
+CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
           }
 
           if (userDocRef) {
@@ -224,6 +338,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.`
         : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
 
+      // Construction de la grille tarifaire exacte pour le calcul interne de NutriFYS
+      const fruitsSummary = availableFruits.length
+        ? availableFruits.map((f) => `- ${f.name} (prix ajout: ${f.price} XAF)`).join('\n')
+        : '- Fruits standards (prix ajout: 0 XAF)';
+
+      const dynamicPricingContext = `\n\nTARIFICATION OFFICIELLE FYS (POUR TON CALCUL INTERNE DU PRIX) :
+- Base contenant 500ml : ${bottle500Base} XAF
+- Base contenant 1L : ${bottle1LBase} XAF
+- Frais de livraison Yaoundé : ${deliveryFee} XAF
+
+LISTE DES FRUITS & SUPPLÉMENTS DISPONIBLES ET LEURS PRIX D'AJOUT :
+${fruitsSummary}
+
+MÉTHODE EXACTE DE CALCUL DU PRIX :
+Pour chaque bouteille de jus que tu composes avec le client :
+1. Prends le prix de base du contenant (${bottle500Base} XAF pour 500ml, ou ${bottle1LBase} XAF pour 1L).
+2. Ajoute le prix d'ajout de chaque fruit présent dans la recette (selon la liste ci-dessus).
+   Exemple : 500ml [Fruit A (0 XAF) + Fruit B (100 XAF)] = ${bottle500Base} + 0 + 100 = ${bottle500Base + 100} XAF par bouteille.
+3. Multiplie par le nombre de bouteilles.
+4. Ajoute les frais de livraison (${deliveryFee} XAF).
+
+RÈGLE D'OR DE CONFIDENTIALITÉ :
+NE RÉVÈLE JAMAIS AU CLIENT LE PRIX DU CONTENANT NI LE PRIX DE CHAQUE FRUIT !
+Pour le client, affiche UNIQUEMENT le prix unitaire final de la bouteille.
+Exemple :
+"• 1 bouteille 500ml [Nom du jus] : [Prix bouteille calculé] XAF
+• Livraison à [Quartier] : ${deliveryFee} XAF
+👉 TOTAL À PAYER : [Total] XAF"`;
+
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
 
@@ -233,28 +376,163 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { role: 'user' as const, parts: [{ text: senderText }] },
       ];
 
+      const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
+
       try {
         const model = genAI.getGenerativeModel({
           model: 'gemini-3.1-flash-lite',
-          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${conversationRules}`,
+          systemInstruction: fullSystemPrompt,
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 600,
           },
         });
-        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite with conversation history...');
+        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite with conversation history & dynamic pricing...');
         const result = await model.generateContent({ contents: contentsPayload });
         aiReply = result.response.text();
       } catch (geminiErr: any) {
         console.warn('[whatsapp-webhook] Gemini error, fallback to gemini-2.0-flash:', geminiErr?.message);
         const modelFallback = genAI.getGenerativeModel({
           model: 'gemini-2.0-flash',
-          systemInstruction: `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${conversationRules}`,
+          systemInstruction: fullSystemPrompt,
         });
         const result = await modelFallback.generateContent({ contents: contentsPayload });
         aiReply = result.response.text();
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
+
+      // 1. Traitement automatique du profil de santé si complété par NutriFYS
+      const profileMatch = aiReply.match(/:::PROFILE_JSON\s*([\s\S]*?)\s*:::?/);
+      if (profileMatch && db && userDocRef) {
+        try {
+          const rawProfileJson = profileMatch[1].trim();
+          const pData = JSON.parse(rawProfileJson);
+          console.log('[whatsapp-webhook] Health profile completed via WhatsApp:', pData);
+
+          const cList = Array.isArray(pData.healthConditions) ? pData.healthConditions : [];
+          const aList = Array.isArray(pData.allergies) ? pData.allergies : [];
+          const gList = Array.isArray(pData.goals) ? pData.goals : [];
+
+          // Enregistrer dans users/{uid}/profile/main (identique au format du web FYS)
+          await userDocRef.collection('profile').doc('main').set({
+            userId: userDocRef.id,
+            healthConditions: cList,
+            allergies: aList,
+            goals: gList,
+            channel: 'whatsapp',
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          // Mettre à jour aussi le document utilisateur
+          await userDocRef.set({
+            healthConditions: cList,
+            allergies: aList,
+            goals: gList,
+            hasHealthProfile: true,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          console.log(`[whatsapp-webhook] ✅ Health profile successfully saved in profile/main for user ${userDocRef.id}`);
+        } catch (profErr) {
+          console.error('[whatsapp-webhook] Error saving health profile:', profErr);
+        } finally {
+          aiReply = aiReply.replace(/:::PROFILE_JSON[\s\S]*?:::?/g, '').trim();
+        }
+      } else if (profileMatch) {
+        aiReply = aiReply.replace(/:::PROFILE_JSON[\s\S]*?:::?/g, '').trim();
+      }
+
+      // 2. Traitement automatique d'une commande validée par le client
+      const orderMatch = aiReply.match(/:::ORDER_JSON\s*([\s\S]*?)\s*:::?/);
+      if (orderMatch && db) {
+        try {
+          const rawOrderJson = orderMatch[1].trim();
+          const orderData = JSON.parse(rawOrderJson);
+          console.log('[whatsapp-webhook] Order detected from WhatsApp:', orderData);
+
+          const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
+          const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
+          const quantity = Math.max(1, Number(orderData.quantity) || 1);
+
+          // Retrouver les fruits sélectionnés et leurs prix réels en base de données
+          const chosenFruitNames: string[] = Array.isArray(orderData.fruits) ? orderData.fruits : [];
+          const matchedIngredients = chosenFruitNames.map((fName: string) => {
+            const clean = fName.trim().toLowerCase();
+            const found = availableFruits.find(
+              (af) => af.name.toLowerCase() === clean || af.id.toLowerCase() === clean
+            );
+            return {
+              fruitId: found ? found.id : fName.toLowerCase().replace(/\s+/g, '_'),
+              fruitName: found ? found.name : fName,
+              quantityGrams: 100,
+              priceSnapshot: found ? found.price : 0,
+              role: 'fruit' as const,
+            };
+          });
+
+          // Calcul fidèle FYS : prix bouteille = prix contenant de base + somme des prix des fruits du mélange
+          const ingredientsPriceSum = matchedIngredients.reduce((sum, ing) => sum + (ing.priceSnapshot || 0), 0);
+          const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
+          const lineTotal = pricePerBottle * quantity;
+          const finalDeliveryFee = deliveryFee;
+          const totalPrice = lineTotal + finalDeliveryFee;
+
+          const orderRef = db.collection('orders').doc();
+          const newOrderDoc = {
+            id: orderRef.id,
+            type: 'classic',
+            source: 'whatsapp',
+            status: 'pending',
+            userId: userDocRef?.id || 'whatsapp_customer',
+            userNameSnapshot: senderName,
+            userPhoneSnapshot: senderPhone,
+            userEmailSnapshot: '',
+            cocktailId: 'whatsapp-custom',
+            cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
+            cocktailIngredientsSnapshot: matchedIngredients,
+            hasAddedSugar: !!orderData.hasAddedSugar,
+            orderLines: [
+              {
+                bottleSize,
+                bottleSizeLabel: bottleSize === '1L' ? '1 L' : '500 ml',
+                quantity,
+                bottleBasePriceSnapshot: baseBottlePrice,
+                pricePerBottle,
+                lineTotal,
+              },
+            ],
+            deliveryFee: finalDeliveryFee,
+            totalPrice,
+            deliveryDetails: {
+              district: orderData.district || 'Yaoundé',
+              phone: senderPhone,
+              instructions: orderData.instructions || 'Commande directe WhatsApp',
+            },
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          };
+
+          await orderRef.set(newOrderDoc);
+          console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
+
+          // Notifier les administrateurs
+          await db.collection('notifications').add({
+            title: 'Nouvelle commande WhatsApp !',
+            message: `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice} XAF).`,
+            link: `/board/orders?order=${orderRef.id}`,
+            audience: 'admins',
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        } catch (orderErr) {
+          console.error('[whatsapp-webhook] Error creating WhatsApp order in Firestore:', orderErr);
+        } finally {
+          // Nettoyer le bloc technique avant envoi au client
+          aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
+        }
+      } else if (orderMatch) {
+        aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
+      }
 
       // Envoyer la réponse sur WhatsApp (await obligatoire avant res.status(200))
       const sent = await sendWhatsAppMessage(senderPhone, aiReply);
