@@ -36,10 +36,9 @@ export function DesktopSidebar() {
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 relative overflow-hidden',
-        'bg-background/70 backdrop-blur-[48px] saturate-[180%]',
-        'border-r border-white/40 dark:border-white/10',
-        'shadow-[8px_0_32px_rgba(0,0,0,0.10)]',
+        'hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 overflow-hidden',
+        'bg-background border-r border-border/40',
+        'shadow-[8px_0_32px_rgba(0,0,0,0.05)]',
         'w-64'
       )}
     >

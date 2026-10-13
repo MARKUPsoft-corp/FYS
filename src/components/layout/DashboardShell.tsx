@@ -6,7 +6,6 @@ import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { DesktopSidebar } from './DesktopSidebar';
 import { useLocation } from 'rasengan';
-import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -38,14 +37,6 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="min-h-dvh bg-background overflow-x-clip relative">
-      {/* ── Fond culturel filigrane immersif pour tous les tableaux de bord ── */}
-      <AfricanSectionBackground
-        pattern="ndop"
-        color="forest"
-        opacityClass="opacity-[0.025] dark:opacity-[0.035]"
-        glowColor="forest"
-        className="fixed inset-0 z-0 pointer-events-none"
-      />
       <DesktopSidebar />
       <Topbar />
 

@@ -689,11 +689,9 @@ const FysLab: PageComponent = () => {
         <AfricanSectionBackground
           pattern="seeds-sun"
           color="forest"
-          opacity={0.03}
-          watermark="sun"
-          watermarkPosition="center"
-          watermarkOpacity={0.03}
-          fixed
+          opacity={0.02}
+          glowColor="none"
+          watermarkEmblem="sun"
         />
         <LabHeader
           activeTab={activeTab}

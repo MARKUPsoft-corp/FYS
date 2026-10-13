@@ -27,6 +27,10 @@ interface AfricanSectionBackgroundProps {
    */
   tileSize?: 'sm' | 'md' | 'lg';
   /**
+   * Numeric opacity override (e.g. 0.03 = 3%) ensuring guaranteed rendering without depending on Tailwind JIT class generation.
+   */
+  opacity?: number;
+  /**
    * Opacity preset for the repeating pattern.
    * Defaults to subtle immersion that preserves 100% text readability.
    */
@@ -92,6 +96,7 @@ export function AfricanSectionBackground({
   pattern = 'ndop',
   color = 'forest',
   tileSize = 'md',
+  opacity,
   opacityClass = 'opacity-[0.035] dark:opacity-[0.05]',
   glowColor = 'forest',
   watermarkEmblem = 'none',
@@ -106,6 +111,9 @@ export function AfricanSectionBackground({
     return defaultSize;
   }, [tileSize, defaultSize]);
 
+  // Guaranteed subtle opacity that never defaults to 100%
+  const computedOpacity = opacity !== undefined ? opacity : 0.035;
+
   return (
     <div className={`absolute inset-0 pointer-events-none select-none z-0 overflow-hidden ${className}`} aria-hidden="true">
       {/* ── 1. The Seamless Repeating Cultural Geometric Pattern ── */}
@@ -115,6 +123,7 @@ export function AfricanSectionBackground({
           backgroundImage: uri,
           backgroundSize: sizeStyle,
           backgroundRepeat: 'repeat',
+          opacity: computedOpacity,
         }}
       />
 

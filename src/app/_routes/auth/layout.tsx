@@ -39,11 +39,10 @@ const AuthLayout: LayoutComponent = () => {
       {/* Subtle cultural totem watermark in the atmosphere */}
       <AfricanSectionBackground
         pattern="signature-totem"
-        color="white"
-        opacity={0.04}
-        watermark="totem"
-        watermarkPosition="center"
-        watermarkOpacity={0.05}
+        color="forest"
+        opacity={0.025}
+        glowColor="none"
+        watermarkEmblem="totem"
       />
       
       {/* Glassmorphism card wrapping the Auth contents */}
