@@ -17,7 +17,8 @@ export default {
     "programs": "Programmes",
     "adminPrograms": "Gestion Cures",
     "events": "FYS Event",
-    "adminEvents": "FYS Event Pro"
+    "adminEvents": "FYS Event Pro",
+    "adminDegustation": "Dégustation 18 Octobre"
   },
   "auth": {
     "login": {
@@ -1618,6 +1619,9 @@ export default {
   "home.admin.stats.cocktails": "Cocktails",
   "home.admin.stats.orders": "Commandes",
   "home.admin.stats.users": "Utilisateurs",
+  "home.admin.quick.degustationTitle": "Dégustation 18 Octobre",
+  "home.admin.quick.degustationDesc": "Monitoring en temps réel des inscriptions, pass téléchargés et commandes VIP.",
+  "home.admin.quick.degustationCta": "Suivre l'événement",
   "home.admin.quick.programsTitle": "FYS Programme (Gestion Cures)",
   "home.admin.quick.programsDesc": "Pilotez les cures signatures, modifiez la vitrine, les prix et suivez les clients inscrits.",
   "home.admin.quick.programsCta": "Gérer les Cures & Vitrine",

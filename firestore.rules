@@ -138,15 +138,34 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     
     // ------------------------------------------------------------------------
-    // Réservations VIP (Dégustation)
+    // Réservations VIP & Tracking Dégustation (RSVP, Téléchargements, Visites)
     // ------------------------------------------------------------------------
     
     match /fys_tasting_rsvps/{rsvpId} {
       // Tout le monde peut s'inscrire (créer)
       allow create: if true;
       
-      // Seul l'admin peut lire, modifier ou supprimer la liste complète
-      allow read, update, delete: if isAdmin();
+      // Lecture et suppression réservées aux admins
+      allow read, delete: if isAdmin();
+      
+      // Mise à jour : admin ou marquage du téléchargement de l'invitation
+      allow update: if isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['invitationDownloaded', 'downloadedAt']);
+    }
+
+    match /fys_tasting_downloads/{downloadId} {
+      // Enregistrement lors du téléchargement de l'invitation
+      allow create: if true;
+      
+      // Seul l'admin peut lire ou supprimer les téléchargements tracés
+      allow read, delete: if isAdmin();
+    }
+
+    match /fys_tasting_visits/{visitId} {
+      // Enregistrement lors d'une visite sur la page dégustation
+      allow create: if true;
+      
+      // Seul l'admin peut lire ou supprimer les visites tracées
+      allow read, delete: if isAdmin();
     }
 
     // ------------------------------------------------------------------------

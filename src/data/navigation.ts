@@ -14,6 +14,7 @@ import {
   CircleDollarSign,
   CalendarCheck,
   Building2,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { UserRole } from '@/entities';
@@ -209,6 +210,16 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.adminEvents',
     path: '/board/events-admin',
     icon: Building2,
+    roles: [UserRole.ADMIN],
+    showInMobileTab: false,
+    showInDesktopNav: true,
+  },
+  {
+    key: 'admin-degustation',
+    label: 'Dégustation 18 Octobre',
+    labelKey: 'nav.adminDegustation',
+    path: '/board/degustation',
+    icon: Sparkles,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
     showInDesktopNav: true,

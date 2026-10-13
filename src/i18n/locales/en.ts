@@ -17,7 +17,8 @@ export default {
     "programs": "Programs",
     "adminPrograms": "Cures Management",
     "events": "FYS Event",
-    "adminEvents": "FYS Event Pro"
+    "adminEvents": "FYS Event Pro",
+    "adminDegustation": "Tasting Oct 18"
   },
   "auth": {
     "login": {
@@ -1618,6 +1619,9 @@ export default {
   "home.admin.stats.cocktails": "Cocktails",
   "home.admin.stats.orders": "Orders",
   "home.admin.stats.users": "Users",
+  "home.admin.quick.degustationTitle": "Tasting Oct 18",
+  "home.admin.quick.degustationDesc": "Live monitoring of RSVPs, downloaded passes, and VIP orders.",
+  "home.admin.quick.degustationCta": "Monitor Event",
   "home.admin.quick.programsTitle": "FYS Program (Plans Management)",
   "home.admin.quick.programsDesc": "Manage signature plans, modify the storefront, pricing, and track enrolled customers.",
   "home.admin.quick.programsCta": "Manage Plans & Store",

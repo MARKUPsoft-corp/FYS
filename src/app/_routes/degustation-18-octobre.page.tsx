@@ -3,13 +3,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getPublicCocktails } from '@/services/cocktail';
 import { Plus, ArrowLeft, Sparkles, BookOpen, Star, Beaker, ArrowRight, CheckCircle2, GlassWater, Clock, MapPin, Users, Phone, Calendar, Download } from 'lucide-react';
-import { submitTastingRSVP } from '@/services/tasting';
+import { submitTastingRSVP, trackInvitationDownload, trackTastingVisit } from '@/services/tasting';
+import { useAuthStore } from '@/stores/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 const TastingPage: PageComponent = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   
   // Form state
@@ -40,6 +42,10 @@ const TastingPage: PageComponent = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, [targetDate]);
+
+  useEffect(() => {
+    trackTastingVisit(user ? { uid: user.uid, name: user.name, phone: user.phone, email: user.email } : undefined);
+  }, [user?.uid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +133,14 @@ const TastingPage: PageComponent = () => {
              <Link to="/lab?mode=degustation" className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white h-14 font-bold shadow-md hover:shadow-lg transition-all animate-pulse hover:animate-none">
                <Sparkles className="size-5" /> Créer mon jus VIP (1000F)
              </Link>
-             <a href="/degustation/Invitation FYS au tissu ndop indigo.png" download="Invitation_FYS_VIP.png" className="w-full block">
+             <a
+               href="/degustation/Invitation FYS au tissu ndop indigo.png"
+               download="Invitation_FYS_VIP.png"
+               onClick={() => {
+                 trackInvitationDownload(ticketId, whatsapp);
+               }}
+               className="w-full block"
+             >
                <Button type="button" className="w-full rounded-xl bg-[#3F6D4E] hover:bg-[#3F6D4E]/90 text-white h-12 mt-2 pointer-events-none">
                  <Download className="mr-2 size-4" /> Télécharger l'invitation
                </Button>
