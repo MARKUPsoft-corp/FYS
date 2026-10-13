@@ -22,11 +22,11 @@ const STEPS_META: StepMeta[] = [
 ];
 
 const STEP_PERCENTAGES: Record<SignatureStepId, number> = {
-  elan: 7.5,
-  heritage: 27.8,
+  elan: 6.8,
+  heritage: 27.5,
   centre: 50.0,
-  creation: 72.1,
-  ancrage: 92.4,
+  creation: 72.5,
+  ancrage: 93.2,
 };
 
 export function FysSignatureSection() {
@@ -488,16 +488,16 @@ export function FysSignatureSection() {
           <div className="flex items-stretch gap-3 sm:gap-4 relative">
             
             {/* ── LEFT COLUMN : Vertical Interactive Totem ── */}
-            <div className="w-[84px] sm:w-[100px] shrink-0 p-2 sm:p-2.5 bg-card/80 backdrop-blur-md rounded-3xl border border-border/50 shadow-md flex flex-col items-center justify-center relative">
-              <div className="w-full h-[430px] relative">
-                <svg viewBox="0 0 200 660" className="w-full h-full">
-                  {/* Central dashed line */}
-                  <line x1="100" y1="10" x2="100" y2="650" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-border/60" />
+            <div className="w-[108px] xs:w-[118px] sm:w-[130px] shrink-0 px-1.5 py-3 sm:px-2 sm:py-4 bg-card/80 backdrop-blur-md rounded-3xl border border-border/50 shadow-md flex flex-col relative">
+              <div className="w-full h-full relative">
+                <svg viewBox="38 6 124 648" className="w-full h-full">
+                  {/* Central dashed line spanning full height */}
+                  <line x1="100" y1="8" x2="100" y2="652" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-border/60" />
 
                   {/* 01 L'Élan */}
                   <g onClick={() => setActiveStep('elan')} className="cursor-pointer">
                     {/* Transparent touch target for easy finger tap */}
-                    <rect x="20" y="0" width="160" height="95" fill="transparent" />
+                    <rect x="35" y="6" width="130" height="92" fill="transparent" />
                     <path
                       d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z"
                       className={`transition-all duration-300 ${
@@ -506,6 +506,13 @@ export function FysSignatureSection() {
                           : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
                       }`}
                     />
+                    {/* Leader arrow connecting directly to the right border */}
+                    {activeStep === 'elan' && (
+                      <g className="transition-all duration-300">
+                        <line x1="108" y1="50" x2="152" y2="50" stroke="#E0982E" strokeWidth="2" strokeDasharray="3 3" />
+                        <polygon points="150,46 158,50 150,54" fill="#E0982E" />
+                      </g>
+                    )}
                     {/* Subtle pulsing indicator on the NEXT element to invite tap */}
                     {nextStep.id === 'elan' && (
                       <circle cx="100" cy="50" r="16" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
@@ -514,7 +521,7 @@ export function FysSignatureSection() {
 
                   {/* 02 L'Héritage */}
                   <g onClick={() => setActiveStep('heritage')} className="cursor-pointer">
-                    <rect x="20" y="100" width="160" height="170" fill="transparent" />
+                    <rect x="35" y="100" width="130" height="170" fill="transparent" />
                     <path
                       d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z"
                       fillRule="evenodd"
@@ -532,6 +539,13 @@ export function FysSignatureSection() {
                           : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
                       }`}
                     />
+                    {/* Leader arrow connecting directly to the right border */}
+                    {activeStep === 'heritage' && (
+                      <g className="transition-all duration-300">
+                        <line x1="150" y1="184" x2="156" y2="184" stroke="#E0982E" strokeWidth="2" />
+                        <polygon points="152,180 160,184 152,188" fill="#E0982E" />
+                      </g>
+                    )}
                     {nextStep.id === 'heritage' && (
                       <circle cx="100" cy="184" r="18" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
                     )}
@@ -539,7 +553,7 @@ export function FysSignatureSection() {
 
                   {/* 03 Soi, au centre */}
                   <g onClick={() => setActiveStep('centre')} className="cursor-pointer">
-                    <rect x="20" y="275" width="160" height="110" fill="transparent" />
+                    <rect x="35" y="275" width="130" height="110" fill="transparent" />
                     <circle
                       cx="100"
                       cy="330"
@@ -562,6 +576,13 @@ export function FysSignatureSection() {
                           : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
                       }`}
                     />
+                    {/* Leader arrow connecting directly to the right border */}
+                    {activeStep === 'centre' && (
+                      <g className="transition-all duration-300">
+                        <line x1="148" y1="330" x2="156" y2="330" stroke="#E0982E" strokeWidth="2" />
+                        <polygon points="152,326 160,330 152,334" fill="#E0982E" />
+                      </g>
+                    )}
                     {nextStep.id === 'centre' && (
                       <circle cx="100" cy="330" r="22" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
                     )}
@@ -569,7 +590,7 @@ export function FysSignatureSection() {
 
                   {/* 04 La Création */}
                   <g onClick={() => setActiveStep('creation')} className="cursor-pointer">
-                    <rect x="20" y="390" width="160" height="170" fill="transparent" />
+                    <rect x="35" y="390" width="130" height="170" fill="transparent" />
                     <path
                       d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z"
                       fillRule="evenodd"
@@ -587,6 +608,13 @@ export function FysSignatureSection() {
                           : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
                       }`}
                     />
+                    {/* Leader arrow connecting directly to the right border */}
+                    {activeStep === 'creation' && (
+                      <g className="transition-all duration-300">
+                        <line x1="150" y1="476" x2="156" y2="476" stroke="#E0982E" strokeWidth="2" />
+                        <polygon points="152,472 160,476 152,480" fill="#E0982E" />
+                      </g>
+                    )}
                     {nextStep.id === 'creation' && (
                       <circle cx="100" cy="476" r="18" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
                     )}
@@ -594,7 +622,7 @@ export function FysSignatureSection() {
 
                   {/* 05 L'Ancrage */}
                   <g onClick={() => setActiveStep('ancrage')} className="cursor-pointer">
-                    <rect x="20" y="565" width="160" height="95" fill="transparent" />
+                    <rect x="35" y="565" width="130" height="85" fill="transparent" />
                     <path
                       d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z"
                       className={`transition-all duration-300 ${
@@ -603,27 +631,46 @@ export function FysSignatureSection() {
                           : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
                       }`}
                     />
+                    {/* Leader arrow connecting directly to the right border */}
+                    {activeStep === 'ancrage' && (
+                      <g className="transition-all duration-300">
+                        <line x1="108" y1="610" x2="152" y2="610" stroke="#E0982E" strokeWidth="2" strokeDasharray="3 3" />
+                        <polygon points="150,606 158,610 150,614" fill="#E0982E" />
+                      </g>
+                    )}
                     {nextStep.id === 'ancrage' && (
                       <circle cx="100" cy="610" r="16" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
                     )}
                   </g>
                 </svg>
 
-                {/* ── Dynamic Glowing Pointer on the active element ── */}
+                {/* ── Dynamic Glowing Pointer Arrow pointing from totem directly into card ── */}
                 <div
-                  className="absolute right-0 -mr-2.5 transition-all duration-500 ease-out z-20 pointer-events-none"
+                  className="absolute -right-3.5 sm:-right-4 transition-all duration-500 ease-out z-30 pointer-events-none"
                   style={{ top: `${STEP_PERCENTAGES[activeStep]}%`, transform: 'translateY(-50%)' }}
                 >
                   <div className="relative flex items-center">
-                    <div className="size-3.5 rounded-full bg-[#E0982E] border-2 border-background shadow-md shadow-[#E0982E]/60 animate-pulse" />
+                    {/* Arrow tip pointing left AT the totem element */}
+                    <div className="w-0 h-0 border-y-[4.5px] border-y-transparent border-r-[6px] border-r-[#E0982E] filter drop-shadow-[0_0_6px_rgba(224,152,46,0.9)]" />
+
+                    {/* Glowing center indicator dot */}
+                    <div className="relative flex items-center justify-center -mx-0.5">
+                      <span className="animate-ping absolute inline-flex size-3.5 rounded-full bg-[#E0982E] opacity-75" />
+                      <span className="relative inline-flex size-3.5 rounded-full bg-[#E0982E] border-2 border-background shadow-lg shadow-[#E0982E]/90" />
+                    </div>
+
+                    {/* Connecting line */}
                     <div className="w-2.5 sm:w-3 h-[2px] bg-gradient-to-r from-[#E0982E] to-primary" />
+
+                    {/* Arrow tip pointing right INTO the active card */}
+                    <div className="w-0 h-0 border-y-[4.5px] border-y-transparent border-l-[6px] border-l-primary filter drop-shadow-[0_0_6px_rgba(63,109,78,0.9)]" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ── RIGHT COLUMN : Detailed active card taking full remaining width ── */}
-            <div className="flex-1 min-w-0 flex flex-col justify-between p-5 sm:p-6 rounded-3xl bg-card border border-primary/30 shadow-xl relative overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col justify-between p-4 sm:p-6 rounded-3xl bg-card border border-primary/30 shadow-xl relative overflow-hidden">
               {/* Background ambient accent */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
