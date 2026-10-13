@@ -743,9 +743,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                         }}
                         className="w-full block"
                       >
-                        <Button className="w-full h-14 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2">
-                          <Download className="size-4.5" />
-                          Télécharger mon invitation officielle (Pass VIP)
+                        <Button className="w-full h-13 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2">
+                          <Download className="size-4.5 shrink-0" />
+                          <span>Télécharger mon Pass VIP</span>
                         </Button>
                       </a>
                     </div>
@@ -842,9 +842,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                           className="w-full h-13 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-sm shadow-xl"
                         >
                           {eventRsvpSubmitting ? (
-                            <><Loader2 className="size-4 animate-spin mr-2" /> Génération de votre Pass...</>
+                            <><Loader2 className="size-4 animate-spin mr-2" /> Génération du Pass...</>
                           ) : (
-                            <>Valider & Obtenir mon Pass d'Accès VIP</>
+                            <>Obtenir mon Pass VIP</>
                           )}
                         </Button>
                       </div>

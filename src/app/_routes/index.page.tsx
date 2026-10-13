@@ -439,10 +439,10 @@ const RootIndex: PageComponent = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/degustation-18-octobre" className="h-14 px-8 rounded-2xl text-base md:text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
-                <Sparkles className="size-5 text-[#E0982E]" />
-                Accéder à la Dégustation Privée
-                <ArrowRight className="size-5" />
+              <Link to="/degustation-18-octobre" className="h-13 sm:h-14 px-6 sm:px-8 rounded-2xl text-sm sm:text-base md:text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2.5">
+                <Sparkles className="size-4.5 sm:size-5 text-[#E0982E] shrink-0" />
+                <span>Accéder à la Dégustation Privée</span>
+                <ArrowRight className="size-4.5 sm:size-5 shrink-0" />
               </Link>
             </div>
           </div>

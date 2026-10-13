@@ -191,8 +191,8 @@ const TastingPage: PageComponent = () => {
             FYS vous convie à une expérience intime et multisensorielle de créations pressées à froid le <strong className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</strong> à Yaoundé.
           </p>
 
-          {/* Countdown */}
-          <div className="flex gap-2.5 sm:gap-4 md:gap-5 mb-6 w-full justify-center">
+          {/* Countdown (Même style que dans la slide de la landing : fond net, chiffres verts contrastés) */}
+          <div className="flex gap-2 sm:gap-3 md:gap-4 mb-6 w-full justify-center">
             {[
               { label: 'Jours', value: timeLeft.days },
               { label: 'Heures', value: timeLeft.hours },
@@ -201,31 +201,26 @@ const TastingPage: PageComponent = () => {
             ].map((unit, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center p-2.5 sm:p-3.5 rounded-2xl shadow-xl border border-white/30 dark:border-white/10 min-w-[65px] sm:min-w-[80px] md:min-w-[85px] relative overflow-hidden bg-white/60 dark:bg-black/50 backdrop-blur-md"
+                className="flex flex-col items-center bg-white/80 dark:bg-black/60 backdrop-blur-md p-2.5 sm:p-3.5 md:p-4 rounded-2xl border border-[#3F6D4E]/20 dark:border-white/10 min-w-[64px] sm:min-w-[76px] md:min-w-[88px] shadow-md"
               >
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-40"
-                  style={{ backgroundImage: "url('/degustation/Texture verte forestière pour compte à rebours-2.png')" }}
-                />
-                <div className="absolute inset-0 bg-[#3F6D4E]/30 dark:bg-black/40 mix-blend-multiply" />
-                <div className="relative z-10 text-2xl sm:text-3xl md:text-4xl font-black text-[#1a1f1b] dark:text-white font-display mb-0.5 drop-shadow-md">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#3F6D4E] dark:text-[#AECBB2] font-display leading-none mb-1">
                   {unit.value.toString().padStart(2, '0')}
                 </div>
-                <div className="relative z-10 text-[9px] sm:text-[10px] md:text-xs uppercase tracking-widest text-[#E0982E] font-extrabold">
+                <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-[#E0982E] uppercase tracking-wider">
                   {unit.label}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* User requested: Hero button to compose juice for event replacing "les bouteilles seront bientôt prêtes" */}
-          <div className="w-full max-w-md mx-auto space-y-3">
+          {/* Boutons d'action Hero raccourcis pour éviter tout débordement sur mobile */}
+          <div className="w-full max-w-sm sm:max-w-md mx-auto space-y-2.5">
             <Link
               to="/lab?mode=degustation"
-              className="w-full h-14 rounded-2xl text-base sm:text-lg font-bold bg-[#E0982E] hover:bg-[#c48225] text-white shadow-xl hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center gap-2.5 animate-pulse hover:animate-none"
+              className="w-full h-13 sm:h-14 px-4 rounded-2xl text-sm sm:text-base font-bold bg-[#E0982E] hover:bg-[#c48225] text-white shadow-xl hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
-              <Sparkles className="size-5" />
-              Composer le jus de l'événement (1 000 FCFA)
+              <Sparkles className="size-4.5 shrink-0" />
+              <span className="truncate">Composer mon jus (1 000 F)</span>
             </Link>
 
             <Button
@@ -238,10 +233,10 @@ const TastingPage: PageComponent = () => {
                 }
               }}
               variant="outline"
-              className="w-full h-12 rounded-2xl text-sm sm:text-base font-bold border-2 border-[#3F6D4E] dark:border-[#88b698] text-[#3F6D4E] dark:text-[#88b698] hover:bg-[#3F6D4E]/10 dark:hover:bg-[#88b698]/10 transition-all flex items-center justify-center gap-2"
+              className="w-full h-12 px-4 rounded-2xl text-sm sm:text-base font-bold border-2 border-[#3F6D4E] dark:border-[#88b698] text-[#3F6D4E] dark:text-[#88b698] hover:bg-[#3F6D4E]/10 dark:hover:bg-[#88b698]/10 transition-all flex items-center justify-center gap-2"
             >
-              <Calendar className="size-4.5 text-[#E0982E]" />
-              {ticketId ? 'Voir & Télécharger mon Pass VIP' : 'Réserver ma place & Pass VIP'}
+              <Calendar className="size-4 text-[#E0982E] shrink-0" />
+              <span className="truncate">{ticketId ? 'Voir mon Pass VIP' : 'Obtenir mon Pass VIP'}</span>
             </Button>
           </div>
         </div>
@@ -454,27 +449,27 @@ const TastingPage: PageComponent = () => {
                 onClick={() => trackInvitationDownload(ticketId, whatsapp)}
                 className="w-full block"
               >
-                <Button className="w-full h-14 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-base shadow-xl flex items-center justify-center gap-2">
-                  <Download className="size-5" />
-                  Télécharger l'invitation officielle (Pass VIP)
+                <Button className="w-full h-13 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2">
+                  <Download className="size-4.5 shrink-0" />
+                  <span>Télécharger mon Pass VIP</span>
                 </Button>
               </a>
 
               <Link
                 to="/lab?mode=degustation"
-                className="w-full h-13 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2"
+                className="w-full h-12 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2"
               >
-                <Sparkles className="size-4.5" />
-                Composer mon jus VIP pour l'événement (1 000 FCFA)
+                <Sparkles className="size-4 shrink-0" />
+                <span>Composer mon jus (1 000 F)</span>
               </Link>
 
               <button
                 type="button"
                 onClick={() => setIsEditingRSVP(true)}
-                className="w-full py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1.5"
+                className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1.5"
               >
-                <Pencil className="size-3.5" />
-                Modifier mes coordonnées d'invité
+                <Pencil className="size-3.5 shrink-0" />
+                <span>Modifier mes coordonnées</span>
               </button>
             </div>
           </div>
@@ -558,9 +553,9 @@ const TastingPage: PageComponent = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-14 rounded-xl text-lg font-bold bg-[#E0982E] hover:bg-[#c48225] text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all"
+                  className="w-full h-13 rounded-xl text-base font-bold bg-[#E0982E] hover:bg-[#c48225] text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all"
                 >
-                  {isSubmitting ? 'Enregistrement...' : 'Confirmer ma présence & Recevoir mon Pass VIP'}
+                  {isSubmitting ? 'Enregistrement...' : 'Obtenir mon Pass VIP'}
                 </Button>
 
                 {ticketId && (
@@ -694,16 +689,18 @@ const TastingPage: PageComponent = () => {
                 className="w-full block"
               >
                 <Button className="w-full h-13 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2">
-                  <Download className="size-4.5" /> Télécharger l'invitation officielle
+                  <Download className="size-4.5 shrink-0" />
+                  <span>Télécharger mon Pass VIP</span>
                 </Button>
               </a>
 
               <Link
                 to="/lab?mode=degustation"
                 onClick={() => setShowTicketModal(false)}
-                className="w-full h-12 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm"
+                className="w-full h-12 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm"
               >
-                <Sparkles className="size-4" /> Composer mon jus VIP (1 000 FCFA)
+                <Sparkles className="size-4 shrink-0" />
+                <span>Composer mon jus (1 000 F)</span>
               </Link>
 
               <button
