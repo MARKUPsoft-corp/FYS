@@ -202,25 +202,71 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ NAVBAR ━━━ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-5 md:px-8">
-          <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <img src="/logos/Logo_fys.png" alt="FYS" className="h-12 w-auto object-contain dark:hidden" />
-            <img src="/logos/Logo_fys_creme.png" alt="FYS" className="h-12 w-auto object-contain hidden dark:block" />
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-2.5 hover:opacity-85 transition-opacity shrink-0">
+            <img src="/logos/Logo_fys.png" alt="FYS" className="h-10 lg:h-11 w-auto object-contain dark:hidden" />
+            <img src="/logos/Logo_fys_creme.png" alt="FYS" className="h-10 lg:h-11 w-auto object-contain hidden dark:block" />
           </Link>
 
-          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-muted-foreground">
-            <a href="#how-it-works" className={`transition-colors ${activeSection === 'how-it-works' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.howItWorks')}</a>
-            <a href="#features" className={`transition-colors ${activeSection === 'features' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.features')}</a>
-            <a href="#events" className={`transition-colors ${activeSection === 'events' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.events')}</a>
-            <a href="#nutrifys" className={`transition-colors ${activeSection === 'nutrifys' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.nutrifys')}</a>
-            <a href="#about" className={`transition-colors ${activeSection === 'about' ? 'text-primary font-bold' : 'hover:text-foreground'}`}>{t('landing.nav.about')}</a>
+          {/* Central Nav Links (Desktop) */}
+          <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[13px] xl:text-sm font-medium">
+            <a
+              href="#how-it-works"
+              className={`px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                activeSection === 'how-it-works'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {t('landing.nav.howItWorks')}
+            </a>
+            <a
+              href="#features"
+              className={`px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                activeSection === 'features'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {t('landing.nav.features')}
+            </a>
+            <a
+              href="#events"
+              className={`px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                activeSection === 'events'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {t('landing.nav.events')}
+            </a>
+            <a
+              href="#nutrifys"
+              className={`px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                activeSection === 'nutrifys'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {t('landing.nav.nutrifys')}
+            </a>
+            <a
+              href="#about"
+              className={`px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                activeSection === 'about'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {t('landing.nav.about')}
+            </a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Language Switcher */}
             <button
               onClick={() => i18n.changeLanguage(i18n.language?.startsWith('fr') ? 'en' : 'fr')}
-              className="flex items-center gap-1.5 h-9 px-2.5 rounded-full border border-border/70 hover:bg-muted/50 text-xs font-black text-foreground transition-all cursor-pointer"
+              className="flex items-center gap-1.5 h-8.5 px-2.5 rounded-full border border-border/70 hover:bg-muted/50 text-xs font-bold text-foreground transition-all cursor-pointer"
               title={i18n.language?.startsWith('fr') ? 'Switch to English' : 'Passer en Français'}
               aria-label="Toggle language"
             >
@@ -228,33 +274,41 @@ const RootIndex: PageComponent = () => {
               <span className="uppercase">{i18n.language?.startsWith('fr') ? 'EN' : 'FR'}</span>
             </button>
 
-            <button onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')} className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/50 transition-all">
-              {actualTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
+              className="size-8.5 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/50 transition-all cursor-pointer"
+              aria-label="Toggle theme"
+            >
+              {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* ── Desktop Buttons ── */}
-            <div className="hidden sm:flex items-center gap-4">
+            {/* Subtle Divider */}
+            <div className="hidden sm:block h-5 w-px bg-border/60 mx-0.5" />
+
+            {/* ── Desktop CTA Buttons ── */}
+            <div className="hidden sm:flex items-center gap-2">
               <Link
                 to="/auth/login"
-                className="h-10 px-5 rounded-full border border-border/80 text-sm font-bold flex items-center gap-2 hover:bg-muted/50 transition-all text-foreground"
+                className="h-9 px-3.5 rounded-full text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all whitespace-nowrap flex items-center"
               >
                 {t('landing.nav.signIn')}
               </Link>
               <Link
                 to="/lab"
-                className="h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                className="h-9 px-4 rounded-full bg-primary text-primary-foreground text-xs lg:text-sm font-bold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-sm whitespace-nowrap"
               >
                 {t('landing.nav.getStarted')}
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            {/* ── Mobile Hamburger Menu ── */}
-            <div className="sm:hidden flex items-center">
+            {/* ── Mobile / Tablet Hamburger Menu ── */}
+            <div className="lg:hidden flex items-center">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="p-2 text-foreground rounded-full hover:bg-muted/50 transition-all flex items-center justify-center">
-                    <Menu className="w-6 h-6" />
+                  <button className="size-9 flex items-center justify-center text-foreground rounded-full hover:bg-muted/50 transition-all cursor-pointer" aria-label="Open menu">
+                    <Menu className="w-5 h-5" />
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background dark:bg-background/80 dark:backdrop-blur-[48px] dark:saturate-[180%] border-l border-border dark:border-white/10 p-6 flex flex-col gap-6 shadow-2xl">

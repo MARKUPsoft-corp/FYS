@@ -956,9 +956,9 @@ export default {
     "nav": {
       "howItWorks": "How it works",
       "features": "Features",
-      "events": "FYS Event (B2B)",
-      "nutrifys": "NutriFYS Assistant",
-      "about": "About us",
+      "events": "Events",
+      "nutrifys": "NutriFYS",
+      "about": "About",
       "signIn": "Sign in",
       "getStarted": "Get started",
       "startNow": "Start now"

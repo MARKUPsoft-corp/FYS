@@ -956,9 +956,9 @@ export default {
     "nav": {
       "howItWorks": "Comment ça marche",
       "features": "Fonctionnalités",
-      "events": "FYS Event (B2B)",
-      "nutrifys": "L'assistant NutriFYS",
-      "about": "À propos de nous",
+      "events": "Événements",
+      "nutrifys": "NutriFYS",
+      "about": "À propos",
       "signIn": "Se connecter",
       "getStarted": "Commencer",
       "startNow": "Commencer maintenant"
