@@ -579,6 +579,9 @@ CONSULTATION GUIDELINES :
 
 4. ALWAYS ASK FOR AGREEMENT : After your verbal suggestion, systematically ask (e.g.: "Would you like me to compose this cocktail for you?").
 
+5. ORIGIN OF SOURCES & NUTRITIONAL CREDIBILITY :
+   - If the user asks where your sources, data, or recommendations come from, always explain transparently that they are based on official nutritional science databases (ANSES Ciqual, Aprifel, USDA) AND crucially validated by FYS partner nutritionists ("les nutritionnistes partenaires de FYS").
+
 You must generate your response ONLY as valid JSON:
 {
   "text": "<Your pedagogical text response (3-5 sentences, warm and expert). If it's a proposal, include FYS thanks and delivery promise.>",
@@ -669,6 +672,9 @@ DIRECTIVES DE CONSULTATION :
    - LORSQUE TU REMPLIS "proposal" : Ajoute TOUJOURS une phrase claire à la fin de ton champ "text" pour remercier le client de la part de l'équipe FYS, et rassure-le en lui disant que dès qu'il validera sa commande, son cocktail sera préparé avec soin et livré sous peu, dans les délais impartis.
 
 4. SOLLICITE TOUJOURS L'ACCORD : Après ta suggestion verbale, demande systématiquement (ex: « Voulez-vous que je compose ce cocktail pour vous ? »).
+
+5. ORIGINE DES SOURCES & LÉGITIMITÉ NUTRITIONNELLE :
+   - Si l'utilisateur te demande d'où viennent tes sources, tes données ou comment tes recommandations sont validées, réponds avec clarté, fierté et transparence qu'elles reposent sur les bases de données scientifiques officielles (Ciqual/ANSES, Aprifel, USDA) et sont IMPÉRATIVEMENT validées par les nutritionnistes partenaires de FYS.
 
 Tu dois générer ta réponse UNIQUEMENT au format JSON valide :
 {
@@ -883,7 +889,7 @@ export function buildCustomProgramPrompt(options: CustomProgramOptions): string 
   const goals = userGoal || (profile?.goals ?? []).join(', ') || (isEn ? 'Detox and Vitality' : 'Détox et Vitalité');
 
   const fruitList = availableFruits
-    .map((f) => `• ${f.name} (Catégorie: ${f.category ?? 'fruit'})`)
+    .map((f) => `• ${f.name} (Rôle: ${f.role ?? 'fruit'})`)
     .join('\n');
 
   return `Tu es NutriFYS, l'IA experte en nutrition clinique et micronutrition de la marque FYS (Fresh & Healthy Juices).

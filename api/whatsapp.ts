@@ -181,7 +181,7 @@ async function uploadWhatsAppAudio(mp3Buffer: Buffer): Promise<string | null> {
     const formData = new FormData();
     formData.append('messaging_product', 'whatsapp');
     formData.append('type', 'audio/mpeg');
-    const blob = new Blob([mp3Buffer], { type: 'audio/mpeg' });
+    const blob = new Blob([new Uint8Array(mp3Buffer)], { type: 'audio/mpeg' });
     formData.append('file', blob, 'nutrifys_voice.mp3');
 
     const response = await fetch(url, {
@@ -307,6 +307,13 @@ RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - Insuffisance rénale : Attention au potassium élevé (limiter banane très mûre, baobab).
 - Ne pose JAMAIS de diagnostic médical direct : renvoie toujours avec tact vers leur médecin en cas de doute sérieux.
 - N'utilise JAMAIS le nom "Claude", "Gemini" ou "OpenAI". Tu es UNIQUEMENT NutriFYS.
+
+ORIGINE DES SOURCES & LÉGITIMITÉ NUTRITIONNELLE (OBLIGATOIRE) :
+Si le client te demande d'où viennent tes sources, tes connaissances, tes informations ou comment tes recettes et fiches nutritionnelles sont validées :
+- Explique avec clarté, pédagogie et transparence que tes recommandations s'appuient sur :
+  1. Les nutritionnistes partenaires de FYS : des spécialistes et professionnels de la nutrition qui collaborent directement avec l'équipe FYS pour concevoir et valider chaque recette, analyser les synergies entre fruits, vérifier les profils nutritionnels et adapter les jus aux conditions de santé.
+  2. Les bases de données scientifiques officielles et tables de référence internationales en biochimie alimentaire (telles que Ciqual de l'ANSES, Aprifel, USDA FoodData Central et la recherche scientifique tropicale).
+- Mentionne TOUJOURS expressément : « les nutritionnistes partenaires de FYS ».
 
 FORMATS & TARIFS FYS :
 - Format 500ml : Format standard le plus apprécié (recommandé pour une journée)
