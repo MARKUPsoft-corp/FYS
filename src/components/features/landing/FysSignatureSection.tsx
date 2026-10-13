@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, ArrowRight, ShieldCheck, Compass, Heart, Leaf } from 'lucide-react';
+import { AfricanCornerPattern, type AfricanMotifVariant } from '@/components/common/AfricanCornerPattern';
 
 export type SignatureStepId = 'elan' | 'heritage' | 'centre' | 'creation' | 'ancrage';
 
@@ -20,6 +21,14 @@ const STEPS_META: StepMeta[] = [
   { id: 'creation', index: 3, number: '04', side: 'right', icon: Sparkles, accentColor: '#3F6D4E' },
   { id: 'ancrage', index: 4, number: '05', side: 'left', icon: Leaf, accentColor: '#3F6D4E' },
 ];
+
+const STEP_MOTIFS: Record<SignatureStepId, AfricanMotifVariant> = {
+  elan: 'elan-chevrons',
+  heritage: 'heritage-diamond',
+  centre: 'centre-sun',
+  creation: 'creation-pyramids',
+  ancrage: 'ancrage-roots',
+};
 
 const STEP_PERCENTAGES: Record<SignatureStepId, number> = {
   elan: 6.8,
@@ -119,12 +128,13 @@ export function FysSignatureSection() {
                 <div
                   key={step.id}
                   onClick={() => setActiveStep(step.id)}
-                  className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-right ${
+                  className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-right overflow-hidden ${
                     isSelected
                       ? 'bg-card shadow-xl border-primary/50 scale-[1.03] ring-1 ring-primary/20'
                       : 'bg-card/40 hover:bg-card border-border/40 hover:border-border/80 opacity-75 hover:opacity-100'
                   }`}
                 >
+                  <AfricanCornerPattern variant={STEP_MOTIFS[step.id]} size="md" className="opacity-15 group-hover:opacity-35" />
                   <div className="flex items-center justify-end gap-3 mb-2">
                     <span
                       className={`font-mono text-xs font-black px-2.5 py-0.5 rounded-full transition-colors ${
@@ -436,12 +446,13 @@ export function FysSignatureSection() {
                 <div
                   key={step.id}
                   onClick={() => setActiveStep(step.id)}
-                  className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-left ${
+                  className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-left overflow-hidden ${
                     isSelected
                       ? 'bg-card shadow-xl border-primary/50 scale-[1.03] ring-1 ring-primary/20'
                       : 'bg-card/40 hover:bg-card border-border/40 hover:border-border/80 opacity-75 hover:opacity-100'
                   }`}
                 >
+                  <AfricanCornerPattern variant={STEP_MOTIFS[step.id]} size="md" className="opacity-15 group-hover:opacity-35" />
                   {/* Active pointer line directed towards center totem */}
                   {isSelected && (
                     <div className="absolute top-1/2 -left-3 -translate-y-1/2 size-3 rounded-full bg-[#E0982E] border-2 border-background shadow-md animate-pulse" />
@@ -670,7 +681,8 @@ export function FysSignatureSection() {
             </div>
 
             {/* ── RIGHT COLUMN : Detailed active card taking full remaining width ── */}
-            <div className="flex-1 min-w-0 flex flex-col justify-between p-4 sm:p-6 rounded-3xl bg-card border border-primary/30 shadow-xl relative overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col justify-between p-4 sm:p-6 rounded-3xl bg-card border border-primary/30 shadow-xl relative overflow-hidden group">
+              <AfricanCornerPattern variant={STEP_MOTIFS[activeStep]} size="lg" className="opacity-20 group-hover:opacity-40" />
               {/* Background ambient accent */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -744,7 +756,8 @@ export function FysSignatureSection() {
         </div>
 
         {/* ━━━ BOTTOM EMBLEM & LOGO INTEGRATION BANNER ━━━ */}
-        <div className="mt-14 md:mt-24 p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-card/80 to-card border border-border/60 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+        <div className="mt-14 md:mt-24 p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-card/80 to-card border border-border/60 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 relative overflow-hidden group">
+          <AfricanCornerPattern variant="totem-seal" size="xl" className="opacity-15 group-hover:opacity-35" />
           <div className="flex items-center gap-5">
             <div className="size-18 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 p-2">
               {/* Standalone Totem mini icon matching the exact sacred geometry */}

@@ -17,6 +17,7 @@ import { getPublicCocktails } from '@/services/cocktail';
 import { CocktailType, type Cocktail } from '@/entities/cocktail';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
 import { FysSignatureSection } from '@/components/features/landing/FysSignatureSection';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 /* ─────────────────────────────────────────────
    FYS Landing Page — Premium, Clean, Épurée
@@ -548,7 +549,8 @@ const RootIndex: PageComponent = () => {
             { value: '100%', label: t('landing.hero.statsNatural'), icon: ShieldCheck, color: '#F2694A' },
             { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: t('landing.hero.statsRecipes'), icon: Users, color: '#AECBB2' },
           ].map((stat, i) => (
-            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
+            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 scroll-animate opacity-0 relative overflow-hidden group" style={{ animationDelay: `${i * 100}ms` }}>
+              <AfricanCornerPattern section="stats" index={i} size="sm" className="opacity-15 group-hover:opacity-35" />
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
                 <stat.icon className="w-6 h-6" />
               </div>
@@ -632,12 +634,13 @@ const RootIndex: PageComponent = () => {
                   {/* Contenu (Accordeon) */}
                   <div 
                     onClick={() => setActiveProcessStep(i)}
-                    className={`cursor-pointer group rounded-[2.5rem] border transition-all duration-700 overflow-hidden
+                    className={`cursor-pointer group rounded-[2.5rem] border transition-all duration-700 overflow-hidden relative
                       ${isActive 
                         ? 'bg-white/40 dark:bg-black/40 backdrop-blur-[32px] saturate-[150%] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border-white/60 dark:border-white/10' 
                         : 'bg-transparent border-transparent hover:bg-white/20 dark:hover:bg-black/10 opacity-60 hover:opacity-90'
                       }`}
                   >
+                    <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-35" />
                     <div className="p-6 md:p-10 flex items-center justify-between gap-4">
                       <h3 className={`text-xl md:text-3xl font-extrabold tracking-tight transition-colors duration-500 ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'}`} style={{ fontFamily: 'var(--font-display)' }}>
                         {item.title}
@@ -693,8 +696,9 @@ const RootIndex: PageComponent = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {catalogCocktails.map((cocktail) => (
+              {catalogCocktails.map((cocktail, i) => (
                 <div key={cocktail.id} className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                  <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
                   <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
                     {cocktail.imageUrl ? (
                       <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -767,7 +771,8 @@ const RootIndex: PageComponent = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Card 1 — User Compose */}
-            <Link to="/lab" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
+            <Link to="/lab" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0 relative" style={{ animationDelay: '100ms' }}>
+              <AfricanCornerPattern section="features" index={0} size="lg" className="z-20 text-white/50 group-hover:text-white/90" />
               <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
                   src={landingImages.featureCatalog || 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop'}
@@ -791,7 +796,8 @@ const RootIndex: PageComponent = () => {
             </Link>
 
             {/* Card 2 — NutriFYS Compose */}
-            <Link to="/lab?tab=nutrifys" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0" style={{ animationDelay: '200ms' }}>
+            <Link to="/lab?tab=nutrifys" className="block rounded-[2.5rem] border border-border/50 overflow-hidden bg-card/60 backdrop-blur-md group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 scroll-animate opacity-0 relative" style={{ animationDelay: '200ms' }}>
+              <AfricanCornerPattern section="features" index={1} size="lg" className="z-20 text-white/50 group-hover:text-white/90" />
               <div className="aspect-[16/10] overflow-hidden bg-muted">
                 <img
                   src={landingImages.featureNutrify || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop'}
@@ -843,7 +849,8 @@ const RootIndex: PageComponent = () => {
 
           {/* 3 Pillars / Value Props */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-animate opacity-0" style={{ animationDelay: '150ms' }}>
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all relative overflow-hidden group">
+              <AfricanCornerPattern section="events" index={0} size="md" className="opacity-15 group-hover:opacity-35" />
               <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                 <GlassWater className="size-6" />
               </div>
@@ -855,7 +862,8 @@ const RootIndex: PageComponent = () => {
               </p>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all relative overflow-hidden group">
+              <AfricanCornerPattern section="events" index={1} size="md" className="opacity-15 group-hover:opacity-35" />
               <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                 <Sparkles className="size-6" />
               </div>
@@ -867,7 +875,8 @@ const RootIndex: PageComponent = () => {
               </p>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all">
+            <div className="bg-card/80 backdrop-blur-sm p-7 rounded-3xl border border-border/70 shadow-xs space-y-3 hover:border-primary/40 transition-all relative overflow-hidden group">
+              <AfricanCornerPattern section="events" index={2} size="md" className="opacity-15 group-hover:opacity-35" />
               <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                 <Package className="size-6" />
               </div>
@@ -881,7 +890,8 @@ const RootIndex: PageComponent = () => {
           </div>
 
           {/* Hero Banner with Executive Photo & Direct Action */}
-          <div className="relative rounded-[2.5rem] overflow-hidden border border-border/60 shadow-xl scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
+          <div className="relative rounded-[2.5rem] overflow-hidden border border-border/60 shadow-xl scroll-animate opacity-0 group" style={{ animationDelay: '250ms' }}>
+            <AfricanCornerPattern section="events" index={3} size="xl" className="z-20 text-white/40 group-hover:text-white/80" />
             <div className="absolute inset-0 bg-muted">
               <img
                 src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600"
@@ -942,6 +952,7 @@ const RootIndex: PageComponent = () => {
               { src: landingImages.creation4Image, label: landingImages.creation4Label },
             ].map((item, i) => (
               <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[3/4] cursor-pointer border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
+                <AfricanCornerPattern section="creations" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
                 <img src={item.src} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/90 via-[#1F3A28]/20 to-transparent group-hover:from-[#1F3A28] transition-colors" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
@@ -960,7 +971,8 @@ const RootIndex: PageComponent = () => {
         <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#F2694A 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[3rem] p-8 md:p-12 lg:p-16 shadow-2xl relative overflow-hidden">
+          <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[3rem] p-8 md:p-12 lg:p-16 shadow-2xl relative overflow-hidden group">
+            <AfricanCornerPattern section="nutrifys" index={0} size="xl" className="opacity-20 group-hover:opacity-40" />
             
             {/* Décoration d'arrière-plan de la carte */}
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
@@ -1050,9 +1062,10 @@ const RootIndex: PageComponent = () => {
                   <div
                     key={fruit.id}
                     onClick={() => setSelectedFruit(fruit)}
-                    className="relative bg-card/40 hover:bg-card/60 w-full p-2.5 rounded-[1.5rem] border border-border/40 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:-translate-y-1 scroll-animate opacity-0"
+                    className="relative bg-card/40 hover:bg-card/60 w-full p-2.5 rounded-[1.5rem] border border-border/40 shadow-sm transition-all duration-300 group flex flex-col items-center cursor-pointer hover:-translate-y-1 scroll-animate opacity-0 overflow-hidden"
                     style={{ animationDelay: `${Math.min(i * 50, 500)}ms` }}
                   >
+                    <AfricanCornerPattern section="fruits" index={i} size="sm" className="opacity-15 group-hover:opacity-35" />
                     <div className="w-full aspect-square rounded-[1.25rem] overflow-hidden mb-3 relative bg-muted">
                       {unavailable && (
                         <span className="absolute top-2 right-2 z-10 text-[8px] font-bold uppercase tracking-widest bg-black/70 text-white px-2 py-0.5 rounded-full backdrop-blur-md">
@@ -1106,6 +1119,7 @@ const RootIndex: PageComponent = () => {
             <div className="relative group w-[90vw] sm:w-full max-w-[340px] scroll-animate opacity-0" style={{ animationDelay: '100ms' }}>
               <div className="absolute inset-0 bg-secondary/15 rounded-[2.5rem] md:rounded-[3rem] blur-2xl group-hover:bg-secondary/30 transition-colors duration-700" />
               <div className="relative aspect-[4/5] rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-border/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] transition-shadow duration-700">
+                <AfricanCornerPattern variant="ndop-cross" size="md" className="z-20 text-white/50 group-hover:text-white/90" />
                 <img src="/claudia.jpg" alt="Claudia NGASSA TAPAH" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/95 via-[#1F3A28]/50 to-transparent" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2.5rem] md:rounded-[3rem] pointer-events-none" />
@@ -1128,6 +1142,7 @@ const RootIndex: PageComponent = () => {
             <div className="relative group w-[90vw] sm:w-full max-w-[340px] mt-2 md:mt-20 scroll-animate opacity-0" style={{ animationDelay: '250ms' }}>
               <div className="absolute inset-0 bg-primary/15 rounded-[2.5rem] md:rounded-[3rem] blur-2xl group-hover:bg-primary/30 transition-colors duration-700" />
               <div className="relative aspect-[4/5] rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-border/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] transition-shadow duration-700">
+                <AfricanCornerPattern variant="heritage-diamond" size="md" className="z-20 text-white/50 group-hover:text-white/90" />
                 <img src="/Emmanuel.jpg" alt="Emmanuel YAKAM TCHAMEGNI" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/95 via-[#1F3A28]/50 to-transparent" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2.5rem] md:rounded-[3rem] pointer-events-none" />
@@ -1159,7 +1174,8 @@ const RootIndex: PageComponent = () => {
               Né à <span className="text-primary brightness-110">Yaoundé</span>,<br className="hidden sm:block"/>pensé pour vous.
             </h2>
             
-            <div className="space-y-6 md:space-y-8 relative px-4 md:px-12 bg-card/30 backdrop-blur-sm border border-border/30 p-8 md:p-10 rounded-[2rem] shadow-sm">
+            <div className="space-y-6 md:space-y-8 relative px-4 md:px-12 bg-card/30 backdrop-blur-sm border border-border/30 p-8 md:p-10 rounded-[2rem] shadow-sm overflow-hidden group">
+              <AfricanCornerPattern section="about" index={0} size="lg" className="opacity-20 group-hover:opacity-40" />
               <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground leading-relaxed font-medium">
                 {t('landing.about.subtitle')}
               </p>
@@ -1176,7 +1192,8 @@ const RootIndex: PageComponent = () => {
       {/* ━━━ CTA FINAL ━━━ */}
       <section className="py-24 px-5 md:px-8 relative overflow-hidden z-0">
         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10 scroll-animate opacity-0">
+        <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10 scroll-animate opacity-0 group">
+          <AfricanCornerPattern section="cta" index={0} size="xl" className="opacity-20 group-hover:opacity-40" />
           
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
           
