@@ -403,24 +403,27 @@ const RootIndex: PageComponent = () => {
       <section className="relative w-full h-dvh min-h-[500px] bg-card overflow-hidden border-b border-border/40 group">
         
         {/* Slide 1: EVENT */}
-        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center bg-[#FAF9F6] ${currentHeroSlide === 0 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
+        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center bg-[#FAF9F6] dark:bg-[#0c100d] ${currentHeroSlide === 0 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Bouteille FYS, ananas et gingembre-1.png')" }} />
-          <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-white/70 dark:bg-black/75 backdrop-blur-[2px]" />
           
           <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16 flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#3F6D4E]/30 text-[#3F6D4E] dark:text-[#AECBB2] font-bold text-xs mb-6 md:mb-8 bg-white/50 dark:bg-black/20 shadow-sm animate-pop-in-cute">
-              <Sparkles className="size-4 text-[#E0982E]" />
-              Événement FYS
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E0982E]/40 text-[#E0982E] font-extrabold text-xs mb-5 md:mb-6 bg-[#E0982E]/10 dark:bg-[#E0982E]/15 backdrop-blur-md shadow-sm animate-pop-in-cute tracking-wide uppercase">
+              <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
+              Événement Exclusif • Dégustation Privée
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#AECBB2] mb-3 md:mb-5 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
+              <span className="block text-2xl sm:text-3xl md:text-4xl text-[#E0982E] font-bold tracking-wider uppercase mb-1">
+                Dégustation Privée FYS
+              </span>
               Le goût de nos fruits.<br/>
               <span className="text-[#E0982E]">L'âme de notre terroir.</span>
             </h1>
             
-            <p className="text-base md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Une dégustation privée de créations pressées à froid. <br className="hidden md:block" />
-              Une expérience intime autour des saveurs du Cameroun.
+            <p className="text-base md:text-2xl text-gray-700 dark:text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
+              Une dégustation privée exclusive de créations pressées à froid. <br className="hidden md:block" />
+              Réservez votre place, obtenez votre pass VIP et créez votre jus d'exception.
             </p>
 
             {/* Countdown in Hero */}
@@ -431,18 +434,19 @@ const RootIndex: PageComponent = () => {
                 { label: 'Minutes', value: timeLeft.minutes },
                 { label: 'Secondes', value: timeLeft.seconds }
               ].map((unit, i) => (
-                <div key={i} className="flex flex-col items-center bg-white/60 dark:bg-black/40 backdrop-blur-sm p-3 md:p-4 rounded-2xl border border-[#3F6D4E]/20 min-w-[70px] md:min-w-[90px] shadow-sm">
+                <div key={i} className="flex flex-col items-center bg-white/70 dark:bg-black/60 backdrop-blur-md p-3 md:p-4 rounded-2xl border border-[#3F6D4E]/20 dark:border-white/10 min-w-[70px] md:min-w-[90px] shadow-sm">
                   <div className="text-3xl md:text-4xl font-black text-[#3F6D4E] dark:text-[#AECBB2] font-display leading-none mb-1">
                     {unit.value.toString().padStart(2, '0')}
                   </div>
-                  <div className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">{unit.label}</div>
+                  <div className="text-[10px] md:text-xs font-bold text-[#E0982E] uppercase">{unit.label}</div>
                 </div>
               ))}
             </div>
 
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/degustation-18-octobre" className="h-14 px-8 rounded-2xl text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
-                Découvrir l'événement
+              <Link to="/degustation-18-octobre" className="h-14 px-8 rounded-2xl text-base md:text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
+                <Sparkles className="size-5 text-[#E0982E]" />
+                Accéder à la Dégustation Privée
                 <ArrowRight className="size-5" />
               </Link>
             </div>

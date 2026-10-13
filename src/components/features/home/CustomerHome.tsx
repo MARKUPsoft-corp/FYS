@@ -310,10 +310,10 @@ export function CustomerHome(_props: Props) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E0982E] text-white shadow-xs">
                     <Sparkles className="size-3.5 text-white" />
-                    Événement VIP
+                    Dégustation Privée • VIP
                   </span>
                   <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    18 Octobre 2026
+                    Dimanche 18 Octobre 2026
                   </span>
                 </div>
 
@@ -322,7 +322,7 @@ export function CustomerHome(_props: Props) {
                 </h3>
 
                 <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
-                  Vous êtes invité(e) ! En tant qu'utilisateur de l'application, créez dès maintenant votre propre jus exclusif à 1000 FCFA. Votre création sera préparée en direct sous vos yeux lors de l'événement.
+                  Vous êtes invité(e) ! En tant qu'utilisateur de l'application, obtenez votre pass VIP et créez dès maintenant votre propre jus exclusif à 1 000 FCFA. Votre création sera préparée sous vos yeux lors de l'événement.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
@@ -338,7 +338,7 @@ export function CustomerHome(_props: Props) {
               <div className="relative z-10 shrink-0">
                 <Link to="/degustation-18-octobre">
                   <Button className="rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer animate-pulse hover:animate-none">
-                    En savoir plus
+                    Mon Pass & Composer mon jus
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </Link>

@@ -2,13 +2,18 @@ import { useTranslation, Trans } from 'react-i18next';
 import {
   Plus, Loader2, Minus, ShoppingBag, Truck, Sparkles, Pencil, CheckCircle2,
   MapPin, Phone, MessageSquare, TimerOff, Smartphone, Banknote, Clock,
+  Download, Calendar, Users,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'rasengan';
 import { useQuery } from '@tanstack/react-query';
 import { YaoundeDistrictPicker } from '@/components/features/orders/YaoundeDistrictPicker';
 import { GeolocationButton } from '@/components/features/orders/GeolocationButton';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
+import { submitTastingRSVP, trackInvitationDownload } from '@/services/tasting';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -182,6 +187,36 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   const isEventMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'degustation';
   const price500 = isEventMode ? 1000 : (pricing ? pricePerBottle(pricing, '500ml', cocktail.ingredients) : cocktail.totalPrice);
   const price1L = isEventMode ? 1000 : (pricing ? pricePerBottle(pricing, '1L', cocktail.ingredients) : Math.round(cocktail.totalPrice * 1.6));
+
+  // ── Dégustation 18 Octobre : post-order pass & RSVP ──
+  const [eventTicketId, setEventTicketId] = useState<string | null>(null);
+  const [eventRsvpName, setEventRsvpName] = useState('');
+  const [eventRsvpPhone, setEventRsvpPhone] = useState('');
+  const [eventRsvpGuests, setEventRsvpGuests] = useState('1');
+  const [eventRsvpPreferences, setEventRsvpPreferences] = useState('');
+  const [eventRsvpSubmitting, setEventRsvpSubmitting] = useState(false);
+  const [eventRsvpDone, setEventRsvpDone] = useState(false);
+
+  useEffect(() => {
+    if (isEventMode && typeof window !== 'undefined') {
+      const storedId = localStorage.getItem('fys_tasting_rsvp_id');
+      const storedName = localStorage.getItem('fys_tasting_rsvp_name');
+      const storedPhone = localStorage.getItem('fys_tasting_rsvp_whatsapp');
+      const storedGuests = localStorage.getItem('fys_tasting_rsvp_guests');
+      const storedPrefs = localStorage.getItem('fys_tasting_rsvp_preferences');
+      if (storedId) {
+        setEventTicketId(storedId);
+        setEventRsvpDone(true);
+        if (storedName) setEventRsvpName(storedName);
+        if (storedPhone) setEventRsvpPhone(storedPhone);
+        if (storedGuests) setEventRsvpGuests(storedGuests);
+        if (storedPrefs) setEventRsvpPreferences(storedPrefs);
+      } else {
+        setEventRsvpName(user?.name || (user as any)?.displayName || '');
+        setEventRsvpPhone(phone || user?.phone || '');
+      }
+    }
+  }, [isEventMode, ordered, user, phone]);
 
 
   const deliveryFee = isEventMode ? 0 : (pricing?.deliveryFee ?? 500);
@@ -658,66 +693,237 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 </div>
               </div>
 
-              {/* Cameroon Map Section */}
-              <div className="px-6 py-6 space-y-5 pb-24">
-                {/* ── Avis Délai de Livraison Mois de Démarrage ── */}
-                {isNoticeActive && (
-                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-4 flex items-start gap-3.5 text-amber-950 dark:text-amber-100 shadow-xs animate-pop-in-cute">
-                    <div className="size-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 text-amber-700 dark:text-amber-400">
-                      <Clock className="size-4" />
+              {isEventMode ? (
+                /* ── Mode Dégustation : Pass VIP & Enregistrement Invité ── */
+                <div className="px-6 py-6 space-y-6 pb-24">
+                  {eventRsvpDone ? (
+                    /* 1. Pass VIP confirmé : Affichage & Téléchargement (SANS bouton composer cocktail) */
+                    <div className="bg-card dark:bg-[#141a16] border border-[#E0982E]/40 rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5 text-center">
+                      <AfricanCornerPattern variant="ndop-cross" size="md" className="opacity-20" />
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E0982E]/15 text-[#E0982E] text-xs font-extrabold uppercase tracking-wider">
+                        <Sparkles className="size-3.5 text-[#E0982E]" />
+                        Pass VIP Officiel • Dégustation Privée
+                      </div>
+
+                      <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border border-border shadow-sm flex items-center justify-center">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${eventTicketId || 'FYS-VIP'}`}
+                          alt="QR Code"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="text-xl font-bold font-display text-foreground">{eventRsvpName || user.name}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center justify-center gap-1.5 font-semibold">
+                          <Users className="size-3.5 text-[#E0982E]" /> {eventRsvpGuests} personne(s)
+                        </p>
+                      </div>
+
+                      <div className="bg-muted/40 rounded-2xl p-4 text-left space-y-2.5 text-xs">
+                        <div className="flex items-start gap-2.5">
+                          <Calendar className="size-4 text-[#E0982E] shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-bold text-foreground">Dimanche 18 Octobre 2026 à 15h00</p>
+                            <p className="text-muted-foreground">Yaoundé (Lieu secret)</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <MapPin className="size-4 text-[#E0982E] shrink-0 mt-0.5" />
+                          <p className="text-muted-foreground">L'adresse exacte vous sera envoyée par WhatsApp.</p>
+                        </div>
+                      </div>
+
+                      {/* Téléchargement immédiat du Pass */}
+                      <a
+                        href="/degustation/Invitation FYS au tissu ndop indigo.png"
+                        download="Invitation_FYS_VIP.png"
+                        onClick={() => {
+                          trackInvitationDownload(eventTicketId, eventRsvpPhone || phone);
+                        }}
+                        className="w-full block"
+                      >
+                        <Button className="w-full h-14 rounded-2xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2">
+                          <Download className="size-4.5" />
+                          Télécharger mon invitation officielle (Pass VIP)
+                        </Button>
+                      </a>
                     </div>
-                    <div className="space-y-0.5 min-w-0 flex-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                        {t('orders.launchDeliveryNoticeTitle')}
-                      </p>
-                      <p className="text-sm font-semibold leading-snug">
-                        {launchNoticeContent}
-                      </p>
+                  ) : (
+                    /* 2. Formulaire Invité si le client a composé son jus sans avoir renseigné son nom au préalable */
+                    <div className="bg-card dark:bg-[#141a16] border border-[#E0982E]/40 rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5">
+                      <AfricanCornerPattern variant="totem-seal" size="md" className="opacity-15" />
+                      <div className="space-y-1 text-center relative z-10">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E0982E]/15 text-[#E0982E] text-xs font-extrabold uppercase tracking-wider mb-2">
+                          <Sparkles className="size-3.5 text-[#E0982E]" />
+                          Dernière étape • Votre Pass d'Accès
+                        </div>
+                        <h4 className="text-lg sm:text-xl font-bold font-display text-foreground">
+                          Finalisez votre Pass Dégustation
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Pour valider votre entrée au lieu secret et télécharger votre invitation officielle, confirmez vos coordonnées d'invité :
+                        </p>
+                      </div>
+
+                      <div className="space-y-4 relative z-10">
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">Nom et Prénom *</label>
+                          <Input
+                            value={eventRsvpName}
+                            onChange={(e) => setEventRsvpName(e.target.value)}
+                            placeholder="Ex: Paul Atangana"
+                            className="h-12 rounded-xl bg-muted/40 border-border/60"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">Numéro WhatsApp *</label>
+                          <Input
+                            type="tel"
+                            value={eventRsvpPhone}
+                            onChange={(e) => setEventRsvpPhone(e.target.value)}
+                            placeholder="Ex: +237 6XX XX XX XX"
+                            className="h-12 rounded-xl bg-muted/40 border-border/60"
+                          />
+                          <p className="text-[11px] text-muted-foreground mt-1">L'adresse secrète y sera envoyée.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">Nombre de personne(s) *</label>
+                          <select
+                            value={eventRsvpGuests}
+                            onChange={(e) => setEventRsvpGuests(e.target.value)}
+                            className="w-full h-12 rounded-xl border border-border/60 bg-muted/40 px-3 text-sm font-semibold text-foreground focus:outline-none"
+                          >
+                            <option value="1">1 personne (moi seul)</option>
+                            <option value="2">2 personnes (avec accompagnateur)</option>
+                            <option value="3">3 personnes</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1.5">Préférences ou allergies (Optionnel)</label>
+                          <Input
+                            value={eventRsvpPreferences}
+                            onChange={(e) => setEventRsvpPreferences(e.target.value)}
+                            placeholder="Ex: Pas de gingembre..."
+                            className="h-12 rounded-xl bg-muted/40 border-border/60"
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          disabled={eventRsvpSubmitting || !eventRsvpName.trim() || !eventRsvpPhone.trim()}
+                          onClick={async () => {
+                            setEventRsvpSubmitting(true);
+                            try {
+                              const id = await submitTastingRSVP({
+                                name: eventRsvpName.trim(),
+                                whatsapp: eventRsvpPhone.trim(),
+                                guests: parseInt(eventRsvpGuests) || 1,
+                                preferences: eventRsvpPreferences.trim(),
+                              });
+                              setEventTicketId(id);
+                              setEventRsvpDone(true);
+                              if (typeof window !== 'undefined') {
+                                localStorage.setItem('fys_tasting_rsvp_id', id);
+                                localStorage.setItem('fys_tasting_rsvp_name', eventRsvpName.trim());
+                                localStorage.setItem('fys_tasting_rsvp_whatsapp', eventRsvpPhone.trim());
+                                localStorage.setItem('fys_tasting_rsvp_guests', eventRsvpGuests);
+                                localStorage.setItem('fys_tasting_rsvp_preferences', eventRsvpPreferences.trim());
+                              }
+                            } catch (err) {
+                              console.error('Erreur inscription degustation post-order:', err);
+                            } finally {
+                              setEventRsvpSubmitting(false);
+                            }
+                          }}
+                          className="w-full h-13 rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-sm shadow-xl"
+                        >
+                          {eventRsvpSubmitting ? (
+                            <><Loader2 className="size-4 animate-spin mr-2" /> Génération de votre Pass...</>
+                          ) : (
+                            <>Valider & Obtenir mon Pass d'Accès VIP</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Cameroon Map Section (mode standard) */
+                <div className="px-6 py-6 space-y-5 pb-24">
+                  {/* ── Avis Délai de Livraison Mois de Démarrage ── */}
+                  {isNoticeActive && (
+                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-4 flex items-start gap-3.5 text-amber-950 dark:text-amber-100 shadow-xs animate-pop-in-cute">
+                      <div className="size-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 text-amber-700 dark:text-amber-400">
+                        <Clock className="size-4" />
+                      </div>
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                          {t('orders.launchDeliveryNoticeTitle')}
+                        </p>
+                        <p className="text-sm font-semibold leading-snug">
+                          {launchNoticeContent}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <h4 className="font-display font-bold text-xl text-foreground">
+                      {t('orders.originTitle')}
+                    </h4>
+                  </div>
+
+                  <CameroonMap ingredients={cocktail.ingredients} />
+
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      <Trans
+                        i18nKey="orders.originDescriptionHtml"
+                        components={{ strong: <strong className="text-foreground font-semibold" /> }}
+                      >
+                        Chaque ingrédient de votre cocktail provient du{' '}
+                        <strong className="text-foreground font-semibold">terroir camerounais</strong>.
+                        Une fierté nationale dans chaque gorgée, cultivée par nos producteurs locaux
+                        avec passion et savoir-faire.
+                      </Trans>
+                    </p>
+
+                    <div className="flex justify-center pt-2">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20">
+                        <span className="text-lg">🇨🇲</span>
+                        <span className="text-xs font-bold text-primary">{t('orders.cameroonFruits')}</span>
+                      </div>
                     </div>
                   </div>
-                )}
-
-                <div className="space-y-3">
-                  <h4 className="font-display font-bold text-xl text-foreground">
-                    {t('orders.originTitle')}
-                  </h4>
                 </div>
-
-                <CameroonMap ingredients={cocktail.ingredients} />
-
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    <Trans
-                      i18nKey="orders.originDescriptionHtml"
-                      components={{ strong: <strong className="text-foreground font-semibold" /> }}
-                    >
-                      Chaque ingrédient de votre cocktail provient du{' '}
-                      <strong className="text-foreground font-semibold">terroir camerounais</strong>.
-                      Une fierté nationale dans chaque gorgée, cultivée par nos producteurs locaux
-                      avec passion et savoir-faire.
-                    </Trans>
-                  </p>
-
-                  <div className="flex justify-center pt-2">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20">
-                      <span className="text-lg">🇨🇲</span>
-                      <span className="text-xs font-bold text-primary">{t('orders.cameroonFruits')}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Fixed Close Button at Bottom */}
-            <div className="shrink-0 border-t border-border/40 px-6 py-4 bg-background">
+            <div className="shrink-0 border-t border-border/40 px-6 py-4 bg-background flex items-center gap-3">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full rounded-2xl h-14 font-bold text-base border-2 hover:bg-muted"
+                className="flex-1 rounded-2xl h-14 font-bold text-base border-2 hover:bg-muted"
                 onClick={() => handleClose(false)}
               >
                 {t('common.close')}
               </Button>
+              {isEventMode && (
+                <Button
+                  asChild
+                  size="lg"
+                  className="flex-1 rounded-2xl h-14 font-bold text-base bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-md"
+                >
+                  <Link to="/degustation-18-octobre" onClick={() => handleClose(false)}>
+                    Page Dégustation
+                  </Link>
+                </Button>
+              )}
             </div>
           </>
 
