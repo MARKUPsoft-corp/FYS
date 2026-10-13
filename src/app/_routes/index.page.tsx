@@ -16,6 +16,7 @@ import { getLandingImagesSettings, getPricingSettings } from '@/services/setting
 import { getPublicCocktails } from '@/services/cocktail';
 import { CocktailType, type Cocktail } from '@/entities/cocktail';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
+import { FysSignatureSection } from '@/components/features/landing/FysSignatureSection';
 
 /* ─────────────────────────────────────────────
    FYS Landing Page — Premium, Clean, Épurée
@@ -202,10 +203,10 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ NAVBAR ━━━ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 lg:h-18 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2.5 hover:opacity-85 transition-opacity shrink-0">
-            <img src="/logos/Logo_fys.png" alt="FYS" className="h-10 lg:h-11 w-auto object-contain dark:hidden" />
-            <img src="/logos/Logo_fys_creme.png" alt="FYS" className="h-10 lg:h-11 w-auto object-contain hidden dark:block" />
+            <img src="/logos/Logo_fys.png" alt="FYS" className="h-11 sm:h-12 lg:h-[3.25rem] w-auto object-contain dark:hidden" />
+            <img src="/logos/Logo_fys_creme.png" alt="FYS" className="h-11 sm:h-12 lg:h-[3.25rem] w-auto object-contain hidden dark:block" />
           </Link>
 
           {/* Central Nav Links (Desktop) */}
@@ -1080,6 +1081,9 @@ const RootIndex: PageComponent = () => {
           <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-background"></path>
         </svg>
       </div>
+
+      {/* ━━━ LA SIGNATURE FYS (SECTION INTERACTIVE) ━━━ */}
+      <FysSignatureSection />
 
       {/* ━━━ ABOUT US (L'ÉQUIPE) ━━━ */}
       <section id="about" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-background">

@@ -1640,5 +1640,42 @@ export default {
   "home.admin.quickActionsSubtitle": "Quickly access your stock, images, pricing, and payments management.",
   "home.admin.viewAll": "View all",
   "home.admin.sectionBefore": "Center of",
-  "home.admin.greeting": "Hello,"
+  "home.admin.greeting": "Hello,",
+  "signature": {
+    "badge": "Identity & Heritage",
+    "title": "The FYS Signature",
+    "subtitle": "A symbol. An identity. A sense of belonging.",
+    "tagline": "From our roots to your everyday life.",
+    "subtagline": "Symbolic reading of the FYS universe",
+    "integratedInLogo": "This sacred emblem is engraved into the letter F of our official logo",
+    "cta": "Discover our story",
+    "clickPrompt": "Click on any symbol to explore its meaning",
+    "steps": {
+      "elan": {
+        "title": "The Momentum",
+        "subtitle": "Openness & Innovation",
+        "desc": "The upper bar expresses our forward-looking openness, bold spirit, and ongoing innovation for your health (like our NutriFYS AI)."
+      },
+      "heritage": {
+        "title": "The Heritage",
+        "subtitle": "Roots & Culture",
+        "desc": "The first diamond evokes our ancestral roots and the priceless richness of Cameroonian cultures and terroirs."
+      },
+      "centre": {
+        "title": "Self, at the Centre",
+        "subtitle": "For Your Self",
+        "desc": "The central dot represents each of us. The concentric circles embody personal well-being radiating across our community."
+      },
+      "creation": {
+        "title": "The Creation",
+        "subtitle": "Contemporary Craft",
+        "desc": "The second diamond translates heritage into contemporary creations, from bespoke cold-pressed juices to our lifestyle universe."
+      },
+      "ancrage": {
+        "title": "The Rooting",
+        "subtitle": "Earth & Craftsmanship",
+        "desc": "The bottom stroke anchors us to the nourishing soil, sun-drenched fruits, and the artisanal expertise of our local farmers."
+      }
+    }
+  }
 };

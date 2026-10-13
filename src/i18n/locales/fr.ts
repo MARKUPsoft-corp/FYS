@@ -1640,5 +1640,42 @@ export default {
   "home.admin.quickActionsSubtitle": "Accédez rapidement à la gestion de vos stocks, images, prix et paiements.",
   "home.admin.viewAll": "Voir tout",
   "home.admin.sectionBefore": "Centre de",
-  "home.admin.greeting": "Bonjour,"
+  "home.admin.greeting": "Bonjour,",
+  "signature": {
+    "badge": "Identité & Terroir",
+    "title": "La Signature FYS",
+    "subtitle": "Un symbole. Une identité. Une appartenance.",
+    "tagline": "De nos racines à votre quotidien.",
+    "subtagline": "Lecture symbolique proposée pour l'univers FYS",
+    "integratedInLogo": "Ce symbole sacré est gravé dans la lettre F de notre logo officiel",
+    "cta": "Découvrir notre histoire",
+    "clickPrompt": "Cliquez sur un symbole pour explorer son sens",
+    "steps": {
+      "elan": {
+        "title": "L'Élan",
+        "subtitle": "Ouverture & Innovation",
+        "desc": "Le trait supérieur exprime notre ouverture vers l'avenir, l'audace et l'innovation continue au service de votre bien-être (comme notre IA NutriFYS)."
+      },
+      "heritage": {
+        "title": "L'Héritage",
+        "subtitle": "Racines & Terroirs",
+        "desc": "Le premier losange évoque nos racines profondes et la richesse inestimable des cultures et des terroirs camerounais."
+      },
+      "centre": {
+        "title": "Soi, au centre",
+        "subtitle": "For Your Self",
+        "desc": "Le point représente chacun de nous. Les cercles concentriques évoquent le bien-être individuel rayonnant au cœur de la communauté."
+      },
+      "creation": {
+        "title": "La Création",
+        "subtitle": "Artisanat Contemporain",
+        "desc": "Le second losange traduit l'héritage en créations contemporaines, de nos jus frais pressés à froid sur-mesure jusqu'à notre univers lifestyle."
+      },
+      "ancrage": {
+        "title": "L'Ancrage",
+        "subtitle": "La Terre & Le Savoir-Faire",
+        "desc": "Le trait inférieur nous relie à la terre nourricière, aux fruits gorgés de soleil et au savoir-faire de nos producteurs locaux."
+      }
+    }
+  }
 };
