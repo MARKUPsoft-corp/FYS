@@ -46,10 +46,10 @@ interface AfricanSectionBackgroundProps {
 }
 
 const COLOR_HEX: Record<AfricanPatternColor, string> = {
-  forest: '%233F6D4E',
-  terracotta: '%23E0982E',
-  coral: '%23F2694A',
-  current: 'currentColor',
+  forest: '#3F6D4E',
+  terracotta: '#E0982E',
+  coral: '#F2694A',
+  current: '#3F6D4E',
 };
 
 // Generates the raw SVG data-uri for each pattern with requested color hex
@@ -137,7 +137,7 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'totem' && (
             <svg
               viewBox="0 0 200 660"
-              className="w-[320px] md:w-[480px] lg:w-[600px] h-auto max-h-[85vh] text-[#3F6D4E] dark:text-[#AECBB2] opacity-[0.025] dark:opacity-[0.035]"
+              className="w-[320px] md:w-[480px] lg:w-[600px] h-auto max-h-[85vh] text-[#3F6D4E] dark:text-[#AECBB2] opacity-[0.04] dark:opacity-[0.055]"
               fill="currentColor"
             >
               <path d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z" />
@@ -154,7 +154,7 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'ndop-mandala' && (
             <svg
               viewBox="0 0 200 200"
-              className="w-[360px] md:w-[520px] h-auto text-[#E0982E] opacity-[0.03] dark:opacity-[0.04]"
+              className="w-[360px] md:w-[520px] h-auto text-[#E0982E] opacity-[0.045] dark:opacity-[0.06]"
               fill="none"
               stroke="currentColor"
             >
@@ -170,7 +170,7 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'sun' && (
             <svg
               viewBox="0 0 200 200"
-              className="w-[360px] md:w-[500px] h-auto text-[#F2694A] opacity-[0.03] dark:opacity-[0.04]"
+              className="w-[360px] md:w-[500px] h-auto text-[#F2694A] opacity-[0.045] dark:opacity-[0.06]"
               fill="none"
               stroke="currentColor"
             >

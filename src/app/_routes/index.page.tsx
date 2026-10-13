@@ -830,13 +830,13 @@ const RootIndex: PageComponent = () => {
       </section>
       <div className="w-full overflow-hidden leading-none bg-[#3F6D4E]/[0.08] dark:bg-[#3F6D4E]/15 relative z-0">
         <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-background"></path>
+          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#E0982E]/[0.08] dark:fill-[#E0982E]/[0.12]"></path>
         </svg>
       </div>
 
       {/* ━━━ FYS EVENT (CORPORATE & B2B CATERING) ━━━ */}
-      <section id="events" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-[#3F6D4E]/[0.03] dark:bg-[#3F6D4E]/10 border-y border-border/40">
-        <AfricanSectionBackground pattern="royal-mosaic" color="forest" opacityClass="opacity-[0.04] dark:opacity-[0.06]" glowColor="forest" watermarkEmblem="ndop-mandala" />
+      <section id="events" className="py-16 md:py-28 px-5 md:px-8 bg-[#E0982E]/[0.08] dark:bg-[#E0982E]/[0.12] relative overflow-hidden z-0">
+        <AfricanSectionBackground pattern="royal-mosaic" color="terracotta" opacityClass="opacity-[0.06] dark:opacity-[0.08]" glowColor="terracotta" watermarkEmblem="ndop-mandala" />
         
         <div className="max-w-6xl mx-auto relative z-10 space-y-16">
           {/* Section Header */}
@@ -936,39 +936,11 @@ const RootIndex: PageComponent = () => {
           </div>
         </div>
       </section>
-
-      {/* ━━━ PRODUCT GALLERY ━━━ */}
-      <section className="py-16 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
-        <AfricanSectionBackground pattern="grassfields-chevrons" color="terracotta" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="terracotta" />
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.creations.title')}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t('landing.creations.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {[
-              { src: landingImages.creation1Image, label: landingImages.creation1Label },
-              { src: landingImages.creation2Image, label: landingImages.creation2Label },
-              { src: landingImages.creation3Image, label: landingImages.creation3Label },
-              { src: landingImages.creation4Image, label: landingImages.creation4Label },
-            ].map((item, i) => (
-              <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[3/4] cursor-pointer border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 scroll-animate opacity-0" style={{ animationDelay: `${i * 100}ms` }}>
-                <AfricanCornerPattern section="creations" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
-                <img src={item.src} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1F3A28]/90 via-[#1F3A28]/20 to-transparent group-hover:from-[#1F3A28] transition-colors" />
-                <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
-                  <p className="text-white font-extrabold text-base md:text-lg tracking-wide" style={{ fontFamily: 'var(--font-display)' }}>{item.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="w-full overflow-hidden leading-none bg-[#E0982E]/[0.08] dark:bg-[#E0982E]/[0.12] relative z-0">
+        <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,32L80,42.7C160,53,320,75,480,74.7C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-background"></path>
+        </svg>
+      </div>
 
       {/* ━━━ NUTRIFYS SECTION ━━━ */}
       <section id="nutrifys" className="py-20 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
