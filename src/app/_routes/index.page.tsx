@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
 import { useTranslation } from 'react-i18next';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from '@/components/ui/sheet';
 import { isUsableFruit, type Fruit, COLLECTIONS } from '@/entities';
 import { Button } from '@/components/ui/button';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -315,10 +315,10 @@ const RootIndex: PageComponent = () => {
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background dark:bg-background/80 dark:backdrop-blur-[48px] dark:saturate-[180%] border-l border-border dark:border-white/10 p-6 flex flex-col gap-6 shadow-2xl">
+                  <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
                   <div className="flex items-center gap-3 pt-4">
                     <img src="/logos/Logo_fys.png" alt="FYS Logo" className="h-12 w-auto object-contain dark:hidden" />
                     <img src="/logos/Logo_fys_creme.png" alt="FYS Logo" className="h-12 w-auto object-contain hidden dark:block" />
-                    
                   </div>
                   
                   <div className="flex flex-col gap-1 mt-6">
