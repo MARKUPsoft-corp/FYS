@@ -61,10 +61,20 @@ export const useAudioStore = createStore<AudioState>((set, get) => ({
   play: () => {
     if (!get().enabled) return;
     if (!audioInstance) {
-      audioInstance = new Audio('/music/ambient.mp3?v=3');
+      audioInstance = new Audio('/music/FYS_backgroundsound.mp3?v=1');
       audioInstance.loop = true;
+      audioInstance.preload = 'auto';
       audioInstance.addEventListener('pause', () => set({ playing: false }));
       audioInstance.addEventListener('play', () => set({ playing: true }));
+      audioInstance.addEventListener('error', (e) => {
+        console.warn('[FYS Audio] Error loading primary background sound, falling back:', e);
+        if (audioInstance && !audioInstance.src.includes('ambient.mp3')) {
+          audioInstance.src = '/music/ambient.mp3?v=3';
+          if (get().enabled) {
+            audioInstance.play().catch(() => {});
+          }
+        }
+      });
     }
     audioInstance.volume = get().volume;
     audioInstance.play().then(() => {
