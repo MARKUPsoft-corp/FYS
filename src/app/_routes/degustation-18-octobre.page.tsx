@@ -38,6 +38,15 @@ const TastingPage: PageComponent = () => {
   // Success & modal state
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolledPastHero(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const targetDate = useMemo(() => new Date('2026-10-18T15:00:00'), []);
 
@@ -166,29 +175,24 @@ const TastingPage: PageComponent = () => {
         />
         <div className="absolute inset-0 bg-white/75 dark:bg-[#0a0e0b]/85 backdrop-blur-[2px]" />
 
-        <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center w-full pt-8 sm:pt-0">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E0982E]/40 text-[#E0982E] font-extrabold text-xs mb-6 bg-[#E0982E]/10 dark:bg-[#E0982E]/15 backdrop-blur-md shadow-sm uppercase tracking-wider animate-pop-in-cute">
+        <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center w-full pt-4 sm:pt-0">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E0982E]/40 text-[#E0982E] font-extrabold text-xs mb-4 bg-[#E0982E]/10 dark:bg-[#E0982E]/15 backdrop-blur-md shadow-sm uppercase tracking-wider animate-pop-in-cute">
             <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
-            Événement Exclusif sur Invitation • Dégustation Privée
+            Événement Exclusif sur Invitation
           </div>
 
           <h1
-            className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-[1.1]"
-            style={{ fontFamily: 'var(--font-display)' }}
+            className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-[#3F6D4E] dark:text-[#AECBB2] mb-3 sm:mb-4 leading-tight font-display"
           >
-            <span className="block text-2xl sm:text-3xl md:text-4xl text-[#E0982E] uppercase font-bold tracking-wider mb-2 font-body">
-              Dégustation Privée FYS
-            </span>
-            Le goût de nos fruits.<br />
-            <span className="text-[#E0982E]">L'âme de notre terroir.</span>
+            Dégustation Privée <span className="text-[#E0982E]">FYS</span>
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-gray-200 mb-8 max-w-xl mx-auto leading-relaxed font-medium">
-            FYS vous convie à une <strong className="text-foreground dark:text-white font-bold">dégustation privée d'exception</strong> le <span className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</span> à Yaoundé. Une expérience intime et multisensorielle autour des saveurs pures du Cameroun.
+          <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-200 mb-6 max-w-lg mx-auto leading-relaxed font-medium">
+            FYS vous convie à une expérience intime et multisensorielle de créations pressées à froid le <strong className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</strong> à Yaoundé.
           </p>
 
           {/* Countdown */}
-          <div className="flex gap-3 sm:gap-4 md:gap-6 mb-8 w-full justify-center">
+          <div className="flex gap-2.5 sm:gap-4 md:gap-5 mb-6 w-full justify-center">
             {[
               { label: 'Jours', value: timeLeft.days },
               { label: 'Heures', value: timeLeft.hours },
@@ -197,17 +201,17 @@ const TastingPage: PageComponent = () => {
             ].map((unit, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center p-3 md:p-4 rounded-2xl shadow-xl border border-white/30 dark:border-white/10 min-w-[70px] md:min-w-[90px] relative overflow-hidden bg-white/60 dark:bg-black/50 backdrop-blur-md"
+                className="flex flex-col items-center p-2.5 sm:p-3.5 rounded-2xl shadow-xl border border-white/30 dark:border-white/10 min-w-[65px] sm:min-w-[80px] md:min-w-[85px] relative overflow-hidden bg-white/60 dark:bg-black/50 backdrop-blur-md"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-40"
                   style={{ backgroundImage: "url('/degustation/Texture verte forestière pour compte à rebours-2.png')" }}
                 />
                 <div className="absolute inset-0 bg-[#3F6D4E]/30 dark:bg-black/40 mix-blend-multiply" />
-                <div className="relative z-10 text-3xl md:text-4xl font-black text-[#1a1f1b] dark:text-white font-display mb-1 drop-shadow-md">
+                <div className="relative z-10 text-2xl sm:text-3xl md:text-4xl font-black text-[#1a1f1b] dark:text-white font-display mb-0.5 drop-shadow-md">
                   {unit.value.toString().padStart(2, '0')}
                 </div>
-                <div className="relative z-10 text-[10px] md:text-xs uppercase tracking-widest text-[#E0982E] font-extrabold">
+                <div className="relative z-10 text-[9px] sm:text-[10px] md:text-xs uppercase tracking-widest text-[#E0982E] font-extrabold">
                   {unit.label}
                 </div>
               </div>
@@ -575,53 +579,55 @@ const TastingPage: PageComponent = () => {
         )}
       </section>
 
-      {/* ── FLOATING PASS PILL (partout durant le parcours) ── */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-md w-[92%] sm:w-auto bg-[#141a16]/95 text-white backdrop-blur-md border border-[#E0982E]/40 px-4 sm:px-5 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom-5">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="size-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <p className="text-xs font-bold truncate">
-            {ticketId ? `Pass VIP (${name || 'Invité'})` : 'Dégustation Privée 18 Octobre'}
-          </p>
-        </div>
+      {/* ── FLOATING PASS PILL (apparaît au défilement) ── */}
+      {scrolledPastHero && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-md w-[92%] sm:w-auto bg-[#141a16]/95 text-white backdrop-blur-md border border-[#E0982E]/40 px-4 sm:px-5 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="size-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <p className="text-xs font-bold truncate">
+              {ticketId ? `Pass VIP (${name || 'Invité'})` : 'Dégustation Privée 18 Octobre'}
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {ticketId ? (
-            <>
-              <a
-                href="/degustation/Invitation FYS au tissu ndop indigo.png"
-                download="Invitation_FYS_VIP.png"
-                onClick={() => trackInvitationDownload(ticketId, whatsapp)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white text-xs font-bold shadow-xs transition-all"
-              >
-                <Download className="size-3.5" /> Télécharger
-              </a>
-              <button
-                type="button"
-                onClick={() => setShowTicketModal(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold"
-              >
-                Voir Pass
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/lab?mode=degustation"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white text-xs font-bold"
-              >
-                Composer
-              </Link>
-              <button
-                type="button"
-                onClick={() => document.getElementById('rsvp')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1.5 rounded-xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-xs font-bold"
-              >
-                Pass VIP
-              </button>
-            </>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {ticketId ? (
+              <>
+                <a
+                  href="/degustation/Invitation FYS au tissu ndop indigo.png"
+                  download="Invitation_FYS_VIP.png"
+                  onClick={() => trackInvitationDownload(ticketId, whatsapp)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white text-xs font-bold shadow-xs transition-all"
+                >
+                  <Download className="size-3.5" /> Télécharger
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowTicketModal(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold"
+                >
+                  Voir Pass
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/lab?mode=degustation"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#E0982E] hover:bg-[#c48225] text-white text-xs font-bold"
+                >
+                  Composer
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('rsvp')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-3 py-1.5 rounded-xl bg-[#3F6D4E] hover:bg-[#2c3e32] text-xs font-bold"
+                >
+                  Pass VIP
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── MODAL DIALOG PASS VIP ── */}
       {showTicketModal && (

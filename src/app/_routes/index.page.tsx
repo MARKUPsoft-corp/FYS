@@ -413,17 +413,12 @@ const RootIndex: PageComponent = () => {
               Événement Exclusif • Dégustation Privée
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tighter text-[#3F6D4E] dark:text-[#AECBB2] mb-3 md:mb-5 leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="block text-2xl sm:text-3xl md:text-4xl text-[#E0982E] font-bold tracking-wider uppercase mb-1">
-                Dégustation Privée FYS
-              </span>
-              Le goût de nos fruits.<br/>
-              <span className="text-[#E0982E]">L'âme de notre terroir.</span>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
+              Dégustation Privée <span className="text-[#E0982E]">FYS</span>
             </h1>
             
             <p className="text-base md:text-2xl text-gray-700 dark:text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
-              Une dégustation privée exclusive de créations pressées à froid. <br className="hidden md:block" />
-              Réservez votre place, obtenez votre pass VIP et créez votre jus d'exception.
+              Une dégustation privée exclusive de créations pressées à froid le <span className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</span> à Yaoundé. Réservez votre place, obtenez votre pass VIP et créez votre jus d'exception.
             </p>
 
             {/* Countdown in Hero */}
