@@ -568,11 +568,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           const usersRef = db.collection('users');
-          const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
+          const cleanDigits = senderPhone.replace(/\D/g, '');
+          const local9 = cleanDigits.replace(/^(237|00237)/, '');
+          const phoneVariants = Array.from(new Set([
+            senderPhone,
+            `+${cleanDigits}`,
+            cleanDigits,
+            local9,
+            `+237${local9}`,
+            `237${local9}`,
+            `00237${local9}`,
+          ].filter(Boolean)));
+
+          const querySnap = await usersRef.where('phone', 'in', phoneVariants).limit(1).get();
 
           if (!querySnap.empty) {
             const userData = querySnap.docs[0].data();
             userDocRef = querySnap.docs[0].ref;
+
+            // Assurer que le document utilisateur possède bien son uid
+            if (!userData?.uid) {
+              await userDocRef.set({ uid: userDocRef.id }, { merge: true });
+            }
 
             let conditions: string[] = [];
             let allergies: string[] = [];
@@ -631,14 +648,19 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
               }
             }
           } else {
-            const newDoc = await usersRef.add({
+            const newDocRef = usersRef.doc();
+            await newDocRef.set({
+              uid: newDocRef.id,
+              id: newDocRef.id,
               name: senderName,
               phone: senderPhone,
+              email: '',
               role: 'customer',
               channel: 'whatsapp',
               createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
             });
-            userDocRef = newDoc;
+            userDocRef = newDocRef;
             userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
           }
@@ -811,7 +833,7 @@ Exemple :
           // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
           // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
           const recentOrdersSnap = await db.collection('orders')
-            .where('userPhoneSnapshot', '==', senderPhone)
+            .where('userPhoneSnapshot', 'in', phoneVariants)
             .limit(5)
             .get();
 

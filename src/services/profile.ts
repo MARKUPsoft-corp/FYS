@@ -8,9 +8,26 @@ function profilePath(uid: string) {
 }
 
 export async function getProfile(uid: string): Promise<HealthProfile | null> {
+  if (!uid) return null;
   const snap = await getDoc(profilePath(uid));
-  if (!snap.exists()) return null;
-  return snap.data() as HealthProfile;
+  if (snap.exists()) {
+    return snap.data() as HealthProfile;
+  }
+  // Fallback : vérifier sur le document utilisateur racine (ex: WhatsApp ou profil direct)
+  const userSnap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+  if (userSnap.exists()) {
+    const data = userSnap.data();
+    if (data?.healthConditions?.length || data?.allergies?.length || data?.goals?.length) {
+      return {
+        userId: uid,
+        healthConditions: data.healthConditions || [],
+        allergies: data.allergies || [],
+        goals: data.goals || [],
+        updatedAt: data.updatedAt || data.createdAt,
+      } as HealthProfile;
+    }
+  }
+  return null;
 }
 
 export async function saveProfile(

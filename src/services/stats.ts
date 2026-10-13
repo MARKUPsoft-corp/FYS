@@ -54,5 +54,5 @@ export async function getUsers(): Promise<User[]> {
   const snap = await getDocs(
     query(collection(db, COLLECTIONS.USERS), orderBy('createdAt', 'desc')),
   );
-  return snap.docs.map((d) => ({ ...d.data() } as User));
+  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as User));
 }

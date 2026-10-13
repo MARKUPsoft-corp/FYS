@@ -102,7 +102,14 @@ function OrderRow({ order }: { order: Order }) {
     <div className="rounded-2xl border border-border/50 bg-card p-4 space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-foreground truncate">{order.cocktailNameSnapshot}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-foreground truncate">{order.cocktailNameSnapshot}</p>
+            {order.source === 'whatsapp' && (
+              <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                WhatsApp
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
             <Clock className="size-3 shrink-0" />
             {formatDateTime(order.createdAt)}
@@ -215,16 +222,16 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
 
   const { data: healthProfile, isLoading: healthLoading } = useQuery({
     queryKey: ['admin-profile', user?.uid],
-    queryFn: () => getProfile(user!.uid),
+    queryFn: () => (user?.uid ? getProfile(user.uid) : null),
     enabled: !!user && open,
     staleTime: 30_000,
   });
 
-  const { orders, isLoading: ordersLoading } = useUserOrders(user?.uid, !!user && open);
+  const { orders, isLoading: ordersLoading } = useUserOrders(user?.uid, !!user && open, user?.phone);
 
   const { data: cocktails = [], isLoading: cocktailsLoading } = useQuery({
     queryKey: ['admin-user-cocktails', user?.uid],
-    queryFn: () => getUserCocktails(user!.uid),
+    queryFn: () => (user?.uid ? getUserCocktails(user.uid) : []),
     enabled: !!user && open,
     staleTime: 30_000,
   });
@@ -234,7 +241,25 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
   const initials = user.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const online = isUserOnline(user);
   const isAdmin = user.role === UserRole.ADMIN;
-  const profileComplete = isProfileComplete(healthProfile ?? null);
+
+  const effectiveHealthProfile: HealthProfile | null = healthProfile ?? (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((user as any)?.healthConditions?.length || (user as any)?.allergies?.length || (user as any)?.goals?.length)
+      ? {
+          userId: user.uid,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          healthConditions: (user as any).healthConditions || [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          allergies: (user as any).allergies || [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          goals: (user as any).goals || [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          updatedAt: (user as any).updatedAt || user.createdAt,
+        }
+      : null
+  );
+
+  const profileComplete = isProfileComplete(effectiveHealthProfile);
 
   const deliveredOrders = orders.filter((o) => o.status === OrderStatus.DELIVERED);
   const totalSpent = deliveredOrders.reduce((s, o) => s + o.totalPrice, 0);
@@ -284,6 +309,12 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                 ) : (
                   <span className="text-[10px] text-muted-foreground">{t('users.offline')}</span>
                 )}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {(user as any)?.channel === 'whatsapp' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
+                    Client WhatsApp
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -319,7 +350,7 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                 <div className="rounded-2xl border border-border/50 bg-card divide-y divide-border/40 overflow-hidden">
                   <a href={`mailto:${user.email}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors">
                     <Mail className="size-4 text-muted-foreground shrink-0" />
-                    <span className="text-[13px] text-foreground truncate">{user.email}</span>
+                    <span className="text-[13px] text-foreground truncate">{user.email || '—'}</span>
                   </a>
                   {user.phone ? (
                     <a href={`tel:${user.phone}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors">
@@ -343,8 +374,8 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                   <StatCard label={t('nav.cocktails')} value={cocktails.length} sub={`${publicCocktails} ${t('catalogue.public')}`} />
                   <StatCard
                     label={t('users.healthProfile')}
-                    value={profileComplete ? t('profile.statusComplete') : healthProfile ? t('profile.statusIncomplete') : t('users.notSet')}
-                    sub={healthProfile ? `${t('users.updatedAt')} ${formatTs(healthProfile.updatedAt)}` : t('users.notSet')}
+                    value={profileComplete ? t('profile.statusComplete') : effectiveHealthProfile ? t('profile.statusIncomplete') : t('users.notSet')}
+                    sub={effectiveHealthProfile ? `${t('users.updatedAt')} ${formatTs(effectiveHealthProfile.updatedAt)}` : t('users.notSet')}
                   />
                 </div>
               </div>
@@ -397,7 +428,7 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                 <div className="flex justify-center py-12">
                   <Loader2 className="size-6 animate-spin text-primary" />
                 </div>
-              ) : !healthProfile ? (
+              ) : !effectiveHealthProfile ? (
                 <EmptyBlock
                   icon={HeartPulse}
                   message={t('users.noHealthProfile')}
@@ -416,7 +447,7 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                   <div>
                     <SectionLabel>{t('profile.healthConditions')}</SectionLabel>
                     <ProfileTags
-                      items={healthProfile.healthConditions}
+                      items={effectiveHealthProfile.healthConditions}
                       emptyLabel={t('profile.noConditions')}
                     />
                   </div>
@@ -424,7 +455,7 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                   <div>
                     <SectionLabel>{t('profile.allergies')}</SectionLabel>
                     <ProfileTags
-                      items={healthProfile.allergies}
+                      items={effectiveHealthProfile.allergies}
                       emptyLabel={t('profile.noAllergies')}
                     />
                   </div>
@@ -432,13 +463,13 @@ export function UserDetailSheet({ user, open, onOpenChange, onDelete }: Props) {
                   <div>
                     <SectionLabel>{t('profile.goals')}</SectionLabel>
                     <ProfileTags
-                      items={healthProfile.goals ?? []}
+                      items={effectiveHealthProfile.goals ?? []}
                       emptyLabel={t('profile.noGoals')}
                     />
                   </div>
 
                   <p className="text-[11px] text-muted-foreground text-center">
-                    {t('users.updatedAt')} : {formatDateTime(healthProfile.updatedAt)}
+                    {t('users.updatedAt')} : {formatDateTime(effectiveHealthProfile.updatedAt)}
                   </p>
                 </div>
               )}
@@ -555,8 +586,16 @@ export function UserMonitoringCard({
               <User className="size-2.5" /> {t('users.sectionClients')}
             </span>
           )}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(user as any)?.channel === 'whatsapp' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
+              WhatsApp
+            </span>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+        {user.email ? (
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+        ) : null}
         {user.phone && (
           <p className="text-xs text-muted-foreground mt-0.5">{user.phone}</p>
         )}

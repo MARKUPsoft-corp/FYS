@@ -542,24 +542,103 @@ function mapOrderSnapshot(snapshot: QuerySnapshot): Order[] {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
 }
 
+export function getPhoneVariants(phone?: string): string[] {
+  if (!phone) return [];
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return [];
+  const local9 = digits.replace(/^(237|00237)/, '');
+  return Array.from(new Set([
+    phone.trim(),
+    `+${digits}`,
+    digits,
+    local9,
+    `+237${local9}`,
+    `237${local9}`,
+  ].filter(Boolean)));
+}
+
+export function subscribeToOrdersForUser(
+  userId: string | undefined,
+  userPhone: string | undefined,
+  callback: (orders: Order[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const phoneVariants = getPhoneVariants(userPhone);
+
+  if (!userId && phoneVariants.length === 0) {
+    callback([]);
+    return () => {};
+  }
+
+  let ordersFromUser: Order[] = [];
+  let ordersFromPhone: Order[] = [];
+
+  const notifyMerged = () => {
+    const map = new Map<string, Order>();
+    for (const o of ordersFromUser) map.set(o.id, o);
+    for (const o of ordersFromPhone) map.set(o.id, o);
+    const sorted = Array.from(map.values()).sort((a, b) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tA = (a.createdAt as any)?.toMillis?.() ?? ((a.createdAt as any)?.seconds ? (a.createdAt as any).seconds * 1000 : 0);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tB = (b.createdAt as any)?.toMillis?.() ?? ((b.createdAt as any)?.seconds ? (b.createdAt as any).seconds * 1000 : 0);
+      return tB - tA;
+    });
+    callback(sorted);
+  };
+
+  const unsubs: Unsubscribe[] = [];
+
+  if (userId) {
+    const qUser = query(
+      collection(db, COLLECTIONS.ORDERS),
+      where('userId', '==', userId),
+    );
+    unsubs.push(
+      onSnapshot(
+        qUser,
+        (snap) => {
+          ordersFromUser = mapOrderSnapshot(snap);
+          notifyMerged();
+        },
+        (err) => {
+          console.error('subscribeToOrdersForUser (userId) failed:', err);
+          onError?.(err);
+        },
+      ),
+    );
+  }
+
+  if (phoneVariants.length > 0) {
+    const qPhone = query(
+      collection(db, COLLECTIONS.ORDERS),
+      where('userPhoneSnapshot', 'in', phoneVariants),
+    );
+    unsubs.push(
+      onSnapshot(
+        qPhone,
+        (snap) => {
+          ordersFromPhone = mapOrderSnapshot(snap);
+          notifyMerged();
+        },
+        (err) => {
+          console.warn('subscribeToOrdersForUser (phone) warning:', err);
+        },
+      ),
+    );
+  }
+
+  return () => {
+    for (const u of unsubs) u();
+  };
+}
+
 export function subscribeToUserOrders(
   userId: string,
   callback: (orders: Order[]) => void,
   onError?: (error: Error) => void,
 ): Unsubscribe {
-  const q = query(
-    collection(db, COLLECTIONS.ORDERS),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc'),
-  );
-  return onSnapshot(
-    q,
-    (snapshot) => callback(mapOrderSnapshot(snapshot)),
-    (err) => {
-      console.error('subscribeToUserOrders failed:', err);
-      onError?.(err);
-    },
-  );
+  return subscribeToOrdersForUser(userId, undefined, callback, onError);
 }
 
 export function subscribeToAllOrders(

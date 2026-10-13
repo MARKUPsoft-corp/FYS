@@ -4,6 +4,7 @@ import {
   subscribeToAllOrders,
   subscribeToOrder,
   subscribeToUserOrders,
+  subscribeToOrdersForUser,
 } from '@/services/order';
 
 export function useOrders(userId: string | undefined, isAdmin: boolean) {
@@ -34,23 +35,23 @@ export function useOrders(userId: string | undefined, isAdmin: boolean) {
   return { orders, isLoading };
 }
 
-export function useUserOrders(userId: string | undefined, enabled = true) {
+export function useUserOrders(userId: string | undefined, enabled = true, userPhone?: string) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId || !enabled) {
+    if ((!userId && !userPhone) || !enabled) {
       setOrders([]);
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    return subscribeToUserOrders(userId, (data) => {
+    return subscribeToOrdersForUser(userId, userPhone, (data) => {
       setOrders(data);
       setIsLoading(false);
     });
-  }, [userId, enabled]);
+  }, [userId, userPhone, enabled]);
 
   return { orders, isLoading };
 }
