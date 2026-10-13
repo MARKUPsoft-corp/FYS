@@ -21,6 +21,14 @@ const STEPS_META: StepMeta[] = [
   { id: 'ancrage', index: 4, number: '05', side: 'left', icon: Leaf, accentColor: '#3F6D4E' },
 ];
 
+const STEP_PERCENTAGES: Record<SignatureStepId, number> = {
+  elan: 7.5,
+  heritage: 27.8,
+  centre: 50.0,
+  creation: 72.1,
+  ancrage: 92.4,
+};
+
 export function FysSignatureSection() {
   const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState<SignatureStepId>('centre');
@@ -44,10 +52,16 @@ export function FysSignatureSection() {
     };
   }, [isPaused]);
 
+  const currentMetaIndex = STEPS_META.findIndex((s) => s.id === activeStep);
+  const currentStepMeta = STEPS_META[currentMetaIndex] || STEPS_META[2];
+  const nextMetaIndex = (currentMetaIndex + 1) % STEPS_META.length;
+  const nextStep = STEPS_META[nextMetaIndex];
+  const ActiveIcon = currentStepMeta.icon;
+
   return (
     <section
       id="signature"
-      className="py-20 md:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-background border-y border-border/50 scroll-mt-20"
+      className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-background border-y border-border/50 scroll-mt-20"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -65,7 +79,7 @@ export function FysSignatureSection() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         {/* ━━━ SECTION HEADER ━━━ */}
-        <div className="text-center max-w-3xl mx-auto mb-16 md:mb-24 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-24 space-y-3 sm:space-y-4">
           <div className="inline-flex items-center justify-center gap-3">
             <span className="w-8 sm:w-12 h-px bg-primary/40" />
             <span className="text-primary text-xs sm:text-sm font-bold tracking-widest uppercase flex items-center gap-2">
@@ -82,13 +96,13 @@ export function FysSignatureSection() {
           </div>
 
           <h2
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground uppercase"
+            className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground uppercase"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {t('signature.title', 'LA SIGNATURE FYS')}
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl font-serif italic text-muted-foreground">
+          <p className="text-base sm:text-xl md:text-2xl font-serif italic text-muted-foreground">
             {t('signature.subtitle', 'Un symbole. Une identité. Une appartenance.')}
           </p>
         </div>
@@ -469,123 +483,221 @@ export function FysSignatureSection() {
 
         </div>
 
-        {/* ━━━ MOBILE & TABLET LAYOUT (VERTICAL TIMELINE) ━━━ */}
-        <div className="lg:hidden flex flex-col items-center space-y-6">
-          {/* Miniature Totem Header */}
-          <div className="w-[140px] h-[380px] p-2 bg-card/60 backdrop-blur-md rounded-3xl border border-border/50 shadow-md">
-            <svg viewBox="0 0 200 660" className="w-full h-full">
-              {/* 01 L'Élan */}
-              <path
-                d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z"
-                onClick={() => setActiveStep('elan')}
-                className={`cursor-pointer transition-all ${
-                  activeStep === 'elan' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                }`}
-              />
-              {/* 02 L'Héritage */}
-              <g onClick={() => setActiveStep('heritage')} className="cursor-pointer">
-                <path
-                  d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z"
-                  fillRule="evenodd"
-                  className={`transition-all ${
-                    activeStep === 'heritage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                  }`}
-                />
-                <path
-                  d="M 100,158 L 114,184 L 100,210 L 86,184 Z"
-                  className={`transition-all ${
-                    activeStep === 'heritage' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                  }`}
-                />
-              </g>
-              {/* 03 Soi, au centre */}
-              <g onClick={() => setActiveStep('centre')} className="cursor-pointer">
-                <circle
-                  cx="100"
-                  cy="330"
-                  r="44.5"
-                  fill="none"
-                  strokeWidth="15"
-                  className={`transition-all ${
-                    activeStep === 'centre' ? 'stroke-[#E0982E]' : 'stroke-[#1F3A28] dark:stroke-[#AECBB2]'
-                  }`}
-                />
-                <circle
-                  cx="100"
-                  cy="330"
-                  r="17"
-                  className={`transition-all ${
-                    activeStep === 'centre' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                  }`}
-                />
-              </g>
-              {/* 04 La Création */}
-              <g onClick={() => setActiveStep('creation')} className="cursor-pointer">
-                <path
-                  d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z"
-                  fillRule="evenodd"
-                  className={`transition-all ${
-                    activeStep === 'creation' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                  }`}
-                />
-                <path
-                  d="M 100,450 L 114,476 L 100,502 L 86,476 Z"
-                  className={`transition-all ${
-                    activeStep === 'creation' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                  }`}
-                />
-              </g>
-              {/* 05 L'Ancrage */}
-              <path
-                d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z"
-                onClick={() => setActiveStep('ancrage')}
-                className={`cursor-pointer transition-all ${
-                  activeStep === 'ancrage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
-                }`}
-              />
-            </svg>
-          </div>
+        {/* ━━━ MOBILE & TABLET LAYOUT (TOTEM ON LEFT, DETAIL CARD ON RIGHT) ━━━ */}
+        <div className="lg:hidden">
+          <div className="flex items-stretch gap-3 sm:gap-4 relative">
+            
+            {/* ── LEFT COLUMN : Vertical Interactive Totem ── */}
+            <div className="w-[84px] sm:w-[100px] shrink-0 p-2 sm:p-2.5 bg-card/80 backdrop-blur-md rounded-3xl border border-border/50 shadow-md flex flex-col items-center justify-center relative">
+              <div className="w-full h-[430px] relative">
+                <svg viewBox="0 0 200 660" className="w-full h-full">
+                  {/* Central dashed line */}
+                  <line x1="100" y1="10" x2="100" y2="650" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-border/60" />
 
-          {/* Cards List */}
-          <div className="w-full space-y-3">
-            {STEPS_META.map((step) => {
-              const isSelected = activeStep === step.id;
-              const Icon = step.icon;
-              return (
+                  {/* 01 L'Élan */}
+                  <g onClick={() => setActiveStep('elan')} className="cursor-pointer">
+                    {/* Transparent touch target for easy finger tap */}
+                    <rect x="20" y="0" width="160" height="95" fill="transparent" />
+                    <path
+                      d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'elan'
+                          ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    {/* Subtle pulsing indicator on the NEXT element to invite tap */}
+                    {nextStep.id === 'elan' && (
+                      <circle cx="100" cy="50" r="16" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
+                    )}
+                  </g>
+
+                  {/* 02 L'Héritage */}
+                  <g onClick={() => setActiveStep('heritage')} className="cursor-pointer">
+                    <rect x="20" y="100" width="160" height="170" fill="transparent" />
+                    <path
+                      d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z"
+                      fillRule="evenodd"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'heritage'
+                          ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_14px_rgba(63,109,78,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    <path
+                      d="M 100,158 L 114,184 L 100,210 L 86,184 Z"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'heritage'
+                          ? 'fill-[#E0982E] filter drop-shadow-[0_0_10px_rgba(224,152,46,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    {nextStep.id === 'heritage' && (
+                      <circle cx="100" cy="184" r="18" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
+                    )}
+                  </g>
+
+                  {/* 03 Soi, au centre */}
+                  <g onClick={() => setActiveStep('centre')} className="cursor-pointer">
+                    <rect x="20" y="275" width="160" height="110" fill="transparent" />
+                    <circle
+                      cx="100"
+                      cy="330"
+                      r="44.5"
+                      fill="none"
+                      strokeWidth="15"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'centre'
+                          ? 'stroke-[#E0982E] filter drop-shadow-[0_0_16px_rgba(224,152,46,0.9)]'
+                          : 'stroke-[#1F3A28] dark:stroke-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    <circle
+                      cx="100"
+                      cy="330"
+                      r="17"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'centre'
+                          ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    {nextStep.id === 'centre' && (
+                      <circle cx="100" cy="330" r="22" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
+                    )}
+                  </g>
+
+                  {/* 04 La Création */}
+                  <g onClick={() => setActiveStep('creation')} className="cursor-pointer">
+                    <rect x="20" y="390" width="160" height="170" fill="transparent" />
+                    <path
+                      d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z"
+                      fillRule="evenodd"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'creation'
+                          ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_14px_rgba(63,109,78,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    <path
+                      d="M 100,450 L 114,476 L 100,502 L 86,476 Z"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'creation'
+                          ? 'fill-[#E0982E] filter drop-shadow-[0_0_10px_rgba(224,152,46,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    {nextStep.id === 'creation' && (
+                      <circle cx="100" cy="476" r="18" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
+                    )}
+                  </g>
+
+                  {/* 05 L'Ancrage */}
+                  <g onClick={() => setActiveStep('ancrage')} className="cursor-pointer">
+                    <rect x="20" y="565" width="160" height="95" fill="transparent" />
+                    <path
+                      d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z"
+                      className={`transition-all duration-300 ${
+                        activeStep === 'ancrage'
+                          ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_12px_rgba(63,109,78,0.9)]'
+                          : 'fill-[#1F3A28] dark:fill-[#AECBB2] opacity-60'
+                      }`}
+                    />
+                    {nextStep.id === 'ancrage' && (
+                      <circle cx="100" cy="610" r="16" fill="none" stroke="#E0982E" strokeWidth="2.5" className="animate-ping opacity-60" />
+                    )}
+                  </g>
+                </svg>
+
+                {/* ── Dynamic Glowing Pointer on the active element ── */}
                 <div
-                  key={step.id}
-                  onClick={() => setActiveStep(step.id)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-card border-primary shadow-lg ring-1 ring-primary/20'
-                      : 'bg-card/50 border-border/40 opacity-80'
-                  }`}
+                  className="absolute right-0 -mr-2.5 transition-all duration-500 ease-out z-20 pointer-events-none"
+                  style={{ top: `${STEP_PERCENTAGES[activeStep]}%`, transform: 'translateY(-50%)' }}
                 >
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {step.number}
-                      </span>
-                      <h3 className="font-display font-bold text-lg text-foreground">
-                        {t(`signature.steps.${step.id}.title`)}
-                      </h3>
-                    </div>
-                    <Icon className="size-4 text-muted-foreground" />
+                  <div className="relative flex items-center">
+                    <div className="size-3.5 rounded-full bg-[#E0982E] border-2 border-background shadow-md shadow-[#E0982E]/60 animate-pulse" />
+                    <div className="w-2.5 sm:w-3 h-[2px] bg-gradient-to-r from-[#E0982E] to-primary" />
                   </div>
-                  <p className="text-xs font-bold text-[#E0982E] uppercase mb-1">
-                    {t(`signature.steps.${step.id}.subtitle`)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t(`signature.steps.${step.id}.desc`)}
-                  </p>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+
+            {/* ── RIGHT COLUMN : Detailed active card taking full remaining width ── */}
+            <div className="flex-1 min-w-0 flex flex-col justify-between p-5 sm:p-6 rounded-3xl bg-card border border-primary/30 shadow-xl relative overflow-hidden">
+              {/* Background ambient accent */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+
+              {/* Top Header with Step Counter & Badge */}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="font-mono text-xs font-black px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20">
+                    {currentStepMeta.number} / 05
+                  </span>
+                  <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <ActiveIcon className="size-4" />
+                  </div>
+                </div>
+
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-foreground leading-tight mb-1">
+                  {t(`signature.steps.${activeStep}.title`)}
+                </h3>
+
+                <p className="text-xs font-bold text-[#E0982E] uppercase tracking-wider mb-3">
+                  {t(`signature.steps.${activeStep}.subtitle`)}
+                </p>
+
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  {t(`signature.steps.${activeStep}.desc`)}
+                </p>
+              </div>
+
+              {/* Bottom Area : Next Step Button & Progress Tracker */}
+              <div className="mt-5 pt-4 border-t border-border/50 space-y-3">
+                {/* Next Element Button (with pulsing invitation indicator) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveStep(nextStep.id)}
+                  className="w-full h-11 px-3.5 rounded-2xl bg-gradient-to-r from-primary/15 to-[#E0982E]/15 hover:from-primary/25 hover:to-[#E0982E]/25 border border-primary/30 text-foreground font-bold text-xs sm:text-sm flex items-center justify-between transition-all active:scale-95 group shadow-sm cursor-pointer"
+                >
+                  <span className="flex items-center gap-2 min-w-0 truncate">
+                    <span className="relative flex size-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E0982E] opacity-75" />
+                      <span className="relative inline-flex rounded-full size-2.5 bg-[#E0982E]" />
+                    </span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold uppercase shrink-0">
+                      {activeStep === 'ancrage' ? t('signature.restartPrompt', 'Revoir :') : t('signature.nextPrompt', 'Suivant :')}
+                    </span>
+                    <span className="truncate font-display font-bold text-foreground">
+                      {nextStep.number} — {t(`signature.steps.${nextStep.id}.title`)}
+                    </span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-[#E0982E] group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                {/* 5 tactile step dots to jump anywhere directly */}
+                <div className="flex items-center justify-center gap-1.5 pt-1">
+                  {STEPS_META.map((step) => (
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => setActiveStep(step.id)}
+                      className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                        activeStep === step.id
+                          ? 'w-7 bg-[#E0982E]'
+                          : 'w-2 bg-border hover:bg-muted-foreground/40'
+                      }`}
+                      aria-label={`Étape ${step.number}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
         {/* ━━━ BOTTOM EMBLEM & LOGO INTEGRATION BANNER ━━━ */}
-        <div className="mt-16 md:mt-24 p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-card/80 to-card border border-border/60 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+        <div className="mt-14 md:mt-24 p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-card/80 to-card border border-border/60 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           <div className="flex items-center gap-5">
             <div className="size-18 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 p-2">
               {/* Standalone Totem mini icon matching the exact sacred geometry */}
