@@ -73,9 +73,9 @@ async function sendWhatsAppMessage(to: string, text: string) {
   }
 }
 
-// ── Marquer le message comme lu (Accusé de réception avec double coche bleue) ──
+// ── Marquer le message comme lu & Activer l'indicateur visuel "en train d'écrire..." ──
 
-async function markWhatsAppMessageAsRead(messageId: string): Promise<boolean> {
+async function markWhatsAppMessageAsReadAndTyping(messageId: string): Promise<boolean> {
   if (!WHATSAPP_API_TOKEN || !messageId) return false;
   const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
   try {
@@ -89,36 +89,33 @@ async function markWhatsAppMessageAsRead(messageId: string): Promise<boolean> {
         messaging_product: 'whatsapp',
         status: 'read',
         message_id: messageId,
+        typing_indicator: {
+          type: 'text',
+        },
       }),
     });
+    const data = await res.json().catch(() => null);
+    console.log('[whatsapp] Read & typing indicator status:', res.status, data);
+
+    // En cas de non-support de typing_indicator par une version spécifique, repli sur le read standard
+    if (!res.ok) {
+      console.warn('[whatsapp] typing_indicator failed, falling back to standard read:', data);
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          status: 'read',
+          message_id: messageId,
+        }),
+      });
+    }
     return res.ok;
   } catch (err) {
-    console.warn('[whatsapp] Could not mark message as read:', err);
-    return false;
-  }
-}
-
-// ── Indicateur visuel "en train d'\''écrire..." (Typing indicator) ─────────────
-
-async function sendWhatsAppTypingIndicator(to: string): Promise<boolean> {
-  if (!WHATSAPP_API_TOKEN || !to) return false;
-  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to,
-        sender_action: 'typing_on',
-      }),
-    });
-    return res.ok;
-  } catch {
+    console.warn('[whatsapp] Could not mark message as read and typing:', err);
     return false;
   }
 }
@@ -525,10 +522,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // RÉTROACTION VISUELLE INSTANTANÉE (Double coche bleue + Indicateur d'écriture)
+      // RÉTROACTION VISUELLE INSTANTANÉE (Double coche bleue + Indicateur "en train d'écrire...")
       if (messageId) {
-        markWhatsAppMessageAsRead(messageId).catch(() => {});
-        sendWhatsAppTypingIndicator(senderPhone).catch(() => {});
+        await markWhatsAppMessageAsReadAndTyping(messageId);
       }
 
       let bottle500Base = 1500;
