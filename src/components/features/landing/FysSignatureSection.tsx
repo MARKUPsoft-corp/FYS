@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, ArrowRight, ShieldCheck, Compass, Heart, Leaf } from 'lucide-react';
 import { AfricanCornerPattern, type AfricanMotifVariant } from '@/components/common/AfricanCornerPattern';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 export type SignatureStepId = 'elan' | 'heritage' | 'centre' | 'creation' | 'ancrage';
 
@@ -74,17 +75,7 @@ export function FysSignatureSection() {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* ── Subtle Geometric Cameroonian Cultural Watermark (Background) ── */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.05]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233F6D4E' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0L80 40L40 80zM40 18L18 40L40 62L62 40z'/%3E%3Cpath d='M40 30L30 40L40 50L50 40z'/%3E%3Ccircle cx='40' cy='40' r='3.5'/%3E%3C/g%3E%3C/svg%3E")`,
-          backgroundSize: '80px 80px',
-        }}
-      />
-
-      {/* Ambient Radial Juice Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
+      <AfricanSectionBackground pattern="ndop" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         {/* ━━━ SECTION HEADER ━━━ */}

@@ -18,6 +18,7 @@ import { CocktailType, type Cocktail } from '@/entities/cocktail';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
 import { FysSignatureSection } from '@/components/features/landing/FysSignatureSection';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 /* ─────────────────────────────────────────────
    FYS Landing Page — Premium, Clean, Épurée
@@ -462,6 +463,9 @@ const RootIndex: PageComponent = () => {
             }} 
           />
 
+          {/* African Cultural Watermark Overlay in Hero */}
+          <AfricanSectionBackground pattern="ndop" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="terracotta" />
+
           {/* Mobile contrast overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-card/90 via-card/50 to-card/90 lg:hidden pointer-events-none" />
 
@@ -541,8 +545,9 @@ const RootIndex: PageComponent = () => {
         </div>
       </section>
 {/* ━━━ STATS BAR ━━━ */}
-      <section className="py-12 md:py-16 px-5 md:px-8 relative z-10">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
+      <section className="py-12 md:py-16 px-5 md:px-8 relative z-10 overflow-hidden">
+        <AfricanSectionBackground pattern="grassfields-chevrons" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center relative z-10">
           {[
             { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: t('home.customer.labStatsFruits'), icon: Leaf, color: '#3F6D4E' },
             { value: '2 min', label: t('home.customer.labStatsTime'), icon: Zap, color: '#E0982E' },
@@ -568,7 +573,7 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
       <section className="py-12 md:py-20 px-5 md:px-8 bg-[#E0982E]/[0.08] dark:bg-[#E0982E]/[0.10] relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#E0982E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="ndop" color="terracotta" opacityClass="opacity-[0.055] dark:opacity-[0.07]" glowColor="terracotta" watermarkEmblem="ndop-mandala" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.howItWorks.title') }} />
@@ -681,7 +686,8 @@ const RootIndex: PageComponent = () => {
       {/* ━━━ NOS CRÉATIONS / CATALOGUE ━━━ */}
       {catalogCocktails.length > 0 && (
         <section id="catalogue" className="py-20 px-5 md:px-8 relative overflow-hidden bg-background scroll-mt-24">
-          <div className="max-w-7xl mx-auto">
+          <AfricanSectionBackground pattern="seeds-sun" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
+          <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-sm">
                 <GlassWater className="size-4" />
@@ -760,7 +766,7 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
       <section id="features" className="py-12 md:py-20 px-5 md:px-8 bg-[#3F6D4E]/[0.08] dark:bg-[#3F6D4E]/15 relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="signature-totem" color="forest" opacityClass="opacity-[0.05] dark:opacity-[0.07]" glowColor="forest" watermarkEmblem="totem" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.features.title') }} />
@@ -830,7 +836,7 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ FYS EVENT (CORPORATE & B2B CATERING) ━━━ */}
       <section id="events" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-[#3F6D4E]/[0.03] dark:bg-[#3F6D4E]/10 border-y border-border/40">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="royal-mosaic" color="forest" opacityClass="opacity-[0.04] dark:opacity-[0.06]" glowColor="forest" watermarkEmblem="ndop-mandala" />
         
         <div className="max-w-6xl mx-auto relative z-10 space-y-16">
           {/* Section Header */}
@@ -933,7 +939,7 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ PRODUCT GALLERY ━━━ */}
       <section className="py-16 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="grassfields-chevrons" color="terracotta" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="terracotta" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
@@ -966,9 +972,7 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ NUTRIFYS SECTION ━━━ */}
       <section id="nutrifys" className="py-20 md:py-24 px-5 md:px-8 relative overflow-hidden z-0">
-        
-        {/* Texture subtile en points (Nodes) */}
-        <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#F2694A 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="seeds-sun" color="coral" opacityClass="opacity-[0.045] dark:opacity-[0.06]" glowColor="coral" watermarkEmblem="sun" />
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[3rem] p-8 md:p-12 lg:p-16 shadow-2xl relative overflow-hidden group">
@@ -1039,7 +1043,7 @@ const RootIndex: PageComponent = () => {
         </svg>
       </div>
       <section className="py-12 md:py-20 px-5 md:px-8 bg-[#3F6D4E]/[0.08] dark:bg-[#3F6D4E]/15 relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.10] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="grassfields-chevrons" color="forest" opacityClass="opacity-[0.045] dark:opacity-[0.06]" glowColor="forest" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4 scroll-animate opacity-0">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
@@ -1100,10 +1104,7 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ ABOUT US (L'ÉQUIPE) ━━━ */}
       <section id="about" className="py-20 md:py-32 px-5 md:px-8 relative overflow-hidden z-0 bg-background">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-        
-        {/* Subtle glow behind the whole section */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        <AfricanSectionBackground pattern="ndop" color="forest" opacityClass="opacity-[0.04] dark:opacity-[0.055]" glowColor="forest" watermarkEmblem="totem" />
 
         <div className="max-w-6xl mx-auto relative z-10 flex flex-col items-center">
           
@@ -1191,7 +1192,7 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ CTA FINAL ━━━ */}
       <section className="py-24 px-5 md:px-8 relative overflow-hidden z-0">
-        <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(currentColor 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+        <AfricanSectionBackground pattern="signature-totem" color="terracotta" opacityClass="opacity-[0.04] dark:opacity-[0.06]" glowColor="terracotta" watermarkEmblem="ndop-mandala" />
         <div className="max-w-5xl mx-auto bg-card rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-border/50 shadow-2xl z-10 scroll-animate opacity-0 group">
           <AfricanCornerPattern section="cta" index={0} size="xl" className="opacity-20 group-hover:opacity-40" />
           
