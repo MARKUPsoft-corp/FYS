@@ -8,6 +8,7 @@ import { signOut } from '@/services/auth';
 import { clearPendingAction } from '@/lib/pending-action';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 export function DesktopSidebar() {
   const { t, i18n } = useTranslation();
@@ -35,13 +36,14 @@ export function DesktopSidebar() {
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col fixed left-0 top-0 h-full z-40',
+        'hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 relative overflow-hidden',
         'bg-background/70 backdrop-blur-[48px] saturate-[180%]',
         'border-r border-white/40 dark:border-white/10',
         'shadow-[8px_0_32px_rgba(0,0,0,0.10)]',
         'w-64'
       )}
     >
+      <AfricanCornerPattern variant="ndop-cross" size="sm" className="opacity-15 dark:opacity-20 pointer-events-none" />
       {/* Header - Logo */}
       <div className="h-20 flex items-center px-6 border-b border-white/10 shrink-0">
         <Link to="/board" className="flex items-center hover:opacity-80 transition-opacity">

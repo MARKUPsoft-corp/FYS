@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { AfricanCornerPattern, type AfricanMotifVariant } from "@/components/common/AfricanCornerPattern"
 
 function Dialog({
   ...props
@@ -49,9 +50,13 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  showAfricanPattern = true,
+  patternVariant,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  showAfricanPattern?: boolean
+  patternVariant?: AfricanMotifVariant
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -59,16 +64,23 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex flex-col w-[calc(100%-1.25rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 max-h-[92vh] overflow-y-auto overflow-x-hidden rounded-2xl border bg-background p-6 shadow-2xl duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:w-full min-w-0",
+          "fixed top-1/2 left-1/2 z-50 flex flex-col w-[calc(100%-1.25rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 max-h-[92vh] overflow-y-auto overflow-x-hidden rounded-2xl border bg-background p-6 shadow-2xl duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:w-full min-w-0 relative",
           className
         )}
         {...props}
       >
+        {showAfricanPattern && (
+          <AfricanCornerPattern
+            variant={patternVariant}
+            size="md"
+            className="z-0 opacity-20 dark:opacity-30 text-primary pointer-events-none"
+          />
+        )}
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 cursor-pointer"
+            className="absolute top-4 right-4 z-10 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 cursor-pointer"
           >
             <XIcon />
             <span className="sr-only">Close</span>

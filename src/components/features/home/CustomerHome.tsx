@@ -15,6 +15,7 @@ import { CocktailBanner } from '@/components/features/cocktail/CocktailBanner';
 import { getSessions } from '@/services/chat';
 import { getPricingSettings } from '@/services/settings';
 import { subscribeToUserActiveProgram, getPrograms } from '@/services/program';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { labelKey: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -167,7 +168,8 @@ export function CustomerHome(_props: Props) {
       <div className="px-3 md:px-6 py-6 md:py-8 max-w-7xl mx-auto space-y-10">
 
         {/* 1. HEADER PERSONNALISÉ (LAUNCHPAD IA) */}
-        <div className="bg-card rounded-[2.5rem] p-7 md:p-12 border border-border/40 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
+        <div className="bg-card rounded-[2.5rem] p-7 md:p-12 border border-border/40 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center group">
+          <AfricanCornerPattern variant="centre-sun" size="xl" className="opacity-15 group-hover:opacity-30 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
           
           {/* Subtle Background Image */}
@@ -284,6 +286,7 @@ export function CustomerHome(_props: Props) {
         
         {/* ── EVENEMENT VIP (TOUJOURS VISIBLE) ── */}
           <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group w-full shrink-0">
+            <AfricanCornerPattern variant="ndop-cross" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
             {/* Background photography */}
             <div className="absolute inset-0 bg-muted">
               <img
@@ -335,6 +338,7 @@ export function CustomerHome(_props: Props) {
             </div>
           </div>
             {activeProgram && (<div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group w-full shrink-0">
+            <AfricanCornerPattern variant="totem-seal" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
 
             {/* Background photo with subtle zoom */}
             <div className="absolute inset-0 bg-muted">
@@ -430,8 +434,9 @@ export function CustomerHome(_props: Props) {
             {/* Stat 1: Commandes */}
             <div 
               onClick={() => setOrdersExpanded(!ordersExpanded)}
-              className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 flex flex-col justify-center hover:bg-primary/10 transition-all duration-300 cursor-pointer shadow-sm group"
+              className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 flex flex-col justify-center hover:bg-primary/10 transition-all duration-300 cursor-pointer shadow-sm group relative overflow-hidden"
             >
+              <AfricanCornerPattern section="customer-stats" index={0} size="sm" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div className="flex items-center justify-between w-full">
                 <div>
                   <p className="text-5xl md:text-6xl font-black font-display text-primary tracking-tighter leading-none">{orders.length || 0}</p>
@@ -466,7 +471,8 @@ export function CustomerHome(_props: Props) {
             </div>
 
             {/* Stat 2: Recettes */}
-            <div className="bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-amber-500/10 transition-all duration-300 cursor-default shadow-sm">
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-amber-500/10 transition-all duration-300 cursor-default shadow-sm relative overflow-hidden group">
+              <AfricanCornerPattern section="customer-stats" index={1} size="sm" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div>
                 <p className="text-5xl md:text-6xl font-black font-display text-amber-500 tracking-tighter leading-none">{uniqueCocktailsCreated}</p>
                 <p className="text-sm font-bold text-foreground mt-3 leading-tight">{t('home.customer.stats.creations')} <br/> <span className="text-muted-foreground font-medium text-xs">{t('home.customer.stats.creationsSub')}</span></p>
@@ -477,7 +483,8 @@ export function CustomerHome(_props: Props) {
             </div>
 
             {/* Stat 3: IA */}
-            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-emerald-500/10 transition-all duration-300 cursor-default shadow-sm">
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[2rem] p-6 flex items-center justify-between hover:scale-105 hover:bg-emerald-500/10 transition-all duration-300 cursor-default shadow-sm relative overflow-hidden group">
+              <AfricanCornerPattern section="customer-stats" index={2} size="sm" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div>
                 <p className="text-5xl md:text-6xl font-black font-display text-emerald-500 tracking-tighter leading-none">{aiExchangesCount}</p>
                 <p className="text-sm font-bold text-foreground mt-3 leading-tight">{t('home.customer.stats.ai')} <br/> <span className="text-muted-foreground font-medium text-xs">{t('home.customer.stats.aiSub')}</span></p>
@@ -500,6 +507,7 @@ export function CustomerHome(_props: Props) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Card 1: Composer Manuel */}
             <Link to="/lab" className="group relative bg-card p-6 sm:p-7 rounded-[2rem] border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/40 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer">
+              <AfricanCornerPattern section="quick" index={0} size="md" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div className="absolute -right-8 -top-8 text-primary/[0.03] dark:text-primary/10 group-hover:text-primary/[0.07] dark:group-hover:text-primary/20 transition-colors duration-500 -rotate-12 group-hover:rotate-0 pointer-events-none">
                 <Beaker size={140} strokeWidth={1} />
               </div>
@@ -520,6 +528,7 @@ export function CustomerHome(_props: Props) {
 
             {/* Card 2: Assistant IA */}
             <Link to="/lab?tab=nutrifys" className="group relative bg-card p-6 sm:p-7 rounded-[2rem] border border-border/50 shadow-sm hover:shadow-xl hover:border-amber-500/40 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer">
+              <AfricanCornerPattern section="quick" index={1} size="md" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div className="absolute -right-8 -top-8 text-amber-500/[0.03] dark:text-amber-500/10 group-hover:text-amber-500/[0.07] dark:group-hover:text-amber-500/20 transition-colors duration-500 -rotate-12 group-hover:rotate-0 pointer-events-none">
                 <Sparkles size={140} strokeWidth={1} />
               </div>
@@ -540,6 +549,7 @@ export function CustomerHome(_props: Props) {
 
             {/* Card 3: Catalogue */}
             <Link to="/board/catalogue" className="group relative bg-card p-6 sm:p-7 rounded-[2rem] border border-border/50 shadow-sm hover:shadow-xl hover:border-emerald-500/40 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer">
+              <AfricanCornerPattern section="quick" index={2} size="md" className="opacity-15 group-hover:opacity-35 pointer-events-none" />
               <div className="absolute -right-8 -top-8 text-emerald-500/[0.03] dark:text-emerald-500/10 group-hover:text-emerald-500/[0.07] dark:group-hover:text-emerald-500/20 transition-colors duration-500 -rotate-12 group-hover:rotate-0 pointer-events-none">
                 <Leaf size={140} strokeWidth={1} />
               </div>

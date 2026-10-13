@@ -2,6 +2,7 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
+import { AfricanCornerPattern } from "@/components/common/AfricanCornerPattern"
 
 function Drawer({
   ...props
@@ -54,7 +55,7 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "group/drawer-content fixed z-50 flex h-auto flex-col bg-background",
+          "group/drawer-content fixed z-50 flex h-auto flex-col bg-background relative overflow-hidden",
           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-xl data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=top]:pt-safe data-[vaul-drawer-direction=top]:px-safe",
           "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-xl data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=bottom]:pb-safe data-[vaul-drawer-direction=bottom]:px-safe",
           "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:pt-safe data-[vaul-drawer-direction=right]:pb-safe data-[vaul-drawer-direction=right]:pr-safe data-[vaul-drawer-direction=right]:sm:max-w-sm",
@@ -63,6 +64,10 @@ function DrawerContent({
         )}
         {...props}
       >
+        <AfricanCornerPattern
+          size="md"
+          className="z-0 opacity-15 dark:opacity-25 text-primary pointer-events-none"
+        />
         <div className="mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>

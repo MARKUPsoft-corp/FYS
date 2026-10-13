@@ -6,6 +6,7 @@ import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { DesktopSidebar } from './DesktopSidebar';
 import { useLocation } from 'rasengan';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -36,14 +37,22 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [user?.uid]);
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-clip">
+    <div className="min-h-dvh bg-background overflow-x-clip relative">
+      {/* ── Fond culturel filigrane immersif pour tous les tableaux de bord ── */}
+      <AfricanSectionBackground
+        pattern="ndop"
+        color="forest"
+        opacityClass="opacity-[0.025] dark:opacity-[0.035]"
+        glowColor="forest"
+        className="fixed inset-0 z-0 pointer-events-none"
+      />
       <DesktopSidebar />
       <Topbar />
 
       <main
         ref={mainRef}
         className={cn(
-          'w-full pt-[calc(env(safe-area-inset-top,0px)+5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] lg:pt-0 lg:pb-0',
+          'w-full pt-[calc(env(safe-area-inset-top,0px)+5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] lg:pt-0 lg:pb-0 relative z-10',
           'transition-all duration-300 ease-in-out',
           user ? 'lg:ml-64 lg:w-[calc(100%-16rem)]' : 'lg:ml-0 lg:w-full'
         )}

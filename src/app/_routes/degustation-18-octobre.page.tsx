@@ -6,6 +6,7 @@ import { Plus, ArrowLeft, Sparkles, BookOpen, Star, Beaker, ArrowRight, CheckCir
 import { submitTastingRSVP } from '@/services/tasting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 const TastingPage: PageComponent = () => {
   const navigate = useNavigate();
@@ -85,7 +86,8 @@ const TastingPage: PageComponent = () => {
         {/* Motif traditionnel discret */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3F6D4E 2px, transparent 2px)', backgroundSize: '30px 30px' }} />
         
-        <div className="max-w-md w-full bg-white dark:bg-[#151916] rounded-3xl shadow-2xl overflow-hidden border border-[#3F6D4E]/20 z-10 animate-pop-in-cute">
+        <div className="max-w-md w-full bg-white dark:bg-[#151916] rounded-3xl shadow-2xl overflow-hidden border border-[#3F6D4E]/20 z-10 animate-pop-in-cute relative">
+          <AfricanCornerPattern variant="ndop-cross" size="lg" className="opacity-25" />
           <div className="bg-[#3F6D4E] text-white p-8 text-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-20">
                <Sparkles className="size-16" />
@@ -268,8 +270,9 @@ const TastingPage: PageComponent = () => {
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Dégustation FYS ananas-gingembre-4.png')" }} />
         <div className="absolute inset-0 bg-[#1a1f1b]/80 backdrop-blur-sm" />
         
-        <div className="max-w-2xl mx-auto bg-white dark:bg-[#151916]/95 dark:bg-[#1a1f1b]/95 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative z-10 border border-white/20">
-          <div className="text-center mb-10">
+        <div className="max-w-2xl mx-auto bg-white dark:bg-[#151916]/95 dark:bg-[#1a1f1b]/95 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative z-10 border border-white/20 overflow-hidden">
+          <AfricanCornerPattern variant="totem-seal" size="lg" className="opacity-15" />
+          <div className="text-center mb-10 relative z-10">
             <h2 className="text-3xl md:text-4xl font-extrabold text-[#3F6D4E] dark:text-[#88b698] font-display mb-4">Rejoignez-nous</h2>
             <p className="text-gray-600 dark:text-gray-300 font-medium">Remplissez ce formulaire pour recevoir votre billet numérique VIP.</p>
           </div>
@@ -367,6 +370,7 @@ function CataloguePreview() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {/* 1. Carte Sur-Mesure (FYS Lab) */}
       <div className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+        <AfricanCornerPattern variant="centre-sun" size="md" className="opacity-40 z-20 text-white" />
         <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
           <img 
             src="/degustation/Création sur-mesure, ananas et gingembre.png" 

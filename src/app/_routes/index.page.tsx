@@ -547,7 +547,24 @@ const RootIndex: PageComponent = () => {
 {/* ━━━ STATS BAR ━━━ */}
       <section className="py-12 md:py-16 px-5 md:px-8 relative z-10 overflow-hidden">
         <AfricanSectionBackground pattern="grassfields-chevrons" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center relative z-10">
+        <div className="max-w-5xl mx-auto relative z-10">
+          {/* ── Bouton express 'Composer mon jus' (accès direct sans scroll) ── */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 md:mb-10 text-center">
+            <Link
+              to="/lab"
+              className="group inline-flex items-center justify-center gap-3.5 h-14 sm:h-16 px-8 sm:px-10 rounded-full bg-primary text-primary-foreground font-extrabold text-base sm:text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer ring-4 ring-primary/20"
+            >
+              <Sparkles className="size-5 text-[#E0982E] animate-pulse" />
+              <span>{t('landing.hero.ctaPrimary', 'Composer mon jus')}</span>
+              <ArrowRight className="size-5 group-hover:translate-x-1.5 transition-transform" />
+            </Link>
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground bg-card/60 backdrop-blur-xs px-4 py-2 rounded-full border border-border/40">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+              <span>100% naturel • Pressé à froid • En 2 min</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
           {[
             { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: t('home.customer.labStatsFruits'), icon: Leaf, color: '#3F6D4E' },
             { value: '2 min', label: t('home.customer.labStatsTime'), icon: Zap, color: '#E0982E' },
@@ -563,6 +580,7 @@ const RootIndex: PageComponent = () => {
               <p className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</p>
             </div>
           ))}
+          </div>
         </div>
       </section>
 

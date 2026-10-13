@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react"
 import { Dialog as SheetPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { AfricanCornerPattern } from "@/components/common/AfricanCornerPattern"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -60,7 +61,7 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
+          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500 relative overflow-hidden",
           side === "right" &&
             "inset-y-0 right-0 h-full w-3/4 border-l pt-safe pb-safe pr-safe data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
           side === "left" &&
@@ -73,6 +74,10 @@ function SheetContent({
         )}
         {...props}
       >
+        <AfricanCornerPattern
+          size="md"
+          className="z-0 opacity-15 dark:opacity-25 text-primary pointer-events-none"
+        />
         {children}
         {showCloseButton && (
           <SheetPrimitive.Close className="absolute top-[calc(var(--sat)+1rem)] right-[calc(var(--sar)+1rem)] flex items-center justify-center size-8 rounded-xl bg-muted/60 hover:bg-muted border border-border/40 text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">

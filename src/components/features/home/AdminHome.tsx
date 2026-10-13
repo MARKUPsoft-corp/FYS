@@ -14,6 +14,7 @@ import type { Order } from '@/entities';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { AdminPushPanel } from '@/components/features/admin/PushNotificationPanel';
 import { LaunchNoticeCard } from '@/components/features/admin/LaunchNoticeCard';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 type Props = { name: string };
 
@@ -225,11 +226,17 @@ export function AdminHome({ name }: Props) {
       <div className="space-y-10 max-w-7xl mx-auto w-full overflow-x-hidden">
       {/* ── KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {statCards.map((s) => {
+        {statCards.map((s, idx) => {
           const Icon = s.icon;
           return (
             <Link key={s.label} to={s.path} className="block group min-w-0">
               <div className="bg-card rounded-[2rem] p-5 md:p-6 border border-border/40 shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1.5 flex flex-col justify-between h-full relative overflow-hidden">
+                <AfricanCornerPattern
+                  variant={idx % 4 === 0 ? 'seed-chevron' : idx % 4 === 1 ? 'ndop-cross' : idx % 4 === 2 ? 'totem-seal' : 'centre-sun'}
+                  seed={`admin-kpi-${idx}`}
+                  size="md"
+                  className="opacity-15 group-hover:opacity-25 transition-opacity"
+                />
                 <div className={`absolute -right-4 -top-4 size-24 rounded-full ${s.bg} blur-2xl opacity-50 pointer-events-none transition-opacity group-hover:opacity-100`} />
                 <div className={`size-12 rounded-[1rem] ${s.bg} border flex items-center justify-center mb-6 relative z-10`}>
                   <Icon className={`size-6 ${s.color}`} strokeWidth={2.5} />
@@ -256,6 +263,7 @@ export function AdminHome({ name }: Props) {
         
         {/* BIG REVENUE METRIC */}
         <div className="lg:col-span-4 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 flex flex-col justify-between relative overflow-hidden group min-w-0">
+          <AfricanCornerPattern variant="centre-sun" size="lg" className="opacity-15 group-hover:opacity-25 transition-opacity" />
           <div className="absolute right-0 bottom-0 size-48 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
           <div>
             <div className="flex items-center gap-3 mb-6 relative z-10">
@@ -285,8 +293,9 @@ export function AdminHome({ name }: Props) {
         </div>
 
         {/* ORDERS BY STATUS */}
-        <div className="lg:col-span-8 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden flex flex-col justify-between">
-           <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="lg:col-span-8 bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden flex flex-col justify-between relative">
+           <AfricanCornerPattern variant="ndop-cross" size="lg" className="opacity-15" />
+           <div className="flex items-center justify-between gap-4 mb-6 relative z-10">
              <h3 className="font-display font-bold text-xl text-foreground">{t('home.admin.chartTitle')}</h3>
              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-muted text-muted-foreground border border-border/40">
                Total : {stats?.ordersCount ?? 0}
@@ -379,8 +388,9 @@ export function AdminHome({ name }: Props) {
       </div>
 
       {/* ── 4. ACTIVITÉ RÉCENTE (COMMANDES EN PLEINE LARGEUR) ── */}
-      <div className="bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
+      <div className="bg-card rounded-[2.5rem] border border-border/40 shadow-sm p-6 md:p-8 min-w-0 overflow-hidden relative">
+        <AfricanCornerPattern variant="totem-seal" size="lg" className="opacity-15" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8 relative z-10">
            <div className="min-w-0">
              <div className="flex items-center gap-2.5">
                <div className="size-9 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">

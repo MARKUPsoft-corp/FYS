@@ -28,6 +28,7 @@ import { OnboardingModal } from '@/components/features/onboarding/OnboardingModa
 import { UserRole } from '@/entities/user';
 
 import { labSounds } from '@/services/lab-sounds';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 const FysLab: PageComponent = () => {
   const { t } = useTranslation();
@@ -684,7 +685,16 @@ const FysLab: PageComponent = () => {
 
   return (
     <>
-      <div className="min-h-dvh bg-background overflow-x-clip page-transition-wrapper">
+      <div className="min-h-dvh bg-background overflow-x-clip page-transition-wrapper relative">
+        <AfricanSectionBackground
+          pattern="seeds-sun"
+          color="forest"
+          opacity={0.03}
+          watermark="sun"
+          watermarkPosition="center"
+          watermarkOpacity={0.03}
+          fixed
+        />
         <LabHeader
           activeTab={activeTab}
           onTabChange={handleTabChange}

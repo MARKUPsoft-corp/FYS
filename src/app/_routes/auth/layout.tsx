@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useQuery } from '@tanstack/react-query';
 import { getLandingImagesSettings } from '@/services/settings';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 const AuthLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
@@ -33,9 +35,24 @@ const AuthLayout: LayoutComponent = () => {
     >
       {/* Dark overlay to ensure text contrast and add background blur */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+
+      {/* Subtle cultural totem watermark in the atmosphere */}
+      <AfricanSectionBackground
+        pattern="signature-totem"
+        color="white"
+        opacity={0.04}
+        watermark="totem"
+        watermarkPosition="center"
+        watermarkOpacity={0.05}
+      />
       
       {/* Glassmorphism card wrapping the Auth contents */}
-      <div className="relative z-10 w-full max-w-md bg-black/30 backdrop-blur-lg border border-white/20 p-8 md:p-10 rounded-[2rem] shadow-2xl flex justify-center animate-in fade-in zoom-in-95 duration-500">
+      <div className="relative z-10 w-full max-w-md bg-black/30 backdrop-blur-lg border border-white/20 p-8 md:p-10 rounded-[2rem] shadow-2xl flex justify-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+        <AfricanCornerPattern
+          variant="ndop-cross"
+          size="lg"
+          className="opacity-25 text-white"
+        />
         <Outlet />
       </div>
     </div>

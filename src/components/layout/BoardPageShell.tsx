@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 type Props = {
   eyebrow: string;
@@ -38,7 +39,7 @@ export function BoardPageShell({
   const hasSectionHeader = Boolean(sectionBefore || sectionHighlight || subtitle);
 
   return (
-    <div className="min-h-dvh bg-background pb-4">
+    <div className="min-h-dvh bg-background pb-4 relative">
       <div
         className={`relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 overflow-hidden ${
           subHeader ? 'mb-0' : 'mb-8 sm:mb-12'
@@ -49,6 +50,7 @@ export function BoardPageShell({
           backgroundPosition: imagePosition,
         }}
       >
+        <AfricanCornerPattern variant="ndop-cross" size="lg" className="z-20 text-white/35 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div className="relative z-10 flex-1 flex items-end justify-between gap-4 max-w-7xl mx-auto w-full">
           <div>
