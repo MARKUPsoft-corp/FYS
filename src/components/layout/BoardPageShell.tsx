@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 
 type Props = {
   eyebrow: string;
@@ -40,6 +41,12 @@ export function BoardPageShell({
 
   return (
     <div className="min-h-dvh bg-background pb-4 relative">
+      <AfricanSectionBackground
+        pattern="ndop"
+        color="forest"
+        opacity={0.035}
+        glowColor="forest"
+      />
       <div
         className={`relative w-full h-[220px] flex items-end px-3 md:px-6 pb-8 overflow-hidden ${
           subHeader ? 'mb-0' : 'mb-8 sm:mb-12'

@@ -146,7 +146,8 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'totem' && (
             <svg
               viewBox="0 0 200 660"
-              className="w-[320px] md:w-[480px] lg:w-[600px] h-auto max-h-[85vh] text-[#3F6D4E] dark:text-[#AECBB2] opacity-[0.04] dark:opacity-[0.055]"
+              className="w-[320px] md:w-[480px] lg:w-[600px] h-auto max-h-[85vh] text-[#3F6D4E] dark:text-[#AECBB2]"
+              style={{ opacity: 0.045 }}
               fill="currentColor"
             >
               <path d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z" />
@@ -163,7 +164,8 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'ndop-mandala' && (
             <svg
               viewBox="0 0 200 200"
-              className="w-[360px] md:w-[520px] h-auto text-[#E0982E] opacity-[0.045] dark:opacity-[0.06]"
+              className="w-[360px] md:w-[520px] h-auto text-[#E0982E]"
+              style={{ opacity: 0.045 }}
               fill="none"
               stroke="currentColor"
             >
@@ -179,7 +181,8 @@ export function AfricanSectionBackground({
           {watermarkEmblem === 'sun' && (
             <svg
               viewBox="0 0 200 200"
-              className="w-[360px] md:w-[500px] h-auto text-[#F2694A] opacity-[0.045] dark:opacity-[0.06]"
+              className="w-[360px] md:w-[500px] h-auto text-[#F2694A]"
+              style={{ opacity: 0.045 }}
               fill="none"
               stroke="currentColor"
             >

@@ -16,6 +16,7 @@ import { getSessions } from '@/services/chat';
 import { getPricingSettings } from '@/services/settings';
 import { subscribeToUserActiveProgram, getPrograms } from '@/services/program';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
+import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
 type Props = Record<string, never>;
 
 const STATUS_CONFIG: Record<OrderStatus, { labelKey: string; icon: any; bg: string; text: string; border: string; dot: string; }> = {
@@ -164,8 +165,15 @@ export function CustomerHome(_props: Props) {
   const completionPct = Math.round((completionCount / completionSections.length) * 100);
 
   return (
-    <div className="min-h-dvh bg-background pb-4 overflow-x-clip">
-      <div className="px-3 md:px-6 py-6 md:py-8 max-w-7xl mx-auto space-y-10">
+    <div className="min-h-dvh bg-background pb-4 overflow-x-clip relative">
+      <AfricanSectionBackground
+        pattern="ndop"
+        color="forest"
+        opacity={0.035}
+        glowColor="forest"
+        watermarkEmblem="totem"
+      />
+      <div className="px-3 md:px-6 py-6 md:py-8 max-w-7xl mx-auto space-y-10 relative z-10">
 
         {/* 1. HEADER PERSONNALISÉ (LAUNCHPAD IA) */}
         <div className="bg-card rounded-[2.5rem] p-7 md:p-12 border border-border/40 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center group">
