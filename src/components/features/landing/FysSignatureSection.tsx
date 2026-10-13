@@ -22,7 +22,7 @@ const STEPS_META: StepMeta[] = [
 ];
 
 export function FysSignatureSection() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState<SignatureStepId>('centre');
   const [isPaused, setIsPaused] = useState(false);
   const autoPlayRef = useRef<number | null>(null);
@@ -44,8 +44,6 @@ export function FysSignatureSection() {
     };
   }, [isPaused]);
 
-  const activeIndex = STEPS_META.findIndex((s) => s.id === activeStep);
-
   return (
     <section
       id="signature"
@@ -57,7 +55,7 @@ export function FysSignatureSection() {
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.05]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233F6D4E' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0L80 40L40 80zM40 18L18 40L40 62L62 40z'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233F6D4E' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0L80 40L40 80zM40 18L18 40L40 62L62 40z'/%3E%3Cpath d='M40 30L30 40L40 50L50 40z'/%3E%3Ccircle cx='40' cy='40' r='3.5'/%3E%3C/g%3E%3C/svg%3E")`,
           backgroundSize: '80px 80px',
         }}
       />
@@ -70,10 +68,15 @@ export function FysSignatureSection() {
         <div className="text-center max-w-3xl mx-auto mb-16 md:mb-24 space-y-4">
           <div className="inline-flex items-center justify-center gap-3">
             <span className="w-8 sm:w-12 h-px bg-primary/40" />
-            <span className="text-primary text-xs sm:text-sm font-bold tracking-widest uppercase flex items-center gap-1.5">
-              <span className="text-[#E0982E] text-base">◇</span>
+            <span className="text-primary text-xs sm:text-sm font-bold tracking-widest uppercase flex items-center gap-2">
+              {/* Little diamond ornament from official poster */}
+              <svg viewBox="0 0 20 20" className="size-3.5 text-[#E0982E] inline-block">
+                <path d="M 10 2 L 18 10 L 10 18 L 2 10 Z M 10 6 L 6 10 L 10 14 L 14 10 Z" fill="currentColor" fillRule="evenodd" />
+              </svg>
               {t('signature.badge', 'Identité & Terroir')}
-              <span className="text-[#E0982E] text-base">◇</span>
+              <svg viewBox="0 0 20 20" className="size-3.5 text-[#E0982E] inline-block">
+                <path d="M 10 2 L 18 10 L 10 18 L 2 10 Z M 10 6 L 6 10 L 10 14 L 14 10 Z" fill="currentColor" fillRule="evenodd" />
+              </svg>
             </span>
             <span className="w-8 sm:w-12 h-px bg-primary/40" />
           </div>
@@ -91,10 +94,10 @@ export function FysSignatureSection() {
         </div>
 
         {/* ━━━ INTERACTIVE TOTEM EXPERIENCE (DESKTOP GRID) ━━━ */}
-        <div className="hidden lg:grid grid-cols-12 gap-8 items-center min-h-[620px]">
+        <div className="hidden lg:grid grid-cols-12 gap-6 xl:gap-8 items-center min-h-[660px]">
           
           {/* LEFT COLUMN : Steps 01 (Élan), 03 (Soi au Centre), 05 (Ancrage) */}
-          <div className="col-span-4 flex flex-col justify-between h-full py-4 space-y-8">
+          <div className="col-span-4 flex flex-col justify-between h-full py-2 space-y-6">
             {STEPS_META.filter((s) => s.side === 'left').map((step) => {
               const isSelected = activeStep === step.id;
               const Icon = step.icon;
@@ -104,7 +107,7 @@ export function FysSignatureSection() {
                   onClick={() => setActiveStep(step.id)}
                   className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-right ${
                     isSelected
-                      ? 'bg-card shadow-xl border-primary/40 scale-[1.03] ring-1 ring-primary/20'
+                      ? 'bg-card shadow-xl border-primary/50 scale-[1.03] ring-1 ring-primary/20'
                       : 'bg-card/40 hover:bg-card border-border/40 hover:border-border/80 opacity-75 hover:opacity-100'
                   }`}
                 >
@@ -147,145 +150,264 @@ export function FysSignatureSection() {
             })}
           </div>
 
-          {/* CENTER COLUMN : The FYS Vector Totem */}
+          {/* CENTER COLUMN : The FYS Vector Totem (Exact Sacred Geometry) */}
           <div className="col-span-4 flex flex-col items-center justify-center relative">
-            <div className="relative w-[220px] h-[580px] flex items-center justify-center">
+            <div className="relative w-[220px] h-[640px] flex items-center justify-center">
               <svg
-                viewBox="0 0 200 600"
-                className="w-full h-full drop-shadow-[0_10px_25px_rgba(31,58,40,0.12)] dark:drop-shadow-[0_10px_25px_rgba(0,0,0,0.5)] transition-all duration-700"
+                viewBox="0 0 200 660"
+                className="w-full h-full drop-shadow-[0_12px_30px_rgba(31,58,40,0.15)] dark:drop-shadow-[0_12px_30px_rgba(0,0,0,0.6)] transition-all duration-700"
               >
-                {/* Vertical Central Baseline Guideline */}
-                <line
-                  x1="100"
-                  y1="10"
-                  x2="100"
-                  y2="590"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                  className="text-border/60"
-                />
-
-                {/* ── 01. L'ÉLAN (Top Capsule) ── */}
+                {/* ── 01. L'ÉLAN (Top Segment: Pointed chevron tip ^ at top, flat bottom) ── */}
                 <g
                   onClick={() => setActiveStep('elan')}
                   className="cursor-pointer group/elan"
                 >
-                  <rect
-                    x="94"
-                    y="25"
-                    width="12"
-                    height="65"
-                    rx="6"
+                  <path
+                    d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z"
                     className={`transition-all duration-500 ${
                       activeStep === 'elan'
-                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.6)]'
+                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_14px_rgba(224,152,46,0.8)]'
                         : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#E0982E]/80'
                     }`}
                   />
-                  {/* Indicator Line to Step 01 */}
-                  {activeStep === 'elan' && (
-                    <circle cx="100" cy="57" r="4" fill="#E0982E" className="animate-ping" />
-                  )}
+                  {/* Leader line to Step 01 (Left) */}
+                  <line
+                    x1="92"
+                    y1="50"
+                    x2="40"
+                    y2="50"
+                    strokeWidth="1.2"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'elan' ? 'stroke-[#E0982E]' : 'stroke-border/50'
+                    }`}
+                  />
+                  <circle
+                    cx="40"
+                    cy="50"
+                    r="3.5"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'elan' ? 'fill-[#E0982E] animate-ping' : 'fill-border/60'
+                    }`}
+                  />
+                  <circle
+                    cx="40"
+                    cy="50"
+                    r="3"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'elan' ? 'fill-[#E0982E]' : 'fill-border/60'
+                    }`}
+                  />
                 </g>
 
-                {/* ── 02. L'HÉRITAGE (Top Double Diamond) ── */}
+                {/* ── 02. L'HÉRITAGE (Top Nested Diamond: Outer Diamond Ring + Inner Solid Diamond) ── */}
                 <g
                   onClick={() => setActiveStep('heritage')}
                   className="cursor-pointer group/heritage"
                 >
+                  {/* Outer Diamond Ring with diamond cutout */}
                   <path
-                    d="M 100 115 L 148 175 L 100 235 L 52 175 Z M 100 138 L 74 175 L 100 212 L 126 175 Z"
+                    d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z"
                     fillRule="evenodd"
                     className={`transition-all duration-500 ${
                       activeStep === 'heritage'
-                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_14px_rgba(63,109,78,0.7)]'
+                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_16px_rgba(63,109,78,0.8)]'
                         : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#3F6D4E]/80'
                     }`}
                   />
-                  {activeStep === 'heritage' && (
-                    <circle cx="148" cy="175" r="4" fill="#E0982E" className="animate-ping" />
-                  )}
+                  {/* Inner Solid Diamond */}
+                  <path
+                    d="M 100,158 L 114,184 L 100,210 L 86,184 Z"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'heritage'
+                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.85)]'
+                        : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#3F6D4E]/80'
+                    }`}
+                  />
+                  {/* Leader line to Step 02 (Right) */}
+                  <line
+                    x1="150"
+                    y1="184"
+                    x2="178"
+                    y2="184"
+                    strokeWidth="1.2"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'heritage' ? 'stroke-[#E0982E]' : 'stroke-border/50'
+                    }`}
+                  />
+                  <circle
+                    cx="178"
+                    cy="184"
+                    r="3.5"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'heritage' ? 'fill-[#E0982E] animate-ping' : 'fill-border/60'
+                    }`}
+                  />
+                  <circle
+                    cx="178"
+                    cy="184"
+                    r="3"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'heritage' ? 'fill-[#E0982E]' : 'fill-border/60'
+                    }`}
+                  />
                 </g>
 
-                {/* ── 03. SOI, AU CENTRE (Concentric Circle + Center Dot) ── */}
+                {/* ── 03. SOI, AU CENTRE (Concentric Circle Ring + Inner Solid Center Dot) ── */}
                 <g
                   onClick={() => setActiveStep('centre')}
                   className="cursor-pointer group/centre"
                 >
-                  {/* Outer Ring */}
+                  {/* Outer Circle Ring */}
                   <circle
                     cx="100"
-                    cy="300"
-                    r="38"
+                    cy="330"
+                    r="44.5"
                     fill="none"
-                    strokeWidth="11"
+                    strokeWidth="15"
                     className={`transition-all duration-500 ${
                       activeStep === 'centre'
-                        ? 'stroke-[#E0982E] filter drop-shadow-[0_0_15px_rgba(224,152,46,0.7)]'
+                        ? 'stroke-[#E0982E] filter drop-shadow-[0_0_18px_rgba(224,152,46,0.8)]'
                         : 'stroke-[#1F3A28] dark:stroke-[#AECBB2] hover:stroke-[#E0982E]/80'
                     }`}
                   />
-                  {/* Inner Dot */}
+                  {/* Inner Solid Center Dot */}
                   <circle
                     cx="100"
-                    cy="300"
-                    r="15"
+                    cy="330"
+                    r="17"
                     className={`transition-all duration-500 ${
                       activeStep === 'centre'
-                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.8)]'
+                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_14px_rgba(224,152,46,0.9)]'
                         : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
                     }`}
                   />
-                  {activeStep === 'centre' && (
-                    <circle cx="62" cy="300" r="4" fill="#E0982E" className="animate-ping" />
-                  )}
+                  {/* Leader line to Step 03 (Left) */}
+                  <line
+                    x1="48"
+                    y1="330"
+                    x2="22"
+                    y2="330"
+                    strokeWidth="1.2"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'centre' ? 'stroke-[#E0982E]' : 'stroke-border/50'
+                    }`}
+                  />
+                  <circle
+                    cx="22"
+                    cy="330"
+                    r="3.5"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'centre' ? 'fill-[#E0982E] animate-ping' : 'fill-border/60'
+                    }`}
+                  />
+                  <circle
+                    cx="22"
+                    cy="330"
+                    r="3"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'centre' ? 'fill-[#E0982E]' : 'fill-border/60'
+                    }`}
+                  />
                 </g>
 
-                {/* ── 04. LA CRÉATION (Bottom Double Diamond) ── */}
+                {/* ── 04. LA CRÉATION (Bottom Nested Diamond: Outer Diamond Ring + Inner Solid Diamond) ── */}
                 <g
                   onClick={() => setActiveStep('creation')}
                   className="cursor-pointer group/creation"
                 >
+                  {/* Outer Diamond Ring with diamond cutout */}
                   <path
-                    d="M 100 365 L 148 425 L 100 485 L 52 425 Z M 100 388 L 74 425 L 100 462 L 126 425 Z"
+                    d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z"
                     fillRule="evenodd"
                     className={`transition-all duration-500 ${
                       activeStep === 'creation'
-                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_14px_rgba(63,109,78,0.7)]'
+                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_16px_rgba(63,109,78,0.8)]'
                         : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#3F6D4E]/80'
                     }`}
                   />
-                  {activeStep === 'creation' && (
-                    <circle cx="148" cy="425" r="4" fill="#E0982E" className="animate-ping" />
-                  )}
+                  {/* Inner Solid Diamond */}
+                  <path
+                    d="M 100,450 L 114,476 L 100,502 L 86,476 Z"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'creation'
+                        ? 'fill-[#E0982E] filter drop-shadow-[0_0_12px_rgba(224,152,46,0.85)]'
+                        : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#3F6D4E]/80'
+                    }`}
+                  />
+                  {/* Leader line to Step 04 (Right) */}
+                  <line
+                    x1="150"
+                    y1="476"
+                    x2="178"
+                    y2="476"
+                    strokeWidth="1.2"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'creation' ? 'stroke-[#E0982E]' : 'stroke-border/50'
+                    }`}
+                  />
+                  <circle
+                    cx="178"
+                    cy="476"
+                    r="3.5"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'creation' ? 'fill-[#E0982E] animate-ping' : 'fill-border/60'
+                    }`}
+                  />
+                  <circle
+                    cx="178"
+                    cy="476"
+                    r="3"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'creation' ? 'fill-[#E0982E]' : 'fill-border/60'
+                    }`}
+                  />
                 </g>
 
-                {/* ── 05. L'ANCRAGE (Bottom Capsule) ── */}
+                {/* ── 05. L'ANCRAGE (Bottom Segment: Flat top, pointed chevron tip v at bottom) ── */}
                 <g
                   onClick={() => setActiveStep('ancrage')}
                   className="cursor-pointer group/ancrage"
                 >
-                  <rect
-                    x="94"
-                    y="510"
-                    width="12"
-                    height="65"
-                    rx="6"
+                  <path
+                    d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z"
                     className={`transition-all duration-500 ${
                       activeStep === 'ancrage'
-                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_12px_rgba(63,109,78,0.7)]'
+                        ? 'fill-[#3F6D4E] filter drop-shadow-[0_0_14px_rgba(63,109,78,0.8)]'
                         : 'fill-[#1F3A28] dark:fill-[#AECBB2] hover:fill-[#3F6D4E]/80'
                     }`}
                   />
-                  {activeStep === 'ancrage' && (
-                    <circle cx="100" cy="542" r="4" fill="#E0982E" className="animate-ping" />
-                  )}
+                  {/* Leader line to Step 05 (Left) */}
+                  <line
+                    x1="92"
+                    y1="610"
+                    x2="40"
+                    y2="610"
+                    strokeWidth="1.2"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'ancrage' ? 'stroke-[#E0982E]' : 'stroke-border/50'
+                    }`}
+                  />
+                  <circle
+                    cx="40"
+                    cy="610"
+                    r="3.5"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'ancrage' ? 'fill-[#E0982E] animate-ping' : 'fill-border/60'
+                    }`}
+                  />
+                  <circle
+                    cx="40"
+                    cy="610"
+                    r="3"
+                    className={`transition-all duration-500 ${
+                      activeStep === 'ancrage' ? 'fill-[#E0982E]' : 'fill-border/60'
+                    }`}
+                  />
                 </g>
               </svg>
             </div>
 
-            {/* Quick helper badge */}
+            {/* Helper exploration badge */}
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-2">
               {t('signature.clickPrompt', 'Cliquez sur un symbole pour explorer')}
             </p>
@@ -302,7 +424,7 @@ export function FysSignatureSection() {
                   onClick={() => setActiveStep(step.id)}
                   className={`group relative p-6 rounded-3xl cursor-pointer border transition-all duration-500 text-left ${
                     isSelected
-                      ? 'bg-card shadow-xl border-primary/40 scale-[1.03] ring-1 ring-primary/20'
+                      ? 'bg-card shadow-xl border-primary/50 scale-[1.03] ring-1 ring-primary/20'
                       : 'bg-card/40 hover:bg-card border-border/40 hover:border-border/80 opacity-75 hover:opacity-100'
                   }`}
                 >
@@ -350,54 +472,76 @@ export function FysSignatureSection() {
         {/* ━━━ MOBILE & TABLET LAYOUT (VERTICAL TIMELINE) ━━━ */}
         <div className="lg:hidden flex flex-col items-center space-y-6">
           {/* Miniature Totem Header */}
-          <div className="w-[140px] h-[360px] p-2 bg-card/60 backdrop-blur-md rounded-3xl border border-border/50 shadow-md">
-            <svg viewBox="0 0 200 600" className="w-full h-full">
-              <line x1="100" y1="10" x2="100" y2="590" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-border/60" />
-              <rect
-                x="94"
-                y="25"
-                width="12"
-                height="65"
-                rx="6"
+          <div className="w-[140px] h-[380px] p-2 bg-card/60 backdrop-blur-md rounded-3xl border border-border/50 shadow-md">
+            <svg viewBox="0 0 200 660" className="w-full h-full">
+              {/* 01 L'Élan */}
+              <path
+                d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z"
                 onClick={() => setActiveStep('elan')}
-                className={`cursor-pointer transition-all ${activeStep === 'elan' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'}`}
+                className={`cursor-pointer transition-all ${
+                  activeStep === 'elan' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                }`}
               />
+              {/* 02 L'Héritage */}
+              <g onClick={() => setActiveStep('heritage')} className="cursor-pointer">
+                <path
+                  d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z"
+                  fillRule="evenodd"
+                  className={`transition-all ${
+                    activeStep === 'heritage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                  }`}
+                />
+                <path
+                  d="M 100,158 L 114,184 L 100,210 L 86,184 Z"
+                  className={`transition-all ${
+                    activeStep === 'heritage' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                  }`}
+                />
+              </g>
+              {/* 03 Soi, au centre */}
+              <g onClick={() => setActiveStep('centre')} className="cursor-pointer">
+                <circle
+                  cx="100"
+                  cy="330"
+                  r="44.5"
+                  fill="none"
+                  strokeWidth="15"
+                  className={`transition-all ${
+                    activeStep === 'centre' ? 'stroke-[#E0982E]' : 'stroke-[#1F3A28] dark:stroke-[#AECBB2]'
+                  }`}
+                />
+                <circle
+                  cx="100"
+                  cy="330"
+                  r="17"
+                  className={`transition-all ${
+                    activeStep === 'centre' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                  }`}
+                />
+              </g>
+              {/* 04 La Création */}
+              <g onClick={() => setActiveStep('creation')} className="cursor-pointer">
+                <path
+                  d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z"
+                  fillRule="evenodd"
+                  className={`transition-all ${
+                    activeStep === 'creation' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                  }`}
+                />
+                <path
+                  d="M 100,450 L 114,476 L 100,502 L 86,476 Z"
+                  className={`transition-all ${
+                    activeStep === 'creation' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                  }`}
+                />
+              </g>
+              {/* 05 L'Ancrage */}
               <path
-                d="M 100 115 L 148 175 L 100 235 L 52 175 Z M 100 138 L 74 175 L 100 212 L 126 175 Z"
-                fillRule="evenodd"
-                onClick={() => setActiveStep('heritage')}
-                className={`cursor-pointer transition-all ${activeStep === 'heritage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'}`}
-              />
-              <circle
-                cx="100"
-                cy="300"
-                r="38"
-                fill="none"
-                strokeWidth="11"
-                onClick={() => setActiveStep('centre')}
-                className={`cursor-pointer transition-all ${activeStep === 'centre' ? 'stroke-[#E0982E]' : 'stroke-[#1F3A28] dark:stroke-[#AECBB2]'}`}
-              />
-              <circle
-                cx="100"
-                cy="300"
-                r="15"
-                onClick={() => setActiveStep('centre')}
-                className={`cursor-pointer transition-all ${activeStep === 'centre' ? 'fill-[#E0982E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'}`}
-              />
-              <path
-                d="M 100 365 L 148 425 L 100 485 L 52 425 Z M 100 388 L 74 425 L 100 462 L 126 425 Z"
-                fillRule="evenodd"
-                onClick={() => setActiveStep('creation')}
-                className={`cursor-pointer transition-all ${activeStep === 'creation' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'}`}
-              />
-              <rect
-                x="94"
-                y="510"
-                width="12"
-                height="65"
-                rx="6"
+                d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z"
                 onClick={() => setActiveStep('ancrage')}
-                className={`cursor-pointer transition-all ${activeStep === 'ancrage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'}`}
+                className={`cursor-pointer transition-all ${
+                  activeStep === 'ancrage' ? 'fill-[#3F6D4E]' : 'fill-[#1F3A28] dark:fill-[#AECBB2]'
+                }`}
               />
             </svg>
           </div>
@@ -443,15 +587,17 @@ export function FysSignatureSection() {
         {/* ━━━ BOTTOM EMBLEM & LOGO INTEGRATION BANNER ━━━ */}
         <div className="mt-16 md:mt-24 p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-card/80 to-card border border-border/60 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           <div className="flex items-center gap-5">
-            <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-              {/* Standalone Totem mini icon */}
-              <svg viewBox="0 0 100 200" className="size-10 text-primary">
-                <rect x="47" y="10" width="6" height="25" rx="3" fill="currentColor" />
-                <path d="M 50 45 L 70 70 L 50 95 L 30 70 Z M 50 55 L 40 70 L 50 85 L 60 70 Z" fillRule="evenodd" fill="currentColor" />
-                <circle cx="50" cy="115" r="16" fill="none" stroke="currentColor" strokeWidth="5" />
-                <circle cx="50" cy="115" r="6" fill="currentColor" />
-                <path d="M 50 135 L 70 160 L 50 185 L 30 160 Z M 50 145 L 40 160 L 50 175 L 60 160 Z" fillRule="evenodd" fill="currentColor" />
-                <rect x="47" y="190" width="6" height="25" rx="3" fill="currentColor" />
+            <div className="size-18 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 p-2">
+              {/* Standalone Totem mini icon matching the exact sacred geometry */}
+              <svg viewBox="0 0 200 660" className="size-12 text-primary">
+                <path d="M 92.5,18 L 100,10 L 107.5,18 L 107.5,90 L 92.5,90 Z" fill="currentColor" />
+                <path d="M 100,104 L 150,184 L 100,264 L 50,184 Z M 100,130 L 67,184 L 100,238 L 133,184 Z" fillRule="evenodd" fill="currentColor" />
+                <path d="M 100,158 L 114,184 L 100,210 L 86,184 Z" fill="currentColor" />
+                <circle cx="100" cy="330" r="44.5" fill="none" stroke="currentColor" strokeWidth="15" />
+                <circle cx="100" cy="330" r="17" fill="currentColor" />
+                <path d="M 100,396 L 150,476 L 100,556 L 50,476 Z M 100,422 L 67,476 L 100,530 L 133,476 Z" fillRule="evenodd" fill="currentColor" />
+                <path d="M 100,450 L 114,476 L 100,502 L 86,476 Z" fill="currentColor" />
+                <path d="M 92.5,570 L 107.5,570 L 107.5,642 L 100,650 L 92.5,642 Z" fill="currentColor" />
               </svg>
             </div>
             <div>
