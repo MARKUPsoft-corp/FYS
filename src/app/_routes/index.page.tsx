@@ -31,6 +31,7 @@ const RootIndex: PageComponent = () => {
   const { actualTheme, setTheme } = useTheme();
   const { fruits, isLoading: fruitsLoading } = useFruitsRealtime();
   const { t, i18n } = useTranslation();
+  const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
 
   const [activeSection, setActiveSection] = useState('home');
