@@ -16,6 +16,7 @@ import { getLandingImagesSettings, getPricingSettings } from '@/services/setting
 import { getPublicCocktails } from '@/services/cocktail';
 import { CocktailType, type Cocktail } from '@/entities/cocktail';
 import { DEFAULT_LANDING_IMAGES } from '@/entities';
+import { MOCK_COCKTAILS } from '@/data/mock-cocktails';
 import { FysSignatureSection } from '@/components/features/landing/FysSignatureSection';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 import { AfricanSectionBackground } from '@/components/common/AfricanSectionBackground';
@@ -33,14 +34,14 @@ const RootIndex: PageComponent = () => {
   const { t, i18n } = useTranslation();
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
-  const [stackedState, setStackedState] = useState<{ c0: boolean; c1: boolean; c0Deep: boolean }>({
-    c0: false,
-    c1: false,
-    c0Deep: false,
-  });
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [hoveredStatIndex, setHoveredStatIndex] = useState<number | null>(null);
-  const [hoveredCocktailIndex, setHoveredCocktailIndex] = useState<number | null>(null);
+  // États & refs pour les 3 decks de cartes empilables (Stats, Étapes, Catalogue)
+  const statsCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const processCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const catalogueCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const [coveredStats, setCoveredStats] = useState<Record<number, boolean>>({});
+  const [coveredProcess, setCoveredProcess] = useState<Record<number, boolean>>({});
+  const [coveredCatalogue, setCoveredCatalogue] = useState<Record<number, boolean>>({});
 
   const [activeSection, setActiveSection] = useState('home');
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -83,6 +84,11 @@ const RootIndex: PageComponent = () => {
     staleTime: 1000 * 60 * 5,
   });
 
+  const displayedCocktails = useMemo(() => {
+    if (catalogCocktails.length > 0) return catalogCocktails;
+    return MOCK_COCKTAILS.slice(0, 4);
+  }, [catalogCocktails]);
+
   // Suivi de la section active
   useEffect(() => {
     const handleScroll = () => {
@@ -104,63 +110,110 @@ const RootIndex: PageComponent = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Détection du chevauchement des cartes pour l'effet d'empilement diagonal et rebond
+  // Calculateur de styles d'empilement sticky, inclinaison oblique et rebond élastique
+  const getStackCardStyle = (
+    index: number,
+    coveredMap: Record<number, boolean>,
+    tabHeight = 44
+  ) => {
+    const isCovered = !!coveredMap[index];
+    const isDeepCovered = isCovered && !!coveredMap[index + 1];
+
+    let transform = 'rotate(0deg) scale(1) translateY(0px)';
+    let filter = 'brightness(1)';
+    let shadow = '0 -6px 25px rgba(0,0,0,0.08), 0 25px 60px rgba(0,0,0,0.18)';
+
+    if (isDeepCovered) {
+      // Empilée sous 2 cartes ou plus : inclinaison oblique accentuée
+      const angle = index % 2 === 0 ? -4.5 : 4.5;
+      transform = `rotate(${angle}deg) scale(0.94) translateY(-10px)`;
+      filter = 'brightness(0.90)';
+      shadow = '0 -4px 18px rgba(0,0,0,0.14), 0 18px 40px rgba(0,0,0,0.22)';
+    } else if (isCovered) {
+      // Empilée sous la carte suivante : inclinaison oblique diagonale
+      const angle = index % 2 === 0 ? -3.0 : 3.0;
+      transform = `rotate(${angle}deg) scale(0.97) translateY(-5px)`;
+      filter = 'brightness(0.94)';
+      shadow = '0 -4px 18px rgba(0,0,0,0.12), 0 20px 45px rgba(0,0,0,0.20)';
+    }
+
+    return {
+      position: 'sticky' as const,
+      top: `calc(4.75rem + ${index * tabHeight}px)`,
+      zIndex: 10 + index,
+      transform,
+      transformOrigin: 'top center',
+      filter,
+      boxShadow: shadow,
+      transition: 'transform 0.75s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, box-shadow 0.4s ease',
+      willChange: 'transform',
+    };
+  };
+
+  // Détection du chevauchement pour les 3 decks de cartes (Stats, Étapes, Catalogue)
   useEffect(() => {
     let ticking = false;
 
-    const updateStackState = () => {
-      const card1 = cardRefs.current[1];
-      const card2 = cardRefs.current[2];
-      if (!card1 && !card2) {
-        ticking = false;
-        return;
-      }
-
+    const updateAllStacks = () => {
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const stickyTop1 = 4.75 * rem + 44;
-      const stickyTop2 = 4.75 * rem + 88;
+      const baseStickyTop = 4.75 * rem; // ~76px
 
-      let c0 = false;
-      let c1 = false;
-      let c0Deep = false;
-
-      if (card1) {
-        const top1 = card1.getBoundingClientRect().top;
-        // La carte 0 commence à s'incliner dès que la carte 1 arrive à proximité de son ancrage
-        c0 = top1 <= stickyTop1 + 55;
-      }
-
-      if (card2) {
-        const top2 = card2.getBoundingClientRect().top;
-        // La carte 1 commence à s'incliner dès que la carte 2 arrive à proximité de son ancrage
-        c1 = top2 <= stickyTop2 + 55;
-        c0Deep = c1;
-      }
-
-      setStackedState((prev) => {
-        if (prev.c0 === c0 && prev.c1 === c1 && prev.c0Deep === c0Deep) return prev;
-        return { c0, c1, c0Deep };
+      // 1. Stats stack (tab height 40px)
+      const nextCoveredStats: Record<number, boolean> = {};
+      statsCardRefs.current.forEach((_, idx) => {
+        const nextCard = statsCardRefs.current[idx + 1];
+        if (nextCard) {
+          const nextTop = nextCard.getBoundingClientRect().top;
+          const targetTop = baseStickyTop + (idx + 1) * 40;
+          nextCoveredStats[idx] = nextTop <= targetTop + 50;
+        }
       });
+
+      // 2. Process stack ("Comment ça marche", tab height 44px)
+      const nextCoveredProcess: Record<number, boolean> = {};
+      processCardRefs.current.forEach((_, idx) => {
+        const nextCard = processCardRefs.current[idx + 1];
+        if (nextCard) {
+          const nextTop = nextCard.getBoundingClientRect().top;
+          const targetTop = baseStickyTop + (idx + 1) * 44;
+          nextCoveredProcess[idx] = nextTop <= targetTop + 50;
+        }
+      });
+
+      // 3. Catalogue stack (tab height 42px)
+      const nextCoveredCatalogue: Record<number, boolean> = {};
+      catalogueCardRefs.current.forEach((_, idx) => {
+        const nextCard = catalogueCardRefs.current[idx + 1];
+        if (nextCard) {
+          const nextTop = nextCard.getBoundingClientRect().top;
+          const targetTop = baseStickyTop + (idx + 1) * 42;
+          nextCoveredCatalogue[idx] = nextTop <= targetTop + 50;
+        }
+      });
+
+      setCoveredStats(nextCoveredStats);
+      setCoveredProcess(nextCoveredProcess);
+      setCoveredCatalogue(nextCoveredCatalogue);
 
       ticking = false;
     };
 
     const onScrollOrResize = () => {
       if (!ticking) {
-        window.requestAnimationFrame(updateStackState);
+        window.requestAnimationFrame(updateAllStacks);
         ticking = true;
       }
     };
 
     window.addEventListener('scroll', onScrollOrResize, { passive: true });
     window.addEventListener('resize', onScrollOrResize, { passive: true });
-    updateStackState();
+    updateAllStacks();
 
     return () => {
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
     };
-  }, []);
+  }, [displayedCocktails.length]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -580,11 +633,12 @@ const RootIndex: PageComponent = () => {
         </div>
       </section>
 {/* ━━━ STATS BAR ━━━ */}
-      <section className="py-12 md:py-16 px-5 md:px-8 relative z-10 overflow-hidden">
+      {/* ━━━ STATS BAR (STACKING CARDS) ━━━ */}
+      <section id="stats" className="py-14 md:py-24 px-4 sm:px-6 md:px-8 relative z-10 overflow-visible scroll-mt-20">
         <AfricanSectionBackground pattern="grassfields-chevrons" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
         <div className="max-w-5xl mx-auto relative z-10">
           {/* ── Bouton express 'Composer mon jus' (accès direct sans scroll) ── */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 md:mb-10 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 md:mb-14 text-center">
             <Link
               to="/lab"
               className="group inline-flex items-center justify-center gap-3.5 h-14 sm:h-16 px-8 sm:px-10 rounded-full bg-primary text-primary-foreground font-extrabold text-base sm:text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer ring-4 ring-primary/20"
@@ -599,66 +653,181 @@ const RootIndex: PageComponent = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
-          {[
-            { value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`, label: t('home.customer.labStatsFruits'), icon: Leaf, color: '#3F6D4E' },
-            { value: '2 min', label: t('home.customer.labStatsTime'), icon: Zap, color: '#E0982E' },
-            { value: '100%', label: t('landing.hero.statsNatural'), icon: ShieldCheck, color: '#F2694A' },
-            { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: t('landing.hero.statsRecipes'), icon: Users, color: '#AECBB2' },
-          ].map((stat, i) => {
-            const isHovered = hoveredStatIndex === i;
-            const isPreviousOfHovered = hoveredStatIndex !== null && hoveredStatIndex - 1 === i;
-            const isNextOfHovered = hoveredStatIndex !== null && hoveredStatIndex + 1 === i;
+          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-12 md:mb-16 space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#3F6D4E]/12 text-[#2d5239] dark:text-[#a0c5ab] border border-[#3F6D4E]/25 font-bold text-xs uppercase tracking-wider">
+              <Sparkles className="size-3.5 text-[#3F6D4E]" />
+              <span>Chiffres Clés & Engagements</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
+              La Pureté FYS en <span className="text-[#3F6D4E]">4 Piliers</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl">
+              Une alliance unique entre fraîcheur brute du terroir et intelligence nutritionnelle sur-mesure.
+            </p>
+          </div>
 
-            let statTransform = 'rotate(0deg) scale(1) translateY(0px)';
-            let statZIndex = 1;
-            let statShadow = '0 8px 30px rgb(0,0,0,0.06)';
-            let statFilter = 'brightness(1)';
+          {/* ── STACKING CARDS CONTAINER (STATS) ── */}
+          <div className="relative max-w-4xl mx-auto space-y-12 sm:space-y-16 md:space-y-24 pb-20 md:pb-28">
+            {[
+              {
+                step: '01',
+                tagline: 'Fruits du terroir',
+                badgeText: 'Pilier 01 · Terroir & Fraîcheur',
+                value: fruitsLoading || fruits.length === 0 ? '30+' : `${fruits.length}+`,
+                title: 'Plus de 30 fruits frais & locaux',
+                desc: 'Cueillis à parfaite maturité auprès des coopératives partenaires du Cameroun : corossol, ananas victoria, mangue sauvage, passion, goyave et agrumes gorgés de soleil.',
+                color: '#3F6D4E',
+                accentBorder: 'border-[#3F6D4E]/40 dark:border-[#3F6D4E]/50',
+                headerBg: 'bg-[#3F6D4E]/12 dark:bg-[#3F6D4E]/20',
+                cardBg: 'bg-card dark:bg-[#151c17]',
+                icon: Leaf,
+                features: ['100% Fruits camerounais', 'Cueillis à maturité optimale', 'Riche en antioxydants'],
+                ctaText: 'Explorer les fruits au Lab',
+                ctaLink: '/lab',
+              },
+              {
+                step: '02',
+                tagline: 'Rapidité & Fraîcheur',
+                badgeText: 'Pilier 02 · Vitesse & Vitalité',
+                value: '2 min',
+                title: 'Pressé à froid en 2 minutes chrono',
+                desc: 'Votre recette est extraite à la commande par pression douce instantanée. Zéro temps de stockage préalable, pour préserver 100% des vitamines et enzymes vivantes.',
+                color: '#E0982E',
+                accentBorder: 'border-[#E0982E]/45 dark:border-[#E0982E]/55',
+                headerBg: 'bg-[#E0982E]/12 dark:bg-[#E0982E]/20',
+                cardBg: 'bg-card dark:bg-[#1c1914]',
+                icon: Zap,
+                features: ['Pressage doux à froid', 'Préparation instantanée', 'Zéro attente en bar'],
+                ctaText: 'Créer mon jus express',
+                ctaLink: '/lab',
+              },
+              {
+                step: '03',
+                tagline: 'Pureté Absolue',
+                badgeText: 'Pilier 03 · Zéro Compromis',
+                value: '100%',
+                title: '100% Brut & Zéro Sucre Ajouté',
+                desc: 'Aucun conservateur, aucun colorant, aucun sirop ni édulcorant artificiel, et aucune dilution à l’eau. Seul le jus pur extrait des fruits entre dans votre bouteille.',
+                color: '#F2694A',
+                accentBorder: 'border-[#F2694A]/40 dark:border-[#F2694A]/50',
+                headerBg: 'bg-[#F2694A]/12 dark:bg-[#F2694A]/20',
+                cardBg: 'bg-card dark:bg-[#1a1715]',
+                icon: ShieldCheck,
+                features: ['Zéro sucre raffiné', 'Sans conservateur', 'Sans aucune eau ajoutée'],
+                ctaText: 'Consulter la charte qualité',
+                ctaLink: '/lab?tab=nutrifys',
+              },
+              {
+                step: '04',
+                tagline: 'Intelligence Nutritionnelle',
+                badgeText: 'Pilier 04 · Bilan IA NutriFYS',
+                value: recipesCount === null ? '500+' : `${recipesCount}+`,
+                title: 'Plus de 500 formules validées',
+                desc: 'Chaque combinaison créée par la communauté est analysée par notre assistant nutritionnel selon vos objectifs personnels : énergie, confort digestif, immunité ou détox.',
+                color: '#3F6D4E',
+                accentBorder: 'border-[#3F6D4E]/40 dark:border-[#3F6D4E]/50',
+                headerBg: 'bg-[#3F6D4E]/12 dark:bg-[#3F6D4E]/20',
+                cardBg: 'bg-card dark:bg-[#151c17]',
+                icon: Users,
+                features: ['Assistant IA NutriFYS', 'Indices glycémiques & vitamines', 'Profil santé sur-mesure'],
+                ctaText: 'Tester l’assistant NutriFYS',
+                ctaLink: '/lab?tab=nutrifys',
+              },
+            ].map((stat, i) => {
+              const cardStyle = getStackCardStyle(i, coveredStats, 40);
 
-            if (isHovered) {
-              // Carte active : élévation franche avec rebond pop
-              statTransform = 'rotate(0deg) scale(1.06) translateY(-8px)';
-              statZIndex = 25;
-              statShadow = '0 20px 45px rgba(0,0,0,0.16), 0 0 25px rgba(242,105,74,0.14)';
-            } else if (isPreviousOfHovered) {
-              // Carte précédente : s'incline obliquement en diagonale vers la gauche
-              statTransform = 'rotate(-3.5deg) scale(0.96) translateY(-3px)';
-              statZIndex = 5;
-              statFilter = 'brightness(0.95)';
-            } else if (isNextOfHovered) {
-              // Carte suivante : s'incline légèrement en diagonale vers la droite
-              statTransform = 'rotate(2.5deg) scale(0.97) translateY(-2px)';
-              statZIndex = 5;
-              statFilter = 'brightness(0.96)';
-            }
+              return (
+                <div
+                  key={i}
+                  ref={(el) => {
+                    statsCardRefs.current[i] = el;
+                  }}
+                  style={cardStyle}
+                  className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${stat.accentBorder} ${stat.cardBg} overflow-hidden group`}
+                >
+                  <AfricanCornerPattern section="stats" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
 
-            return (
-              <div
-                key={i}
-                onMouseEnter={() => setHoveredStatIndex(i)}
-                onMouseLeave={() => setHoveredStatIndex(null)}
-                onTouchStart={() => setHoveredStatIndex(i)}
-                style={{
-                  transform: statTransform,
-                  zIndex: statZIndex,
-                  boxShadow: statShadow,
-                  filter: statFilter,
-                  transformOrigin: 'bottom center',
-                  transition: 'transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, filter 0.4s ease',
-                  willChange: 'transform',
-                  animationDelay: `${i * 100}ms`,
-                }}
-                className="bg-card rounded-3xl p-6 md:p-8 text-center border border-border/40 flex flex-col items-center gap-3 scroll-animate opacity-0 relative overflow-hidden group cursor-pointer"
-              >
-                <AfricanCornerPattern section="stats" index={i} size="sm" className="opacity-15 group-hover:opacity-35" />
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
-                  <stat.icon className="w-6 h-6" />
+                  {/* Top Stacking Tab Strip */}
+                  <div className={`px-4 sm:px-8 md:px-10 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-border/40 ${stat.headerBg} backdrop-blur-md`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <span
+                        className="inline-flex items-center justify-center size-6 sm:size-7 md:size-8 rounded-full text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs font-display shrink-0"
+                        style={{ backgroundColor: stat.color }}
+                      >
+                        {stat.step}
+                      </span>
+                      <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-foreground">
+                        {stat.tagline}
+                      </span>
+                    </div>
+
+                    <span className="text-[11px] font-bold text-muted-foreground hidden sm:inline-flex items-center gap-1.5">
+                      <span>Pilier {stat.step} / 04</span>
+                    </span>
+                  </div>
+
+                  {/* Main Card Content */}
+                  <div className="p-4 sm:p-6 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-10 items-center">
+                    {/* Left: Stat & Details (7 cols) */}
+                    <div className="lg:col-span-7 space-y-3 sm:space-y-4 md:space-y-5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
+                          <span className="size-1.5 rounded-full" style={{ backgroundColor: stat.color }} />
+                          {stat.badgeText}
+                        </div>
+                        <h3 className="font-display font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-4xl text-foreground tracking-tight">
+                          {stat.title}
+                        </h3>
+                        <p className="text-muted-foreground text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed">
+                          {stat.desc}
+                        </p>
+                      </div>
+
+                      {/* Feature pills */}
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
+                        {stat.features.map((feat, fIdx) => (
+                          <span
+                            key={fIdx}
+                            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
+                          >
+                            <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: stat.color }} />
+                            <span>{feat}</span>
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* CTA Link */}
+                      <div className="pt-1 sm:pt-2">
+                        <Link
+                          to={stat.ctaLink}
+                          className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                          style={{ backgroundColor: stat.color }}
+                        >
+                          <span>{stat.ctaText}</span>
+                          <ChevronRight className="size-4" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Right: Giant Stat & Glowing Emblem (5 cols) */}
+                    <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-muted/20 border border-border/40 relative overflow-hidden text-center group/stat">
+                      <div
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mb-3 shadow-lg transition-transform duration-500 group-hover/stat:scale-110"
+                        style={{ backgroundColor: `color-mix(in srgb, ${stat.color} 18%, transparent)`, color: stat.color }}
+                      >
+                        <stat.icon className="size-10 sm:size-12" />
+                      </div>
+                      <p className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight" style={{ color: stat.color, fontFamily: 'var(--font-display)' }}>
+                        {stat.value}
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground font-bold mt-1 uppercase tracking-wider">
+                        {stat.tagline}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-2xl md:text-3xl font-extrabold text-foreground" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</p>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -752,49 +921,15 @@ const RootIndex: PageComponent = () => {
                 ctaLink: '#catalogue',
               },
             ].map((item, i) => {
-              // Styles dynamiques pour l'effet d'inclinaison diagonale et rebond élastique
-              let cardTransform = 'rotate(0deg) scale(1) translateY(0px)';
-              let cardFilter = 'brightness(1)';
-              let cardShadow = '0 -6px 25px rgba(0,0,0,0.08), 0 25px 60px rgba(0,0,0,0.18)';
-
-              if (i === 0) {
-                if (stackedState.c0Deep) {
-                  // Couverte par les étapes 2 et 3 : inclinaison diagonale gauche accentuée
-                  cardTransform = 'rotate(-4.2deg) scale(0.95) translateY(-8px)';
-                  cardFilter = 'brightness(0.90)';
-                  cardShadow = '0 -4px 18px rgba(0,0,0,0.14), 0 18px 40px rgba(0,0,0,0.22)';
-                } else if (stackedState.c0) {
-                  // Couverte par l'étape 2 : inclinaison diagonale gauche
-                  cardTransform = 'rotate(-2.8deg) scale(0.97) translateY(-5px)';
-                  cardFilter = 'brightness(0.94)';
-                  cardShadow = '0 -4px 18px rgba(0,0,0,0.12), 0 20px 45px rgba(0,0,0,0.20)';
-                }
-              } else if (i === 1) {
-                if (stackedState.c1) {
-                  // Couverte par l'étape 3 : inclinaison diagonale droite
-                  cardTransform = 'rotate(2.8deg) scale(0.97) translateY(-5px)';
-                  cardFilter = 'brightness(0.94)';
-                  cardShadow = '0 -4px 18px rgba(0,0,0,0.12), 0 20px 45px rgba(0,0,0,0.20)';
-                }
-              }
+              const cardStyle = getStackCardStyle(i, coveredProcess, 44);
 
               return (
                 <div
                   key={i}
                   ref={(el) => {
-                    cardRefs.current[i] = el;
+                    processCardRefs.current[i] = el;
                   }}
-                  style={{
-                    position: 'sticky',
-                    top: `calc(4.75rem + ${i * 44}px)`,
-                    zIndex: 10 + i,
-                    transform: cardTransform,
-                    transformOrigin: 'top center',
-                    filter: cardFilter,
-                    boxShadow: cardShadow,
-                    transition: 'transform 0.75s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, box-shadow 0.4s ease',
-                    willChange: 'transform',
-                  }}
+                  style={cardStyle}
                   className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} overflow-hidden group`}
                 >
                   <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
@@ -893,105 +1028,178 @@ const RootIndex: PageComponent = () => {
       </div>
 
 
-      {/* ━━━ NOS CRÉATIONS / CATALOGUE ━━━ */}
-      {catalogCocktails.length > 0 && (
-        <section id="catalogue" className="py-20 px-5 md:px-8 relative overflow-hidden bg-background scroll-mt-24">
+      {/* ━━━ NOS CRÉATIONS / CATALOGUE (STACKING CARDS) ━━━ */}
+      {displayedCocktails.length > 0 && (
+        <section id="catalogue" className="py-14 md:py-24 px-4 sm:px-6 md:px-8 relative overflow-visible bg-background scroll-mt-24">
           <AfricanSectionBackground pattern="seeds-sun" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-sm">
+          <div className="max-w-5xl mx-auto relative z-10">
+            <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-14 md:mb-20 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
                 <GlassWater className="size-4" />
-                Notre Carte
+                <span>Notre Carte Exclusive</span>
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-                Découvrez notre <span className="text-primary">catalogue</span>
+                Découvrez nos <span className="text-primary">Créations Signatures</span>
               </h2>
-              <p className="text-muted-foreground text-lg">
-                Des recettes exclusives créées par nos experts, prêtes à être commandées et livrées chez vous.
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl">
+                Des recettes exclusives pressées à froid, élaborées par nos mixologues et prêtes à être commandées.
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {catalogCocktails.map((cocktail, i) => {
-                const isHovered = hoveredCocktailIndex === i;
-                const isPreviousOfHovered = hoveredCocktailIndex !== null && hoveredCocktailIndex - 1 === i;
-                const isNextOfHovered = hoveredCocktailIndex !== null && hoveredCocktailIndex + 1 === i;
+            {/* ── STACKING CARDS CONTAINER (CATALOGUE) ── */}
+            <div className="relative max-w-4xl mx-auto space-y-12 sm:space-y-16 md:space-y-24 pb-20 md:pb-32">
+              {displayedCocktails.map((cocktail, i) => {
+                const cardStyle = getStackCardStyle(i, coveredCatalogue, 44);
+                const colorPalette = [
+                  {
+                    color: '#3F6D4E',
+                    accentBorder: 'border-[#3F6D4E]/40 dark:border-[#3F6D4E]/50',
+                    headerBg: 'bg-[#3F6D4E]/12 dark:bg-[#3F6D4E]/20',
+                    cardBg: 'bg-card dark:bg-[#151c17]',
+                  },
+                  {
+                    color: '#F2694A',
+                    accentBorder: 'border-[#F2694A]/40 dark:border-[#F2694A]/50',
+                    headerBg: 'bg-[#F2694A]/12 dark:bg-[#F2694A]/20',
+                    cardBg: 'bg-card dark:bg-[#1a1715]',
+                  },
+                  {
+                    color: '#E0982E',
+                    accentBorder: 'border-[#E0982E]/45 dark:border-[#E0982E]/55',
+                    headerBg: 'bg-[#E0982E]/12 dark:bg-[#E0982E]/20',
+                    cardBg: 'bg-card dark:bg-[#1c1914]',
+                  },
+                ][i % 3];
 
-                let cocktailTransform = 'rotate(0deg) scale(1) translateY(0px)';
-                let cocktailZIndex = 1;
-                let cocktailShadow = '0 4px 20px rgba(0,0,0,0.06)';
-                let cocktailFilter = 'brightness(1)';
-
-                if (isHovered) {
-                  // Carte active : élévation franche avec rebond élastique
-                  cocktailTransform = 'rotate(0deg) scale(1.04) translateY(-10px)';
-                  cocktailZIndex = 25;
-                  cocktailShadow = '0 25px 50px rgba(0,0,0,0.22), 0 0 30px rgba(63,109,78,0.18)';
-                } else if (isPreviousOfHovered) {
-                  // Carte précédente : s'incline obliquement en diagonale vers la gauche
-                  cocktailTransform = 'rotate(-3.5deg) scale(0.96) translateY(-4px)';
-                  cocktailZIndex = 5;
-                  cocktailFilter = 'brightness(0.94)';
-                } else if (isNextOfHovered) {
-                  // Carte suivante : s'incline légèrement en diagonale vers la droite
-                  cocktailTransform = 'rotate(2.5deg) scale(0.97) translateY(-3px)';
-                  cocktailZIndex = 5;
-                  cocktailFilter = 'brightness(0.96)';
-                }
+                const priceText = cocktail.containers && cocktail.containers.length > 0
+                  ? `Dès ${(cocktail.containers.find((c) => c.price != null)?.price ?? cocktail.totalPrice).toLocaleString()} XAF`
+                  : `${cocktail.totalPrice.toLocaleString()} XAF`;
 
                 return (
                   <div
-                    key={cocktail.id}
-                    onMouseEnter={() => setHoveredCocktailIndex(i)}
-                    onMouseLeave={() => setHoveredCocktailIndex(null)}
-                    onTouchStart={() => setHoveredCocktailIndex(i)}
-                    style={{
-                      transform: cocktailTransform,
-                      zIndex: cocktailZIndex,
-                      boxShadow: cocktailShadow,
-                      filter: cocktailFilter,
-                      transformOrigin: 'bottom center',
-                      transition: 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, filter 0.4s ease',
-                      willChange: 'transform',
+                    key={cocktail.id || i}
+                    ref={(el) => {
+                      catalogueCardRefs.current[i] = el;
                     }}
-                    className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden cursor-pointer"
+                    style={cardStyle}
+                    className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${colorPalette.accentBorder} ${colorPalette.cardBg} overflow-hidden group`}
                   >
-                    <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
-                    <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
-                      {cocktail.imageUrl ? (
-                        <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
-                          <GlassWater className="size-16 mb-4 opacity-20" />
-                          <span className="text-sm font-medium">Image à venir</span>
-                        </div>
-                      )}
-                      {cocktail.tag && (
-                        <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10">
-                          {cocktail.tag}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 md:opacity-80 z-0" />
-                      
-                      <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                        <h3 className="text-white font-display font-bold text-xl md:text-2xl mb-1 drop-shadow-sm">{cocktail.name}</h3>
-                        {cocktail.description && (
-                          <p className="text-white/80 text-sm line-clamp-2 leading-relaxed mb-4">
-                            {cocktail.description}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
-                            {cocktail.containers && cocktail.containers.length > 0 
-                              ? 'Dès ' + (cocktail.containers.find(c => c.price != null)?.price ?? cocktail.totalPrice) + ' XAF'
-                              : cocktail.totalPrice + ' XAF'
-                            }
+                    <AfricanCornerPattern section="catalogue" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
+
+                    {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
+                    <div className={`px-4 sm:px-8 md:px-10 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-border/40 ${colorPalette.headerBg} backdrop-blur-md`}>
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <span
+                          className="inline-flex items-center justify-center size-6 sm:size-7 md:size-8 rounded-full text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs font-display shrink-0"
+                          style={{ backgroundColor: colorPalette.color }}
+                        >
+                          {`0${i + 1}`}
+                        </span>
+                        <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-foreground">
+                          {cocktail.name}
+                        </span>
+                        {cocktail.tag && (
+                          <span
+                            className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide text-white"
+                            style={{ backgroundColor: colorPalette.color }}
+                          >
+                            {cocktail.tag}
                           </span>
-                          
-                          <Button onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
-                            <Plus className="size-5" />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-black text-foreground bg-background/60 backdrop-blur-md px-3 py-1 rounded-xl border border-border/50">
+                          {priceText}
+                        </span>
+                        <span className="text-[11px] font-bold text-muted-foreground hidden md:inline-flex items-center gap-1">
+                          <span>{i + 1} / {displayedCocktails.length}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Main Card Content */}
+                    <div className="p-4 sm:p-6 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-10 items-center">
+                      {/* Left: Info, Ingredients & CTA (7 cols) */}
+                      <div className="lg:col-span-7 space-y-3 sm:space-y-4 md:space-y-5">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <div
+                            className="inline-flex items-center gap-2 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider"
+                            style={{ backgroundColor: `color-mix(in srgb, ${colorPalette.color} 15%, transparent)`, color: colorPalette.color }}
+                          >
+                            <GlassWater className="size-3.5" />
+                            <span>{cocktail.tag || 'Création Signature FYS'}</span>
+                          </div>
+                          <h3 className="font-display font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-4xl text-foreground tracking-tight">
+                            {cocktail.name}
+                          </h3>
+                          <p className="text-muted-foreground text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed">
+                            {cocktail.description || 'Un assemblage unique de fruits frais du terroir, pressé à froid à la commande sans aucun conservateur ni sucre ajouté.'}
+                          </p>
+                        </div>
+
+                        {/* Fruit / Ingredients Pills */}
+                        {cocktail.ingredients && cocktail.ingredients.length > 0 && (
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-muted-foreground">
+                              Composition pure
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                              {cocktail.ingredients.map((ing, ingIdx) => (
+                                <span
+                                  key={ingIdx}
+                                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
+                                >
+                                  <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: colorPalette.color }} />
+                                  <span>{ing.fruitName}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CTA & Price Action */}
+                        <div className="pt-2 flex flex-wrap items-center gap-3">
+                          <Button
+                            onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)}
+                            className="inline-flex items-center gap-2 h-11 sm:h-12 px-6 sm:px-7 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                            style={{ backgroundColor: colorPalette.color }}
+                          >
+                            <Plus className="size-4" />
+                            <span>Commander ce cocktail</span>
+                            <ArrowRight className="size-4 ml-1" />
                           </Button>
+                          <span className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                            {priceText}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: Visual Image (5 cols) */}
+                      <div className="lg:col-span-5">
+                        <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[21/9] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
+                          {cocktail.imageUrl ? (
+                            <>
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent z-10" />
+                              <img
+                                src={cocktail.imageUrl}
+                                alt={cocktail.name}
+                                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                              />
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
+                              <GlassWater className="size-16 mb-4 opacity-30 text-primary" />
+                              <span className="text-sm font-bold">FYS Signature Drink</span>
+                            </div>
+                          )}
+                          <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex items-center justify-between text-white text-[11px] sm:text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-1.5 sm:py-2 rounded-xl border border-white/15">
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="size-3.5" style={{ color: colorPalette.color }} />
+                              <span>{cocktail.tag || 'Pressé à froid'}</span>
+                            </span>
+                            <span className="text-[10px] opacity-75 uppercase tracking-wider font-semibold">100% Brut</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1000,11 +1208,15 @@ const RootIndex: PageComponent = () => {
               })}
             </div>
             
-            <div className="mt-12 flex justify-center">
-               <Button onClick={() => navigate('/auth/login?redirect=/board/catalogue')} size="lg" className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground">
-                 Voir tout le catalogue
-                 <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
-               </Button>
+            <div className="mt-14 sm:mt-18 flex justify-center">
+              <Button
+                onClick={() => navigate('/auth/login?redirect=/board/catalogue')}
+                size="lg"
+                className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all"
+              >
+                Voir tout le catalogue
+                <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </div>
           </div>
         </section>
