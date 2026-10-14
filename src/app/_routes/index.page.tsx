@@ -31,10 +31,7 @@ const RootIndex: PageComponent = () => {
   const { actualTheme, setTheme } = useTheme();
   const { fruits, isLoading: fruitsLoading } = useFruitsRealtime();
   const { t, i18n } = useTranslation();
-  const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
-  const [activeProcessStep, setActiveProcessStep] = useState(0);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activeSection, setActiveSection] = useState('home');
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -98,32 +95,6 @@ const RootIndex: PageComponent = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Animation au scroll pour "Comment ça marche"
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = Number(entry.target.getAttribute('data-step-index'));
-            setActiveProcessStep(index);
-          }
-        });
-      },
-      {
-        // On crée une "ligne de détection" très fine (1% de l'écran) exactement au milieu.
-        // Ainsi, une étape ne devient active QUE lorsque son bord supérieur touche le milieu exact de l'écran.
-        // Puisque l'étape 2 est grande quand elle est ouverte, elle restera active tant que l'étape 3 n'a pas atteint le milieu.
-        rootMargin: '-50% 0px -49% 0px',
-        threshold: 0
-      }
-    );
-
-    stepRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   // Animation générique au défilement (Scroll Reveal)
   useEffect(() => {
@@ -584,112 +555,187 @@ const RootIndex: PageComponent = () => {
       </section>
 
       {/* ━━━ HOW IT WORKS ━━━ */}
-      <div id="how-it-works" className="w-full overflow-hidden leading-none relative z-0 scroll-mt-24">
+      <div className="w-full overflow-hidden leading-none relative z-0 pointer-events-none">
         <svg viewBox="0 0 1440 120" className="w-full h-[50px] md:h-[100px] block" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M0,96L80,85.3C160,75,320,53,480,58.7C640,64,800,96,960,101.3C1120,107,1280,85,1360,74.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" className="fill-[#E0982E]/[0.08] dark:fill-[#E0982E]/[0.10]"></path>
         </svg>
       </div>
-      <section className="py-12 md:py-20 px-5 md:px-8 bg-[#E0982E]/[0.08] dark:bg-[#E0982E]/[0.10] relative overflow-hidden z-0">
+      <section id="how-it-works" className="py-12 md:py-24 px-4 sm:px-6 md:px-8 bg-[#E0982E]/[0.08] dark:bg-[#E0982E]/[0.10] relative overflow-visible z-0 scroll-mt-20">
         <AfricanSectionBackground pattern="ndop" color="terracotta" opacityClass="opacity-[0.055] dark:opacity-[0.07]" glowColor="terracotta" watermarkEmblem="ndop-mandala" />
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-14 md:mb-20 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border border-[#E0982E]/30 font-bold text-xs uppercase tracking-wider">
+              <Sparkles className="size-3.5 text-[#E0982E]" />
+              {t('landing.howItWorks.badge', 'Expérience Fluide')}
+            </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }} dangerouslySetInnerHTML={{ __html: t('landing.howItWorks.title') }} />
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-xl">
               {t('landing.howItWorks.subtitle')}
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto relative">
+          {/* ── STACKING CARDS CONTAINER ── */}
+          <div className="relative max-w-4xl mx-auto space-y-12 sm:space-y-16 md:space-y-24 pb-20 md:pb-32">
             {[
               {
                 step: '01',
+                tagline: 'Composition sur-mesure',
+                badgeText: 'Étape 01 · Votre Recette',
                 title: t('landing.howItWorks.step1Title'),
                 desc: t('landing.howItWorks.step1Desc'),
                 color: '#F2694A',
+                accentBorder: 'border-[#F2694A]/40 dark:border-[#F2694A]/50',
+                headerBg: 'bg-[#F2694A]/12 dark:bg-[#F2694A]/20',
+                cardBg: 'bg-card dark:bg-[#1a1715]',
+                glowColor: 'rgba(242, 105, 74, 0.16)',
                 img: landingImages.step1,
+                imgBadge: '15+ Fruits du terroir',
+                features: [
+                  'Fruits frais cueillis à maturité',
+                  'Boosters : Gingembre, Menthe, Foléré',
+                  '100% Brut · Zéro sucre ni conservateur',
+                ],
+                ctaText: 'Créer ma formule au Lab',
+                ctaLink: '/lab',
               },
               {
                 step: '02',
+                tagline: 'Intelligence & Pureté',
+                badgeText: 'Étape 02 · Analyse & Pureté',
                 title: t('landing.howItWorks.step2Title'),
                 desc: t('landing.howItWorks.step2Desc'),
                 color: '#3F6D4E',
+                accentBorder: 'border-[#3F6D4E]/40 dark:border-[#3F6D4E]/50',
+                headerBg: 'bg-[#3F6D4E]/12 dark:bg-[#3F6D4E]/20',
+                cardBg: 'bg-card dark:bg-[#151c17]',
+                glowColor: 'rgba(63, 109, 78, 0.18)',
                 img: landingImages.step2,
+                imgBadge: 'Extraction lente à froid',
+                features: [
+                  'Bilan vitamines, minéraux & glycémie',
+                  'Conseils physiologiques sur-mesure',
+                  'Pressage doux qui préserve les enzymes',
+                ],
+                ctaText: 'Explorer NutriFYS',
+                ctaLink: '/lab?tab=nutrifys',
               },
               {
                 step: '03',
+                tagline: 'Fraîcheur & Dégustation',
+                badgeText: 'Étape 03 · Dégustation',
                 title: t('landing.howItWorks.step3Title'),
                 desc: isNoticeActive
                   ? `${t('landing.howItWorks.step3Desc')} (${launchNoticeContent})`
                   : t('landing.howItWorks.step3Desc'),
                 color: '#E0982E',
+                accentBorder: 'border-[#E0982E]/45 dark:border-[#E0982E]/55',
+                headerBg: 'bg-[#E0982E]/12 dark:bg-[#E0982E]/20',
+                cardBg: 'bg-card dark:bg-[#1c1914]',
+                glowColor: 'rgba(224, 152, 46, 0.18)',
                 img: landingImages.step3,
+                imgBadge: 'Bouteilles verre consignées',
+                features: [
+                  'Pressage artisanal à la commande',
+                  'Livraison directe chez vous ou au bureau',
+                  'Conservation optimale 100% fraîcheur',
+                ],
+                ctaText: 'Commander un cocktail',
+                ctaLink: '#catalogue',
               },
-            ].map((item, i, arr) => {
-              const isActive = activeProcessStep === i;
-              const isLast = i === arr.length - 1;
-              return (
-                <div 
-                  key={i} 
-                  ref={(el) => { stepRefs.current[i] = el; }}
-                  data-step-index={i}
-                  className="relative pl-14 md:pl-24 pb-4 md:pb-8 group"
-                >
-                  {/* Ligne temporelle (Timeline) */}
-                  {!isLast && (
-                    <div className="absolute top-14 left-6 md:left-10 bottom-0 w-[2px] transition-colors duration-500" style={{ backgroundColor: isActive ? item.color : 'hsl(var(--border) / 0.8)' }} />
-                  )}
-
-                  {/* Point / Numéro */}
-                  <div 
-                    onClick={() => setActiveProcessStep(i)}
-                    className={`absolute left-0 md:left-3 top-4 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-extrabold text-lg md:text-xl cursor-pointer shadow-sm z-10 transition-transform duration-700 ${isActive ? 'scale-110' : 'scale-100'}`}
-                    style={{ 
-                      background: isActive ? item.color : 'var(--muted)', 
-                      color: isActive ? '#fff' : 'var(--muted-foreground)',
-                      fontFamily: 'var(--font-display)',
-                      boxShadow: isActive ? `0 0 0 6px color-mix(in srgb, ${item.color} 15%, transparent)` : 'none'
-                    }}
-                  >
-                    {item.step}
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  top: `calc(clamp(4.5rem, 6vh + 3rem, 6.25rem) + ${i * 44}px)`,
+                  zIndex: i + 10,
+                }}
+                className={`sticky rounded-[2.2rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden transition-all duration-300 relative group`}
+              >
+                <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
+                
+                {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
+                <div className={`px-5 sm:px-8 md:px-10 py-3 md:py-3.5 flex items-center justify-between border-b border-border/40 ${item.headerBg} backdrop-blur-md`}>
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <span
+                      className="inline-flex items-center justify-center size-7 md:size-8 rounded-full text-white font-extrabold text-xs md:text-sm shadow-xs font-display shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    >
+                      {item.step}
+                    </span>
+                    <span className="font-display font-black text-xs md:text-sm uppercase tracking-wider text-foreground">
+                      {item.tagline}
+                    </span>
                   </div>
 
-                  {/* Contenu (Accordeon) */}
-                  <div 
-                    onClick={() => setActiveProcessStep(i)}
-                    className={`cursor-pointer group rounded-[2.5rem] border transition-all duration-700 overflow-hidden relative
-                      ${isActive 
-                        ? 'bg-white/40 dark:bg-black/40 backdrop-blur-[32px] saturate-[150%] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border-white/60 dark:border-white/10' 
-                        : 'bg-transparent border-transparent hover:bg-white/20 dark:hover:bg-black/10 opacity-60 hover:opacity-90'
-                      }`}
-                  >
-                    <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-35" />
-                    <div className="p-6 md:p-10 flex items-center justify-between gap-4">
-                      <h3 className={`text-xl md:text-3xl font-extrabold tracking-tight transition-colors duration-500 ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'}`} style={{ fontFamily: 'var(--font-display)' }}>
+                  <span className="text-[11px] font-bold text-muted-foreground hidden sm:inline-flex items-center gap-1.5">
+                    <span>Étape {item.step} / 03</span>
+                  </span>
+                </div>
+
+                {/* Main Card Content */}
+                <div className="p-5 sm:p-8 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+                  {/* Left: Text & Features (7 cols) */}
+                  <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`, color: item.color }}>
+                        <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        {item.badgeText}
+                      </div>
+                      <h3 className="font-display font-extrabold text-2xl sm:text-3xl md:text-4xl text-foreground tracking-tight">
                         {item.title}
                       </h3>
-                      {/* Indicateur d'état */}
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-700 ${isActive ? 'bg-white/50 dark:bg-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3)]' : 'bg-muted/50 group-hover:bg-muted'}`}>
-                        <ChevronDown className={`w-6 h-6 transition-transform duration-700 ${isActive ? 'rotate-180 text-foreground' : 'text-muted-foreground'}`} />
-                      </div>
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed">
+                        {item.desc}
+                      </p>
                     </div>
 
-                    <div className={`grid transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                      <div className="overflow-hidden">
-                        <div className="px-6 md:px-10 pb-10 space-y-8">
-                          <p className="text-foreground/80 leading-relaxed font-medium text-lg">
-                            {item.desc}
-                          </p>
-                          <div className="w-full aspect-[16/10] sm:aspect-[21/9] rounded-3xl overflow-hidden shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] relative group/img">
-                            <div className="absolute inset-0 bg-black/10 group-hover/img:bg-transparent transition-colors z-10" />
-                            <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700" />
-                          </div>
-                        </div>
+                    {/* Feature pills */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {item.features.map((feat, fIdx) => (
+                        <span
+                          key={fIdx}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
+                        >
+                          <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                          <span>{feat}</span>
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* CTA Link */}
+                    <div className="pt-2">
+                      <Link
+                        to={item.ctaLink}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                        style={{ backgroundColor: item.color }}
+                      >
+                        <span>{item.ctaText}</span>
+                        <ChevronRight className="size-4" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Right: Visual Image Card (5 cols) */}
+                  <div className="lg:col-span-5">
+                    <div className="relative rounded-3xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10" />
+                      <img
+                        src={item.img}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-white text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl border border-white/15">
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="size-3.5" style={{ color: item.color }} />
+                          <span>{item.imgBadge}</span>
+                        </span>
+                        <span className="text-[10px] opacity-75 uppercase tracking-wider font-semibold">FYS Signature</span>
                       </div>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </section>
