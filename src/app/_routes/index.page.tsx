@@ -39,6 +39,8 @@ const RootIndex: PageComponent = () => {
     c0Deep: false,
   });
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [hoveredStatIndex, setHoveredStatIndex] = useState<number | null>(null);
+  const [hoveredCocktailIndex, setHoveredCocktailIndex] = useState<number | null>(null);
 
   const [activeSection, setActiveSection] = useState('home');
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -603,16 +605,60 @@ const RootIndex: PageComponent = () => {
             { value: '2 min', label: t('home.customer.labStatsTime'), icon: Zap, color: '#E0982E' },
             { value: '100%', label: t('landing.hero.statsNatural'), icon: ShieldCheck, color: '#F2694A' },
             { value: recipesCount === null ? '500+' : `${recipesCount}+`, label: t('landing.hero.statsRecipes'), icon: Users, color: '#AECBB2' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-card rounded-3xl p-6 md:p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-border/40 flex flex-col items-center gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 scroll-animate opacity-0 relative overflow-hidden group" style={{ animationDelay: `${i * 100}ms` }}>
-              <AfricanCornerPattern section="stats" index={i} size="sm" className="opacity-15 group-hover:opacity-35" />
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
-                <stat.icon className="w-6 h-6" />
+          ].map((stat, i) => {
+            const isHovered = hoveredStatIndex === i;
+            const isPreviousOfHovered = hoveredStatIndex !== null && hoveredStatIndex - 1 === i;
+            const isNextOfHovered = hoveredStatIndex !== null && hoveredStatIndex + 1 === i;
+
+            let statTransform = 'rotate(0deg) scale(1) translateY(0px)';
+            let statZIndex = 1;
+            let statShadow = '0 8px 30px rgb(0,0,0,0.06)';
+            let statFilter = 'brightness(1)';
+
+            if (isHovered) {
+              // Carte active : élévation franche avec rebond pop
+              statTransform = 'rotate(0deg) scale(1.06) translateY(-8px)';
+              statZIndex = 25;
+              statShadow = '0 20px 45px rgba(0,0,0,0.16), 0 0 25px rgba(242,105,74,0.14)';
+            } else if (isPreviousOfHovered) {
+              // Carte précédente : s'incline obliquement en diagonale vers la gauche
+              statTransform = 'rotate(-3.5deg) scale(0.96) translateY(-3px)';
+              statZIndex = 5;
+              statFilter = 'brightness(0.95)';
+            } else if (isNextOfHovered) {
+              // Carte suivante : s'incline légèrement en diagonale vers la droite
+              statTransform = 'rotate(2.5deg) scale(0.97) translateY(-2px)';
+              statZIndex = 5;
+              statFilter = 'brightness(0.96)';
+            }
+
+            return (
+              <div
+                key={i}
+                onMouseEnter={() => setHoveredStatIndex(i)}
+                onMouseLeave={() => setHoveredStatIndex(null)}
+                onTouchStart={() => setHoveredStatIndex(i)}
+                style={{
+                  transform: statTransform,
+                  zIndex: statZIndex,
+                  boxShadow: statShadow,
+                  filter: statFilter,
+                  transformOrigin: 'bottom center',
+                  transition: 'transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, filter 0.4s ease',
+                  willChange: 'transform',
+                  animationDelay: `${i * 100}ms`,
+                }}
+                className="bg-card rounded-3xl p-6 md:p-8 text-center border border-border/40 flex flex-col items-center gap-3 scroll-animate opacity-0 relative overflow-hidden group cursor-pointer"
+              >
+                <AfricanCornerPattern section="stats" index={i} size="sm" className="opacity-15 group-hover:opacity-35" />
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)`, color: stat.color }}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <p className="text-2xl md:text-3xl font-extrabold text-foreground" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</p>
               </div>
-              <p className="text-2xl md:text-3xl font-extrabold text-foreground" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</p>
-            </div>
-          ))}
+            );
+          })}
           </div>
         </div>
       </section>
@@ -866,49 +912,92 @@ const RootIndex: PageComponent = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {catalogCocktails.map((cocktail, i) => (
-                <div key={cocktail.id} className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                  <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
-                  <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
-                    {cocktail.imageUrl ? (
-                      <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
-                        <GlassWater className="size-16 mb-4 opacity-20" />
-                        <span className="text-sm font-medium">Image à venir</span>
-                      </div>
-                    )}
-                    {cocktail.tag && (
-                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10">
-                        {cocktail.tag}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 md:opacity-80 z-0" />
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                      <h3 className="text-white font-display font-bold text-xl md:text-2xl mb-1 drop-shadow-sm">{cocktail.name}</h3>
-                      {cocktail.description && (
-                        <p className="text-white/80 text-sm line-clamp-2 leading-relaxed mb-4">
-                          {cocktail.description}
-                        </p>
+              {catalogCocktails.map((cocktail, i) => {
+                const isHovered = hoveredCocktailIndex === i;
+                const isPreviousOfHovered = hoveredCocktailIndex !== null && hoveredCocktailIndex - 1 === i;
+                const isNextOfHovered = hoveredCocktailIndex !== null && hoveredCocktailIndex + 1 === i;
+
+                let cocktailTransform = 'rotate(0deg) scale(1) translateY(0px)';
+                let cocktailZIndex = 1;
+                let cocktailShadow = '0 4px 20px rgba(0,0,0,0.06)';
+                let cocktailFilter = 'brightness(1)';
+
+                if (isHovered) {
+                  // Carte active : élévation franche avec rebond élastique
+                  cocktailTransform = 'rotate(0deg) scale(1.04) translateY(-10px)';
+                  cocktailZIndex = 25;
+                  cocktailShadow = '0 25px 50px rgba(0,0,0,0.22), 0 0 30px rgba(63,109,78,0.18)';
+                } else if (isPreviousOfHovered) {
+                  // Carte précédente : s'incline obliquement en diagonale vers la gauche
+                  cocktailTransform = 'rotate(-3.5deg) scale(0.96) translateY(-4px)';
+                  cocktailZIndex = 5;
+                  cocktailFilter = 'brightness(0.94)';
+                } else if (isNextOfHovered) {
+                  // Carte suivante : s'incline légèrement en diagonale vers la droite
+                  cocktailTransform = 'rotate(2.5deg) scale(0.97) translateY(-3px)';
+                  cocktailZIndex = 5;
+                  cocktailFilter = 'brightness(0.96)';
+                }
+
+                return (
+                  <div
+                    key={cocktail.id}
+                    onMouseEnter={() => setHoveredCocktailIndex(i)}
+                    onMouseLeave={() => setHoveredCocktailIndex(null)}
+                    onTouchStart={() => setHoveredCocktailIndex(i)}
+                    style={{
+                      transform: cocktailTransform,
+                      zIndex: cocktailZIndex,
+                      boxShadow: cocktailShadow,
+                      filter: cocktailFilter,
+                      transformOrigin: 'bottom center',
+                      transition: 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, filter 0.4s ease',
+                      willChange: 'transform',
+                    }}
+                    className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden cursor-pointer"
+                  >
+                    <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
+                    <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
+                      {cocktail.imageUrl ? (
+                        <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-primary/5">
+                          <GlassWater className="size-16 mb-4 opacity-20" />
+                          <span className="text-sm font-medium">Image à venir</span>
+                        </div>
                       )}
+                      {cocktail.tag && (
+                        <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10">
+                          {cocktail.tag}
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 md:opacity-80 z-0" />
                       
-                      <div className="flex items-center justify-between mt-auto">
-                        <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
-                          {cocktail.containers && cocktail.containers.length > 0 
-                            ? 'Dès ' + (cocktail.containers.find(c => c.price != null)?.price ?? cocktail.totalPrice) + ' XAF'
-                            : cocktail.totalPrice + ' XAF'
-                          }
-                        </span>
+                      <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                        <h3 className="text-white font-display font-bold text-xl md:text-2xl mb-1 drop-shadow-sm">{cocktail.name}</h3>
+                        {cocktail.description && (
+                          <p className="text-white/80 text-sm line-clamp-2 leading-relaxed mb-4">
+                            {cocktail.description}
+                          </p>
+                        )}
                         
-                        <Button onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
-                          <Plus className="size-5" />
-                        </Button>
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="text-white font-bold text-sm bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
+                            {cocktail.containers && cocktail.containers.length > 0 
+                              ? 'Dès ' + (cocktail.containers.find(c => c.price != null)?.price ?? cocktail.totalPrice) + ' XAF'
+                              : cocktail.totalPrice + ' XAF'
+                            }
+                          </span>
+                          
+                          <Button onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)} className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105">
+                            <Plus className="size-5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="mt-12 flex justify-center">
