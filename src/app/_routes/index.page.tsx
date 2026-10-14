@@ -37,13 +37,11 @@ const RootIndex: PageComponent = () => {
   // États & refs pour les 3 decks de cartes empilables (Stats, Étapes, Catalogue)
   const statsCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const processCardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const catalogueScrollRef = useRef<HTMLDivElement | null>(null);
-  const isDraggingCatalogue = useRef(false);
-  const catalogueStartX = useRef(0);
-  const catalogueScrollLeft = useRef(0);
+  const catalogueCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [coveredStats, setCoveredStats] = useState<Record<number, boolean>>({});
   const [coveredProcess, setCoveredProcess] = useState<Record<number, boolean>>({});
+  const [coveredCatalogue, setCoveredCatalogue] = useState<Record<number, boolean>>({});
 
   const [activeSection, setActiveSection] = useState('home');
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -182,8 +180,20 @@ const RootIndex: PageComponent = () => {
         }
       });
 
+      // 3. Catalogue stack (tab height 32px)
+      const nextCoveredCatalogue: Record<number, boolean> = {};
+      catalogueCardRefs.current.forEach((_, idx) => {
+        const nextCard = catalogueCardRefs.current[idx + 1];
+        if (nextCard) {
+          const nextTop = nextCard.getBoundingClientRect().top;
+          const targetTop = baseStickyTop + (idx + 1) * 32;
+          nextCoveredCatalogue[idx] = nextTop <= targetTop + 50;
+        }
+      });
+
       setCoveredStats(nextCoveredStats);
       setCoveredProcess(nextCoveredProcess);
+      setCoveredCatalogue(nextCoveredCatalogue);
 
       ticking = false;
     };
@@ -203,59 +213,7 @@ const RootIndex: PageComponent = () => {
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
     };
-  }, []);
-
-  // Défilement horizontal sur PC avec la molette verticale au survol du catalogue
-  useEffect(() => {
-    const el = catalogueScrollRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        if (maxScroll > 0) {
-          const canScrollRight = e.deltaY > 0 && el.scrollLeft < maxScroll - 2;
-          const canScrollLeft = e.deltaY < 0 && el.scrollLeft > 2;
-          if (canScrollRight || canScrollLeft) {
-            e.preventDefault();
-            el.scrollLeft += e.deltaY * 1.2;
-          }
-        }
-      }
-    };
-
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
   }, [displayedCocktails.length]);
-
-  const scrollCatalogue = (direction: 'left' | 'right') => {
-    if (catalogueScrollRef.current) {
-      const scrollAmount = 360;
-      catalogueScrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
-  };
-
-  const handleCatalogueMouseDown = (e: React.MouseEvent) => {
-    if (!catalogueScrollRef.current) return;
-    isDraggingCatalogue.current = true;
-    catalogueStartX.current = e.pageX - catalogueScrollRef.current.offsetLeft;
-    catalogueScrollLeft.current = catalogueScrollRef.current.scrollLeft;
-  };
-
-  const handleCatalogueMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingCatalogue.current || !catalogueScrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - catalogueScrollRef.current.offsetLeft;
-    const walk = (x - catalogueStartX.current) * 1.5;
-    catalogueScrollRef.current.scrollLeft = catalogueScrollLeft.current - walk;
-  };
-
-  const handleCatalogueMouseUpOrLeave = () => {
-    isDraggingCatalogue.current = false;
-  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -330,6 +288,15 @@ const RootIndex: PageComponent = () => {
   if (user) return null;
 
   const toggleTheme = () => setTheme(actualTheme === 'dark' ? 'light' : 'dark');
+
+  const handleCocktailClick = (cocktailId: string) => {
+    const targetUrl = `/board/catalogue?cocktail=${encodeURIComponent(cocktailId)}`;
+    if (user) {
+      navigate(targetUrl);
+    } else {
+      navigate(`/auth/login?redirect=${encodeURIComponent(targetUrl)}`);
+    }
+  };
 
   return (
     <div className="min-h-dvh bg-background text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
@@ -917,64 +884,43 @@ const RootIndex: PageComponent = () => {
 
       {/* ━━━ NOS CRÉATIONS / CATALOGUE (STACKING CARDS) ━━━ */}
       {displayedCocktails.length > 0 && (
-        <section id="catalogue" className="py-16 md:py-24 px-5 md:px-8 relative overflow-hidden bg-background scroll-mt-24">
+        <section id="catalogue" className="py-20 px-5 md:px-8 relative overflow-visible bg-background scroll-mt-24">
           <AfricanSectionBackground pattern="seeds-sun" color="forest" opacityClass="opacity-[0.035] dark:opacity-[0.05]" glowColor="forest" />
           <div className="max-w-7xl mx-auto relative z-10">
-            {/* Header with Navigation Controls */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
-              <div className="space-y-3 max-w-2xl text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
-                  <GlassWater className="size-4" />
-                  <span>Notre Carte Exclusive</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-                  Découvrez notre <span className="text-primary">catalogue</span>
-                </h2>
-                <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-                  Des recettes exclusives créées par nos experts, prêtes à être commandées et livrées chez vous.
-                </p>
+            <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-16 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-sm">
+                <GlassWater className="size-4" />
+                Notre Carte
               </div>
-
-              {/* Desktop Horizontal Navigation Arrows */}
-              <div className="hidden md:flex items-center gap-3 shrink-0 self-center md:self-end">
-                <span className="text-xs text-muted-foreground font-semibold mr-2 flex items-center gap-1.5">
-                  <Mouse className="size-3.5" />
-                  <span>Défiler horizontalement</span>
-                </span>
-                <button
-                  onClick={() => scrollCatalogue('left')}
-                  className="size-11 rounded-full border border-border/80 bg-card hover:bg-muted text-foreground flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  aria-label="Cocktails précédents"
-                >
-                  <ChevronLeft className="size-5" />
-                </button>
-                <button
-                  onClick={() => scrollCatalogue('right')}
-                  className="size-11 rounded-full border border-border/80 bg-card hover:bg-muted text-foreground flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  aria-label="Cocktails suivants"
-                >
-                  <ChevronRight className="size-5" />
-                </button>
-              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
+                Découvrez notre <span className="text-primary">catalogue</span>
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Des recettes exclusives créées par nos experts, prêtes à être commandées et livrées chez vous.
+              </p>
             </div>
             
-            {/* Horizontal Scroll Track */}
-            <div
-              ref={catalogueScrollRef}
-              onMouseDown={handleCatalogueMouseDown}
-              onMouseMove={handleCatalogueMouseMove}
-              onMouseUp={handleCatalogueMouseUpOrLeave}
-              onMouseLeave={handleCatalogueMouseUpOrLeave}
-              className="flex items-stretch gap-5 sm:gap-6 overflow-x-auto scrollbar-none py-4 px-1 md:px-2 snap-x snap-mandatory scroll-smooth cursor-grab active:cursor-grabbing select-none"
-              style={{ scrollbarWidth: 'none' }}
-            >
+            {/* Stacking Catalogue Cards Deck */}
+            <div className="relative max-w-sm sm:max-w-md mx-auto space-y-8 sm:space-y-12 pb-16 sm:pb-24">
               {displayedCocktails.map((cocktail, i) => (
                 <div
                   key={cocktail.id || i}
-                  onClick={() => navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`)}
-                  className="w-[270px] sm:w-[300px] md:w-[320px] lg:w-[340px] shrink-0 snap-start group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer flex flex-col"
+                  ref={(el) => {
+                    catalogueCardRefs.current[i] = el;
+                  }}
+                  style={getStackCardStyle(i, coveredCatalogue, 32)}
+                  onClick={() => handleCocktailClick(cocktail.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCocktailClick(cocktail.id);
+                    }
+                  }}
+                  className="group relative bg-card border border-border/60 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer select-none active:scale-[0.99]"
                 >
-                  <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80 pointer-events-none" />
+                  <AfricanCornerPattern section="catalogue" index={i} size="md" className="z-20 text-white/40 group-hover:text-white/80" />
                   <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden">
                     {cocktail.imageUrl ? (
                       <img src={cocktail.imageUrl} alt={cocktail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -1010,9 +956,9 @@ const RootIndex: PageComponent = () => {
                         <Button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/auth/login?redirect=${encodeURIComponent('/board/catalogue?cocktail=' + cocktail.id)}`);
+                            handleCocktailClick(cocktail.id);
                           }}
-                          className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105"
+                          className="rounded-full size-10 p-0 bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-105 cursor-pointer"
                         >
                           <Plus className="size-5" />
                         </Button>
@@ -1022,31 +968,22 @@ const RootIndex: PageComponent = () => {
                 </div>
               ))}
             </div>
-
-            {/* Mobile Navigation Controls & View All CTA */}
-            <div className="mt-8 md:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <div className="flex md:hidden items-center gap-3">
-                <button
-                  onClick={() => scrollCatalogue('left')}
-                  className="size-10 rounded-full border border-border/80 bg-card text-foreground flex items-center justify-center shadow-xs active:scale-95"
-                  aria-label="Précédent"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <span className="text-xs text-muted-foreground font-semibold">Glissez pour voir plus</span>
-                <button
-                  onClick={() => scrollCatalogue('right')}
-                  className="size-10 rounded-full border border-border/80 bg-card text-foreground flex items-center justify-center shadow-xs active:scale-95"
-                  aria-label="Suivant"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-
-              <Button onClick={() => navigate('/auth/login?redirect=/board/catalogue')} size="lg" className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all">
-                Voir tout le catalogue
-                <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
+            
+            <div className="mt-12 flex justify-center">
+               <Button
+                 onClick={() => {
+                   if (user) {
+                     navigate('/board/catalogue');
+                   } else {
+                     navigate('/auth/login?redirect=/board/catalogue');
+                   }
+                 }}
+                 size="lg"
+                 className="rounded-full font-bold h-14 px-8 text-base group cursor-pointer bg-primary text-primary-foreground"
+               >
+                 Voir tout le catalogue
+                 <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+               </Button>
             </div>
           </div>
         </section>

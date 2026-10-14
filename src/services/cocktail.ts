@@ -18,6 +18,7 @@ import { uploadCocktailImage, deleteCocktailImage, isManagedImageUrl } from './s
 import { notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from './push';
 import { trackEvent } from '@/lib/analytics';
+import { MOCK_COCKTAILS } from '@/data/mock-cocktails';
 import i18n from '@/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,24 +35,43 @@ function stripUndefined(obj: any): any {
 }
 
 export async function getCocktailById(id: string): Promise<Cocktail | null> {
-  const snap = await getDoc(doc(db, COLLECTIONS.COCKTAILS, id));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Cocktail;
+  try {
+    const snap = await getDoc(doc(db, COLLECTIONS.COCKTAILS, id));
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() } as Cocktail;
+    }
+  } catch (err) {
+    console.warn('Error fetching cocktail by id:', err);
+  }
+  const mock = MOCK_COCKTAILS.find((m) => m.id === id);
+  return mock ?? null;
 }
 
 export async function getCocktails(): Promise<Cocktail[]> {
-  const snap = await getDocs(collection(db, COLLECTIONS.COCKTAILS));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Cocktail));
+  try {
+    const snap = await getDocs(collection(db, COLLECTIONS.COCKTAILS));
+    const results = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Cocktail));
+    if (results.length > 0) return results;
+  } catch (err) {
+    console.warn('Error fetching cocktails:', err);
+  }
+  return MOCK_COCKTAILS;
 }
 
 export async function getPublicCocktails(): Promise<Cocktail[]> {
-  const q = query(
-    collection(db, COLLECTIONS.COCKTAILS),
-    where('isActive', '==', true),
-    where('isPublic', '==', true),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Cocktail));
+  try {
+    const q = query(
+      collection(db, COLLECTIONS.COCKTAILS),
+      where('isActive', '==', true),
+      where('isPublic', '==', true),
+    );
+    const snap = await getDocs(q);
+    const results = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Cocktail));
+    if (results.length > 0) return results;
+  } catch (err) {
+    console.warn('Error fetching public cocktails:', err);
+  }
+  return MOCK_COCKTAILS;
 }
 
 export async function createCocktail(
