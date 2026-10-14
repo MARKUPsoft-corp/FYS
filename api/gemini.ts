@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const {
-    model = 'gemini-3.1-flash-lite',
+    model: requestedModel,
     prompt,
     contents,
     systemInstruction,
@@ -26,23 +26,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing prompt or contents in request body' });
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const generativeModel = genAI.getGenerativeModel({
-      model,
-      ...(systemInstruction ? { systemInstruction } : {}),
-      ...(generationConfig ? { generationConfig } : {}),
-    });
+  const primaryModel = requestedModel || process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
+  const modelQueue = Array.from(new Set(['gemini-flash-lite-latest', primaryModel, 'gemini-3.1-flash-lite', 'gemini-3.8-flash']));
 
-    const requestPayload = contents ? { contents } : prompt;
-    const result = await generativeModel.generateContent(requestPayload);
-    const text = result.response.text();
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const requestPayload = contents ? { contents } : prompt;
 
-    return res.status(200).json({ text });
-  } catch (err: any) {
-    console.error('[gemini-api] Generation error:', err);
-    return res.status(500).json({
-      error: err?.message || 'Error generating content from Gemini',
-    });
+  let lastError: any = null;
+
+  for (const modelName of modelQueue) {
+    try {
+      const generativeModel = genAI.getGenerativeModel({
+        model: modelName,
+        ...(systemInstruction ? { systemInstruction } : {}),
+        ...(generationConfig ? { generationConfig } : {}),
+      });
+
+      const result = await generativeModel.generateContent(requestPayload);
+      const text = result.response.text();
+      return res.status(200).json({ text, model: modelName });
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[gemini-api] Model ${modelName} failed (${err?.message || err}). Trying fallback...`);
+    }
   }
+
+  console.error('[gemini-api] All Gemini models failed:', lastError);
+  return res.status(500).json({
+    error: lastError?.message || 'Error generating content from Gemini',
+  });
 }

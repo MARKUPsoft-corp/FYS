@@ -758,26 +758,27 @@ Exemple :
 
       const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
 
-      try {
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-3.1-flash-lite',
-          systemInstruction: fullSystemPrompt,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 600,
-          },
-        });
-        console.log('[whatsapp-webhook] Calling Gemini 3.1 Flash Lite with conversation history & dynamic pricing...');
-        const result = await model.generateContent({ contents: contentsPayload });
-        aiReply = result.response.text();
-      } catch (geminiErr: any) {
-        console.warn('[whatsapp-webhook] Gemini 3.1 Flash Lite error, fallback to gemini-3.8-flash:', geminiErr?.message);
-        const modelFallback = genAI.getGenerativeModel({
-          model: 'gemini-3.8-flash',
-          systemInstruction: fullSystemPrompt,
-        });
-        const result = await modelFallback.generateContent({ contents: contentsPayload });
-        aiReply = result.response.text();
+      const primaryModel = process.env.GEMINI_WHATSAPP_MODEL || 'gemini-flash-lite-latest';
+      const fallbackModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+      const modelQueue = Array.from(new Set(['gemini-flash-lite-latest', primaryModel, ...fallbackModels]));
+
+      for (const modelCandidate of modelQueue) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelCandidate,
+            systemInstruction: fullSystemPrompt,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 600,
+            },
+          });
+          console.log(`[whatsapp-webhook] Calling Gemini (${modelCandidate}) with conversation history & dynamic pricing...`);
+          const result = await model.generateContent({ contents: contentsPayload });
+          aiReply = result.response.text();
+          if (aiReply) break;
+        } catch (geminiErr: any) {
+          console.warn(`[whatsapp-webhook] Gemini (${modelCandidate}) error, trying next fallback:`, geminiErr?.message);
+        }
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
 

@@ -56,12 +56,17 @@ const FysLab: PageComponent = () => {
   }, [user, profile, profileLoading, fetchProfile]);
 
 
-  const isEventMode = searchParams.get('mode') === 'degustation';
-  const tabParam = searchParams.get('tab');
-  const stepParam = searchParams.get('step');
-  const sheetParam = searchParams.get('sheet');
-  const loadParam = searchParams.get('load');
-  const promoParam = searchParams.get('promo');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isEventMode = mounted && searchParams.get('mode') === 'degustation';
+  const tabParam = mounted ? searchParams.get('tab') : null;
+  const stepParam = mounted ? searchParams.get('step') : null;
+  const sheetParam = mounted ? searchParams.get('sheet') : null;
+  const loadParam = mounted ? searchParams.get('load') : null;
+  const promoParam = mounted ? searchParams.get('promo') : null;
 
   const activeTab: LabTab = tabParam === 'nutrifys' ? 'nutrifys' : 'compose';
   const composeStep: ComposeStep = stepParam === '2' ? 2 : 1;
