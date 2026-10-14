@@ -173,7 +173,7 @@ const RootIndex: PageComponent = () => {
   const toggleTheme = () => setTheme(actualTheme === 'dark' ? 'light' : 'dark');
 
   return (
-    <div className="min-h-dvh bg-background text-foreground overflow-x-hidden" style={{ fontFamily: 'var(--font-body)' }}>
+    <div className="min-h-dvh bg-background text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
 
       {/* ━━━ NAVBAR ━━━ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -647,23 +647,24 @@ const RootIndex: PageComponent = () => {
               <div
                 key={i}
                 style={{
-                  top: `calc(clamp(4.5rem, 6vh + 3rem, 6.25rem) + ${i * 44}px)`,
-                  zIndex: i + 10,
+                  position: 'sticky',
+                  top: `calc(4.75rem + ${i * 44}px)`,
+                  zIndex: 10 + i,
                 }}
-                className={`sticky rounded-[2.2rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden transition-all duration-300 relative group`}
+                className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden transition-all duration-300 group`}
               >
                 <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
                 
                 {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
-                <div className={`px-5 sm:px-8 md:px-10 py-3 md:py-3.5 flex items-center justify-between border-b border-border/40 ${item.headerBg} backdrop-blur-md`}>
+                <div className={`px-4 sm:px-8 md:px-10 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-border/40 ${item.headerBg} backdrop-blur-md`}>
                   <div className="flex items-center gap-2.5 sm:gap-3">
                     <span
-                      className="inline-flex items-center justify-center size-7 md:size-8 rounded-full text-white font-extrabold text-xs md:text-sm shadow-xs font-display shrink-0"
+                      className="inline-flex items-center justify-center size-6 sm:size-7 md:size-8 rounded-full text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs font-display shrink-0"
                       style={{ backgroundColor: item.color }}
                     >
                       {item.step}
                     </span>
-                    <span className="font-display font-black text-xs md:text-sm uppercase tracking-wider text-foreground">
+                    <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-foreground">
                       {item.tagline}
                     </span>
                   </div>
@@ -674,28 +675,28 @@ const RootIndex: PageComponent = () => {
                 </div>
 
                 {/* Main Card Content */}
-                <div className="p-5 sm:p-8 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+                <div className="p-4 sm:p-6 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-10 items-center">
                   {/* Left: Text & Features (7 cols) */}
-                  <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-                    <div className="space-y-2">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`, color: item.color }}>
+                  <div className="lg:col-span-7 space-y-3 sm:space-y-4 md:space-y-5">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`, color: item.color }}>
                         <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
                         {item.badgeText}
                       </div>
-                      <h3 className="font-display font-extrabold text-2xl sm:text-3xl md:text-4xl text-foreground tracking-tight">
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-4xl text-foreground tracking-tight">
                         {item.title}
                       </h3>
-                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed">
+                      <p className="text-muted-foreground text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
 
                     {/* Feature pills */}
-                    <div className="flex flex-wrap gap-2 pt-1">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
                       {item.features.map((feat, fIdx) => (
                         <span
                           key={fIdx}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
+                          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
                         >
                           <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                           <span>{feat}</span>
@@ -704,10 +705,10 @@ const RootIndex: PageComponent = () => {
                     </div>
 
                     {/* CTA Link */}
-                    <div className="pt-2">
+                    <div className="pt-1 sm:pt-2">
                       <Link
                         to={item.ctaLink}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                        className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
                         style={{ backgroundColor: item.color }}
                       >
                         <span>{item.ctaText}</span>
@@ -718,14 +719,14 @@ const RootIndex: PageComponent = () => {
 
                   {/* Right: Visual Image Card (5 cols) */}
                   <div className="lg:col-span-5">
-                    <div className="relative rounded-3xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
+                    <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[21/9] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10" />
                       <img
                         src={item.img}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
                       />
-                      <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-white text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl border border-white/15">
+                      <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex items-center justify-between text-white text-[11px] sm:text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-1.5 sm:py-2 rounded-xl border border-white/15">
                         <span className="flex items-center gap-1.5">
                           <Sparkles className="size-3.5" style={{ color: item.color }} />
                           <span>{item.imgBadge}</span>
