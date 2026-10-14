@@ -34,6 +34,12 @@ const RootIndex: PageComponent = () => {
   const [selectedFruit, setSelectedFruit] = useState<Fruit | null>(null);
   const [recipesCount, setRecipesCount] = useState<number | null>(null);
 
+  // État et détection du rebond physique lors de l'empilement des cartes
+  const [stackedCards, setStackedCards] = useState<boolean[]>([false, false, false]);
+  const [bouncingCardIndex, setBouncingCardIndex] = useState<number | null>(null);
+  const prevStackedRef = useRef<boolean[]>([false, false, false]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const [activeSection, setActiveSection] = useState('home');
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   
@@ -75,7 +81,7 @@ const RootIndex: PageComponent = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Suivi de la section active
+  // Suivi de la section active et de l'empilement avec animation de rebond
   useEffect(() => {
     const handleScroll = () => {
       const sections = ['how-it-works', 'features', 'events', 'nutrifys', 'about'];
@@ -90,6 +96,33 @@ const RootIndex: PageComponent = () => {
         }
       }
       setActiveSection(current);
+
+      // Détection de l'empilement des cartes "Comment ça marche"
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const stickyBase = 4.75 * rootFontSize; // ~76px (juste sous la navbar)
+      const newStacked = [false, false, false];
+
+      cardRefs.current.forEach((el, index) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const targetTop = stickyBase + index * 44;
+        if (rect.top <= targetTop + 4) {
+          newStacked[index] = true;
+        }
+      });
+
+      // Déclenchement du rebond quand une nouvelle carte s'empile
+      newStacked.forEach((isStacked, index) => {
+        if (isStacked && !prevStackedRef.current[index]) {
+          setBouncingCardIndex(index);
+          setTimeout(() => {
+            setBouncingCardIndex((curr) => (curr === index ? null : curr));
+          }, 700);
+        }
+      });
+
+      prevStackedRef.current = newStacked;
+      setStackedCards(newStacked);
     };
     handleScroll(); // Init
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -643,101 +676,138 @@ const RootIndex: PageComponent = () => {
                 ctaText: 'Commander un cocktail',
                 ctaLink: '#catalogue',
               },
-            ].map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  position: 'sticky',
-                  top: `calc(4.75rem + ${i * 44}px)`,
-                  zIndex: 10 + i,
-                }}
-                className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden transition-all duration-300 group`}
-              >
-                <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
-                
-                {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
-                <div className={`px-4 sm:px-8 md:px-10 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-border/40 ${item.headerBg} backdrop-blur-md`}>
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <span
-                      className="inline-flex items-center justify-center size-6 sm:size-7 md:size-8 rounded-full text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs font-display shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    >
-                      {item.step}
-                    </span>
-                    <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-foreground">
-                      {item.tagline}
-                    </span>
-                  </div>
+            ].map((item, i) => {
+              const isCardBouncing = bouncingCardIndex === i;
+              const isStacked = stackedCards[i];
 
-                  <span className="text-[11px] font-bold text-muted-foreground hidden sm:inline-flex items-center gap-1.5">
-                    <span>Étape {item.step} / 03</span>
-                  </span>
-                </div>
+              // Cartes empilées par-dessus cette carte
+              let cardsAbove = 0;
+              if (i === 0) {
+                cardsAbove = stackedCards[2] ? 2 : (stackedCards[1] ? 1 : 0);
+              } else if (i === 1) {
+                cardsAbove = stackedCards[2] ? 1 : 0;
+              }
 
-                {/* Main Card Content */}
-                <div className="p-4 sm:p-6 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-10 items-center">
-                  {/* Left: Text & Features (7 cols) */}
-                  <div className="lg:col-span-7 space-y-3 sm:space-y-4 md:space-y-5">
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="inline-flex items-center gap-2 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`, color: item.color }}>
-                        <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                        {item.badgeText}
-                      </div>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-4xl text-foreground tracking-tight">
-                        {item.title}
-                      </h3>
-                      <p className="text-muted-foreground text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
+              // Effet d'enfoncement physique quand les cartes supérieures s'empilent
+              const depthScale = 1 - cardsAbove * 0.035;
+              const depthBrightness = 1 - cardsAbove * 0.05;
 
-                    {/* Feature pills */}
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
-                      {item.features.map((feat, fIdx) => (
-                        <span
-                          key={fIdx}
-                          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
-                        >
-                          <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                          <span>{feat}</span>
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* CTA Link */}
-                    <div className="pt-1 sm:pt-2">
-                      <Link
-                        to={item.ctaLink}
-                        className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+              return (
+                <div
+                  key={i}
+                  ref={(el) => {
+                    cardRefs.current[i] = el;
+                  }}
+                  style={{
+                    position: 'sticky',
+                    top: `calc(4.75rem + ${i * 44}px)`,
+                    zIndex: 10 + i,
+                    transform: `scale(${depthScale})`,
+                    transformOrigin: 'top center',
+                    filter: `brightness(${depthBrightness})`,
+                    transition: 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, box-shadow 0.4s ease',
+                  }}
+                  className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} ${
+                    isCardBouncing ? 'animate-stack-bounce ring-4 ring-offset-2' : ''
+                  } shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden group`}
+                >
+                  <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
+                  
+                  {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
+                  <div className={`px-4 sm:px-8 md:px-10 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-border/40 ${item.headerBg} backdrop-blur-md transition-all duration-300 ${
+                    isStacked ? 'shadow-[0_4px_12px_rgba(0,0,0,0.06)]' : ''
+                  }`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <span
+                        className={`inline-flex items-center justify-center size-6 sm:size-7 md:size-8 rounded-full text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs font-display shrink-0 ${
+                          isCardBouncing ? 'animate-tab-bounce' : ''
+                        }`}
                         style={{ backgroundColor: item.color }}
                       >
-                        <span>{item.ctaText}</span>
-                        <ChevronRight className="size-4" />
-                      </Link>
+                        {item.step}
+                      </span>
+                      <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-foreground flex items-center gap-2">
+                        <span>{item.tagline}</span>
+                        {isStacked && (
+                          <span
+                            className="size-1.5 rounded-full animate-ping inline-block"
+                            style={{ backgroundColor: item.color }}
+                            title="Étape active sur la pile"
+                          />
+                        )}
+                      </span>
                     </div>
+
+                    <span className="text-[11px] font-bold text-muted-foreground hidden sm:inline-flex items-center gap-1.5">
+                      <span>Étape {item.step} / 03</span>
+                    </span>
                   </div>
 
-                  {/* Right: Visual Image Card (5 cols) */}
-                  <div className="lg:col-span-5">
-                    <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[21/9] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10" />
-                      <img
-                        src={item.img}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
-                      />
-                      <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex items-center justify-between text-white text-[11px] sm:text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-1.5 sm:py-2 rounded-xl border border-white/15">
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="size-3.5" style={{ color: item.color }} />
-                          <span>{item.imgBadge}</span>
-                        </span>
-                        <span className="text-[10px] opacity-75 uppercase tracking-wider font-semibold">FYS Signature</span>
+                  {/* Main Card Content */}
+                  <div className="p-4 sm:p-6 md:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-10 items-center">
+                    {/* Left: Text & Features (7 cols) */}
+                    <div className="lg:col-span-7 space-y-3 sm:space-y-4 md:space-y-5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`, color: item.color }}>
+                          <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                          {item.badgeText}
+                        </div>
+                        <h3 className="font-display font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-4xl text-foreground tracking-tight">
+                          {item.title}
+                        </h3>
+                        <p className="text-muted-foreground text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+
+                      {/* Feature pills */}
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
+                        {item.features.map((feat, fIdx) => (
+                          <span
+                            key={fIdx}
+                            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border backdrop-blur-md bg-muted/40 text-foreground/80 border-border/50"
+                          >
+                            <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                            <span>{feat}</span>
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* CTA Link */}
+                      <div className="pt-1 sm:pt-2">
+                        <Link
+                          to={item.ctaLink}
+                          className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                          style={{ backgroundColor: item.color }}
+                        >
+                          <span>{item.ctaText}</span>
+                          <ChevronRight className="size-4" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Right: Visual Image Card (5 cols) */}
+                    <div className="lg:col-span-5">
+                      <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[21/9] sm:aspect-[16/9] lg:aspect-[4/3] shadow-lg border border-white/20 group/img bg-muted/30">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10" />
+                        <img
+                          src={item.img}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                        />
+                        <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex items-center justify-between text-white text-[11px] sm:text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-1.5 sm:py-2 rounded-xl border border-white/15">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="size-3.5" style={{ color: item.color }} />
+                            <span>{item.imgBadge}</span>
+                          </span>
+                          <span className="text-[10px] opacity-75 uppercase tracking-wider font-semibold">FYS Signature</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
