@@ -688,8 +688,20 @@ const RootIndex: PageComponent = () => {
                 cardsAbove = stackedCards[2] ? 1 : 0;
               }
 
-              // Effet d'enfoncement physique quand les cartes supérieures s'empilent
+              // Inclinaison oblique en diagonale pour la carte située derrière :
+              // - Si 0 carte dessus : 0deg (parfaitement droite)
+              // - Si 1 carte dessus : s'incline obliquement (-2.8deg ou +2.6deg)
+              // - Si 2 cartes dessus : accentue légèrement l'inclinaison (-4.5deg)
+              // Dès qu'on remonte (revient dessus), cardsAbove repasse à 0 et elle redevient instantanément droite avec rebond élastique
+              let tiltAngle = 0;
+              if (cardsAbove === 1) {
+                tiltAngle = i % 2 === 0 ? -2.8 : 2.6;
+              } else if (cardsAbove === 2) {
+                tiltAngle = i % 2 === 0 ? -4.5 : 4.5;
+              }
+
               const depthScale = 1 - cardsAbove * 0.035;
+              const depthTranslateY = cardsAbove * -4;
               const depthBrightness = 1 - cardsAbove * 0.05;
 
               return (
@@ -702,15 +714,20 @@ const RootIndex: PageComponent = () => {
                     position: 'sticky',
                     top: `calc(4.75rem + ${i * 44}px)`,
                     zIndex: 10 + i,
-                    transform: `scale(${depthScale})`,
-                    transformOrigin: 'top center',
-                    filter: `brightness(${depthBrightness})`,
-                    transition: 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, box-shadow 0.4s ease',
                   }}
-                  className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} ${
-                    isCardBouncing ? 'animate-stack-bounce ring-4 ring-offset-2' : ''
-                  } shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden group`}
+                  className="w-full"
                 >
+                  <div
+                    style={{
+                      transform: `rotate(${tiltAngle}deg) scale(${depthScale}) translateY(${depthTranslateY}px)`,
+                      transformOrigin: 'top center',
+                      filter: `brightness(${depthBrightness})`,
+                      transition: 'transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, box-shadow 0.4s ease',
+                    }}
+                    className={`rounded-[2rem] sm:rounded-[2.4rem] md:rounded-[2.8rem] border-2 ${item.accentBorder} ${item.cardBg} ${
+                      isCardBouncing ? 'animate-stack-bounce' : ''
+                    } shadow-[0_-6px_25px_rgba(0,0,0,0.08),0_25px_60px_rgba(0,0,0,0.18)] overflow-hidden group`}
+                  >
                   <AfricanCornerPattern section="how-it-works" index={i} size="md" className="opacity-15 group-hover:opacity-30 pointer-events-none transition-opacity duration-500" />
                   
                   {/* Top Stacking Tab Strip (stays visible when next card stacks over this card) */}
@@ -806,8 +823,9 @@ const RootIndex: PageComponent = () => {
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
           </div>
         </div>
       </section>
