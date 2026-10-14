@@ -11,7 +11,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { COLLECTIONS } from '@/entities';
+import { COLLECTIONS, isTastingOrder } from '@/entities';
 import type { Order } from '@/entities';
 
 export interface TastingRSVP {
@@ -209,11 +209,7 @@ export function subscribeToTastingOrders(
         ...d.data(),
       })) as Order[];
 
-      const tastingOrders = allOrders.filter((o) => {
-        const district = o.deliveryDetails?.district?.toLowerCase() || '';
-        const name = o.cocktailNameSnapshot?.toLowerCase() || '';
-        return district.includes('dégustation') || district.includes('degustation') || name.includes('dégustation') || name.includes('degustation');
-      });
+      const tastingOrders = allOrders.filter((o) => isTastingOrder(o));
 
       tastingOrders.sort((a, b) => {
         const tA = (a.createdAt as any)?.seconds ?? 0;

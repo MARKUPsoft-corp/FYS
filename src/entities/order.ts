@@ -111,7 +111,34 @@ export interface Order {
   ingredientImageSnapshots?: string[];
   /** Dépenses réelles et bénéfice calculé pour la commande */
   expenses?: OrderExpenses;
+  /** Précommande spéciale pour l'événement Dégustation Privée (18 Octobre) */
+  isDegustation?: boolean;
+  orderType?: 'classic' | 'program' | 'degustation';
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+/**
+ * Détermine de manière fiable si une commande est une précommande pour l'événement
+ * Dégustation Privée (18 Octobre 2026).
+ */
+export function isTastingOrder(order?: Partial<Order> | null): boolean {
+  if (!order) return false;
+  if (order.isDegustation === true) return true;
+  if ((order as any).orderType === 'degustation') return true;
+  const district = order.deliveryDetails?.district?.toLowerCase() || '';
+  const instructions = order.deliveryDetails?.instructions?.toLowerCase() || '';
+  const name = order.cocktailNameSnapshot?.toLowerCase() || '';
+  const promo = order.promoCodeApplied?.toLowerCase() || '';
+  return (
+    district.includes('dégustation') ||
+    district.includes('degustation') ||
+    instructions.includes('dégustation') ||
+    instructions.includes('degustation') ||
+    name.includes('dégustation') ||
+    name.includes('degustation') ||
+    promo.includes('degust')
+  );
+}
+
 

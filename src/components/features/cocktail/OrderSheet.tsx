@@ -376,6 +376,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
             discountAmount,
             promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
+            isDegustation: isEventMode,
           },
         );
       } else if (!isOwnerCheck && !isDraftCheck) {
@@ -394,6 +395,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             ),
             discountAmount,
             promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
+            isDegustation: isEventMode,
           },
         );
       } else {
@@ -408,6 +410,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
             ingredientImageSnapshots: fruitVisuals.map((f) => f.imageUrl ?? ''),
             discountAmount,
             promoCodeApplied: discountAmount > 0 ? activePromoCode : undefined,
+            isDegustation: isEventMode,
           },
         );
       }

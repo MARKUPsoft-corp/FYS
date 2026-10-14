@@ -10,7 +10,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
-import { UserRole, OrderStatus, partitionCocktailIngredients, formatIngredientsSummary } from '@/entities';
+import { UserRole, OrderStatus, partitionCocktailIngredients, formatIngredientsSummary, isTastingOrder } from '@/entities';
 import type { Order, Cocktail, CocktailIngredient, Fruit } from '@/entities';
 import { getCocktailById } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
@@ -154,12 +154,22 @@ function OrderCard({
 }) {
   const { t } = useTranslation();
   const isProgram = order.type === 'program';
+  const isTasting = isTastingOrder(order);
 
   return (
     <div
       onClick={onClick}
-      className="bg-card rounded-[2rem] border border-border/40 p-5 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
+      className={`rounded-[2rem] p-5 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden ${
+        isTasting
+          ? 'bg-card border-2 border-[#E0982E]/55 dark:border-[#E0982E]/45 bg-gradient-to-br from-[#E0982E]/[0.08] via-card to-[#E0982E]/[0.02] dark:from-[#E0982E]/[0.10]'
+          : 'bg-card border border-border/40'
+      }`}
     >
+      {/* Tasting Golden Top Stripe */}
+      {isTasting && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#E0982E] via-amber-400 to-[#E0982E]" />
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -168,6 +178,15 @@ function OrderCard({
                 ? (order.programTitleSnapshot || order.cocktailNameSnapshot || 'Cure FYS Programme')
                 : order.cocktailNameSnapshot}
             </p>
+
+            {/* DÉGUSTATION PRE-ORDER BADGE */}
+            {isTasting && (
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 shadow-xs uppercase tracking-wide">
+                <Sparkles className="size-3 text-[#E0982E] animate-pulse" />
+                🍷 Précommande Dégustation
+              </span>
+            )}
+
             {order.source === 'whatsapp' && (
               <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -180,13 +199,35 @@ function OrderCard({
               </span>
             )}
           </div>
+
           {showCustomer && (
-            <p className="text-xs font-semibold text-primary truncate mt-0.5">{order.userNameSnapshot}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <p className="text-xs font-semibold text-primary truncate">{order.userNameSnapshot}</p>
+              {order.userPhoneSnapshot && (
+                <span className="text-[11px] text-muted-foreground font-medium">({order.userPhoneSnapshot})</span>
+              )}
+            </div>
           )}
+
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Clock className="size-3" />
             {formatDate(order.createdAt as unknown as { seconds: number })}
           </p>
+
+          {/* Tasting Event Notice Strip */}
+          {isTasting ? (
+            <div className="mt-2.5 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#E0982E]/12 border border-[#E0982E]/30 text-xs font-bold text-[#b27218] dark:text-[#f8be68]">
+              <Calendar className="size-3.5 shrink-0 text-[#E0982E]" />
+              <span className="truncate">Événement Privé 18 Octobre · Retrait sur place (Yaoundé)</span>
+            </div>
+          ) : (
+            showCustomer && order.deliveryDetails?.district && (
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
+                <MapPin className="size-3 text-primary shrink-0" />
+                <span className="truncate">Livraison : {order.deliveryDetails.district}</span>
+              </div>
+            )
+          )}
 
           {isProgram ? (
             <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-muted-foreground">
@@ -263,16 +304,20 @@ function OrderCard({
           </>
         )}
         {!isProgram && ' · '}
-        {!isProgram && (
-          order.orderLines?.length ? (
-            order.orderLines.map((line, i) => (
-              <span key={i}>
-                {line.pricePerBottle.toLocaleString()} XAF
-                {i < order.orderLines.length - 1 ? ' + ' : ''}
-              </span>
-            ))
-          ) : (
-            `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
+        {isTasting ? (
+          <span className="font-semibold text-[#E0982E]">Tarif VIP Dégustation (1 000 XAF)</span>
+        ) : (
+          !isProgram && (
+            order.orderLines?.length ? (
+              order.orderLines.map((line, i) => (
+                <span key={i}>
+                  {line.pricePerBottle.toLocaleString()} XAF
+                  {i < order.orderLines.length - 1 ? ' + ' : ''}
+                </span>
+              ))
+            ) : (
+              `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
+            )
           )
         )}
       </p>
@@ -713,6 +758,12 @@ function ClientOrderSheet({
             {order.aiAnalysisSnapshot && (
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
                 {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
+              </span>
+            )}
+            {isTastingOrder(order) && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 uppercase tracking-wide">
+                <Sparkles className="size-3 text-[#E0982E]" />
+                🍷 Précommande Dégustation
               </span>
             )}
           </div>
@@ -1225,6 +1276,12 @@ function AdminOrderSheet({
                 {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
                   </span>
                 )}
+                {isTastingOrder(order) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 uppercase tracking-wide">
+                    <Sparkles className="size-3 text-[#E0982E]" />
+                    🍷 Précommande Dégustation
+                  </span>
+                )}
               </div>
             </div>
             <StatusBadge status={order.status} size="lg" />
@@ -1290,6 +1347,19 @@ function AdminOrderSheet({
         ) : (
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
+
+          {/* Tasting Event Warning Callout for Admin */}
+          {isTastingOrder(order) && (
+            <div className="p-4 rounded-2xl bg-[#E0982E]/15 border-2 border-[#E0982E]/40 text-[#b27218] dark:text-[#f8be68] space-y-2 shadow-xs">
+              <div className="flex items-center gap-2 font-black text-sm uppercase tracking-wide">
+                <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
+                <span>Précommande Dégustation Privée (18 Octobre)</span>
+              </div>
+              <p className="text-xs text-foreground/85 leading-relaxed font-medium">
+                ⚠️ <b>Retrait sur place uniquement :</b> Cette commande est réservée pour l'événement dégustation privée du <b>Dimanche 18 Octobre 2026</b> à Yaoundé. Ne pas expédier par coursier classique à domicile.
+              </p>
+            </div>
+          )}
 
           {/* Cocktail or Program info */}
           {order.type === 'program' ? (
@@ -1839,23 +1909,29 @@ const Orders: PageComponent = () => {
   const isAdmin = user?.role === UserRole.ADMIN;
 
   const tabParam = searchParams.get('tab');
-  const [orderTypeTab, setOrderTypeTab] = useState<'classic' | 'program'>(
-    tabParam === 'programs' || tabParam === 'program' ? 'program' : 'classic'
+  const [orderTypeTab, setOrderTypeTab] = useState<'classic' | 'degustation' | 'program'>(
+    tabParam === 'degustation' || tabParam === 'tasting'
+      ? 'degustation'
+      : tabParam === 'programs' || tabParam === 'program'
+      ? 'program'
+      : 'classic'
   );
 
   useEffect(() => {
-    if (tabParam === 'programs' || tabParam === 'program') {
+    if (tabParam === 'degustation' || tabParam === 'tasting') {
+      setOrderTypeTab('degustation');
+    } else if (tabParam === 'programs' || tabParam === 'program') {
       setOrderTypeTab('program');
     } else if (tabParam === 'classic') {
       setOrderTypeTab('classic');
     }
   }, [tabParam]);
 
-  function handleTabChange(tab: 'classic' | 'program') {
+  function handleTabChange(tab: 'classic' | 'degustation' | 'program') {
     setOrderTypeTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      next.set('tab', tab === 'program' ? 'programs' : 'classic');
+      next.set('tab', tab === 'program' ? 'programs' : tab === 'degustation' ? 'degustation' : 'classic');
       return next;
     }, { replace: true });
   }
@@ -1924,8 +2000,12 @@ const Orders: PageComponent = () => {
     [orders, periodType, periodAnchor],
   );
 
+  const tastingOrdersCount = useMemo(
+    () => periodOrders.filter((o) => isTastingOrder(o)).length,
+    [periodOrders]
+  );
   const classicOrdersCount = useMemo(
-    () => periodOrders.filter((o) => o.type !== 'program').length,
+    () => periodOrders.filter((o) => o.type !== 'program' && !isTastingOrder(o)).length,
     [periodOrders]
   );
   const programOrdersCount = useMemo(
@@ -1946,8 +2026,16 @@ const Orders: PageComponent = () => {
     const q = searchQuery.trim().toLowerCase();
     return periodOrders.filter((o) => {
       const isProg = o.type === 'program';
-      if (orderTypeTab === 'program' && !isProg) return false;
-      if (orderTypeTab === 'classic' && isProg) return false;
+      const isTasting = isTastingOrder(o);
+
+      if (orderTypeTab === 'degustation') {
+        if (!isTasting) return false;
+      } else if (orderTypeTab === 'program') {
+        if (!isProg) return false;
+      } else {
+        // Tab classique : commandes classiques hors précommandes dégustation
+        if (isProg || isTasting) return false;
+      }
 
       if (filterSource !== 'all' && (o.source || 'web') !== filterSource) return false;
       if (filterStatus !== 'all' && o.status !== filterStatus) return false;
@@ -1958,6 +2046,7 @@ const Orders: PageComponent = () => {
         (o.userNameSnapshot?.toLowerCase().includes(q) ?? false) ||
         (o.userEmailSnapshot?.toLowerCase().includes(q) ?? false) ||
         (o.userPhoneSnapshot?.toLowerCase().includes(q) ?? false) ||
+        (o.deliveryDetails?.district?.toLowerCase().includes(q) ?? false) ||
         (o.deliveryDetails?.phone?.toLowerCase().includes(q) ?? false) ||
         o.id.toLowerCase().includes(q)
       );
@@ -1996,20 +2085,20 @@ const Orders: PageComponent = () => {
         heroExtra={heroExtra}
       >
         <div className="space-y-6">
-          {/* Tabs: Commandes classiques vs Commandes programmes */}
-          <div className="p-1.5 rounded-2xl bg-card/80 backdrop-blur-md border border-border/60 shadow-sm flex gap-2">
+          {/* Tabs: Commandes classiques vs Dégustation (18 Oct.) vs Commandes programmes */}
+          <div className="p-1.5 rounded-2xl bg-card/80 backdrop-blur-md border border-border/60 shadow-sm flex gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => handleTabChange('classic')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                 orderTypeTab === 'classic'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <ShoppingBag className="size-4 shrink-0" />
-              <span>{t('orders.tabs.classic', 'Commandes classiques')}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              <span className="truncate">{t('orders.tabs.classic', 'Classiques')}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
                 orderTypeTab === 'classic'
                   ? 'bg-primary-foreground/20 text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
@@ -2020,16 +2109,36 @@ const Orders: PageComponent = () => {
 
             <button
               type="button"
+              onClick={() => handleTabChange('degustation')}
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
+                orderTypeTab === 'degustation'
+                  ? 'bg-[#E0982E] text-white border-[#E0982E] shadow-md'
+                  : 'border-transparent text-amber-700 dark:text-amber-400 hover:text-foreground hover:bg-amber-500/10'
+              }`}
+            >
+              <Sparkles className="size-4 shrink-0" />
+              <span className="truncate">🍷 Dégustation</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                orderTypeTab === 'degustation'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+              }`}>
+                {tastingOrdersCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleTabChange('program')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                 orderTypeTab === 'program'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <Calendar className="size-4 shrink-0" />
-              <span>{t('orders.tabs.programs', 'Commandes programmes')}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              <span className="truncate">{t('orders.tabs.programs', 'Programmes')}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
                 orderTypeTab === 'program'
                   ? 'bg-primary-foreground/20 text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
@@ -2178,12 +2287,16 @@ const Orders: PageComponent = () => {
                   {label}
                   {value !== 'all' && (
                     <span className="ml-1.5 opacity-60">
-                      {periodOrders.filter((o) => (orderTypeTab === 'program' ? o.type === 'program' : o.type !== 'program') && o.status === value).length}
+                      {periodOrders.filter((o) => {
+                        if (orderTypeTab === 'degustation') return isTastingOrder(o) && o.status === value;
+                        if (orderTypeTab === 'program') return o.type === 'program' && o.status === value;
+                        return o.type !== 'program' && !isTastingOrder(o) && o.status === value;
+                      }).length}
                     </span>
                   )}
                   {value === 'all' && periodType !== 'all' && (
                     <span className="ml-1.5 opacity-60">
-                      {orderTypeTab === 'program' ? programOrdersCount : classicOrdersCount}
+                      {orderTypeTab === 'degustation' ? tastingOrdersCount : orderTypeTab === 'program' ? programOrdersCount : classicOrdersCount}
                     </span>
                   )}
                 </button>
@@ -2231,6 +2344,8 @@ const Orders: PageComponent = () => {
             <p className="text-sm font-semibold text-foreground">
               {filterStatus !== 'all' || periodType !== 'all'
                 ? t('orders.emptyFilter')
+                : orderTypeTab === 'degustation'
+                ? 'Aucune précommande pour la dégustation trouvée'
                 : orderTypeTab === 'program'
                 ? 'Aucune commande de cure trouvée'
                 : t('orders.emptyAll')}

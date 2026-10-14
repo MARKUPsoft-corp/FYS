@@ -45,6 +45,7 @@ export type CreateOrderVisuals = {
   ingredientImageSnapshots?: string[];
   discountAmount?: number;
   promoCodeApplied?: string;
+  isDegustation?: boolean;
 };
 
 export async function createOrder(
@@ -95,11 +96,20 @@ export async function createOrder(
     lineTotal: line.pricePerBottle * line.quantity,
   }));
 
+  const isDegustation =
+    visuals?.isDegustation ??
+    (cleanedDeliveryDetails?.district?.toLowerCase().includes('dégustation') ||
+      cleanedDeliveryDetails?.district?.toLowerCase().includes('degustation') ||
+      cocktail.name.toLowerCase().includes('dégustation') ||
+      cocktail.name.toLowerCase().includes('degustation') ||
+      false);
+
   const ref = doc(collection(db, COLLECTIONS.ORDERS));
   const order: Omit<Order, 'createdAt' | 'updatedAt'> = {
     id: ref.id,
     type: 'classic',
     source: 'web',
+    isDegustation,
     userId: user.uid,
     userNameSnapshot: user.name,
     userEmailSnapshot: user.email,
