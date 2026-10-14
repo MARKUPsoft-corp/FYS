@@ -229,3 +229,26 @@ export function getDefaultBottleCost(
   return settings?.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml ?? 250;
 }
 
+// ── Tasting Event Lab Settings (settings/degustation) ──────────────────────
+
+export const TASTING_SETTINGS_DOC_ID = 'degustation';
+
+export interface TastingSettings {
+  /** Liste des IDs de fruits principaux autorisés pour l'étape 1 du lab dégustation */
+  tastingMainFruitIds: string[];
+  /** Liste des IDs de suppléments autorisés pour l'étape 2 du lab dégustation */
+  tastingSupplementIds: string[];
+  /** Liste globale des IDs d'ingrédients autorisés en dégustation (union des deux) */
+  tastingFruitIds?: string[];
+  updatedAt?: Timestamp;
+}
+
+export const DEFAULT_TASTING_MAIN_FRUITS = ['ananas', 'papaye', 'orange'];
+export const DEFAULT_TASTING_SUPPLEMENTS = ['gingembre', 'menthe', 'folere'];
+
+export const DEFAULT_TASTING_SETTINGS: TastingSettings = {
+  tastingMainFruitIds: DEFAULT_TASTING_MAIN_FRUITS,
+  tastingSupplementIds: DEFAULT_TASTING_SUPPLEMENTS,
+  tastingFruitIds: [...DEFAULT_TASTING_MAIN_FRUITS, ...DEFAULT_TASTING_SUPPLEMENTS],
+};
+

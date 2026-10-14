@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { isUsableFruit, type Fruit, type Category } from '@/entities';
+import { useTastingSettings } from '@/hooks/useTastingSettings';
 
 type Props = {
   fruits: Fruit[];
@@ -25,7 +26,12 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning'> = {
 
 export function FruitTable({ fruits, categories, onEdit, onDelete, onToggleActive }: Props) {
   const { t } = useTranslation();
+  const { settings: tastingSettings } = useTastingSettings();
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  const tastingIds = new Set([
+    ...(tastingSettings.tastingMainFruitIds || []),
+    ...(tastingSettings.tastingSupplementIds || []),
+  ]);
 
   if (fruits.length === 0) {
     return (
@@ -114,6 +120,11 @@ export function FruitTable({ fruits, categories, onEdit, onDelete, onToggleActiv
                   {fruit.isSupplement && (
                     <Badge className="text-[10px] bg-secondary/15 text-secondary border-secondary/30" variant="outline">
                       {t('fruits.supplement')}
+                    </Badge>
+                  )}
+                  {tastingIds.has(fruit.id) && (
+                    <Badge className="text-[10px] bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 font-bold" variant="outline">
+                      🍷 Dégustation
                     </Badge>
                   )}
                 </div>

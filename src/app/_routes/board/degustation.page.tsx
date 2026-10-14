@@ -40,8 +40,10 @@ import {
   type TastingVisit,
 } from '@/services/tasting';
 import type { Order } from '@/entities';
+import { TastingIngredientsManager } from '@/components/features/admin/TastingIngredientsManager';
+import { useTastingSettings } from '@/hooks/useTastingSettings';
 
-type Tab = 'rsvps' | 'orders' | 'broadcast';
+type Tab = 'rsvps' | 'orders' | 'ingredients' | 'broadcast';
 
 function formatDateTime(ts: any): string {
   if (!ts) return '—';
@@ -64,11 +66,19 @@ function cleanPhoneForWhatsApp(phone: string): string {
 
 const DegustationAdminPage: PageComponent = () => {
   const [activeTab, setActiveTab] = useState<Tab>('rsvps');
+  const { settings: tastingSettings } = useTastingSettings();
   const [rsvps, setRsvps] = useState<TastingRSVP[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [downloads, setDownloads] = useState<TastingDownload[]>([]);
   const [visits, setVisits] = useState<TastingVisit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const tastingIngredientsCount = useMemo(() => {
+    return new Set([
+      ...(tastingSettings.tastingMainFruitIds || []),
+      ...(tastingSettings.tastingSupplementIds || []),
+    ]).size;
+  }, [tastingSettings]);
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -412,6 +422,19 @@ const DegustationAdminPage: PageComponent = () => {
 
             <button
               type="button"
+              onClick={() => setActiveTab('ingredients')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'ingredients'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              <Sparkles className="size-4" />
+              Ingrédients du Lab ({tastingIngredientsCount})
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('broadcast')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'broadcast'
@@ -720,6 +743,11 @@ const DegustationAdminPage: PageComponent = () => {
                 })}
               </div>
             </div>
+          )}
+
+          {/* ━━ TAB 4 : INGRÉDIENTS DU LAB DÉGUSTATION ━━ */}
+          {activeTab === 'ingredients' && (
+            <TastingIngredientsManager />
           )}
         </div>
       </div>

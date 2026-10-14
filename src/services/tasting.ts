@@ -3,6 +3,8 @@ import {
   addDoc,
   serverTimestamp,
   doc,
+  getDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
@@ -11,7 +13,13 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { COLLECTIONS, isTastingOrder } from '@/entities';
+import {
+  COLLECTIONS,
+  isTastingOrder,
+  TASTING_SETTINGS_DOC_ID,
+  DEFAULT_TASTING_SETTINGS,
+  type TastingSettings,
+} from '@/entities';
 import type { Order } from '@/entities';
 
 export interface TastingRSVP {
@@ -221,4 +229,85 @@ export function subscribeToTastingOrders(
     },
     (err) => console.warn('[tasting] subscribeToTastingOrders warning:', err),
   );
+}
+
+// ── Tasting Lab Ingredients Settings ──────────────────────────────────────────
+
+export async function getTastingSettings(): Promise<TastingSettings> {
+  try {
+    const snap = await getDoc(doc(db, COLLECTIONS.SETTINGS, TASTING_SETTINGS_DOC_ID));
+    if (!snap.exists()) {
+      return { ...DEFAULT_TASTING_SETTINGS };
+    }
+    const data = snap.data() as Partial<TastingSettings>;
+    const mainIds = data.tastingMainFruitIds ?? DEFAULT_TASTING_SETTINGS.tastingMainFruitIds;
+    const suppIds = data.tastingSupplementIds ?? DEFAULT_TASTING_SETTINGS.tastingSupplementIds;
+    return {
+      tastingMainFruitIds: mainIds,
+      tastingSupplementIds: suppIds,
+      tastingFruitIds: data.tastingFruitIds ?? [...new Set([...mainIds, ...suppIds])],
+      ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
+    };
+  } catch (err) {
+    console.warn('[tasting] getTastingSettings fallback to defaults:', err);
+    return { ...DEFAULT_TASTING_SETTINGS };
+  }
+}
+
+export function subscribeToTastingSettings(
+  callback: (settings: TastingSettings) => void,
+): Unsubscribe {
+  const docRef = doc(db, COLLECTIONS.SETTINGS, TASTING_SETTINGS_DOC_ID);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      if (!snap.exists()) {
+        callback({ ...DEFAULT_TASTING_SETTINGS });
+        return;
+      }
+      const data = snap.data() as Partial<TastingSettings>;
+      const mainIds = data.tastingMainFruitIds ?? DEFAULT_TASTING_SETTINGS.tastingMainFruitIds;
+      const suppIds = data.tastingSupplementIds ?? DEFAULT_TASTING_SETTINGS.tastingSupplementIds;
+      callback({
+        tastingMainFruitIds: mainIds,
+        tastingSupplementIds: suppIds,
+        tastingFruitIds: data.tastingFruitIds ?? [...new Set([...mainIds, ...suppIds])],
+        ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
+      });
+    },
+    (err) => {
+      console.warn('[tasting] subscribeToTastingSettings warning:', err);
+      callback({ ...DEFAULT_TASTING_SETTINGS });
+    },
+  );
+}
+
+export async function updateTastingSettings(
+  data: Partial<TastingSettings>,
+): Promise<void> {
+  const docRef = doc(db, COLLECTIONS.SETTINGS, TASTING_SETTINGS_DOC_ID);
+  const mainIds = data.tastingMainFruitIds;
+  const suppIds = data.tastingSupplementIds;
+  const combined = data.tastingFruitIds ?? (
+    mainIds && suppIds ? [...new Set([...mainIds, ...suppIds])] : undefined
+  );
+
+  await setDoc(
+    docRef,
+    {
+      ...(mainIds ? { tastingMainFruitIds: mainIds } : {}),
+      ...(suppIds ? { tastingSupplementIds: suppIds } : {}),
+      ...(combined ? { tastingFruitIds: combined } : {}),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function resetTastingSettingsToDefault(): Promise<void> {
+  const docRef = doc(db, COLLECTIONS.SETTINGS, TASTING_SETTINGS_DOC_ID);
+  await setDoc(docRef, {
+    ...DEFAULT_TASTING_SETTINGS,
+    updatedAt: serverTimestamp(),
+  });
 }

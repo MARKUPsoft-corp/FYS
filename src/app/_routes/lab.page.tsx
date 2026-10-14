@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import { Save, Sparkles, ChevronRight } from 'lucide-react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
-import type { CocktailIngredient, AIAnalysis, Cocktail } from '@/entities';
+import type { CocktailIngredient, AIAnalysis, Cocktail, Fruit } from '@/entities';
 import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail, getCocktailById } from '@/services/cocktail';
@@ -22,6 +22,7 @@ import { trackEvent } from '@/lib/analytics';
 import { useProfileStore, isProfileComplete } from '@/stores/profile';
 import { pushHistoryParam, useCloseHistoryParam } from '@/hooks/useHistoryParam';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
+import { useTastingSettings } from '@/hooks/useTastingSettings';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { consumePendingAction, saveLabMix, loadLabMix } from '@/lib/pending-action';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
@@ -83,11 +84,34 @@ const FysLab: PageComponent = () => {
   const recommendKeyRef = useRef<string>('');
 
     const { fruits: allFruits, isLoading: fruitsLoading } = useFruitsRealtime();
+  const { settings: tastingSettings } = useTastingSettings();
+
+  const isTastingMainFruit = useCallback((f: Fruit) => {
+    if (tastingSettings?.tastingMainFruitIds && tastingSettings.tastingMainFruitIds.length > 0) {
+      return tastingSettings.tastingMainFruitIds.includes(f.id);
+    }
+    const defaults = ['ananas', 'papaye', 'orange'];
+    return defaults.some((d) => f.id === d || f.name.toLowerCase().includes(d));
+  }, [tastingSettings]);
+
+  const isTastingSupplement = useCallback((f: Fruit) => {
+    if (tastingSettings?.tastingSupplementIds && tastingSettings.tastingSupplementIds.length > 0) {
+      return tastingSettings.tastingSupplementIds.includes(f.id);
+    }
+    const defaults = ['gingembre', 'menthe', 'folere', 'bissap'];
+    return defaults.some((d) => f.id === d || f.name.toLowerCase().includes(d));
+  }, [tastingSettings]);
+
   const fruits = useMemo(() => {
     if (!isEventMode) return allFruits;
-    const eventFruits = ['ananas', 'papaye', 'orange', 'gingembre', 'menthe', 'bissap'];
-    return allFruits.filter(f => eventFruits.some(ef => f.name.toLowerCase().includes(ef)));
-  }, [allFruits, isEventMode]);
+    return allFruits
+      .filter((f) => isTastingMainFruit(f) || isTastingSupplement(f))
+      .map((f) => ({
+        ...f,
+        isMainFruit: isTastingMainFruit(f),
+        isSupplement: isTastingSupplement(f),
+      }));
+  }, [allFruits, isEventMode, isTastingMainFruit, isTastingSupplement]);
 
   const { data: pricing } = useQuery({
     queryKey: ['pricing-settings'],

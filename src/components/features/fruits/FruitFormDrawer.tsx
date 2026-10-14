@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Plus, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTastingSettings } from '@/hooks/useTastingSettings';
+import { updateTastingSettings } from '@/services/tasting';
 import {
   Sheet,
   SheetContent,
@@ -238,6 +240,11 @@ export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSa
   const [isActive, setIsActive] = useState(true);
   const [incompatibleIds, setIncompatibleIds] = useState<string[]>([]);
 
+  // Tasting event roles
+  const { settings: tastingSettings } = useTastingSettings();
+  const [isTastingMain, setIsTastingMain] = useState(false);
+  const [isTastingSupp, setIsTastingSupp] = useState(false);
+
   // Cocktail profile
   const [benefits, setBenefits] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -307,6 +314,8 @@ export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSa
       setDataStatus(fruit.dataStatus);
       setSources(fruit.sources ?? []);
       setValidatedByNutritionist(fruit.validatedByNutritionist);
+      setIsTastingMain(tastingSettings.tastingMainFruitIds?.includes(fruit.id) ?? false);
+      setIsTastingSupp(tastingSettings.tastingSupplementIds?.includes(fruit.id) ?? false);
     } else {
       setName(''); setScientificName(''); setPricePerGram('');
       setCategoryIds([]); setCocktailRole(''); setImageFile(null);
@@ -321,9 +330,11 @@ export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSa
       setBenefitBadges([]); setOkRules(''); setPrecautions('');
       setContraindications(''); setNutritionistNote('');
       setDataStatus('partial'); setSources([]); setValidatedByNutritionist(false);
+      setIsTastingMain(false);
+      setIsTastingSupp(false);
     }
     setError('');
-  }, [fruit, open]);
+  }, [fruit, open, tastingSettings]);
 
   function toggleCategory(id: string) {
     setCategoryIds((prev) =>
@@ -419,6 +430,21 @@ export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSa
     setError('');
     try {
       await onSave(data, imageFile, fruit?.id);
+      if (fruit?.id) {
+        const nextMain = new Set(tastingSettings.tastingMainFruitIds || []);
+        if (isTastingMain) nextMain.add(fruit.id);
+        else nextMain.delete(fruit.id);
+
+        const nextSupp = new Set(tastingSettings.tastingSupplementIds || []);
+        if (isTastingSupp) nextSupp.add(fruit.id);
+        else nextSupp.delete(fruit.id);
+
+        await updateTastingSettings({
+          tastingMainFruitIds: Array.from(nextMain),
+          tastingSupplementIds: Array.from(nextSupp),
+          tastingFruitIds: Array.from(new Set([...nextMain, ...nextSupp])),
+        });
+      }
       onClose();
     } catch {
       setError('Failed to save. Please try again.');
@@ -588,6 +614,44 @@ export function FruitFormDrawer({ open, fruit, categories, fruits, onClose, onSa
                   {t('fruits.supplement')}
                 </button>
               </div>
+
+              {fruit?.id && (
+                <div className="pt-3 mt-3 border-t border-border/40 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="size-3.5 text-[#E0982E]" />
+                    <Label className="text-xs font-bold text-foreground">
+                      Lab Dégustation Privée (18 Octobre)
+                    </Label>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Activez les rôles sous lesquels cet ingrédient sera proposé aux invités VIP.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsTastingMain((v) => !v)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                        isTastingMain
+                          ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs'
+                          : 'border-border text-muted-foreground hover:border-emerald-600 hover:text-foreground'
+                      }`}
+                    >
+                      {isTastingMain ? '✓ ' : '+ '}Fruit Dégustation (Étape 1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsTastingSupp((v) => !v)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                        isTastingSupp
+                          ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-xs'
+                          : 'border-border text-muted-foreground hover:border-amber-600 hover:text-foreground'
+                      }`}
+                    >
+                      {isTastingSupp ? '✓ ' : '+ '}Supplément Dégustation (Étape 2)
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
