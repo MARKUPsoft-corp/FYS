@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ── Configuration ─────────────────────────────────────────────────────────────
@@ -15,23 +16,57 @@ const GEMINI_API_KEY =
 
 // ── Firebase Admin (optionnel & sécurisé) ────────────────────────────────────
 
+function getAdminApp() {
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    return null;
+  }
+  return getApps().length
+    ? getApps()[0]
+    : initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+      });
+}
+
 function getAdminDb() {
   try {
-    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      return null;
-    }
-    const app = getApps().length
-      ? getApps()[0]
-      : initializeApp({
-          credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          }),
-        });
-    return getFirestore(app);
+    const app = getAdminApp();
+    return app ? getFirestore(app) : null;
   } catch (e) {
     console.warn('[whatsapp-webhook] Firebase Admin init bypassed:', e);
+    return null;
+  }
+}
+
+function getAdminMessaging() {
+  try {
+    const app = getAdminApp();
+    return app ? getMessaging(app) : null;
+  } catch (e) {
+    console.warn('[whatsapp-webhook] Firebase Admin messaging bypassed:', e);
+    return null;
+  }
+}
+
+/**
+ * Parse du JSON renvoyé par un LLM de manière tolérante :
+ * retire les blocs markdown ```json ... ``` et extrait l'objet { ... }.
+ */
+function parseSafeJson<T = any>(raw: string): T | null {
+  if (!raw) return null;
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    cleaned = match[0];
+  }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (e) {
+    console.warn('[whatsapp-webhook] Failed to parse JSON block:', e, 'Raw content was:', raw);
     return null;
   }
 }
@@ -505,6 +540,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ status: 'ignored_empty' });
       }
 
+      // Normalisation du numéro de téléphone et variantes pour requêtes multi-formats fiables
+      const cleanDigits = senderPhone.replace(/\D/g, '');
+      const local9 = cleanDigits.replace(/^(237|00237)/, '');
+      const phoneVariants = Array.from(new Set([
+        senderPhone,
+        `+${cleanDigits}`,
+        cleanDigits,
+        local9,
+        `+237${local9}`,
+        `237${local9}`,
+        `00237${local9}`,
+      ].filter(Boolean)));
+
       const messageKind = isAudioMessage ? 'audio' : isImageMessage ? 'image' : 'text';
       console.log(`[whatsapp-webhook] Processing ${messageKind} message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
 
@@ -568,19 +616,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           const usersRef = db.collection('users');
-          const cleanDigits = senderPhone.replace(/\D/g, '');
-          const local9 = cleanDigits.replace(/^(237|00237)/, '');
-          const phoneVariants = Array.from(new Set([
-            senderPhone,
-            `+${cleanDigits}`,
-            cleanDigits,
-            local9,
-            `+237${local9}`,
-            `237${local9}`,
-            `00237${local9}`,
-          ].filter(Boolean)));
-
-          const querySnap = await usersRef.where('phone', 'in', phoneVariants).limit(1).get();
+          const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
+          const querySnap = await usersRef.where('phone', 'in', safeUserVariants).limit(1).get();
 
           if (!querySnap.empty) {
             const userData = querySnap.docs[0].data();
@@ -786,34 +823,35 @@ Exemple :
       const profileMatch = aiReply.match(/:::PROFILE_JSON\s*([\s\S]*?)\s*:::?/);
       if (profileMatch && db && userDocRef) {
         try {
-          const rawProfileJson = profileMatch[1].trim();
-          const pData = JSON.parse(rawProfileJson);
-          console.log('[whatsapp-webhook] Health profile completed via WhatsApp:', pData);
+          const pData = parseSafeJson(profileMatch[1]);
+          if (pData) {
+            console.log('[whatsapp-webhook] Health profile completed via WhatsApp:', pData);
 
-          const cList = Array.isArray(pData.healthConditions) ? pData.healthConditions : [];
-          const aList = Array.isArray(pData.allergies) ? pData.allergies : [];
-          const gList = Array.isArray(pData.goals) ? pData.goals : [];
+            const cList = Array.isArray(pData.healthConditions) ? pData.healthConditions : [];
+            const aList = Array.isArray(pData.allergies) ? pData.allergies : [];
+            const gList = Array.isArray(pData.goals) ? pData.goals : [];
 
-          // Enregistrer dans users/{uid}/profile/main (identique au format du web FYS)
-          await userDocRef.collection('profile').doc('main').set({
-            userId: userDocRef.id,
-            healthConditions: cList,
-            allergies: aList,
-            goals: gList,
-            channel: 'whatsapp',
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
+            // Enregistrer dans users/{uid}/profile/main (identique au format du web FYS)
+            await userDocRef.collection('profile').doc('main').set({
+              userId: userDocRef.id,
+              healthConditions: cList,
+              allergies: aList,
+              goals: gList,
+              channel: 'whatsapp',
+              updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
 
-          // Mettre à jour aussi le document utilisateur
-          await userDocRef.set({
-            healthConditions: cList,
-            allergies: aList,
-            goals: gList,
-            hasHealthProfile: true,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
+            // Mettre à jour aussi le document utilisateur
+            await userDocRef.set({
+              healthConditions: cList,
+              allergies: aList,
+              goals: gList,
+              hasHealthProfile: true,
+              updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
 
-          console.log(`[whatsapp-webhook] ✅ Health profile successfully saved in profile/main for user ${userDocRef.id}`);
+            console.log(`[whatsapp-webhook] ✅ Health profile successfully saved in profile/main for user ${userDocRef.id}`);
+          }
         } catch (profErr) {
           console.error('[whatsapp-webhook] Error saving health profile:', profErr);
         } finally {
@@ -827,105 +865,157 @@ Exemple :
       const orderMatch = aiReply.match(/:::ORDER_JSON\s*([\s\S]*?)\s*:::?/);
       if (orderMatch && db) {
         try {
-          const rawOrderJson = orderMatch[1].trim();
-          const orderData = JSON.parse(rawOrderJson);
-          console.log('[whatsapp-webhook] Order detected from WhatsApp:', orderData);
-
-          // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
-          // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
-          const recentOrdersSnap = await db.collection('orders')
-            .where('userPhoneSnapshot', 'in', phoneVariants)
-            .limit(5)
-            .get();
-
-          const isDuplicateOrder = recentOrdersSnap.docs.some((doc: any) => {
-            const d = doc.data();
-            if (d.source !== 'whatsapp') return false;
-            if (messageId && d.whatsappMessageId === messageId) return true;
-            const createdAtMs = d.createdAt?.toMillis
-              ? d.createdAt.toMillis()
-              : (d.createdAt?._seconds ? d.createdAt._seconds * 1000 : 0);
-            return Date.now() - createdAtMs < 120 * 1000;
-          });
-
-          if (isDuplicateOrder) {
-            console.warn(`[whatsapp-webhook] ⚠️ Duplicate order blocked for ${senderPhone}: an order was already registered in the last 120 seconds.`);
+          const orderData = parseSafeJson(orderMatch[1]);
+          if (!orderData) {
+            console.warn('[whatsapp-webhook] Could not parse ORDER_JSON from AI reply');
           } else {
-            const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
-            const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
-            const quantity = Math.max(1, Number(orderData.quantity) || 1);
+            console.log('[whatsapp-webhook] Order detected from WhatsApp:', orderData);
 
-            // Retrouver les fruits sélectionnés et leurs prix réels en base de données
-            const chosenFruitNames: string[] = Array.isArray(orderData.fruits) ? orderData.fruits : [];
-            const matchedIngredients = chosenFruitNames.map((fName: string) => {
-              const clean = fName.trim().toLowerCase();
-              const found = availableFruits.find(
-                (af) => af.name.toLowerCase() === clean || af.id.toLowerCase() === clean
-              );
-              return {
-                fruitId: found ? found.id : fName.toLowerCase().replace(/\s+/g, '_'),
-                fruitName: found ? found.name : fName,
-                quantityGrams: 100,
-                priceSnapshot: found ? found.price : 0,
-                role: 'fruit' as const,
-              };
+            // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
+            // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
+            const safePhoneVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
+            const recentOrdersSnap = await db.collection('orders')
+              .where('userPhoneSnapshot', 'in', safePhoneVariants)
+              .limit(5)
+              .get();
+
+            const isDuplicateOrder = recentOrdersSnap.docs.some((doc: any) => {
+              const d = doc.data();
+              if (d.source !== 'whatsapp') return false;
+              if (messageId && d.whatsappMessageId === messageId) return true;
+              const createdAtMs = d.createdAt?.toMillis
+                ? d.createdAt.toMillis()
+                : (d.createdAt?._seconds ? d.createdAt._seconds * 1000 : 0);
+              return Date.now() - createdAtMs < 120 * 1000;
             });
 
-            // Calcul fidèle FYS : prix bouteille = prix contenant de base + somme des prix des fruits du mélange
-            const ingredientsPriceSum = matchedIngredients.reduce((sum, ing) => sum + (ing.priceSnapshot || 0), 0);
-            const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
-            const lineTotal = pricePerBottle * quantity;
-            const finalDeliveryFee = deliveryFee;
-            const totalPrice = lineTotal + finalDeliveryFee;
+            if (isDuplicateOrder) {
+              console.warn(`[whatsapp-webhook] ⚠️ Duplicate order blocked for ${senderPhone}: an order was already registered in the last 120 seconds.`);
+            } else {
+              const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
+              const bottleSizeLabel = bottleSize === '1L' ? '1 L' : '500 ml';
+              const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
+              const quantity = Math.max(1, Number(orderData.quantity) || 1);
 
-            const orderRef = db.collection('orders').doc();
-            const newOrderDoc = {
-              id: orderRef.id,
-              type: 'classic',
-              source: 'whatsapp',
-              whatsappMessageId: messageId || null,
-              status: 'pending',
-              userId: userDocRef?.id || 'whatsapp_customer',
-              userNameSnapshot: senderName,
-              userPhoneSnapshot: senderPhone,
-              userEmailSnapshot: '',
-              cocktailId: 'whatsapp-custom',
-              cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
-              cocktailIngredientsSnapshot: matchedIngredients,
-              hasAddedSugar: !!orderData.hasAddedSugar,
-              orderLines: [
-                {
-                  bottleSize,
-                  bottleSizeLabel: bottleSize === '1L' ? '1 L' : '500 ml',
-                  quantity,
-                  bottleBasePriceSnapshot: baseBottlePrice,
-                  pricePerBottle,
-                  lineTotal,
+              // Retrouver les fruits sélectionnés et leurs prix réels en base de données
+              const chosenFruitNames: string[] = Array.isArray(orderData.fruits) ? orderData.fruits : [];
+              const matchedIngredients = chosenFruitNames.map((fName: string) => {
+                const clean = fName.trim().toLowerCase();
+                const found = availableFruits.find(
+                  (af) => af.name.toLowerCase() === clean || af.id.toLowerCase() === clean
+                );
+                return {
+                  fruitId: found ? found.id : fName.toLowerCase().replace(/\s+/g, '_'),
+                  fruitName: found ? found.name : fName,
+                  quantityGrams: 100,
+                  priceSnapshot: found ? found.price : 0,
+                  role: 'fruit' as const,
+                };
+              });
+
+              // Calcul fidèle FYS : prix bouteille = prix contenant de base + somme des prix des fruits du mélange
+              const ingredientsPriceSum = matchedIngredients.reduce((sum, ing) => sum + (ing.priceSnapshot || 0), 0);
+              const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
+              const lineTotal = pricePerBottle * quantity;
+              const finalDeliveryFee = deliveryFee;
+              const totalPrice = lineTotal + finalDeliveryFee;
+
+              const orderRef = db.collection('orders').doc();
+              const newOrderDoc = {
+                id: orderRef.id,
+                type: 'classic',
+                source: 'whatsapp',
+                whatsappMessageId: messageId || null,
+                status: 'pending',
+                userId: userDocRef?.id || 'whatsapp_customer',
+                userNameSnapshot: senderName,
+                userPhoneSnapshot: senderPhone,
+                userEmailSnapshot: '',
+                cocktailId: 'whatsapp-custom',
+                cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
+                cocktailIngredientsSnapshot: matchedIngredients,
+                hasAddedSugar: !!orderData.hasAddedSugar,
+                // Champs rétro-compatibles & structurés
+                quantity,
+                bottleSize,
+                bottleSizeLabel,
+                bottleBasePriceSnapshot: baseBottlePrice,
+                cocktailPriceSnapshot: pricePerBottle,
+                orderLines: [
+                  {
+                    bottleSize,
+                    bottleSizeLabel,
+                    quantity,
+                    bottleBasePriceSnapshot: baseBottlePrice,
+                    pricePerBottle,
+                    lineTotal,
+                  },
+                ],
+                deliveryFee: finalDeliveryFee,
+                totalPrice,
+                deliveryDetails: {
+                  district: orderData.district || 'Yaoundé',
+                  phone: senderPhone,
+                  instructions: orderData.instructions || 'Commande directe WhatsApp',
                 },
-              ],
-              deliveryFee: finalDeliveryFee,
-              totalPrice,
-              deliveryDetails: {
-                district: orderData.district || 'Yaoundé',
-                phone: senderPhone,
-                instructions: orderData.instructions || 'Commande directe WhatsApp',
-              },
-              createdAt: FieldValue.serverTimestamp(),
-              updatedAt: FieldValue.serverTimestamp(),
-            };
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+              };
 
-            await orderRef.set(newOrderDoc);
-            console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
+              await orderRef.set(newOrderDoc);
+              console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
 
-            // Notifier les administrateurs
-            await db.collection('notifications').add({
-              title: 'Nouvelle commande WhatsApp !',
-              message: `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice} XAF).`,
-              link: `/board/orders?order=${orderRef.id}`,
-              audience: 'admins',
-              read: false,
-              createdAt: FieldValue.serverTimestamp(),
-            });
+              // ── Notifications Administrateurs (In-App + FCM Web Push) ──
+              try {
+                const adminsSnap = await db.collection('users').where('role', '==', 'admin').get();
+                if (!adminsSnap.empty) {
+                  const notifTitle = 'Nouvelle commande WhatsApp !';
+                  const notifMessage = `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice.toLocaleString()} XAF).`;
+                  const notifLink = `/board/orders?order=${orderRef.id}`;
+
+                  // 1. Notification in-app dans la collection "notifications" pour chaque admin
+                  const batch = db.batch();
+                  adminsSnap.docs.forEach((aDoc: any) => {
+                    const notifRef = db.collection('notifications').doc();
+                    batch.set(notifRef, {
+                      id: notifRef.id,
+                      userId: aDoc.id,
+                      title: notifTitle,
+                      message: notifMessage,
+                      link: notifLink,
+                      isRead: false,
+                      createdAt: FieldValue.serverTimestamp(),
+                    });
+                  });
+                  await batch.commit().catch((e: any) => console.warn('[whatsapp-webhook] In-app notification batch error:', e));
+
+                  // 2. Notification push FCM vers les navigateurs/smartphones des admins connectés
+                  const adminUids = adminsSnap.docs.map((d: any) => d.id);
+                  const tokensSnap = await db.collection('fcm_tokens').where('uid', 'in', adminUids.slice(0, 30)).get();
+                  if (!tokensSnap.empty) {
+                    const tokens = tokensSnap.docs.map((d: any) => d.data()?.token).filter(Boolean);
+                    if (tokens.length > 0) {
+                      const messaging = getAdminMessaging();
+                      if (messaging) {
+                        await messaging.sendEachForMulticast({
+                          tokens,
+                          notification: {
+                            title: notifTitle,
+                            body: notifMessage,
+                          },
+                          data: {
+                            url: notifLink,
+                            tag: `order-new-${orderRef.id}`,
+                          },
+                        }).catch((e: any) => console.warn('[whatsapp-webhook] FCM multicast error:', e));
+                      }
+                    }
+                  }
+                }
+              } catch (adminNotifErr) {
+                console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
+              }
+            }
           }
         } catch (orderErr) {
           console.error('[whatsapp-webhook] Error creating WhatsApp order in Firestore:', orderErr);
@@ -959,17 +1049,26 @@ Exemple :
       const sent = await sendWhatsAppMessage(senderPhone, aiReply);
       console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio });
 
-      // Enregistrer la réponse de l'IA dans Firestore si actif
+      // Enregistrer la réponse de l'IA dans Firestore pour garder l'historique de discussion
       if (db) {
         try {
-          const usersRef = db.collection('users');
-          const querySnap = await usersRef.where('phone', '==', senderPhone).limit(1).get();
-          if (!querySnap.empty) {
-            await querySnap.docs[0].ref.collection('whatsapp_messages').add({
+          if (userDocRef) {
+            await userDocRef.collection('whatsapp_messages').add({
               sender: 'nutrifys',
               text: aiReply,
               timestamp: FieldValue.serverTimestamp(),
             });
+          } else {
+            const usersRef = db.collection('users');
+            const safeVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 10) : [senderPhone];
+            const querySnap = await usersRef.where('phone', 'in', safeVariants).limit(1).get();
+            if (!querySnap.empty) {
+              await querySnap.docs[0].ref.collection('whatsapp_messages').add({
+                sender: 'nutrifys',
+                text: aiReply,
+                timestamp: FieldValue.serverTimestamp(),
+              });
+            }
           }
         } catch (saveErr) {
           console.warn('[whatsapp-webhook] Error saving AI reply:', saveErr);
