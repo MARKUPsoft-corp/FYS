@@ -746,6 +746,11 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
       tag: `order-update-${orderId}`,
       skipInApp: true,
     });
+
+    // Envoi de la notification automatique WhatsApp par NutriFYS au client
+    sendWhatsAppOrderStatus(orderId, status).catch((err) => {
+      console.warn('[order] Automated WhatsApp status notification skipped or failed:', err);
+    });
   }
 }
 
@@ -785,6 +790,31 @@ export async function cancelOrder(orderId: string): Promise<void> {
       tag: `order-cancel-${orderId}`,
       skipInApp: true,
     });
+
+    // Envoi de la notification d'annulation automatique WhatsApp par NutriFYS au client
+    sendWhatsAppOrderStatus(orderId, OrderStatus.CANCELLED).catch((err) => {
+      console.warn('[order] Automated WhatsApp cancel notification skipped or failed:', err);
+    });
+  }
+}
+
+/**
+ * Envoie un message WhatsApp automatisé au client via NutriFYS
+ * lors d'un changement de statut de commande.
+ */
+export async function sendWhatsAppOrderStatus(orderId: string, status: OrderStatus): Promise<boolean> {
+  try {
+    const res = await fetch('/api/send-order-status-whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, status }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.sent;
+  } catch (e) {
+    console.warn('[order] sendWhatsAppOrderStatus error:', e);
+    return false;
   }
 }
 

@@ -1647,9 +1647,17 @@ function AdminOrderSheet({
           {/* Changer le statut */}
           {!isCancelled && !isDelivered && (
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {t('orders.advanceOrder')}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  {t('orders.advanceOrder')}
+                </p>
+                {(order.userPhoneSnapshot || order.deliveryDetails?.phone) && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    💬 Message WhatsApp NutriFYS
+                  </span>
+                )}
+              </div>
               <div className="flex flex-col gap-2">
                 {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
                   const cfg = STATUS_CONFIG[status];
