@@ -652,6 +652,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
+          // 3. Sinon, si le message contient un email (ex: compte Google existant), lier automatiquement le compte
+          if (!existingUserDoc && senderText) {
+            const emailMatch = senderText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+            if (emailMatch) {
+              const email = emailMatch[1].toLowerCase().trim();
+              const emailSnap = await usersRef.where('email', '==', email).limit(1).get();
+              if (!emailSnap.empty) {
+                existingUserDoc = emailSnap.docs[0];
+                console.log(`[whatsapp-webhook] 🔗 Google account linked via email ${email} to phone ${senderPhone}`);
+              }
+            }
+          }
+
           if (existingUserDoc) {
             const userData = existingUserDoc.data();
             userDocRef = existingUserDoc.ref;
