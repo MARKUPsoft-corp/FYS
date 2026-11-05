@@ -14,6 +14,7 @@ import type { Order } from '@/entities';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { AdminPushPanel } from '@/components/features/admin/PushNotificationPanel';
 import { LaunchNoticeCard } from '@/components/features/admin/LaunchNoticeCard';
+import { EmailCampaignPanel } from '@/components/features/admin/EmailCampaignPanel';
 import { AfricanCornerPattern } from '@/components/common/AfricanCornerPattern';
 
 type Props = { name: string };
@@ -483,11 +484,13 @@ export function AdminHome({ name }: Props) {
       </div>
 
       {/* ── 5. COMMUNICATION & OUTILS D'ADMINISTRATION (CÔTE À CÔTE SUR PC) ── */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
           <h3 className="font-display font-bold text-xl md:text-2xl text-foreground">{t('home.admin.communication.title')}</h3>
           <p className="text-muted-foreground font-medium text-sm mt-0.5">{t('home.admin.communication.desc')}</p>
         </div>
+
+        <EmailCampaignPanel />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <LaunchNoticeCard />

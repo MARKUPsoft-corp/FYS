@@ -40,6 +40,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.477.0",
+    "nodemailer": "^10.3.1",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.6.2",
     "rasengan": "^1.2.1",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.0.8",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/three": "^0.186.0",
