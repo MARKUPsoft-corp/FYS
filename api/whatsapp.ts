@@ -2262,71 +2262,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             userDocRef = existingUserDoc.ref;
             matchedUserEmail = userData?.email || '';
 
-            // ── RESTAURATION DU BROUILLON WEB ACTIF SUR TOUTE LA CONVERSATION ──
-            // A. Si pas de code dans ce message précis, vérifier userData.activeDraftCode
-            if (!webDraft && userData?.activeDraftCode) {
+            // ── GESTION DU BROUILLON WEB & DÉTECTION DU CHANGEMENT DE RECETTE ──
+            // Si le client n'a pas tapé un code #FYS-XXXX dans ce message précis,
+            // vérifier s'il souhaite changer de recette, annuler, ou composer un nouveau jus sur WhatsApp
+            const isResetOrNewCocktailIntent = !isNewDraftCodeInMessage && /(?:composer\s+(?:un\s+)?autre|nouvelle\s+recette|changer\s+(?:de\s+)?recette|autre\s+(?:jus|cocktail)|annuler|recommencer|je\s+veux|j'aimerais|mets-moi)/i.test(senderText);
+
+            if (isResetOrNewCocktailIntent) {
+              console.log(`[whatsapp-webhook] 🔄 Client initiated a new cocktail composition or reset. Purging any active/stale webDraft.`);
+              if (userData?.activeDraftCode) {
+                await db.collection('whatsapp_drafts').doc(userData.activeDraftCode).update({ status: 'superseded' }).catch(() => null);
+              }
+              webDraft = null;
+              webDraftCode = null;
+              if (userData?.activeDraftCode) {
+                await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
+              }
+            } else if (!webDraft && userData?.activeDraftCode) {
+              // Restauration du brouillon UNIQUEMENT s'il est très récent (< 2 heures) et toujours en statut "draft"
               try {
                 const draftSnap = await db.collection('whatsapp_drafts').doc(userData.activeDraftCode).get();
                 if (draftSnap.exists) {
                   const dData = draftSnap.data();
-                  if (dData?.status !== 'converted') {
+                  const createdAtMs = dData?.createdAt?.toMillis
+                    ? dData.createdAt.toMillis()
+                    : (dData?.createdAt?._seconds ? dData.createdAt._seconds * 1000 : 0);
+                  const isRecentDraft = createdAtMs > 0 && (Date.now() - createdAtMs < 2 * 3600 * 1000);
+                  if (dData?.status === 'draft' && isRecentDraft) {
                     webDraftCode = userData.activeDraftCode;
                     webDraft = dData;
                     console.log(`[whatsapp-webhook] 🔄 Restored active web draft #${webDraftCode} from user profile:`, webDraft.cocktail?.name);
+                  } else {
+                    console.log(`[whatsapp-webhook] ⚠️ Stale or already converted webDraft #${userData.activeDraftCode} ignored.`);
+                    await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
                   }
                 }
               } catch (dErr) {
                 console.warn('[whatsapp-webhook] Failed to restore activeDraftCode from userData:', dErr);
-              }
-            }
-
-            // B. Si toujours pas de webDraft, chercher un brouillon non converti pour ce numéro
-            if (!webDraft) {
-              try {
-                const draftsSnap = await db.collection('whatsapp_drafts')
-                  .where('customerPhone', 'in', safeUserVariants)
-                  .where('status', '==', 'draft')
-                  .limit(10)
-                  .get();
-                if (!draftsSnap.empty) {
-                  const sorted = draftsSnap.docs.sort((a: any, b: any) => {
-                    const aT = a.data()?.createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
-                    const bT = b.data()?.createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
-                    return bT - aT;
-                  });
-                  const dDoc = sorted[0];
-                  webDraftCode = dDoc.id;
-                  webDraft = dDoc.data();
-                  console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} from customer phone query:`, webDraft.cocktail?.name);
-                }
-              } catch (e) {
-                console.warn('[whatsapp-webhook] Phone drafts query bypassed:', e);
-              }
-            }
-
-            // C. Si toujours pas de webDraft, analyser les messages récents pour un code #FYS-XXXX
-            if (!webDraft) {
-              try {
-                const recentMsgsSnap = await userDocRef.collection('whatsapp_messages')
-                  .orderBy('timestamp', 'desc')
-                  .limit(10)
-                  .get();
-                for (const mDoc of recentMsgsSnap.docs) {
-                  const mText = mDoc.data()?.text || '';
-                  const m = mText.match(/#?(FYS-[A-Z0-9]{4})/i);
-                  if (m) {
-                    const candidateCode = m[1].toUpperCase();
-                    const candSnap = await db.collection('whatsapp_drafts').doc(candidateCode).get();
-                    if (candSnap.exists && candSnap.data()?.status !== 'converted') {
-                      webDraftCode = candidateCode;
-                      webDraft = candSnap.data();
-                      console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} from recent chat history:`, webDraft.cocktail?.name);
-                      break;
-                    }
-                  }
-                }
-              } catch (e) {
-                console.warn('[whatsapp-webhook] History draft check bypassed:', e);
               }
             }
 
@@ -2509,24 +2480,29 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
             }
           } else {
             // NOUVEAU CLIENT : Création officielle du compte avec son numéro au moment de l'envoi WhatsApp
-            // Si pas de draftMatch direct, tenter de chercher un brouillon récent non converti
-            if (!webDraft) {
+            const isResetOrNewCocktailIntent = !isNewDraftCodeInMessage && /(?:composer\s+(?:un\s+)?autre|nouvelle\s+recette|changer\s+(?:de\s+)?recette|autre\s+(?:jus|cocktail)|annuler|recommencer|je\s+veux|j'aimerais|mets-moi)/i.test(senderText);
+            if (!webDraft && !isResetOrNewCocktailIntent) {
               try {
                 const draftsSnap = await db.collection('whatsapp_drafts')
                   .where('customerPhone', 'in', safeUserVariants)
                   .where('status', '==', 'draft')
-                  .limit(10)
+                  .limit(5)
                   .get();
                 if (!draftsSnap.empty) {
-                  const sorted = draftsSnap.docs.sort((a: any, b: any) => {
-                    const aT = a.data()?.createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
-                    const bT = b.data()?.createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
-                    return bT - aT;
-                  });
-                  const dDoc = sorted[0];
-                  webDraftCode = dDoc.id;
-                  webDraft = dDoc.data();
-                  console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} for new user from phone query:`, webDraft.cocktail?.name);
+                  const sorted = draftsSnap.docs
+                    .map(d => ({
+                      id: d.id,
+                      data: d.data(),
+                      t: d.data()?.createdAt?.toMillis ? d.data().createdAt.toMillis() : (d.data()?.createdAt?._seconds ? d.data().createdAt._seconds * 1000 : 0)
+                    }))
+                    .filter(x => x.t > 0 && Date.now() - x.t < 2 * 3600 * 1000)
+                    .sort((a, b) => b.t - a.t);
+
+                  if (sorted.length > 0) {
+                    webDraftCode = sorted[0].id;
+                    webDraft = sorted[0].data;
+                    console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} for new user from phone query:`, webDraft.cocktail?.name);
+                  }
                 }
               } catch (e) {
                 console.warn('[whatsapp-webhook] Phone drafts query bypassed for new user:', e);
@@ -2680,35 +2656,50 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
             incompatibleIds: matchedFruit?.incompatibleIds || [],
           };
         });
+      } else if (existingUserDoc?.data()?.activeWhatsAppDraft && Array.isArray(existingUserDoc.data().activeWhatsAppDraft.ingredients) && existingUserDoc.data().activeWhatsAppDraft.ingredients.length > 0) {
+        // Priorité 2 : Recette personnalisée déjà composée et mémorisée sur WhatsApp
+        const waDraft = existingUserDoc.data().activeWhatsAppDraft;
+        activeRecipeName = waDraft.cocktailName || 'Cocktail Santé FYS';
+        activeRecipeIngredients = waDraft.ingredients.map((i: any) => {
+          const snapPrice = Number(i.priceSnapshot);
+          const matchedFruit = availableFruits.find(
+            (f) => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() ||
+                   f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase()
+          );
+          return {
+            fruitId: i.fruitId || i.id || matchedFruit?.id || 'fruit',
+            fruitName: i.fruitName || i.name || matchedFruit?.name || 'Fruit',
+            priceSnapshot: snapPrice > 0 ? snapPrice : (matchedFruit?.price || 0),
+            isSupplement: matchedFruit?.isSupplement ?? (i.role === 'supplement'),
+            incompatibleIds: matchedFruit?.incompatibleIds || [],
+          };
+        });
       } else {
-        // Détection dans l'historique récent des fruits convenus ou choisis pour la composition WhatsApp
-        const historyTexts = chatHistoryForGemini.slice(-8).flatMap((m) => m.parts.map((p) => p.text));
-        const fullChatContext = [...historyTexts, senderText].join(' ').toLowerCase();
-
+        // Priorité 3 : Détection précise des fruits mentionnés par le client dans son message actuel
+        const mentionedFruits: any[] = [];
+        const cleanSenderText = senderText.toLowerCase();
         for (const fruit of availableFruits) {
           const fNameLower = fruit.name.toLowerCase();
-          const fIdLower = fruit.id.toLowerCase();
           const simpleName = fNameLower.split('(')[0].trim();
-          if (
-            fullChatContext.includes(fNameLower) ||
-            fullChatContext.includes(fIdLower) ||
-            (simpleName.length > 3 && fullChatContext.includes(simpleName)) ||
-            (fNameLower.includes('foléré') && (fullChatContext.includes('bissap') || fullChatContext.includes('foléré') || fullChatContext.includes('folere'))) ||
-            (fNameLower.includes('coco') && (fullChatContext.includes('coco') || fullChatContext.includes('noix de coco')))
-          ) {
-            if (!activeRecipeIngredients.some((item) => item.fruitId === fruit.id)) {
-              activeRecipeIngredients.push({
-                fruitId: fruit.id,
-                fruitName: fruit.name,
-                priceSnapshot: fruit.price,
-                isSupplement: fruit.isSupplement,
-                incompatibleIds: fruit.incompatibleIds,
-              });
+          const regex = new RegExp(`(?:^|[\\s,;.!?'"()-])${simpleName}(?:$|[\\s,;.!?'"()-])`, 'i');
+          const isFoledMatch = fNameLower.includes('foléré') && /(?:^|[\s,;.!?'"()-])(?:bissap|foléré|folere)(?:$|[\\s,;.!?'"()-])/i.test(cleanSenderText);
+          const isCocoMatch = fNameLower.includes('coco') && /(?:^|[\s,;.!?'"()-])(?:coco|noix de coco)(?:$|[\\s,;.!?'"()-])/i.test(cleanSenderText);
+
+          if (regex.test(cleanSenderText) || isFoledMatch || isCocoMatch) {
+            if (!mentionedFruits.some((m) => m.id === fruit.id)) {
+              mentionedFruits.push(fruit);
             }
           }
         }
-        if (activeRecipeIngredients.length > 0) {
+        if (mentionedFruits.length > 0) {
           activeRecipeName = 'Cocktail Sur-Mesure FYS';
+          activeRecipeIngredients = mentionedFruits.map((fruit) => ({
+            fruitId: fruit.id,
+            fruitName: fruit.name,
+            priceSnapshot: fruit.price,
+            isSupplement: fruit.isSupplement,
+            incompatibleIds: fruit.incompatibleIds,
+          }));
         }
       }
 
@@ -2821,7 +2812,23 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
 3. EXCLUSIVITÉ DU STOCK :
    - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
 4. CONFIDENTIALITÉ :
-   - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.`;
+   - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.
+
+RÈGLE OBLIGATOIRE DE MÉMORISATION DES RECETTES SUR WHATSAPP (:::RECIPE_JSON) :
+Dès que tu proposes une recette au client ou qu'il valide/choisit ses fruits (ex: Orange + Ananas) :
+1. Donne un nom valorisant et inspirant au cocktail (ex: "Énergie Solaire à l'Orange").
+2. Inclus TOUJOURS à la toute fin de ton message le bloc technique suivant pour mémoriser définitivement sa recette :
+:::RECIPE_JSON { "cocktailName": "Nom de la recette", "fruits": ["Fruit 1", "Fruit 2"], "hasAddedSugar": false } :::
+Ce bloc enregistre la recette dans Firestore afin qu'elle reste verrouillée et mémorisée tout au long de la commande (format, quantité, quartier).
+
+RÈGLE D'AFFICHAGE DU RÉCAPITULATIF DE COMMANDE (:::ORDER_JSON) :
+Lorsque la commande est prête à être validée ou vient d'être confirmée :
+1. Tu DOIS TOUJOURS écrire en texte clair et visible le récapitulatif complet de la commande :
+   * Nom du cocktail et ses fruits exacts
+   * Quantité et format
+   * Frais de livraison (1 000 XAF)
+   * TOTAL À PAYER en XAF
+2. Ce texte récapitulatif DOIT ÊTRE ENTIÈREMENT VISIBLE DANS LE MESSAGE TEXTE, AVANT ou APRÈS le bloc :::ORDER_JSON. Ne laisse JAMAIS un espace vide ou un texte coupé !`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
@@ -3042,6 +3049,51 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
         aiReply = aiReply.replace(/:::PROFILE_JSON[\s\S]*?:::?/g, '').trim();
       }
 
+      // 1.5. Traitement automatique de la recette personnalisée WhatsApp (:::RECIPE_JSON)
+      const recipeMatch = aiReply.match(/:::RECIPE_JSON\s*([\s\S]*?)\s*:::?/);
+      if (recipeMatch && userDocRef) {
+        try {
+          const rData = parseSafeJson(recipeMatch[1]);
+          if (rData && Array.isArray(rData.fruits) && rData.fruits.length > 0) {
+            const resolvedIngs: any[] = [];
+            for (const fn of rData.fruits) {
+              const clean = String(fn).trim().toLowerCase();
+              const found = availableFruits.find(af => {
+                const afClean = af.name.toLowerCase();
+                const afId = af.id.toLowerCase();
+                return afClean === clean || afId === clean || afClean.includes(clean) || clean.includes(afClean);
+              });
+              if (found && !resolvedIngs.some(x => x.fruitId === found.id)) {
+                resolvedIngs.push({
+                  fruitId: found.id,
+                  fruitName: found.name,
+                  priceSnapshot: found.price,
+                  isSupplement: found.isSupplement,
+                  incompatibleIds: found.incompatibleIds || [],
+                });
+              }
+            }
+            if (resolvedIngs.length > 0) {
+              const customWaDraft = {
+                cocktailName: rData.cocktailName || 'Cocktail Santé FYS',
+                fruits: resolvedIngs.map(i => i.fruitName),
+                ingredients: resolvedIngs,
+                hasAddedSugar: !!rData.hasAddedSugar,
+                updatedAt: Date.now(),
+              };
+              await userDocRef.set({ activeWhatsAppDraft: customWaDraft }, { merge: true });
+              console.log(`[whatsapp-webhook] 🍹 Persisted activeWhatsAppDraft in user doc:`, customWaDraft.cocktailName, customWaDraft.fruits);
+            }
+          }
+        } catch (rErr) {
+          console.warn('[whatsapp-webhook] Error saving WhatsApp recipe draft:', rErr);
+        } finally {
+          aiReply = aiReply.replace(/:::RECIPE_JSON[\s\S]*?:::?/g, '').trim();
+        }
+      } else if (recipeMatch) {
+        aiReply = aiReply.replace(/:::RECIPE_JSON[\s\S]*?:::?/g, '').trim();
+      }
+
       // 2. Traitement automatique d'une commande validée par le client
       let createdOrderInfo: {
         orderId: string;
@@ -3103,6 +3155,23 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
                     role: ing.role || 'fruit',
                   };
                 });
+              } else if (existingUserDoc?.data()?.activeWhatsAppDraft && Array.isArray(existingUserDoc.data().activeWhatsAppDraft.ingredients) && existingUserDoc.data().activeWhatsAppDraft.ingredients.length > 0) {
+                // Priorité 2 : Recette personnalisée WhatsApp mémorisée dans le profil utilisateur
+                const waDraft = existingUserDoc.data().activeWhatsAppDraft;
+                finalCocktailName = waDraft.cocktailName || orderData.cocktailName || 'Cocktail Santé WhatsApp';
+                finalIngredients = waDraft.ingredients.map((ing: any) => {
+                  const snapPrice = Number(ing.priceSnapshot);
+                  const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (ing.fruitId || ing.id || '').toLowerCase() || f.name.toLowerCase() === (ing.fruitName || ing.name || '').toLowerCase());
+                  return {
+                    fruitId: ing.fruitId || ing.id || foundInStock?.id || 'fruit',
+                    fruitName: ing.fruitName || ing.name || foundInStock?.name || 'Fruit',
+                    quantityGrams: 100,
+                    priceSnapshot: snapPrice > 0 ? snapPrice : (foundInStock?.price || 0),
+                    role: (foundInStock?.isSupplement ?? ing.isSupplement) ? ('supplement' as const) : ('fruit' as const),
+                    isSupplement: foundInStock?.isSupplement ?? ing.isSupplement,
+                    incompatibleIds: foundInStock?.incompatibleIds || [],
+                  };
+                });
               } else if (activeRecipeIngredients.length > 0) {
                 finalCocktailName = activeRecipeName || orderData.cocktailName || 'Cocktail Sur-Mesure WhatsApp';
                 finalIngredients = activeRecipeIngredients.map((ing) => ({
@@ -3110,7 +3179,9 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
                   fruitName: ing.fruitName,
                   quantityGrams: 100,
                   priceSnapshot: ing.priceSnapshot,
-                  role: 'fruit' as const,
+                  role: ing.isSupplement ? ('supplement' as const) : ('fruit' as const),
+                  isSupplement: ing.isSupplement,
+                  incompatibleIds: ing.incompatibleIds || [],
                 }));
               } else {
                 // Création personnalisée sur WhatsApp : stricte restriction aux fruits disponibles en stock
@@ -3276,6 +3347,11 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
                   }
                 }
 
+                // Nettoyer la recette personnalisée activeWhatsAppDraft une fois la commande validée
+                if (userDocRef) {
+                  await userDocRef.set({ activeWhatsAppDraft: FieldValue.delete() }, { merge: true }).catch(() => null);
+                }
+
                 // ── Notifications Administrateurs (In-App + FCM Web Push) ──
                 try {
                   const adminsSnap = await db.collection('users').where('role', '==', 'admin').get();
@@ -3337,6 +3413,24 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
 
           // Nettoyer tout lien URL brut dans la réponse pour ne jamais afficher de lien long
           aiReply = aiReply.replace(/https?:\/\/fys-app\.com[^\s]*/g, '').replace(/👉\s*$/gm, '').trim();
+
+          // 3. Garantir qu'un récapitulatif complet et propre est TOUJOURS visible pour le client
+          if (createdOrderInfo) {
+            const o = createdOrderInfo.orderDoc;
+            const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
+            const recapBlock = `📋 *RÉCAPITULATIF OFFICIEL DE LA COMMANDE*\n` +
+              `• Cocktail : *${o.cocktailNameSnapshot}* (${ingNames})\n` +
+              `• Format : ${o.quantity}× ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString()} XAF la bouteille)\n` +
+              `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
+              `👉 *TOTAL À PAYER : ${o.totalPrice.toLocaleString()} XAF* (Paiement Mobile Money ou à la livraison)`;
+
+            // Si le message contenait "Voici d'ailleurs le récapitulatif..." sans détails ou vide, y insérer le récapitulatif
+            if (aiReply.includes('récapitulatif')) {
+              aiReply = aiReply.replace(/(Voici(?:\s+d'ailleurs)?\s+le\s+récapitulatif[^\n]*:?\s*)/i, `$1\n\n${recapBlock}\n\n`);
+            } else if (!aiReply.includes('TOTAL À PAYER') && !aiReply.includes(o.totalPrice.toLocaleString())) {
+              aiReply = `${aiReply}\n\n${recapBlock}`;
+            }
+          }
         }
       } else if (orderMatch) {
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
