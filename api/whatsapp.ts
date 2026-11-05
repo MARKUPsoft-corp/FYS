@@ -451,6 +451,169 @@ async function sendWhatsAppInteractiveList(
   }
 }
 
+// ── Envoi de message interactif avec bouton CTA URL (Lien cliquable natif Meta) ──
+
+interface WhatsAppCtaUrlData {
+  displayText: string;
+  url: string;
+  headerText?: string;
+  footerText?: string;
+}
+
+async function sendWhatsAppCtaUrl(
+  to: string,
+  bodyText: string,
+  cta: WhatsAppCtaUrlData
+): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN) {
+    console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
+    return false;
+  }
+
+  const cleanButtonTitle = (raw: string, fallback: string): string => {
+    if (!raw || typeof raw !== 'string') return fallback.slice(0, 20);
+    const stripped = raw
+      .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
+      .replace(/[*_~`#|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const finalTitle = stripped.slice(0, 20).trim();
+    return finalTitle.length > 0 ? finalTitle : fallback.slice(0, 20);
+  };
+
+  const safeDisplayText = cleanButtonTitle(cta.displayText, 'Tableau de bord');
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+  // Nettoyer bodyText pour retirer tout lien brut restant et garder un texte impeccable
+  let textForBody = (bodyText || '')
+    .replace(/https?:\/\/fys-app\.com[^\s]*/g, '')
+    .replace(/👉\s*$/gm, '')
+    .trim();
+
+  if (!textForBody) {
+    textForBody = 'Votre commande est confirmée ! Cliquez sur le bouton ci-dessous pour accéder à votre espace personnel FYS :';
+  }
+
+  // Meta limite body.text à 1024 caractères pour les messages interactifs
+  let prefixTextToSendFirst: string | null = null;
+  if (textForBody.length > 950) {
+    const splitIndex = textForBody.lastIndexOf('\n\n', 900);
+    const cutAt = splitIndex > 250 ? splitIndex : 850;
+    prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
+    textForBody = textForBody.slice(cutAt).trim();
+    if (textForBody.length > 950) {
+      textForBody = textForBody.slice(-950);
+    }
+  }
+
+  if (prefixTextToSendFirst) {
+    await sendWhatsAppMessage(to, prefixTextToSendFirst);
+  }
+
+  const interactivePayload: any = {
+    type: 'cta_url',
+    body: {
+      text: textForBody,
+    },
+    action: {
+      name: 'cta_url',
+      parameters: {
+        display_text: safeDisplayText,
+        url: cta.url,
+      },
+    },
+  };
+
+  if (cta.headerText && cta.headerText.length <= 60) {
+    interactivePayload.header = {
+      type: 'text',
+      text: cta.headerText,
+    };
+  }
+
+  if (cta.footerText && cta.footerText.length <= 60) {
+    interactivePayload.footer = {
+      text: cta.footerText,
+    };
+  }
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'interactive',
+    interactive: interactivePayload,
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    console.log('[whatsapp] Meta CTA URL button response status:', response.status, responseText);
+
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendWhatsAppCtaUrl',
+        to,
+        status: response.status,
+        responseText,
+        payload,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
+
+    if (!response.ok) {
+      console.warn('[whatsapp] CTA URL button rejected by Meta, retrying minimal payload without header/footer...');
+      const minimalPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'interactive',
+        interactive: {
+          type: 'cta_url',
+          body: { text: textForBody },
+          action: {
+            name: 'cta_url',
+            parameters: {
+              display_text: safeDisplayText,
+              url: cta.url,
+            },
+          },
+        },
+      };
+
+      const retryRes = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(minimalPayload),
+      });
+
+      const retryText = await retryRes.text();
+      console.log('[whatsapp] Minimal CTA retry response status:', retryRes.status, retryText);
+      if (retryRes.ok) return true;
+
+      // Repli texte standard si rejeté par le client WhatsApp de l'utilisateur
+      return sendWhatsAppMessage(to, `${textForBody}\n\n👉 Accéder à votre Tableau de bord : ${cta.url}`);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[whatsapp] Network error sending CTA URL button, falling back to text:', err);
+    return sendWhatsAppMessage(to, `${textForBody}\n\n👉 Accéder à votre Tableau de bord : ${cta.url}`);
+  }
+}
+
 // ── Marquer le message comme lu & Activer l'indicateur visuel "en train d'écrire..." ──
 
 async function markWhatsAppMessageAsReadAndTyping(messageId: string): Promise<boolean> {
@@ -1029,6 +1192,7 @@ RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - Insuffisance rénale : Attention au potassium élevé (limiter banane très mûre, baobab).
 - Ne pose JAMAIS de diagnostic médical direct : renvoie toujours avec tact vers leur médecin en cas de doute sérieux.
 - N'utilise JAMAIS le nom "Claude", "Gemini" ou "OpenAI". Tu es UNIQUEMENT NutriFYS.
+- INTERDICTION FORMELLE DE COLLER DES LIENS URL BRUTS DANS LE TEXTE : Ne mentionne JAMAIS de lien comme https://fys-app.com/... dans tes messages. Notre système WhatsApp attache automatiquement un bouton interactif cliquable pour ouvrir le tableau de bord du client !
 
 ORIGINE DES SOURCES & LÉGITIMITÉ NUTRITIONNELLE (OBLIGATOIRE) :
 Si le client te demande d'où viennent tes sources, tes connaissances, tes informations ou comment tes recettes et fiches nutritionnelles sont validées :
@@ -2117,14 +2281,43 @@ Exemple conforme :
           // Nettoyer le bloc technique avant envoi au client
           aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
 
-          // Ajouter le lien direct vers le tableau de bord client FYS pour le suivi et les factures
-          const trackingUrl = `https://fys-app.com/board/orders?phone=${senderPhone}`;
-          if (!aiReply.includes('fys-app.com/board')) {
-            aiReply += `\n\n📲 *Votre Tableau de bord FYS :*\nSuivez l'état de préparation de votre commande et retrouvez toutes vos factures ici :\n👉 ${trackingUrl}`;
-          }
+          // Nettoyer tout lien URL brut dans la réponse pour ne jamais afficher de lien long
+          aiReply = aiReply.replace(/https?:\/\/fys-app\.com[^\s]*/g, '').replace(/👉\s*$/gm, '').trim();
         }
       } else if (orderMatch) {
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
+      }
+
+      // ── Extraction et détection des boutons CTA URL (Lien cliquable natif Meta) ──
+      let ctaUrlToSend: WhatsAppCtaUrlData | null = null;
+      const ctaMatch = aiReply.match(/:::CTA_URL\s*([\s\S]*?):::/);
+      if (ctaMatch) {
+        try {
+          const parsed = JSON.parse(ctaMatch[1].trim());
+          if (parsed && parsed.url) {
+            ctaUrlToSend = {
+              displayText: (parsed.displayText || parsed.title || 'Tableau de bord').slice(0, 20),
+              url: parsed.url,
+              headerText: parsed.headerText || 'NutriFYS · FYS',
+              footerText: parsed.footerText || 'NutriFYS · Votre nutritionniste sur-mesure',
+            };
+          }
+        } catch (cErr) {
+          console.warn('[whatsapp-webhook] Failed to parse :::CTA_URL JSON:', cErr);
+        }
+        aiReply = aiReply.replace(/:::CTA_URL[\s\S]*?:::?/g, '').trim();
+      }
+
+      // Si une commande vient d'être créée ou si un lien vers le tableau de bord est pertinent
+      if (!ctaUrlToSend && (createdOrderInfo || aiReply.includes('fys-app.com/board'))) {
+        const trackingUrl = `https://fys-app.com/board/orders?phone=${senderPhone}`;
+        aiReply = aiReply.replace(/https?:\/\/fys-app\.com[^\s]*/g, '').replace(/👉\s*$/gm, '').trim();
+        ctaUrlToSend = {
+          displayText: 'Mon Tableau de bord',
+          url: trackingUrl,
+          headerText: 'NutriFYS · Commande confirmée',
+          footerText: 'NutriFYS · Votre nutritionniste sur-mesure',
+        };
       }
 
       // ── Extraction et détection des listes interactives Meta (Menu déroulant) ────
@@ -2250,9 +2443,12 @@ Exemple conforme :
         }
       }
 
-      // Envoyer le message : avec liste déroulante native, ou boutons natifs si présents, sinon texte standard
+      // Envoyer le message : avec bouton CTA URL natif si présent (zéro lien brut dans le texte), sinon liste déroulante, sinon boutons de réponse, sinon texte standard
       let sent = false;
-      if (listToSend) {
+      if (ctaUrlToSend) {
+        console.log(`[whatsapp-webhook] 🔗 Sending message with native CTA URL button ("${ctaUrlToSend.displayText}") to ${senderPhone}...`);
+        sent = await sendWhatsAppCtaUrl(senderPhone, aiReply, ctaUrlToSend);
+      } else if (listToSend) {
         console.log(`[whatsapp-webhook] 📋 Sending message with interactive LIST to ${senderPhone}...`);
         sent = await sendWhatsAppInteractiveList(
           senderPhone,
@@ -2273,7 +2469,7 @@ Exemple conforme :
       } else {
         sent = await sendWhatsAppMessage(senderPhone, aiReply);
       }
-      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio, interactive: buttonsToSend.length > 0, list: Boolean(listToSend) });
+      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio, cta: Boolean(ctaUrlToSend), interactive: buttonsToSend.length > 0, list: Boolean(listToSend) });
 
       // ── Envoi automatique de la Facture PDF et de la Fiche Nutritionnelle PDF ──
       if (createdOrderInfo) {
