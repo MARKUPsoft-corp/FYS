@@ -3,6 +3,11 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { renderToBuffer } from '@react-pdf/renderer';
+import React from 'react';
+import { FacturePDF } from '../src/components/pdf/FacturePDF';
+import { NutritionPDF } from '../src/components/pdf/NutritionPDF';
+import i18n from '../src/i18n';
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -840,7 +845,7 @@ async function uploadWhatsAppDocument(pdfBuffer: Buffer, filename: string): Prom
     const formData = new FormData();
     formData.append('messaging_product', 'whatsapp');
     formData.append('type', 'application/pdf');
-    const blob = new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' });
+    const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
     formData.append('file', blob, filename);
 
     const response = await fetch(url, {
@@ -848,15 +853,40 @@ async function uploadWhatsAppDocument(pdfBuffer: Buffer, filename: string): Prom
       headers: { Authorization: `Bearer ${WHATSAPP_API_TOKEN}` },
       body: formData,
     });
+    const responseText = await response.text();
+    console.log(`[whatsapp] Upload PDF media (${filename}) response: status ${response.status}:`, responseText);
+
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'uploadWhatsAppDocument',
+        filename,
+        bufferSize: pdfBuffer.length,
+        status: response.status,
+        responseText,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
+
     if (!response.ok) {
-      console.error('[whatsapp] Upload PDF media failed:', response.status, await response.text());
+      console.error('[whatsapp] Upload PDF media failed:', response.status, responseText);
       return null;
     }
-    const data = await response.json() as any;
+    const data = JSON.parse(responseText);
     console.log(`[whatsapp] PDF document ${filename} uploaded to Meta with media ID:`, data.id);
     return data.id || null;
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[whatsapp] Error uploading PDF ${filename} to Meta:`, err);
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'uploadWhatsAppDocument_error',
+        filename,
+        error: err?.message || String(err),
+        stack: err?.stack || null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
     return null;
   }
 }
@@ -889,11 +919,36 @@ async function sendWhatsAppDocument(to: string, mediaId: string, filename: strin
       },
       body: JSON.stringify(payload),
     });
-    const data = await response.text();
-    console.log(`[whatsapp] Meta send document (${filename}) response status:`, response.status, data);
+    const responseText = await response.text();
+    console.log(`[whatsapp] Meta send document (${filename}) response status:`, response.status, responseText);
+
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendWhatsAppDocument',
+        to,
+        mediaId,
+        filename,
+        status: response.status,
+        responseText,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
+
     return response.ok;
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[whatsapp] Network error sending document (${filename}) to WhatsApp:`, err);
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendWhatsAppDocument_error',
+        to,
+        filename,
+        error: err?.message || String(err),
+        stack: err?.stack || null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
     return false;
   }
 }
@@ -902,10 +957,6 @@ async function sendWhatsAppDocument(to: string, mediaId: string, filename: strin
 
 async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string): Promise<Buffer | null> {
   try {
-    const { renderToBuffer } = await import('@react-pdf/renderer');
-    const React = await import('react');
-    const { FacturePDF } = await import('../src/components/pdf/FacturePDF');
-
     // Assurer la présence de toDate() sur createdAt pour le rendu FacturePDF
     const orderForPdf = {
       ...order,
@@ -918,8 +969,18 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
       React.createElement(FacturePDF, { order: orderForPdf, ingredientsStr }) as any
     );
     return buffer as Buffer;
-  } catch (err) {
+  } catch (err: any) {
     console.error('[whatsapp] Failed to generate Facture PDF buffer:', err);
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'generateOrderFacturePdfBuffer_error',
+        orderId: order?.id || 'unknown',
+        error: err?.message || String(err),
+        stack: err?.stack || null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
     return null;
   }
 }
@@ -931,23 +992,28 @@ async function generateOrderNutritionPdfBuffer(
   ingredients?: string[]
 ): Promise<Buffer | null> {
   try {
-    const { renderToBuffer } = await import('@react-pdf/renderer');
-    const React = await import('react');
-    const { NutritionPDF } = await import('../src/components/pdf/NutritionPDF');
-    const i18n = await import('../src/i18n');
-
     const buffer = await renderToBuffer(
       React.createElement(NutritionPDF, {
         analysis,
         cocktailName,
         userName,
         ingredients,
-        t: i18n.default.t.bind(i18n.default),
+        t: i18n.t.bind(i18n),
       }) as any
     );
     return buffer as Buffer;
-  } catch (err) {
+  } catch (err: any) {
     console.error('[whatsapp] Failed to generate Nutrition PDF buffer:', err);
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'generateOrderNutritionPdfBuffer_error',
+        cocktailName: cocktailName || 'unknown',
+        error: err?.message || String(err),
+        stack: err?.stack || null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
     return null;
   }
 }
@@ -1091,6 +1157,17 @@ async function sendOrderPdfsToCustomer(
 
   console.log(`[whatsapp] 📄 Generating and dispatching Facture & Nutrition PDFs for order #${shortId} to ${to}...`);
 
+  const db = getAdminDb();
+  if (db) {
+    await db.collection('meta_debug_logs').add({
+      action: 'sendOrderPdfsToCustomer_start',
+      orderId,
+      to,
+      cocktailName,
+      createdAt: FieldValue.serverTimestamp(),
+    }).catch(() => null);
+  }
+
   try {
     // 1. Analyse nutritionnelle
     const nutritionAnalysis = await resolveOrGenerateNutritionAnalysis(
@@ -1102,7 +1179,6 @@ async function sendOrderPdfsToCustomer(
     );
 
     // Mettre à jour l'analyse dans Firestore si elle était absente
-    const db = getAdminDb();
     if (db && !order.aiAnalysisSnapshot && nutritionAnalysis) {
       db.collection('orders').doc(orderId).update({
         aiAnalysisSnapshot: nutritionAnalysis,
@@ -1164,9 +1240,32 @@ async function sendOrderPdfsToCustomer(
       console.error('[whatsapp] Nutrition buffer generation returned null');
     }
 
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendOrderPdfsToCustomer_completed',
+        orderId,
+        to,
+        factureSent,
+        nutritionSent,
+        factureBufferSize: factureBuffer ? factureBuffer.length : null,
+        nutritionBufferSize: nutritionBuffer ? nutritionBuffer.length : null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
+
     console.log(`[whatsapp] ✅ Order PDFs dispatch completed: Facture=${factureSent}, Nutrition=${nutritionSent}`);
-  } catch (pdfErr) {
+  } catch (pdfErr: any) {
     console.error('[whatsapp] Error in sendOrderPdfsToCustomer:', pdfErr);
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendOrderPdfsToCustomer_error',
+        orderId,
+        to,
+        error: pdfErr?.message || String(pdfErr),
+        stack: pdfErr?.stack || null,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
   }
 
   return { factureSent, nutritionSent };
@@ -1388,8 +1487,27 @@ Pour offrir une expérience fluide sans saisie fastidieuse au clavier, chaque fo
 // ── Handler principal ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. Vérification Webhook (GET) demandé par Meta
+  // 1. Vérification Webhook (GET) demandé par Meta ou Test Diagnostic PDF
   if (req.method === 'GET') {
+    // Diagnostique et déclenchement direct du dispatch PDF (Facture + Fiche Nutritionnelle)
+    if (req.query.test_pdf_order) {
+      const testOrderId = String(req.query.test_pdf_order);
+      const db = getAdminDb();
+      if (!db) return res.status(500).json({ error: 'No db instance' });
+      const snap = await db.collection('orders').doc(testOrderId).get();
+      if (!snap.exists) return res.status(404).json({ error: 'Order not found', testOrderId });
+      const orderData = snap.data()!;
+      const phone = String(req.query.to || orderData.userPhoneSnapshot || '237675108876');
+      const ingredients = orderData.cocktailIngredientsSnapshot || [];
+      const result = await sendOrderPdfsToCustomer(phone, orderData, testOrderId, ingredients);
+      return res.status(200).json({
+        status: 'tested',
+        testOrderId,
+        phone,
+        result,
+      });
+    }
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
