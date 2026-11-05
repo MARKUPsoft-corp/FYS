@@ -249,7 +249,7 @@ const EventsPage: PageComponent = () => {
   }, [activeFormats]);
 
   // WhatsApp Support Config
-  const whatsappNumber = pricingSettings?.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
+  const whatsappNumber = pricingSettings?.whatsappNumber || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237650437427';
   const cleanWaNumber = normalizeWhatsAppNumber(whatsappNumber);
 
   const getWhatsAppEventUrl = (event: { id: string; eventTitle?: string; eventName?: string; companyName: string }) => {

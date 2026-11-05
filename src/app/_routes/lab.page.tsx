@@ -676,7 +676,7 @@ const FysLab: PageComponent = () => {
         });
 
         // 3. Pré-remplir le message WhatsApp avec le code court
-        const rawNumber = (pricing as any)?.whatsappNumber || '237691850125';
+        const rawNumber = (pricing as any)?.whatsappNumber || '237650437427';
         const cleanWaNumber = rawNumber.replace(/[^0-9]/g, '');
 
         const lines = [
@@ -693,7 +693,7 @@ const FysLab: PageComponent = () => {
         window.location.href = waUrl;
       } catch (err) {
         console.error('[lab] Erreur création draft WhatsApp:', err);
-        const rawNumber = (pricing as any)?.whatsappNumber || '237691850125';
+        const rawNumber = (pricing as any)?.whatsappNumber || '237650437427';
         const cleanWaNumber = rawNumber.replace(/[^0-9]/g, '');
         const cName = cocktailName.trim() || 'santé';
         const fallbackUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(

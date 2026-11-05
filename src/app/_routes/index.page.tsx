@@ -1164,7 +1164,7 @@ const RootIndex: PageComponent = () => {
 
               <div className="pt-2">
                 <a
-                  href={`https://wa.me/237691850125?text=${encodeURIComponent("Bonjour FYS ! Je souhaite des informations / un devis pour un événement d'entreprise ou privé.")}`}
+                  href={`https://wa.me/237650437427?text=${encodeURIComponent("Bonjour FYS ! Je souhaite des informations / un devis pour un événement d'entreprise ou privé.")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"

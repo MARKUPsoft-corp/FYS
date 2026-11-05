@@ -232,5 +232,5 @@ export const DEFAULT_FYS_EVENT_PRICING: FysEventPricingSettings = {
   bartenderHalfDayRate: 15000,
   bartenderServiceHourlyRate: 5000,
   baseEventDeliveryFee: 3000,
-  whatsappNumber: '+237699000000',
+  whatsappNumber: '+237650437427',
 };

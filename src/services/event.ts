@@ -127,9 +127,9 @@ export function subscribeToFysEventPricingSettings(
  * Normalise un numéro de téléphone pour WhatsApp (ex: +237 699 00 00 00 ou 699000000 -> 237699000000)
  */
 export function normalizeWhatsAppNumber(phone?: string): string {
-  if (!phone) return '237699000000';
+  if (!phone) return '237650437427';
   let cleaned = phone.replace(/[^0-9]/g, '');
-  if (!cleaned) return '237699000000';
+  if (!cleaned) return '237650437427';
   if (cleaned.startsWith('00')) {
     cleaned = cleaned.slice(2);
   }
@@ -152,7 +152,7 @@ export async function updateFysEventPricingSettings(
   const hourlyRate = settings.bartenderServiceHourlyRate ?? (settings.bartenderHalfDayRate ? Math.round(settings.bartenderHalfDayRate / 4) : DEFAULT_FYS_EVENT_PRICING.bartenderServiceHourlyRate);
   const halfDayRate = settings.bartenderHalfDayRate ?? hourlyRate * 4;
   const deliveryFee = settings.baseEventDeliveryFee ?? DEFAULT_FYS_EVENT_PRICING.baseEventDeliveryFee;
-  const whatsappNumber = (settings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237699000000';
+  const whatsappNumber = (settings.whatsappNumber || '').trim() || DEFAULT_FYS_EVENT_PRICING.whatsappNumber || '+237650437427';
   const availableFormats = Array.isArray(settings.availableFormats) && settings.availableFormats.length > 0
     ? settings.availableFormats
     : DEFAULT_FYS_EVENT_PRICING.availableFormats;

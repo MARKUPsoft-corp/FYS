@@ -32,7 +32,7 @@ export function WhatsappOrderSheet({
   healthProfile,
   hasAddedSugar = false,
   promoCode,
-  whatsappSupportNumber = '237691850125',
+  whatsappSupportNumber = '237650437427',
 }: WhatsappOrderSheetProps) {
   const { t } = useTranslation();
 
