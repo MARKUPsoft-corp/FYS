@@ -220,7 +220,60 @@ async function sendWhatsAppInteractiveButtons(
     const responseText = await response.text();
     console.log('[whatsapp] Meta interactive buttons response status:', response.status, responseText);
 
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendWhatsAppInteractiveButtons',
+        to,
+        status: response.status,
+        responseText,
+        payload,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch((e: any) => console.warn('[whatsapp] meta_debug_logs write skipped:', e));
+    }
+
     if (!response.ok) {
+      console.warn('[whatsapp] Interactive message not accepted by Meta:', response.status, responseText);
+
+      // Tentative de secours 1 : envoyer sans header ni footer (certains clients Meta bloquent les en-têtes textuels)
+      if (interactivePayload.header || interactivePayload.footer) {
+        console.log('[whatsapp] Retrying interactive buttons with minimal body+action payload...');
+        const minimalPayload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to,
+          type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: textForBody || 'Que souhaitez-vous faire ?' },
+            action: { buttons: safeButtons },
+          },
+        };
+        const retryRes = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(minimalPayload),
+        });
+        const retryText = await retryRes.text();
+        console.log('[whatsapp] Minimal interactive retry response status:', retryRes.status, retryText);
+
+        if (db) {
+          await db.collection('meta_debug_logs').add({
+            action: 'minimalInteractiveRetry',
+            to,
+            status: retryRes.status,
+            responseText: retryText,
+            payload: minimalPayload,
+            createdAt: FieldValue.serverTimestamp(),
+          }).catch(() => null);
+        }
+
+        if (retryRes.ok) return true;
+      }
+
       console.warn('[whatsapp] Interactive message not accepted by Meta, falling back to text message...');
       return sendWhatsAppMessage(to, textForBody);
     }
@@ -929,7 +982,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 ? webDraftIngredients.map((i: any) => i.fruitName || i.name).filter(Boolean).join(', ')
                 : 'Fruits frais';
               const sugarMention = webDraft.hasAddedSugar ? 'Avec sucre ajouté' : 'Sans sucre ajouté (100% pur)';
-              const customerGreetingName = webDraft.customerName?.trim() || userData.name || senderName;
+              const rawGreeting = webDraft.customerName?.trim() || userData.name || senderName;
+              const customerGreetingName = rawGreeting
+                .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
+                .replace(/[^\p{L}\p{N}\s'-]/gu, '')
+                .replace(/\s+/g, ' ')
+                .trim() || 'cher client';
 
               userProfileContext = `\n\nCOMMANDE EN COURS INITIÉE SUR LE SITE FYS (RÉFÉRENCE #${webDraftCode}) :
 - Client : ${customerGreetingName}
@@ -987,7 +1045,12 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
           } else {
             // NOUVEAU CLIENT : Création officielle du compte avec son numéro au moment de l'envoi WhatsApp
             const newDocRef = usersRef.doc();
-            const initialName = webDraft?.customerName?.trim() || senderName;
+            const rawInitName = webDraft?.customerName?.trim() || senderName;
+            const initialName = rawInitName
+              .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
+              .replace(/[^\p{L}\p{N}\s'-]/gu, '')
+              .replace(/\s+/g, ' ')
+              .trim() || 'Cher client';
             const initialConditions = webDraft?.healthProfile?.healthConditions || [];
             const initialAllergies = webDraft?.healthProfile?.allergies || [];
             const initialGoals = webDraft?.healthProfile?.goals || [];
