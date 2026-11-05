@@ -127,6 +127,18 @@ async function sendWhatsAppInteractiveButtons(
     return false;
   }
 
+  // Nettoyer strictement les titres de boutons : Meta INTERDIT formellement les emojis et le markdown dans reply.title
+  const cleanButtonTitle = (raw: string, fallback: string): string => {
+    if (!raw || typeof raw !== 'string') return fallback.slice(0, 20);
+    const stripped = raw
+      .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
+      .replace(/[*_~`#|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const finalTitle = stripped.slice(0, 20).trim();
+    return finalTitle.length > 0 ? finalTitle : fallback.slice(0, 20);
+  };
+
   // Meta autorise entre 1 et 3 boutons de réponse rapide max
   const safeButtons = (buttons || [])
     .filter((b) => b && typeof b.title === 'string' && b.title.trim().length > 0)
@@ -134,9 +146,9 @@ async function sendWhatsAppInteractiveButtons(
     .map((b, idx) => ({
       type: 'reply' as const,
       reply: {
-        id: b.id || `btn_${idx}`,
-        // Limite stricte de Meta : 20 caractères max par titre de bouton
-        title: b.title.slice(0, 20).trim(),
+        id: (b.id || `btn_${idx}`).slice(0, 256),
+        // Limite stricte de Meta : 20 caractères max, 100% sans emoji ni markdown
+        title: cleanButtonTitle(b.title, `Option ${idx + 1}`),
       },
     }));
 
@@ -149,13 +161,13 @@ async function sendWhatsAppInteractiveButtons(
   // Meta limite body.text à 1024 caractères pour les messages interactifs
   let textForBody = bodyText;
   let prefixTextToSendFirst: string | null = null;
-  if (textForBody.length > 1000) {
-    const splitIndex = textForBody.lastIndexOf('\n\n', 950);
-    const cutAt = splitIndex > 300 ? splitIndex : 900;
+  if (textForBody.length > 950) {
+    const splitIndex = textForBody.lastIndexOf('\n\n', 900);
+    const cutAt = splitIndex > 250 ? splitIndex : 850;
     prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
     textForBody = textForBody.slice(cutAt).trim();
-    if (textForBody.length > 1000) {
-      textForBody = textForBody.slice(-1000);
+    if (textForBody.length > 950) {
+      textForBody = textForBody.slice(-950);
     }
   }
 
@@ -582,14 +594,14 @@ STYLE DE COMMUNICATION WHATSAPP :
 - Pose UNE seule question à la fois pour laisser le client respirer et répondre aisément.
 
 BOUTONS D'INTERACTION CLIC-DIRECT META WHATSAPP :
-Pour éviter au client de taper du texte au clavier, tu peux ajouter TOUT À LA FIN de ton message un bloc de boutons cliquables :::BUTTONS [...] ::: (maximum 3 boutons, titre de chaque bouton STRICTEMENT inférieur ou égal à 20 caractères) :
+Pour éviter au client de taper du texte au clavier, tu peux ajouter TOUT À LA FIN de ton message un bloc de boutons cliquables :::BUTTONS [...] ::: (maximum 3 boutons, titre de chaque bouton STRICTEMENT SANS AUCUN ÉMOJI NI SYMBOLE, 20 caractères max) :
 
 1. À l'accueil d'un brouillon web FYS (#FYS-XXXX) :
 Propose le choix entre commander directement ou voir sa fiche santé :
 :::BUTTONS
 [
-  {"id": "btn_order", "title": "🛒 Commander"},
-  {"id": "btn_nutrition", "title": "📊 Fiche santé"}
+  {"id": "btn_order", "title": "Commander"},
+  {"id": "btn_nutrition", "title": "Fiche nutrition"}
 ]
 :::
 
@@ -604,8 +616,8 @@ Propose le choix entre commander directement ou voir sa fiche santé :
 3. Lors de la présentation du devis récapitulatif pour validation en 1 clic :
 :::BUTTONS
 [
-  {"id": "btn_confirm_order", "title": "✅ Oui, je valide"},
-  {"id": "btn_edit_order", "title": "✏️ Modifier"}
+  {"id": "btn_confirm_order", "title": "Valider commande"},
+  {"id": "btn_edit_order", "title": "Modifier"}
 ]
 :::`;
 
@@ -646,8 +658,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const messageId = message.id;
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
+      const rawSenderName = changes?.contacts?.[0]?.profile?.name || '';
+      const cleanSenderName = rawSenderName
+        .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
+        .replace(/[^\p{L}\p{N}\s'-]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const senderName = cleanSenderName || 'Cher client';
       let senderText = message.text?.body?.trim() || message.image?.caption?.trim() || '';
-      const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
       let interactiveButtonId = '';
 
       if (isInteractiveMessage) {
@@ -1120,6 +1138,22 @@ Exemple conforme :
           ? `L'utilisateur a envoyé cette photo accompagnée du message suivant : "${senderText}". Analyse attentivement l'image (ordonnance médicale, analyse, fruits ou reçu Mobile Money) et réponds-lui de manière claire, empathique et personnalisée.`
           : `L'utilisateur a envoyé cette photo. Analyse attentivement ce qu'elle contient (ordonnance médicale, bilan de santé, fruits frais ou reçu de paiement Mobile Money) et réponds-lui chaleureusement selon tes consignes NutriFYS.`;
         currentUserParts.push({ text: promptIntro });
+      } else if (isInteractiveMessage && interactiveButtonId) {
+        let explicitAction = `[Action bouton cliqué : "${senderText}"]`;
+        if (interactiveButtonId === 'btn_order') {
+          explicitAction = `[Le client a cliqué sur le bouton 'Commander' : il souhaite commander ce mélange. Demande-lui le format souhaité (500ml ou 1L) et son quartier de livraison].`;
+        } else if (interactiveButtonId === 'btn_nutrition') {
+          explicitAction = `[Le client a cliqué sur le bouton 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
+        } else if (interactiveButtonId === 'btn_confirm_order') {
+          explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus].`;
+        } else if (interactiveButtonId === 'btn_edit_order') {
+          explicitAction = `[Le client a cliqué sur 'Modifier' : demande-lui avec bienveillance ce qu'il souhaite modifier : fruits, format ou adresse de livraison].`;
+        } else if (interactiveButtonId === 'btn_format_500ml') {
+          explicitAction = `[Le client a sélectionné le format 500ml].`;
+        } else if (interactiveButtonId === 'btn_format_1l') {
+          explicitAction = `[Le client a sélectionné le format 1 Litre].`;
+        }
+        currentUserParts.push({ text: explicitAction });
       } else {
         currentUserParts.push({ text: senderText });
       }
@@ -1131,9 +1165,9 @@ Exemple conforme :
 
       const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
 
-      const primaryModel = process.env.GEMINI_WHATSAPP_MODEL || 'gemini-flash-lite-latest';
-      const fallbackModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
-      const modelQueue = Array.from(new Set(['gemini-flash-lite-latest', primaryModel, ...fallbackModels]));
+      const primaryModel = process.env.GEMINI_WHATSAPP_MODEL || 'gemini-3-flash-preview';
+      const fallbackModels = ['gemini-3.6-flash', 'gemini-flash-lite-latest'];
+      const modelQueue = Array.from(new Set(['gemini-3-flash-preview', primaryModel, ...fallbackModels]));
 
       for (const modelCandidate of modelQueue) {
         try {
@@ -1146,7 +1180,10 @@ Exemple conforme :
             },
           });
           console.log(`[whatsapp-webhook] Calling Gemini (${modelCandidate}) with conversation history & dynamic pricing...`);
-          const result = await model.generateContent({ contents: contentsPayload });
+          const result = await Promise.race([
+            model.generateContent({ contents: contentsPayload }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Model ${modelCandidate} timed out after 5000ms`)), 5000)),
+          ]);
           aiReply = result.response.text();
           if (aiReply) break;
         } catch (geminiErr: any) {
@@ -1433,8 +1470,8 @@ Exemple conforme :
       // 1. Accueil d'un brouillon Web FYS (#FYS-XXXX)
       if (webDraftCode && buttonsToSend.length === 0 && !orderMatch) {
         buttonsToSend = [
-          { id: 'btn_order', title: '🛒 Commander' },
-          { id: 'btn_nutrition', title: '📊 Fiche santé' },
+          { id: 'btn_order', title: 'Commander' },
+          { id: 'btn_nutrition', title: 'Fiche nutrition' },
         ];
       }
 
@@ -1446,8 +1483,8 @@ Exemple conforme :
         (aiReply.toLowerCase().includes('convient') || aiReply.toLowerCase().includes('valider'))
       ) {
         buttonsToSend = [
-          { id: 'btn_confirm_order', title: '✅ Oui, je valide' },
-          { id: 'btn_edit_order', title: '✏️ Modifier' },
+          { id: 'btn_confirm_order', title: 'Valider commande' },
+          { id: 'btn_edit_order', title: 'Modifier' },
         ];
       }
 
@@ -1489,7 +1526,7 @@ Exemple conforme :
           senderPhone,
           aiReply,
           buttonsToSend,
-          '🌿 NutriFYS · FYS',
+          'NutriFYS · FYS',
           'NutriFYS · Votre nutritionniste sur-mesure'
         );
       } else {

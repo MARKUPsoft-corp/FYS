@@ -29,15 +29,35 @@ interface GeminiCallParams {
   };
 }
 
-const DEFAULT_GEMINI_MODEL = (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-flash-lite-latest';
+const DEFAULT_GEMINI_MODEL = (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-3-flash-preview';
 
 let devGenAIInstance: GoogleGenerativeAI | null = null;
+
+// Cache mémoire client pour rendre les analyses répétées instantanées (0ms)
+const analysisMemoryCache = new Map<string, AIAnalysis>();
+
+function getAnalysisCacheKey(
+  ingredients: { fruit: Fruit; grams: number }[],
+  profile: HealthProfile | null,
+  lang: string,
+  options?: AnalysisOptions,
+): string {
+  const ingParts = ingredients
+    .map((i) => `${i.fruit.id}:${i.grams}`)
+    .sort()
+    .join('|');
+  const conds = (profile?.healthConditions || []).slice().sort().join(',');
+  const allergies = (profile?.allergies || []).slice().sort().join(',');
+  const goals = (profile?.goals || []).slice().sort().join(',');
+  const sugar = options?.hasAddedSugar ? 'sugar' : 'nosugar';
+  return `fys_analysis_${lang}_${sugar}_${ingParts}__${conds}__${allergies}__${goals}`;
+}
 
 /**
  * Exécute une requête vers l'API Gemini avec latence minimale.
  * - En dev local : utilise directement le SDK client si RASENGAN_GEMINI_API_KEY est présent (évite la tentative 404 sur /api/gemini).
  * - En production : passe par le proxy sécurisé /api/gemini.
- * - Priorise gemini-flash-lite-latest pour une réponse immédiate (< 1s) sans subir les 503 temporaires.
+ * - Priorise gemini-3-flash-preview pour une réponse immédiate (< 1.5s) sans subir les 503 temporaires.
  */
 async function executeGeminiRequest(params: GeminiCallParams): Promise<string> {
   const modelToUse = params.model || DEFAULT_GEMINI_MODEL;
@@ -54,10 +74,10 @@ async function executeGeminiRequest(params: GeminiCallParams): Promise<string> {
       devGenAIInstance = new GoogleGenerativeAI(devKey);
     }
     const modelCandidates = Array.from(new Set([
-      'gemini-flash-lite-latest',
+      'gemini-3-flash-preview',
       sanitizedParams.model || DEFAULT_GEMINI_MODEL,
-      'gemini-3.1-flash-lite',
-      'gemini-3.8-flash',
+      'gemini-flash-lite-latest',
+      'gemini-3.6-flash',
     ]));
 
     let lastDevErr: any = null;
@@ -114,6 +134,27 @@ export async function analyzeWithGemini(
   options?: AnalysisOptions,
 ): Promise<AIAnalysis> {
   const lang = i18n.language?.startsWith('en') ? 'en' : 'fr';
+  const cacheKey = getAnalysisCacheKey(ingredients, profile, lang, options);
+
+  // 1. Vérifier le cache mémoire (réponse immédiate en 0ms)
+  if (analysisMemoryCache.has(cacheKey)) {
+    return analysisMemoryCache.get(cacheKey)!;
+  }
+
+  // 2. Vérifier le sessionStorage (pour conserver les analyses entre les navigations)
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const stored = window.sessionStorage.getItem(cacheKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as AIAnalysis;
+        analysisMemoryCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch {
+    // sessionStorage indisponible
+  }
+
   const prompt = buildAnalysisPrompt(ingredients, profile, lang, options);
   
   const raw = await executeGeminiRequest({
@@ -121,11 +162,23 @@ export async function analyzeWithGemini(
     prompt,
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 900,
+      maxOutputTokens: 650,
     },
   });
 
-  return parseAnalysisResponse(raw);
+  const parsed = parseAnalysisResponse(raw);
+
+  // Mettre en cache pour accès instantané immédiat
+  analysisMemoryCache.set(cacheKey, parsed);
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.setItem(cacheKey, JSON.stringify(parsed));
+    }
+  } catch {
+    // Quota sessionStorage dépassé, pas bloquant
+  }
+
+  return parsed;
 }
 
 export async function chatWithGemini(
