@@ -2032,7 +2032,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let userDocRef: any = null;
       let webDraftCode = '';
       let webDraft: any = null;
+      let isNewDraftCodeInMessage = false;
       let matchedUserEmail = '';
+      let buttonsToSend: WhatsAppInteractiveButton[] = [];
+      let listToSend: WhatsAppListData | null = null;
 
       // DÉDUPLICATION 1 (META RETRIES) : Ignorer les retries réseau automatiques de Meta sur le même message ID
       if (db && messageId) {
@@ -2062,7 +2065,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (db) {
         try {
           // ── Détection initiale d'un brouillon de commande web FYS (ex: #FYS-7K2X) ──
-          let isNewDraftCodeInMessage = false;
+          isNewDraftCodeInMessage = false;
           const draftMatch = senderText.match(/#?(FYS-[A-Z0-9]{4})/i);
           if (draftMatch) {
             webDraftCode = draftMatch[1].toUpperCase();
@@ -2169,11 +2172,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const draftsSnap = await db.collection('whatsapp_drafts')
                   .where('customerPhone', 'in', safeUserVariants)
                   .where('status', '==', 'draft')
-                  .orderBy('createdAt', 'desc')
-                  .limit(1)
+                  .limit(10)
                   .get();
                 if (!draftsSnap.empty) {
-                  const dDoc = draftsSnap.docs[0];
+                  const sorted = draftsSnap.docs.sort((a: any, b: any) => {
+                    const aT = a.data()?.createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
+                    const bT = b.data()?.createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
+                    return bT - aT;
+                  });
+                  const dDoc = sorted[0];
                   webDraftCode = dDoc.id;
                   webDraft = dDoc.data();
                   console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} from customer phone query:`, webDraft.cocktail?.name);
@@ -3112,7 +3119,6 @@ RÈGLES D'OR COMMERCIALES :
       }
 
       // ── Extraction et détection des listes interactives Meta (Menu déroulant) ────
-      let listToSend: WhatsAppListData | null = null;
       const listMatch = aiReply.match(/:::LIST\s*([\s\S]*?):::/);
       if (listMatch) {
         try {
@@ -3127,7 +3133,6 @@ RÈGLES D'OR COMMERCIALES :
       }
 
       // ── Extraction et détection des boutons interactifs Meta ────────────
-      let buttonsToSend: WhatsAppInteractiveButton[] = [];
       const buttonsMatch = aiReply.match(/:::BUTTONS\s*([\s\S]*?):::/);
       if (buttonsMatch) {
         try {
