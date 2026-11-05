@@ -81,12 +81,16 @@ async function sendWhatsAppMessage(to: string, text: string) {
 
   const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
+  const safeText = text && text.trim().length > 0
+    ? text.trim()
+    : 'Bonjour ! Merci pour votre message. Que pouvons-nous faire pour vous aujourd\'hui chez FYS ?';
+
   const payload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
     to,
     type: 'text',
-    text: { preview_url: false, body: text },
+    text: { preview_url: false, body: safeText },
   };
 
   try {
@@ -1235,30 +1239,79 @@ Exemple conforme :
 
       const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
 
-      const primaryModel = process.env.GEMINI_WHATSAPP_MODEL || 'gemini-3-flash-preview';
-      const fallbackModels = ['gemini-3.6-flash', 'gemini-flash-lite-latest'];
-      const modelQueue = Array.from(new Set(['gemini-3-flash-preview', primaryModel, ...fallbackModels]));
+      // Modèles à très haute réactivité (< 1.5s) sans saturation de quota journalier
+      const envModel = process.env.GEMINI_WHATSAPP_MODEL;
+      const modelQueue = Array.from(new Set([
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-lite-latest',
+        ...(envModel && envModel !== 'gemini-3-flash-preview' ? [envModel] : []),
+        'gemini-3.6-flash',
+        'gemini-3-flash-preview',
+      ])).filter(Boolean);
 
       for (const modelCandidate of modelQueue) {
         try {
+          const isThinkingSupported = !modelCandidate.includes('lite');
+          const genConfig: any = {
+            temperature: 0.7,
+            maxOutputTokens: 1200,
+          };
+          if (isThinkingSupported) {
+            genConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
+
           const model = genAI.getGenerativeModel({
             model: modelCandidate,
             systemInstruction: fullSystemPrompt,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1200,
-              thinkingConfig: { thinkingBudget: 0 },
-            } as any,
+            generationConfig: genConfig,
           });
           console.log(`[whatsapp-webhook] Calling Gemini (${modelCandidate}) with conversation history & dynamic pricing...`);
+          const timeoutMs = modelCandidate.includes('lite') ? 7000 : 15000;
           const result = await Promise.race([
             model.generateContent({ contents: contentsPayload }),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Model ${modelCandidate} timed out after 5000ms`)), 5000)),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Model ${modelCandidate} timed out after ${timeoutMs}ms`)), timeoutMs)),
           ]);
-          aiReply = result.response.text();
-          if (aiReply) break;
+          const candidateText = result.response.text();
+          if (candidateText && candidateText.trim().length > 0) {
+            aiReply = candidateText.trim();
+            break;
+          }
         } catch (geminiErr: any) {
           console.warn(`[whatsapp-webhook] Gemini (${modelCandidate}) error, trying next fallback:`, geminiErr?.message);
+        }
+      }
+
+      // 🛡️ GARANTIE DE RÉPONSE 100% : Si aucun modèle IA n'a pu répondre, NutriFYS ne reste JAMAIS muet
+      if (!aiReply || aiReply.trim().length === 0) {
+        console.warn('[whatsapp-webhook] ⚠️ All Gemini models failed or timed out. Triggering resilient NutriFYS fallback...');
+        if (webDraftCode) {
+          aiReply = `Bonjour ${senderName} ! 🍹 Votre mélange personnalisé FYS est bien reçu. Souhaitez-vous le commander dès maintenant ou découvrir sa composition et ses bienfaits nutritionnels ?`;
+          buttonsToSend = [
+            { id: 'btn_order', title: 'Commander' },
+            { id: 'btn_nutrition', title: 'Fiche nutrition' },
+          ];
+        } else if (isInteractiveMessage && interactiveButtonId) {
+          if (interactiveButtonId.startsWith('btn_order')) {
+            aiReply = `Avec grand plaisir ${senderName} ! 🥤 Quel format préférez-vous (500ml ou 1 Litre) et dans quel quartier de Yaoundé souhaitez-vous être livré ?`;
+            buttonsToSend = [
+              { id: 'btn_format_500ml', title: 'Format 500ml' },
+              { id: 'btn_format_1l', title: 'Format 1 Litre' },
+            ];
+          } else if (interactiveButtonId.startsWith('btn_nutrition')) {
+            aiReply = `Voici les atouts santé de votre mélange FYS : riche en antioxydants, vitamines naturelles et sans sucre ajouté. Souhaitez-vous passer à la commande ?`;
+            buttonsToSend = [
+              { id: 'btn_order', title: 'Commander' },
+            ];
+          } else {
+            aiReply = `C'est bien noté ${senderName} ! Je prépare votre commande FYS. Dans quel quartier de Yaoundé souhaitez-vous être livré ?`;
+          }
+        } else {
+          aiReply = `Bonjour ${senderName} ! 🌿 Je suis ravi de vous retrouver chez FYS. Que puis-je faire pour vous aujourd'hui : une nouvelle commande de cocktail frais ou un conseil nutrition ?`;
+          buttonsToSend = [
+            { id: 'btn_order', title: 'Commander' },
+            { id: 'btn_nutrition', title: 'Fiche nutrition' },
+          ];
         }
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);

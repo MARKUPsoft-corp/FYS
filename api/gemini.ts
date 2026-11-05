@@ -43,14 +43,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ text: cached.text, model: cached.model, cached: true });
   }
 
-  // Priorité absolue aux modèles les plus rapides et stables (évite les 503 et les modèles lents à 15-20s)
-  const primaryModel = requestedModel || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+  // Priorité absolue aux modèles les plus rapides, stables et sans dépassement de quota (évite les 503 et 429)
+  const envModel = process.env.GEMINI_MODEL;
   const modelQueue = Array.from(new Set([
-    'gemini-3-flash-preview',
-    primaryModel,
-    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
     'gemini-flash-lite-latest',
-  ]));
+    requestedModel,
+    ...(envModel && envModel !== 'gemini-3-flash-preview' ? [envModel] : []),
+    'gemini-3.6-flash',
+    'gemini-3-flash-preview',
+  ])).filter(Boolean) as string[];
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const requestPayload = contents ? { contents } : prompt;
@@ -59,22 +62,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   for (const modelName of modelQueue) {
     try {
-      const effectiveGenConfig = {
+      const isThinkingSupported = !modelName.includes('lite');
+      const effectiveGenConfig: any = {
         ...(generationConfig || {}),
         maxOutputTokens: Math.max(2048, Number(generationConfig?.maxOutputTokens) || 2048),
-        thinkingConfig: { thinkingBudget: 0 },
       };
+      if (isThinkingSupported) {
+        effectiveGenConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+
       const generativeModel = genAI.getGenerativeModel({
         model: modelName,
         ...(systemInstruction ? { systemInstruction } : {}),
         generationConfig: effectiveGenConfig as any,
       });
 
-      // Timeout strict de 5 secondes par tentative pour éviter tout blocage
+      const timeoutMs = modelName.includes('lite') ? 7000 : 15000;
       const result = await withTimeout(
         generativeModel.generateContent(requestPayload),
-        5000,
-        `Model ${modelName} timed out after 5000ms`
+        timeoutMs,
+        `Model ${modelName} timed out after ${timeoutMs}ms`
       );
       const text = result.response.text();
 

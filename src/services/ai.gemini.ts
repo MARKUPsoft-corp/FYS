@@ -29,7 +29,7 @@ interface GeminiCallParams {
   };
 }
 
-const DEFAULT_GEMINI_MODEL = (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-3-flash-preview';
+const DEFAULT_GEMINI_MODEL = (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-3.5-flash-lite';
 
 let devGenAIInstance: GoogleGenerativeAI | null = null;
 
@@ -57,7 +57,7 @@ function getAnalysisCacheKey(
  * Exécute une requête vers l'API Gemini avec latence minimale.
  * - En dev local : utilise directement le SDK client si RASENGAN_GEMINI_API_KEY est présent (évite la tentative 404 sur /api/gemini).
  * - En production : passe par le proxy sécurisé /api/gemini.
- * - Priorise gemini-3-flash-preview pour une réponse immédiate (< 1.5s) sans subir les 503 temporaires.
+ * - Priorise gemini-3.5-flash-lite pour une réponse immédiate (< 1.5s) sans saturation de quota.
  */
 async function executeGeminiRequest(params: GeminiCallParams): Promise<string> {
   const modelToUse = params.model || DEFAULT_GEMINI_MODEL;
@@ -74,19 +74,24 @@ async function executeGeminiRequest(params: GeminiCallParams): Promise<string> {
       devGenAIInstance = new GoogleGenerativeAI(devKey);
     }
     const modelCandidates = Array.from(new Set([
-      'gemini-3-flash-preview',
-      sanitizedParams.model || DEFAULT_GEMINI_MODEL,
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
       'gemini-flash-lite-latest',
+      sanitizedParams.model || DEFAULT_GEMINI_MODEL,
       'gemini-3.6-flash',
-    ]));
+      'gemini-3-flash-preview',
+    ])).filter(Boolean);
 
     let lastDevErr: any = null;
     for (const mName of modelCandidates) {
       try {
-        const genConfig = {
+        const isThinkingSupported = !mName.includes('lite');
+        const genConfig: any = {
           ...(sanitizedParams.generationConfig || {}),
-          thinkingConfig: { thinkingBudget: 0 },
         };
+        if (isThinkingSupported) {
+          genConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
         const model = devGenAIInstance.getGenerativeModel({
           model: mName,
           ...(sanitizedParams.systemInstruction ? { systemInstruction: sanitizedParams.systemInstruction } : {}),
