@@ -366,7 +366,10 @@ let cachedQrCodeBase64: string | null = null;
 async function getQrCodeBase64(targetUrl: string): Promise<string | null> {
   if (cachedQrCodeBase64) return cachedQrCodeBase64;
   try {
-    const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=png&data=${encodeURIComponent(targetUrl)}`);
+    const res = await fetch(
+      `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=png&data=${encodeURIComponent(targetUrl)}`,
+      { signal: AbortSignal.timeout(3000) }
+    );
     if (!res.ok) return null;
     const arrayBuf = await res.arrayBuffer();
     cachedQrCodeBase64 = Buffer.from(arrayBuf).toString('base64');
@@ -964,5 +967,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     console.error('[send-email-campaign] Unexpected handler error:', error);
     return res.status(500).json({ error: error?.message || 'Internal server error' });
+  } finally {
+    if (sharedSmtpTransporter) {
+      try {
+        sharedSmtpTransporter.close();
+      } catch {}
+      sharedSmtpTransporter = null;
+    }
   }
 }
