@@ -1,6 +1,6 @@
 import { PageComponent, Link, useNavigate } from 'rasengan';
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { ArrowRight, Sparkles, Leaf, Heart, ChevronLeft, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package, Globe } from 'lucide-react';
+import { ArrowRight, Sparkles, Leaf, Heart, ChevronLeft, ChevronRight, Play, CheckCircle2, Users, Zap, ShieldCheck, Sun, Moon, Plus, Mouse, ChevronDown, Menu, Phone, Mail, MapPin, Clock, Building2, GlassWater, Package, Globe, Lock } from 'lucide-react';
 import { useTheme } from '@rasenganjs/theme';
 import { useAuthStore } from '@/stores/auth';
 import { useFruitsRealtime } from '@/hooks/useFruitsRealtime';
@@ -479,13 +479,23 @@ const RootIndex: PageComponent = () => {
                   </div>
                   
                   <div className="mt-auto flex flex-col gap-4 pb-8">
-                    {user && (
+                    {user ? (
                       <Link
                         to="/board"
                         className="h-12 w-full rounded-full border-2 border-border/80 text-base font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all text-foreground"
                       >
                         Tableau de bord
                       </Link>
+                    ) : (
+                      <SheetClose asChild>
+                        <Link
+                          to="/auth/login"
+                          className="text-xs text-center text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5 py-1 opacity-70 hover:opacity-100"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Connexion</span>
+                        </Link>
+                      </SheetClose>
                     )}
                     <Link
                       to="/lab"
@@ -1485,6 +1495,12 @@ const RootIndex: PageComponent = () => {
               <li><Link to="/lab" className="hover:text-primary transition-colors flex items-center gap-2">FYS Lab</Link></li>
               <li><Link to="/board/catalogue" className="hover:text-primary transition-colors flex items-center gap-2">{t('nav.catalogue')}</Link></li>
               <li><Link to="/board/profile" className="hover:text-primary transition-colors flex items-center gap-2">{t('nav.profile')}</Link></li>
+              <li>
+                <Link to="/auth/login" className="hover:text-primary transition-colors flex items-center gap-1.5 text-xs opacity-70 hover:opacity-100 pt-2">
+                  <Lock className="w-3 h-3" />
+                  <span>Connexion</span>
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -1494,6 +1510,14 @@ const RootIndex: PageComponent = () => {
           <div className="flex items-center gap-6">
             <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.terms')}</span>
             <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.privacy')}</span>
+            <Link
+              to="/auth/login"
+              className="flex items-center gap-1.5 opacity-60 hover:opacity-100 hover:text-foreground transition-all cursor-pointer text-xs"
+              title="Connexion à l'espace d'administration"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Connexion</span>
+            </Link>
           </div>
         </div>
       </footer>
