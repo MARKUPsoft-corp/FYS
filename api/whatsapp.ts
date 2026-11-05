@@ -296,6 +296,161 @@ async function sendWhatsAppInteractiveButtons(
   }
 }
 
+// ── Envoi de messages interactifs avec listes déroulantes natives Meta ────────
+
+interface WhatsAppListRow {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+interface WhatsAppListSection {
+  title?: string;
+  rows: WhatsAppListRow[];
+}
+
+interface WhatsAppListData {
+  buttonText: string;
+  sections: WhatsAppListSection[];
+}
+
+// 10 quartiers fréquents prédéfinis de Yaoundé pour la livraison
+const YAOUNDE_DISTRICTS_LIST: WhatsAppListData = {
+  buttonText: 'Choisir le quartier',
+  sections: [
+    {
+      title: 'Quartiers fréquents',
+      rows: [
+        { id: 'loc_bastos', title: 'Bastos', description: 'Zone Ambassades, Golf' },
+        { id: 'loc_biyem_assi', title: 'Biyem-Assi', description: 'Rond-point, Accacia' },
+        { id: 'loc_odza', title: 'Odza', description: 'Messamendongo, Borne 10' },
+        { id: 'loc_omnisports', title: 'Omnisports / Essos', description: 'Stade, Mfandena' },
+        { id: 'loc_mendong', title: 'Mendong / Simbock', description: 'Lycée, Carrefour Jouvence' },
+        { id: 'loc_nlongkak', title: 'Nlongkak / Elig-Essono', description: 'Rond-point, Warda' },
+        { id: 'loc_mokolo', title: 'Mokolo / Madagascar', description: 'Marché, Tsinga' },
+        { id: 'loc_ngousso', title: 'Ngousso', description: 'Hôpital Général, Eleveur' },
+        { id: 'loc_emombo', title: 'Emombo / Nkolmesseng', description: 'Chapelle, Tradex' },
+        { id: 'loc_centre_ville', title: 'Centre-ville', description: 'Poste Centrale, Boulevard' },
+      ],
+    },
+  ],
+};
+
+async function sendWhatsAppInteractiveList(
+  to: string,
+  bodyText: string,
+  listData: WhatsAppListData,
+  headerText?: string,
+  footerText = 'NutriFYS · Votre nutritionniste sur-mesure'
+): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN) {
+    console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
+    return false;
+  }
+
+  let totalRowsCount = 0;
+  const safeSections = (listData.sections || [])
+    .map((sec, secIdx) => {
+      const safeRows = (sec.rows || [])
+        .filter((r) => r && typeof r.title === 'string' && r.title.trim().length > 0)
+        .map((r, rIdx) => {
+          if (totalRowsCount >= 10) return null;
+          totalRowsCount++;
+          const cleanTitle = r.title.replace(/[*_~`#|]/g, '').trim().slice(0, 24);
+          const cleanDesc = r.description ? r.description.replace(/[*_~`#|]/g, '').trim().slice(0, 72) : undefined;
+          return {
+            id: (r.id || `row_${secIdx}_${rIdx}`).slice(0, 200),
+            title: cleanTitle || `Option ${totalRowsCount}`,
+            ...(cleanDesc ? { description: cleanDesc } : {}),
+          };
+        })
+        .filter(Boolean) as { id: string; title: string; description?: string }[];
+
+      return {
+        ...(sec.title ? { title: sec.title.replace(/[*_~`#|]/g, '').trim().slice(0, 24) } : {}),
+        rows: safeRows,
+      };
+    })
+    .filter((sec) => sec.rows.length > 0)
+    .slice(0, 10);
+
+  if (safeSections.length === 0 || totalRowsCount === 0) {
+    return sendWhatsAppMessage(to, bodyText);
+  }
+
+  const cleanButton = (listData.buttonText || 'Choisir').replace(/[*_~`#|]/g, '').trim().slice(0, 20);
+
+  const interactivePayload: any = {
+    type: 'list',
+    body: {
+      text: (bodyText || 'Veuillez faire un choix :').slice(0, 4000),
+    },
+    action: {
+      button: cleanButton || 'Choisir',
+      sections: safeSections,
+    },
+  };
+
+  if (headerText && headerText.length <= 60) {
+    interactivePayload.header = {
+      type: 'text',
+      text: headerText,
+    };
+  }
+
+  if (footerText && footerText.length <= 60) {
+    interactivePayload.footer = {
+      text: footerText,
+    };
+  }
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'interactive',
+    interactive: interactivePayload,
+  };
+
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    console.log('[whatsapp] Meta interactive list response status:', response.status, responseText);
+
+    const db = getAdminDb();
+    if (db) {
+      await db.collection('meta_debug_logs').add({
+        action: 'sendWhatsAppInteractiveList',
+        to,
+        status: response.status,
+        responseText,
+        payload,
+        createdAt: FieldValue.serverTimestamp(),
+      }).catch(() => null);
+    }
+
+    if (!response.ok) {
+      console.warn('[whatsapp] Interactive list not accepted by Meta, falling back to text message:', response.status, responseText);
+      return sendWhatsAppMessage(to, bodyText);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[whatsapp] Network error sending interactive list, falling back to text:', err);
+    return sendWhatsAppMessage(to, bodyText);
+  }
+}
+
 // ── Marquer le message comme lu & Activer l'indicateur visuel "en train d'écrire..." ──
 
 async function markWhatsAppMessageAsReadAndTyping(messageId: string): Promise<boolean> {
@@ -603,24 +758,87 @@ Présente une FICHE NUTRITIONNELLE COMPLÈTE contenant exactement les mêmes inf
 Puis termine en demandant :
 "Souhaitez-vous maintenant passer à la commande de cette recette ?"
 
-ÉTAPE 4 : COMMANDE & CALCUL COMMERCIAL DU PRIX
-Quand le client souhaite commander (soit directement à l'étape 2, soit après avoir consulté sa fiche nutritionnelle) :
-1. Demande le format souhaité (500ml ou 1L), la quantité de bouteilles et son quartier de livraison à Yaoundé.
-2. CALCUL COMMERCIAL DU PRIX (PRODUIT FINI UNIQUEMENT, CONFIDENTIALITÉ TOTALE DES COÛTS INTERNES) :
-- RÈGLE COMMERCIALE CRITIQUE : Tu ne vends JAMAIS de bouteilles vides ni de fruits au détail. Tu vends des jus et cocktails santé d'excellence déjà embouteillés.
-- INTERDICTION FORMELLE ET ABSOLUE : Tu NE DOIS JAMAIS mentionner le prix du contenant vide, ni le prix individuel des fruits, ni aucune opération d'addition (interdit d'écrire "1500 + 200"). Le détail des éléments fait perdre de l'argent et décrédibilise l'offre FYS.
-- Tu annonces EXCLUSIVEMENT le prix unitaire final tout compris de la bouteille composée.
-- Tu multiplies par la quantité et tu ajoutes les frais de livraison pour afficher le TOTAL À PAYER.
-Exemple strict de récapitulatif devis :
+ÉTAPE 4 : COMMANDE EN QUESTIONS STRICTEMENT DÉTACHÉES (1 SEULE QUESTION À LA FOIS !)
+RÈGLE D'OR COMMERCIALE & INTERACTIVE :
+Tu ne poses JAMAIS deux questions à la fois ! Chaque étape correspond à UNE SEULE question avec ses boutons ou sa liste dédiée.
+
+Sous-étape 4.1 : CHOIX DU FORMAT (Uniquement le format !)
+Quand le client indique qu'il veut commander (ex: clic sur "Commander" ou dit "je veux commander") :
+Demande UNIQUEMENT le format souhaité :
+"Pour préparer votre cocktail [Nom de la recette], quel format préférez-vous ?"
+Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_format_500ml", "title": "Format 500ml"},
+  {"id": "btn_format_1l", "title": "Format 1 Litre"}
+]
+:::
+(INTERDICTION FORMELLE de demander le nombre de bouteilles ou le quartier à cette sous-étape !).
+
+Sous-étape 4.2 : CHOIX DE LA QUANTITÉ (Uniquement la quantité !)
+Dès que le format est choisi par le client (ex: 500ml ou 1L) :
+Remercie-le et demande UNIQUEMENT le nombre de bouteilles :
+"C'est noté pour le format [Format] ! Combien de bouteilles souhaitez-vous commander ? (Vous pouvez choisir ci-dessous ou taper directement un autre chiffre)"
+Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_qty_1", "title": "1 Bouteille"},
+  {"id": "btn_qty_2", "title": "2 Bouteilles"},
+  {"id": "btn_qty_3", "title": "3 Bouteilles"}
+]
+:::
+(INTERDICTION de demander le quartier à cette sous-étape !).
+
+Sous-étape 4.3 : CHOIX DU QUARTIER DE LIVRAISON (Liste déroulante native)
+Dès que la quantité de bouteilles est connue :
+Demande UNIQUEMENT le quartier de livraison à Yaoundé :
+"Dans quel quartier de Yaoundé souhaitez-vous être livré ? Vous pouvez sélectionner votre quartier dans la liste déroulante ci-dessous. Si votre quartier n'y apparaît pas, écrivez-le simplement ici en message !"
+Inclus OBLIGATOIREMENT le bloc :::LIST :
+:::LIST
+{
+  "buttonText": "Choisir le quartier",
+  "sections": [
+    {
+      "title": "Quartiers fréquents",
+      "rows": [
+        {"id": "loc_bastos", "title": "Bastos", "description": "Zone Ambassades, Golf"},
+        {"id": "loc_biyem_assi", "title": "Biyem-Assi", "description": "Rond-point, Accacia"},
+        {"id": "loc_odza", "title": "Odza", "description": "Messamendongo, Borne 10"},
+        {"id": "loc_omnisports", "title": "Omnisports / Essos", "description": "Stade, Mfandena"},
+        {"id": "loc_mendong", "title": "Mendong / Simbock", "description": "Lycée, Carrefour Jouvence"},
+        {"id": "loc_nlongkak", "title": "Nlongkak / Elig-Essono", "description": "Rond-point, Warda"},
+        {"id": "loc_mokolo", "title": "Mokolo / Madagascar", "description": "Marché, Tsinga"},
+        {"id": "loc_ngousso", "title": "Ngousso", "description": "Hôpital Général, Eleveur"},
+        {"id": "loc_emombo", "title": "Emombo / Nkolmesseng", "description": "Chapelle, Tradex"},
+        {"id": "loc_centre_ville", "title": "Centre-ville", "description": "Poste Centrale, Boulevard"}
+      ]
+    }
+  ]
+}
+:::
+
+Sous-étape 4.4 : CALCUL COMMERCIAL DU PRIX & DEVIS RÉCAPITULATIF (Validation en 1 clic)
+Dès que le quartier est renseigné (sélectionné dans la liste ou écrit par le client) :
+1. Tu calcules le montant total : Prix unitaire de la bouteille x Quantité + Frais de livraison Yaoundé (minimum 1 000 XAF selon le quartier) = TOTAL À PAYER.
+2. CONFIDENTIALITÉ STRICTE : Tu n'affiches JAMAIS le coût des fruits ou du contenant vide, seulement le prix unitaire tout compris de la bouteille finie.
+3. Tu présentes le récapitulatif clair :
 "Voici le récapitulatif de votre commande :
-• [Quantité] bouteille(s) [Format: 500ml ou 1L] de [Nom du jus] : [Prix unitaire] XAF (soit [Sous-total] XAF)
-• Livraison à [Quartier] : [Frais livraison à partir de 1 000 XAF selon la zone] XAF
-👉 TOTAL À PAYER : [Total] XAF (Paiement par Mobile Money ou au comptant à la livraison).
+• [Quantité] bouteille(s) [Format] de [Nom de la recette] : [Prix unitaire] XAF (soit [Sous-total] XAF)
+• Livraison à [Quartier] : [Frais livraison à partir de 1 000 XAF] XAF
+👉 TOTAL À PAYER : [Total] XAF (Paiement Mobile Money ou à la livraison).
 
-Est-ce que cela vous convient pour valider votre commande ?"
+Est-ce que tout est bon pour vous pour valider cette commande ?"
+Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_confirm_order", "title": "Valider commande"},
+  {"id": "btn_edit_order", "title": "Modifier"}
+]
+:::
 
-3. INTERDICTION FORMELLE : Ne mets JAMAIS le bloc :::ORDER_JSON dans ce message de devis. Le client DOIT voir le prix d'abord et valider !
-4. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu le remercies chaleureusement, tu lui indiques avec enthousiasme que sa commande est enregistrée et qu'il pourra retrouver tout son suivi et ses factures sur son tableau de bord client FYS, et tu insères TOUT À LA FIN le bloc technique avec les prix EXACTS convenus (pour synchronisation parfaite à 100% avec l'administration) :
+Sous-étape 4.5 : ENREGISTREMENT DE LA COMMANDE
+C'est SEULEMENT après que le client a cliqué sur 'Valider commande' (ou dit oui / confirmé) :
+Tu le remercies chaleureusement, tu lui annonces que sa commande part en préparation et qu'il recevra son lien de suivi dans un instant, et tu insères TOUT À LA FIN le bloc technique :
 :::ORDER_JSON
 {
   "cocktailName": "Nom de la recette",
@@ -652,38 +870,12 @@ Quand le client t'envoie une image ou photo :
    - Lis la capture d'écran du reçu (montant en XAF, référence ou ID de transaction).
    - Remercie chaleureusement le client et confirme-lui que son paiement a bien été reçu et que sa commande part en préparation pour sa livraison à Yaoundé.
 
-STYLE DE COMMUNICATION WHATSAPP :
-- Réponses aérées, faciles à lire sur un écran de smartphone (puces claires, émojis sobres).
-- Phrases chaleureuses, empathiques et accessibles sans jargon médical hermétique.
-- Pose UNE seule question à la fois pour laisser le client respirer et répondre aisément.
-
-BOUTONS D'INTERACTION CLIC-DIRECT META WHATSAPP :
-Pour éviter au client de taper du texte au clavier, tu peux ajouter TOUT À LA FIN de ton message un bloc de boutons cliquables :::BUTTONS [...] ::: (maximum 3 boutons, titre de chaque bouton STRICTEMENT SANS AUCUN ÉMOJI NI SYMBOLE, 20 caractères max) :
-
-1. À l'accueil d'un brouillon web FYS (#FYS-XXXX) :
-Propose le choix entre commander directement ou voir sa fiche santé :
-:::BUTTONS
-[
-  {"id": "btn_order", "title": "Commander"},
-  {"id": "btn_nutrition", "title": "Fiche nutrition"}
-]
-:::
-
-2. Lors du choix du format de bouteille :
-:::BUTTONS
-[
-  {"id": "btn_format_500ml", "title": "Format 500ml"},
-  {"id": "btn_format_1l", "title": "Format 1 Litre"}
-]
-:::
-
-3. Lors de la présentation du devis récapitulatif pour validation en 1 clic :
-:::BUTTONS
-[
-  {"id": "btn_confirm_order", "title": "Valider commande"},
-  {"id": "btn_edit_order", "title": "Modifier"}
-]
-:::`;
+RÈGLE D'INTERACTION META WHATSAPP GÉNÉRALE (BOUTONS OU LISTES POUR CHAQUE CHOIX) :
+Pour offrir une expérience fluide sans saisie fastidieuse au clavier, chaque fois que tu poses une question impliquant un choix :
+- Pour 2 ou 3 choix (ex: Oui/Non, Commander/Fiche, Format 500ml/1L, Quantité, Validation) :
+  Ajoute TOUJOURS le bloc :::BUTTONS [ {"id": "...", "title": "... (sans emoji, max 20 car)"} ] :::
+- Pour plus de 3 choix (ex: liste des quartiers de Yaoundé, sélection d'ingrédients) :
+  Ajoute TOUJOURS le bloc :::LIST { "buttonText": "...", "sections": [ {"title": "...", "rows": [{"id": "...", "title": "...", "description": "..."}]} ] } :::`;
 
 // ── Handler principal ─────────────────────────────────────────────────────────
 
@@ -1213,19 +1405,23 @@ Exemple conforme :
           : `L'utilisateur a envoyé cette photo. Analyse attentivement ce qu'elle contient (ordonnance médicale, bilan de santé, fruits frais ou reçu de paiement Mobile Money) et réponds-lui chaleureusement selon tes consignes NutriFYS.`;
         currentUserParts.push({ text: promptIntro });
       } else if (isInteractiveMessage && interactiveButtonId) {
-        let explicitAction = `[Action bouton cliqué : "${senderText}"]`;
+        let explicitAction = `[Action interactive cliquée : "${senderText}"]`;
         if (interactiveButtonId.startsWith('btn_order')) {
-          explicitAction = `[Le client a cliqué sur le bouton 'Commander' : il souhaite commander ce mélange. Demande-lui le format souhaité (500ml ou 1L) et son quartier de livraison].`;
+          explicitAction = `[Le client a cliqué sur 'Commander'. RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS. Ne pose AUCUNE autre question (pas de quantité, pas de quartier à cette étape) !]`;
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
-          explicitAction = `[Le client a cliqué sur le bouton 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
+          explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
+        } else if (interactiveButtonId.startsWith('btn_format_500ml')) {
+          explicitAction = `[Le client a sélectionné le format 500ml. RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+        } else if (interactiveButtonId.startsWith('btn_format_1l')) {
+          explicitAction = `[Le client a sélectionné le format 1 Litre. RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+        } else if (interactiveButtonId.startsWith('btn_qty_')) {
+          explicitAction = `[Le client a choisi la quantité : "${senderText}". RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+        } else if (interactiveButtonId.startsWith('loc_')) {
+          explicitAction = `[Le client a choisi son quartier de livraison : "${senderText}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul des frais de livraison (à partir de 1 000 XAF selon la zone) et demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
         } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
           explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus].`;
         } else if (interactiveButtonId.startsWith('btn_edit_order')) {
-          explicitAction = `[Le client a cliqué sur 'Modifier' : demande-lui avec bienveillance ce qu'il souhaite modifier : fruits, format ou adresse de livraison].`;
-        } else if (interactiveButtonId.startsWith('btn_format_500ml')) {
-          explicitAction = `[Le client a sélectionné le format 500ml].`;
-        } else if (interactiveButtonId.startsWith('btn_format_1l')) {
-          explicitAction = `[Le client a sélectionné le format 1 Litre].`;
+          explicitAction = `[Le client a cliqué sur 'Modifier' : demande-lui avec bienveillance ce qu'il souhaite modifier : fruits, format, quantité ou adresse de livraison].`;
         }
         currentUserParts.push({ text: explicitAction });
       } else {
@@ -1575,6 +1771,21 @@ Exemple conforme :
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
       }
 
+      // ── Extraction et détection des listes interactives Meta (Menu déroulant) ────
+      let listToSend: WhatsAppListData | null = null;
+      const listMatch = aiReply.match(/:::LIST\s*([\s\S]*?):::/);
+      if (listMatch) {
+        try {
+          const parsed = JSON.parse(listMatch[1].trim());
+          if (parsed && Array.isArray(parsed.sections)) {
+            listToSend = parsed;
+          }
+        } catch (lErr) {
+          console.warn('[whatsapp-webhook] Failed to parse :::LIST JSON:', lErr);
+        }
+        aiReply = aiReply.replace(/:::LIST[\s\S]*?:::?/g, '').trim();
+      }
+
       // ── Extraction et détection des boutons interactifs Meta ────────────
       let buttonsToSend: WhatsAppInteractiveButton[] = [];
       const buttonsMatch = aiReply.match(/:::BUTTONS\s*([\s\S]*?):::/);
@@ -1590,17 +1801,57 @@ Exemple conforme :
         aiReply = aiReply.replace(/:::BUTTONS[\s\S]*?:::?/g, '').trim();
       }
 
-      // Détection automatique intelligente en renfort si l'IA n'a pas inclus le bloc :::BUTTONS :
-      // 1. Accueil d'un brouillon Web FYS (#FYS-XXXX)
-      if (webDraftCode && buttonsToSend.length === 0 && !orderMatch) {
+      // ── Détection automatique intelligente en renfort si l'IA n'a pas inclus les balises ────
+      // 1. Choix du quartier de livraison à Yaoundé (Liste déroulante)
+      if (
+        !listToSend &&
+        buttonsToSend.length === 0 &&
+        !orderMatch &&
+        (aiReply.toLowerCase().includes('quel quartier') ||
+         aiReply.toLowerCase().includes('quartier de livraison') ||
+         aiReply.toLowerCase().includes('quartier de yaoundé') ||
+         aiReply.toLowerCase().includes('quartier souhaitez-vous') ||
+         aiReply.toLowerCase().includes('dans quel quartier'))
+      ) {
+        listToSend = YAOUNDE_DISTRICTS_LIST;
+      }
+
+      // 2. Choix de la quantité de bouteilles (Boutons 1, 2, 3)
+      if (
+        !listToSend &&
+        buttonsToSend.length === 0 &&
+        !orderMatch &&
+        (aiReply.toLowerCase().includes('combien de bouteilles') ||
+         aiReply.toLowerCase().includes('nombre de bouteilles') ||
+         aiReply.toLowerCase().includes('quantité de bouteilles') ||
+         aiReply.toLowerCase().includes('combien de bouteille'))
+      ) {
         buttonsToSend = [
-          { id: 'btn_order', title: 'Commander' },
-          { id: 'btn_nutrition', title: 'Fiche nutrition' },
+          { id: 'btn_qty_1', title: '1 Bouteille' },
+          { id: 'btn_qty_2', title: '2 Bouteilles' },
+          { id: 'btn_qty_3', title: '3 Bouteilles' },
         ];
       }
 
-      // 2. Devis récapitulatif demandant confirmation
+      // 3. Choix du format si la question du format est posée
       if (
+        !listToSend &&
+        buttonsToSend.length === 0 &&
+        !orderMatch &&
+        (aiReply.toLowerCase().includes('quel format') ||
+         aiReply.toLowerCase().includes('format souhaité') ||
+         aiReply.toLowerCase().includes('format préférez-vous') ||
+         aiReply.toLowerCase().includes('500ml ou 1l'))
+      ) {
+        buttonsToSend = [
+          { id: 'btn_format_500ml', title: 'Format 500ml' },
+          { id: 'btn_format_1l', title: 'Format 1 Litre' },
+        ];
+      }
+
+      // 4. Devis récapitulatif demandant confirmation
+      if (
+        !listToSend &&
         buttonsToSend.length === 0 &&
         !orderMatch &&
         aiReply.includes('TOTAL À PAYER') &&
@@ -1612,15 +1863,16 @@ Exemple conforme :
         ];
       }
 
-      // 3. Choix du format si la question du format est posée
+      // 5. Accueil d'un brouillon Web FYS (#FYS-XXXX) ou proposition recette
       if (
+        !listToSend &&
         buttonsToSend.length === 0 &&
         !orderMatch &&
-        (aiReply.toLowerCase().includes('quel format') || aiReply.toLowerCase().includes('format souhaité') || aiReply.toLowerCase().includes('500ml ou 1l'))
+        (webDraftCode || aiReply.toLowerCase().includes('fiche nutritionnelle') || aiReply.toLowerCase().includes('passer à la commande'))
       ) {
         buttonsToSend = [
-          { id: 'btn_format_500ml', title: 'Format 500ml' },
-          { id: 'btn_format_1l', title: 'Format 1 Litre' },
+          { id: 'btn_order', title: 'Commander' },
+          { id: 'btn_nutrition', title: 'Fiche nutrition' },
         ];
       }
 
@@ -1642,9 +1894,18 @@ Exemple conforme :
         }
       }
 
-      // Envoyer le message : avec boutons natifs interactifs si présents, sinon texte standard
+      // Envoyer le message : avec liste déroulante native, ou boutons natifs si présents, sinon texte standard
       let sent = false;
-      if (buttonsToSend.length > 0) {
+      if (listToSend) {
+        console.log(`[whatsapp-webhook] 📋 Sending message with interactive LIST to ${senderPhone}...`);
+        sent = await sendWhatsAppInteractiveList(
+          senderPhone,
+          aiReply,
+          listToSend,
+          'NutriFYS · FYS',
+          'NutriFYS · Votre nutritionniste sur-mesure'
+        );
+      } else if (buttonsToSend.length > 0) {
         console.log(`[whatsapp-webhook] 🔘 Sending message with ${buttonsToSend.length} interactive buttons to ${senderPhone}...`);
         sent = await sendWhatsAppInteractiveButtons(
           senderPhone,
@@ -1656,7 +1917,7 @@ Exemple conforme :
       } else {
         sent = await sendWhatsAppMessage(senderPhone, aiReply);
       }
-      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio, interactive: buttonsToSend.length > 0 });
+      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio, interactive: buttonsToSend.length > 0, list: Boolean(listToSend) });
 
       // Enregistrer la réponse de l'IA dans Firestore pour garder l'historique de discussion
       if (db) {
