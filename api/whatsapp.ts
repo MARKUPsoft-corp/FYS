@@ -140,17 +140,25 @@ async function sendWhatsAppInteractiveButtons(
   };
 
   // Meta autorise entre 1 et 3 boutons de réponse rapide max
+  const seenIds = new Set<string>();
   const safeButtons = (buttons || [])
     .filter((b) => b && typeof b.title === 'string' && b.title.trim().length > 0)
     .slice(0, 3)
-    .map((b, idx) => ({
-      type: 'reply' as const,
-      reply: {
-        id: (b.id || `btn_${idx}`).slice(0, 256),
-        // Limite stricte de Meta : 20 caractères max, 100% sans emoji ni markdown
-        title: cleanButtonTitle(b.title, `Option ${idx + 1}`),
-      },
-    }));
+    .map((b, idx) => {
+      let candidateId = (b.id || `btn_${idx}`).trim().slice(0, 256);
+      if (!candidateId || seenIds.has(candidateId)) {
+        candidateId = `btn_${idx}_${Date.now().toString(36)}`;
+      }
+      seenIds.add(candidateId);
+      return {
+        type: 'reply' as const,
+        reply: {
+          id: candidateId,
+          // Limite stricte de Meta : 20 caractères max, 100% sans emoji ni markdown
+          title: cleanButtonTitle(b.title, `Option ${idx + 1}`),
+        },
+      };
+    });
 
   if (safeButtons.length === 0) {
     return sendWhatsAppMessage(to, bodyText);
@@ -194,7 +202,6 @@ async function sendWhatsAppInteractiveButtons(
 
   if (footerText && footerText.length <= 60) {
     interactivePayload.footer = {
-      type: 'text',
       text: footerText,
     };
   }
@@ -1203,17 +1210,17 @@ Exemple conforme :
         currentUserParts.push({ text: promptIntro });
       } else if (isInteractiveMessage && interactiveButtonId) {
         let explicitAction = `[Action bouton cliqué : "${senderText}"]`;
-        if (interactiveButtonId === 'btn_order') {
+        if (interactiveButtonId.startsWith('btn_order')) {
           explicitAction = `[Le client a cliqué sur le bouton 'Commander' : il souhaite commander ce mélange. Demande-lui le format souhaité (500ml ou 1L) et son quartier de livraison].`;
-        } else if (interactiveButtonId === 'btn_nutrition') {
+        } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur le bouton 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
-        } else if (interactiveButtonId === 'btn_confirm_order') {
+        } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
           explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus].`;
-        } else if (interactiveButtonId === 'btn_edit_order') {
+        } else if (interactiveButtonId.startsWith('btn_edit_order')) {
           explicitAction = `[Le client a cliqué sur 'Modifier' : demande-lui avec bienveillance ce qu'il souhaite modifier : fruits, format ou adresse de livraison].`;
-        } else if (interactiveButtonId === 'btn_format_500ml') {
+        } else if (interactiveButtonId.startsWith('btn_format_500ml')) {
           explicitAction = `[Le client a sélectionné le format 500ml].`;
-        } else if (interactiveButtonId === 'btn_format_1l') {
+        } else if (interactiveButtonId.startsWith('btn_format_1l')) {
           explicitAction = `[Le client a sélectionné le format 1 Litre].`;
         }
         currentUserParts.push({ text: explicitAction });

@@ -45,7 +45,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       text: 'NutriFYS',
     };
     interactivePayload.footer = {
-      type: 'text',
       text: 'Votre nutritionniste FYS',
     };
   }
