@@ -1695,10 +1695,12 @@ Si le client te demande d'où viennent tes sources, tes connaissances, tes infor
   2. Les bases de données scientifiques officielles et tables de référence internationales en biochimie alimentaire (telles que Ciqual de l'ANSES, Aprifel, USDA FoodData Central et la recherche scientifique tropicale).
 - Mentionne TOUJOURS expressément : « les nutritionnistes partenaires de FYS ».
 
-FORMATS & TARIFS FYS :
-- Format 500ml : Format standard le plus apprécié (recommandé pour une journée)
-- Format 1L : Idéal pour partager en famille ou cure de 2 jours
-- Livraison à Yaoundé : Disponible dans tous les quartiers (Bastos, Biyem-Assi, Omnisports, Mendong, Odza, etc.).
+FORMATS & TARIFS FYS (LA VRAIE FORMULE OFFICIELLE) :
+- Formule stricte du prix d'une bouteille = Prix de base du contenant (enregistré en base : 1 000 XAF pour 500ml, 1 500 XAF pour 1L) + Somme exacte des prix des fruits et compléments de la recette.
+- Format 500ml : Format individuel standard (base contenant : 1 000 XAF)
+- Format 1L : Format familial ou cure 2 jours (base contenant : 1 500 XAF)
+- Livraison à Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Biyem-Assi, Odza, etc.). INTERDICTION FORMELLE d'annoncer 1 500 XAF ou tout autre montant !
+- TOTAL COMMANDE = (Prix unitaire x Quantité) + 1 000 XAF (livraison fixe).
 - Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant à la livraison.
 
 GESTION DU PROFIL DE SANTÉ (EXPÉRIENCE IDENTIQUE AU WEB FYS) :
@@ -1764,8 +1766,12 @@ Puis termine en demandant :
 RÈGLE D'OR COMMERCIALE & INTERACTIVE :
 Tu ne poses JAMAIS deux questions à la fois ! Chaque étape correspond à UNE SEULE question avec ses boutons ou sa liste dédiée.
 
+PRÉREQUIS INDISPENSABLE : LA RECETTE DE FRUITS DOIT ÊTRE CONNUE !
+Si le client veut commander (clic sur "Commander", message "je veux commander", ou choix de format direct) mais qu'AUCUNE recette n'a été composée (pas de brouillon Lab et aucun fruit convenu) :
+TU NE DOIS PAS demander le format ni donner de prix ! Tu dois d'abord lui dire avec bienveillance que pour préparer sa bouteille et calculer son prix exact selon la formule FYS, il doit d'abord choisir ses fruits (2 à 4 fruits parmi notre catalogue disponible).
+
 Sous-étape 4.1 : CHOIX DU FORMAT (Uniquement le format !)
-Quand le client indique qu'il veut commander (ex: clic sur "Commander" ou dit "je veux commander") :
+Quand les fruits de la recette sont connus et calés, et que le client veut commander :
 Demande UNIQUEMENT le format souhaité :
 "Pour préparer votre cocktail [Nom de la recette], quel format préférez-vous ?"
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
@@ -1821,12 +1827,16 @@ Inclus OBLIGATOIREMENT le bloc :::LIST :
 
 Sous-étape 4.4 : CALCUL COMMERCIAL DU PRIX & DEVIS RÉCAPITULATIF (Validation en 1 clic)
 Dès que le quartier est renseigné (sélectionné dans la liste ou écrit par le client) :
-1. Tu calcules le montant total : Prix unitaire de la bouteille x Quantité + Frais de livraison Yaoundé (minimum 1 000 XAF selon le quartier) = TOTAL À PAYER.
-2. CONFIDENTIALITÉ STRICTE : Tu n'affiches JAMAIS le coût des fruits ou du contenant vide, seulement le prix unitaire tout compris de la bouteille finie.
+1. Tu calcules le montant total selon la vraie formule officielle FYS :
+   • Prix unitaire de la bouteille = Base contenant + Somme des fruits et compléments de la recette.
+   • Sous-total = Prix unitaire x Quantité.
+   • Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (ne facture JAMAIS 1 500 XAF !).
+   • TOTAL À PAYER = Sous-total + 1 000 XAF.
+2. CONFIDENTIALITÉ STRICTE : Tu n'affiches JAMAIS le coût individuel des fruits ou du contenant vide au client, seulement le prix unitaire tout compris de la bouteille finie.
 3. Tu présentes le récapitulatif clair :
 "Voici le récapitulatif de votre commande :
-• [Quantité] bouteille(s) [Format] de [Nom de la recette] : [Prix unitaire] XAF (soit [Sous-total] XAF)
-• Livraison à [Quartier] : [Frais livraison à partir de 1 000 XAF] XAF
+• [Quantité] bouteille(s) [Format] de [Nom de la recette] : [Prix unitaire] XAF la bouteille (soit [Sous-total] XAF)
+• Livraison à [Quartier] : 1 000 XAF
 👉 TOTAL À PAYER : [Total] XAF (Paiement Mobile Money ou à la livraison).
 
 Est-ce que tout est bon pour vous pour valider cette commande ?"
@@ -2044,8 +2054,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await markWhatsAppMessageAsReadAndTyping(messageId);
       }
 
-      let bottle500Base = 1500;
-      let bottle1LBase = 2500;
+      let bottle500Base = 1000;
+      let bottle1LBase = 1500;
       let deliveryFee = 1000;
       const availableFruits: { id: string; name: string; price: number }[] = [];
 
@@ -2078,7 +2088,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const p = pricingDoc.data();
             if (typeof p?.bottle500mlBase === 'number') bottle500Base = p.bottle500mlBase;
             if (typeof p?.bottle1LBase === 'number') bottle1LBase = p.bottle1LBase;
-            if (typeof p?.deliveryFee === 'number') deliveryFee = Math.max(1000, p.deliveryFee);
+            // Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
+            deliveryFee = 1000;
           }
 
           if (fruitsSnap) {
@@ -2276,16 +2287,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               goals = userData.goals;
             }
 
-            // Calcul des tarifs stricts si commande initiée depuis le site FYS
+            // Calcul des tarifs stricts selon la vraie formule FYS
             const webDraftIngredients = Array.isArray(webDraft?.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
-            const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => s + (Number(i.priceSnapshot) || 0), 0);
-            const exactDraftPrice500 = (typeof webDraft?.cocktail?.totalPrice === 'number' && webDraft.cocktail.totalPrice > 0)
-              ? webDraft.cocktail.totalPrice
-              : (bottle500Base + webDraftIngredientsSum);
+            const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => {
+              const snapPrice = Number(i.priceSnapshot);
+              if (snapPrice > 0) return s + snapPrice;
+              const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() || f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase());
+              return s + (foundInStock?.price || 0);
+            }, 0);
+            const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const exactDraftDeliveryFee = typeof webDraft?.deliveryFee === 'number'
-              ? Math.max(1000, webDraft.deliveryFee)
-              : Math.max(1000, deliveryFee);
+            const exactDraftDeliveryFee = 1000;
 
             if (webDraft) {
               const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
@@ -2305,10 +2317,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - Recette composée au Lab FYS : "${cocktailName}"
 - Ingrédients stricts de la recette : ${ingredientsNames}
 - Sucre : ${sugarMention}
-- Tarifs fermes et définitifs FYS du site web :
-  * Bouteille 500ml : ${exactDraftPrice500} XAF
-  * Bouteille 1L : ${exactDraftPrice1L} XAF
-  * Livraison Yaoundé : à partir de ${exactDraftDeliveryFee} XAF (minimum 1 000 XAF selon le quartier)
+- Tarifs fermes et définitifs FYS (Calculés selon la vraie formule) :
+  * Bouteille 500ml : ${exactDraftPrice500} XAF (Base contenant ${bottle500Base} XAF + ${webDraftIngredientsSum} XAF de fruits)
+  * Bouteille 1L : ${exactDraftPrice1L} XAF (Base contenant ${bottle1LBase} XAF + ${webDraftIngredientsSum} XAF de fruits)
+  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
@@ -2316,10 +2328,12 @@ CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
 4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
 5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500} XAF (pour 500ml) ou ${exactDraftPrice1L} XAF (pour 1L).
-6. Lors de la confirmation finale (:::ORDER_JSON) :
+6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
+7. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
-   - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)`;
+   - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
+   - "deliveryFee" DOIT être strictement 1000`;
             } else {
               const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
               if (hasProfile) {
@@ -2427,16 +2441,17 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
               }
             }
 
-            // Calcul des tarifs stricts si commande initiée depuis le site FYS
+            // Calcul des tarifs stricts selon la vraie formule FYS
             const webDraftIngredients = Array.isArray(webDraft?.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
-            const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => s + (Number(i.priceSnapshot) || 0), 0);
-            const exactDraftPrice500 = (typeof webDraft?.cocktail?.totalPrice === 'number' && webDraft.cocktail.totalPrice > 0)
-              ? webDraft.cocktail.totalPrice
-              : (bottle500Base + webDraftIngredientsSum);
+            const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => {
+              const snapPrice = Number(i.priceSnapshot);
+              if (snapPrice > 0) return s + snapPrice;
+              const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() || f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase());
+              return s + (foundInStock?.price || 0);
+            }, 0);
+            const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const exactDraftDeliveryFee = typeof webDraft?.deliveryFee === 'number'
-              ? Math.max(1000, webDraft.deliveryFee)
-              : Math.max(1000, deliveryFee);
+            const exactDraftDeliveryFee = 1000;
 
             if (webDraft) {
               const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
@@ -2450,21 +2465,23 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
 - Recette composée au Lab FYS : "${cocktailName}"
 - Ingrédients stricts de la recette : ${ingredientsNames}
 - Sucre : ${sugarMention}
-- Tarifs fermes et définitifs FYS du site web :
-  * Bouteille 500ml : ${exactDraftPrice500} XAF
-  * Bouteille 1L : ${exactDraftPrice1L} XAF
-  * Livraison Yaoundé : à partir de ${exactDraftDeliveryFee} XAF (minimum 1 000 XAF selon le quartier)
+- Tarifs fermes et définitifs FYS (Calculés selon la vraie formule) :
+  * Bouteille 500ml : ${exactDraftPrice500} XAF (Base contenant ${bottle500Base} XAF + ${webDraftIngredientsSum} XAF de fruits)
+  * Bouteille 1L : ${exactDraftPrice1L} XAF (Base contenant ${bottle1LBase} XAF + ${webDraftIngredientsSum} XAF de fruits)
+  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
 2. INTERDICTION FORMELLE ET ABSOLUE de lui proposer une autre recette, d'inventer des fruits ou de changer le nom du cocktail (ne propose JAMAIS "Cocktail Douceur Tension" ou une autre recette inventée !).
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
-4. Propose-lui simplement de choisir le format de sa bouteille (500ml ou 1L) et demande son quartier de livraison pour finaliser.
+4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
 5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500} XAF (pour 500ml) ou ${exactDraftPrice1L} XAF (pour 1L).
-6. Lors de la confirmation finale (:::ORDER_JSON) :
+6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
+7. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
-   - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)`;
+   - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
+   - "deliveryFee" DOIT être strictement 1000`;
             } else {
               userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
@@ -2498,27 +2515,100 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.`
         : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
 
+      // ── DÉTERMINATION & CALCUL DE LA RECETTE ET DES PRIX DYNAMIQUES ──
+      let activeRecipeIngredients: { fruitId: string; fruitName: string; priceSnapshot: number }[] = [];
+      let activeRecipeName = '';
+
+      if (webDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
+        activeRecipeName = webDraft.cocktail?.name || 'Mon Jus Personnalisé FYS';
+        activeRecipeIngredients = webDraft.cocktail.ingredients.map((i: any) => {
+          const snapPrice = Number(i.priceSnapshot);
+          const matchedFruit = availableFruits.find(
+            (f) => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() ||
+                   f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase()
+          );
+          return {
+            fruitId: i.fruitId || i.id || matchedFruit?.id || 'fruit',
+            fruitName: i.fruitName || i.name || matchedFruit?.name || 'Fruit',
+            priceSnapshot: snapPrice > 0 ? snapPrice : (matchedFruit?.price || 0),
+          };
+        });
+      } else {
+        // Détection dans l'historique récent des fruits convenus ou choisis pour la composition WhatsApp
+        const historyTexts = chatHistoryForGemini.slice(-8).flatMap((m) => m.parts.map((p) => p.text));
+        const fullChatContext = [...historyTexts, senderText].join(' ').toLowerCase();
+
+        for (const fruit of availableFruits) {
+          const fNameLower = fruit.name.toLowerCase();
+          const fIdLower = fruit.id.toLowerCase();
+          const simpleName = fNameLower.split('(')[0].trim();
+          if (
+            fullChatContext.includes(fNameLower) ||
+            fullChatContext.includes(fIdLower) ||
+            (simpleName.length > 3 && fullChatContext.includes(simpleName)) ||
+            (fNameLower.includes('foléré') && (fullChatContext.includes('bissap') || fullChatContext.includes('foléré') || fullChatContext.includes('folere'))) ||
+            (fNameLower.includes('coco') && (fullChatContext.includes('coco') || fullChatContext.includes('noix de coco')))
+          ) {
+            if (!activeRecipeIngredients.some((item) => item.fruitId === fruit.id)) {
+              activeRecipeIngredients.push({
+                fruitId: fruit.id,
+                fruitName: fruit.name,
+                priceSnapshot: fruit.price,
+              });
+            }
+          }
+        }
+        if (activeRecipeIngredients.length > 0) {
+          activeRecipeName = 'Cocktail Sur-Mesure FYS';
+        }
+      }
+
+      const activeIngredientsSum = activeRecipeIngredients.reduce((s, i) => s + i.priceSnapshot, 0);
+      const activePrice500 = bottle500Base + activeIngredientsSum;
+      const activePrice1L = bottle1LBase + activeIngredientsSum;
+
       // Construction du catalogue et de la grille tarifaire interne pour NutriFYS
       const fruitsSummary = availableFruits.length
         ? availableFruits.map((f) => `- ${f.name} : +${f.price} XAF`).join('\n')
         : '- Fruits standards';
 
+      let recipePricingDetails = '';
+      if (activeRecipeIngredients.length > 0) {
+        const ingredientsListStr = activeRecipeIngredients.map((i) => `${i.fruitName} (+${i.priceSnapshot} XAF)`).join(', ');
+        recipePricingDetails = `
+RECETTE DÉTECTÉE EN COURS : "${activeRecipeName}"
+Ingrédients (${activeRecipeIngredients.length} fruits) : ${ingredientsListStr}
+Somme exacte des fruits & compléments : ${activeIngredientsSum} XAF
+CALCUL FERME ET OBLIGATOIRE SELON LA VRAIE FORMULE FYS :
+- Format 500ml : ${bottle500Base} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice500} XAF la bouteille
+- Format 1L : ${bottle1LBase} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice1L} XAF la bouteille
+- Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
+TOTAL COMMANDE POUR Q BOUTEILLES :
+- Sous-total = (Prix unitaire x Quantité)
+- TOTAL À PAYER = Sous-total + 1 000 XAF (livraison fixe)
+CONSIGNE IMPÉRATIVE ANTI-HALLUCINATION :
+Tu DOIS STRICTEMENT utiliser ces tarifs exacts (${activePrice500} XAF pour 500ml, ${activePrice1L} XAF pour 1L, et 1 000 XAF de livraison). INTERDICTION FORMELLE d'annoncer 1 500 XAF de livraison ou un autre prix unitaire !`;
+      } else {
+        recipePricingDetails = `
+ATTENTION : AUCUN FRUIT NI RECETTE N'A ENCORE ÉTÉ CHOISI PAR LE CLIENT !
+RÈGLE COMMERCIALE CRITIQUE :
+Tant que les fruits du cocktail ne sont pas connus, TU NE PEUX PAS calculer de prix ni présenter de devis ou de format !
+Si le client veut commander ou demande le prix, guide-le d'abord pour choisir 2 à 4 fruits parmi le catalogue officiel en stock ci-dessous afin de composer sa recette et calculer son prix exact selon la formule FYS.`;
+      }
+
       const dynamicPricingContext = `\n\nCATALOGUE OFFICIEL DES FRUITS & INGRÉDIENTS FYS EN STOCK (LISTE EXCLUSIVE) :
 ${fruitsSummary}
 
-RÈGLE D'OR COMMERCIALE & NUTRITIONNELLE (ANTI-HALLUCINATION ABSOLUE) :
-1. SEULS LES FRUITS LISTÉS CI-DESSUS SONT DISPONIBLES EN STOCK CHEZ FYS.
-2. INTERDICTION FORMELLE DE CITER, SUGGÉRER OU INCLURE UN FRUIT ABSENT DE CETTE LISTE (par exemple : la Pastèque, la Mangue, la Fraise, le Kiwi, l'Avocat sont HORS STOCK).
-3. Si un client demande un fruit absent, dis-lui avec bienveillance qu'il est en rupture de stock chez FYS et oriente-le vers une alternative disponible en stock.
-4. Pour toute création personnalisée sur WhatsApp (sans commande web préalable) :
-   - Choisir 2 à 4 fruits STRICTEMENT parmi cette liste en stock.
-   - Tarification interne : Bouteille 500ml = base ${bottle500Base} XAF + suppléments fruits. Bouteille 1L = base ${bottle1LBase} XAF + suppléments fruits.
-   - Livraison Yaoundé : à partir de ${deliveryFee} XAF (minimum 1 000 XAF selon le quartier).
-   - Confidentialité : Ne montre JAMAIS le détail du contenant ou des fruits, seulement le prix unitaire final tout compris.
-Exemple conforme :
-"• 1 bouteille 500ml [Nom du jus] : [Prix unitaire final calculé] XAF
-• Livraison à [Quartier] : [Frais de livraison, à partir de ${deliveryFee} XAF] XAF
-👉 TOTAL À PAYER : [Total] XAF"`;
+FORMULE OFFICIELLE STRICTE DU CALCUL DES PRIX FYS :
+1. Prix par bouteille = Prix de base du contenant (${bottle500Base} XAF en 500ml, ${bottle1LBase} XAF en 1L) + Somme exacte des prix des fruits & compléments choisis.
+2. Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé. Ne facture JAMAIS 1 500 XAF !
+3. TOTAL À PAYER = (Prix par bouteille x Quantité) + 1 000 XAF de livraison.
+${recipePricingDetails}
+
+RÈGLES D'OR COMMERCIALES :
+1. SEULS LES FRUITS LISTÉS DANS LE CATALOGUE CI-DESSUS SONT DISPONIBLES EN STOCK CHEZ FYS.
+2. INTERDICTION FORMELLE DE CITER, SUGGÉRER OU INCLURE UN FRUIT ABSENT DE CETTE LISTE (Pastèque, Mangue, Fraise, Kiwi, Avocat sont STRICTEMENT HORS STOCK).
+3. Confidentialité : Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
@@ -2549,19 +2639,39 @@ Exemple conforme :
       } else if (isInteractiveMessage && interactiveButtonId) {
         let explicitAction = `[Action interactive cliquée : "${senderText}"]`;
         if (interactiveButtonId.startsWith('btn_order')) {
-          explicitAction = `[Le client a cliqué sur 'Commander'. RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS. Ne pose AUCUNE autre question (pas de quantité, pas de quartier à cette étape) !]`;
+          if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a cliqué sur 'Commander', mais AUCUN fruit ni recette n'a encore été composé. RÈGLE STRICTE : Ne demande PAS encore le format ! Propose-lui avec chaleur de choisir 2 à 4 fruits parmi nos fruits disponibles en stock pour composer sa recette sur-mesure].`;
+          } else {
+            explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS. Ne pose AUCUNE autre question !]`;
+          }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
         } else if (interactiveButtonId.startsWith('btn_format_500ml')) {
-          explicitAction = `[Le client a sélectionné le format 500ml. RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+          if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a cliqué sur 'Format 500ml', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format 500ml, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
+          } else {
+            explicitAction = `[Le client a sélectionné le format 500ml pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+          }
         } else if (interactiveButtonId.startsWith('btn_format_1l')) {
-          explicitAction = `[Le client a sélectionné le format 1 Litre. RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+          if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a cliqué sur 'Format 1 Litre', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format 1L, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
+          } else {
+            explicitAction = `[Le client a sélectionné le format 1 Litre pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+          }
         } else if (interactiveButtonId.startsWith('btn_qty_')) {
-          explicitAction = `[Le client a choisi la quantité : "${senderText}". RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+          if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a cliqué sur la quantité : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits il souhaite mélanger].`;
+          } else {
+            explicitAction = `[Le client a choisi la quantité : "${senderText}". RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+          }
         } else if (interactiveButtonId.startsWith('loc_')) {
-          explicitAction = `[Le client a choisi son quartier de livraison : "${senderText}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul des frais de livraison (à partir de 1 000 XAF selon la zone) et demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
+          if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a choisi son quartier : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits composer].`;
+          } else {
+            explicitAction = `[Le client a choisi son quartier de livraison : "${senderText}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul exact du prix : (Prix unitaire x Quantité) + 1 000 XAF de livraison fixe à Yaoundé. Demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
+          }
         } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
-          explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus].`;
+          explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus (livraison = 1000 XAF)].`;
           if (webDraft) {
             const draftIngredients = Array.isArray(webDraft.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
             const fruitNames = draftIngredients.map((i: any) => i.fruitName || i.name);
@@ -2659,6 +2769,24 @@ Exemple conforme :
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
 
+      // ── NORMALISATION & SÉCURISATION DU TEXTE AFFICHÉ AU CLIENT ──
+      // 1. Frais de livraison : STRICTEMENT 1 000 XAF fixe (élimination des hallucinations à 1 500 XAF ou 2 000 XAF)
+      aiReply = aiReply.replace(/(Livraison\s*(?:à|a)?\s*[^:\n]+:\s*)(?:1\s*500|2\s*000|[0-9]{4,5})\s*XAF/gi, '$11 000 XAF');
+      aiReply = aiReply.replace(/à partir de 1\s*000\s*XAF/gi, '1 000 XAF');
+      aiReply = aiReply.replace(/frais de livraison à partir de 1\s*000\s*XAF/gi, 'frais de livraison : 1 000 XAF');
+
+      // 2. Vérification et recalcul exact du TOTAL si un récapitulatif devis est affiché
+      if (activeRecipeIngredients.length > 0 && aiReply.includes('TOTAL À PAYER')) {
+        const is1L = /1\s*(?:litre|l)\b/i.test(aiReply);
+        const unitP = is1L ? activePrice1L : activePrice500;
+        const qtyMatch = aiReply.match(/•\s*(\d+)\s*bouteille/i);
+        const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+        const correctSubtotal = unitP * qty;
+        const correctTotal = correctSubtotal + 1000;
+
+        aiReply = aiReply.replace(/(👉\s*TOTAL\s*(?:À|A)\s*PAYER\s*:\s*)[0-9\s]+XAF/gi, `$1${correctTotal.toLocaleString()} XAF`);
+      }
+
       // 1. Traitement automatique du profil de santé si complété par NutriFYS
       const profileMatch = aiReply.match(/:::PROFILE_JSON\s*([\s\S]*?)\s*:::?/);
       if (profileMatch && db && userDocRef) {
@@ -2751,12 +2879,25 @@ Exemple conforme :
 
               if (isWebDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
                 finalCocktailName = webDraft.cocktail?.name || 'Cocktail Personnalisé FYS';
-                finalIngredients = webDraft.cocktail.ingredients.map((ing: any) => ({
-                  fruitId: ing.fruitId || ing.id || 'fruit',
-                  fruitName: ing.fruitName || ing.name || 'Fruit',
-                  quantityGrams: Number(ing.quantityGrams) || 100,
-                  priceSnapshot: Number(ing.priceSnapshot) || 0,
-                  role: ing.role || 'fruit',
+                finalIngredients = webDraft.cocktail.ingredients.map((ing: any) => {
+                  const snapPrice = Number(ing.priceSnapshot);
+                  const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (ing.fruitId || ing.id || '').toLowerCase() || f.name.toLowerCase() === (ing.fruitName || ing.name || '').toLowerCase());
+                  return {
+                    fruitId: ing.fruitId || ing.id || foundInStock?.id || 'fruit',
+                    fruitName: ing.fruitName || ing.name || foundInStock?.name || 'Fruit',
+                    quantityGrams: Number(ing.quantityGrams) || 100,
+                    priceSnapshot: snapPrice > 0 ? snapPrice : (foundInStock?.price || 0),
+                    role: ing.role || 'fruit',
+                  };
+                });
+              } else if (activeRecipeIngredients.length > 0) {
+                finalCocktailName = activeRecipeName || orderData.cocktailName || 'Cocktail Sur-Mesure WhatsApp';
+                finalIngredients = activeRecipeIngredients.map((ing) => ({
+                  fruitId: ing.fruitId,
+                  fruitName: ing.fruitName,
+                  quantityGrams: 100,
+                  priceSnapshot: ing.priceSnapshot,
+                  role: 'fruit' as const,
                 }));
               } else {
                 // Création personnalisée sur WhatsApp : stricte restriction aux fruits disponibles en stock
@@ -2794,31 +2935,17 @@ Exemple conforme :
                 }
               }
 
+              // 2. VRAIE FORMULE OFFICIELLE STRICTE EXIGÉE PAR FYS :
+              // Prix unitaire = Prix de base contenant (Firestore) + Somme des fruits et compléments (Firestore)
               const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.priceSnapshot) || 0), 0);
-
-              // 2. SYNCHRONISATION ABSOLUE DU PRIX (ZÉRO ÉCART AVEC LE PRIX DU CATALOGUE / LAB) :
-              let pricePerBottle = baseBottlePrice + ingredientsPriceSum;
-
-              if (isWebDraft) {
-                if (bottleSize === '500ml') {
-                  pricePerBottle = exactDraftPrice500;
-                } else if (bottleSize === '1L') {
-                  pricePerBottle = exactDraftPrice1L;
-                }
-              } else if (typeof orderData.unitPrice === 'number' && orderData.unitPrice >= baseBottlePrice) {
-                pricePerBottle = Math.round(orderData.unitPrice);
-              }
+              const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
 
               const lineTotal = pricePerBottle * quantity;
 
-              // Frais de livraison : priorité au draft web, puis au prix convenu dans orderData, sinon barème par défaut (minimum 1000 XAF)
-              let finalDeliveryFee = Math.max(1000, deliveryFee);
-              if (isWebDraft && typeof webDraft.deliveryFee === 'number') {
-                finalDeliveryFee = Math.max(1000, webDraft.deliveryFee);
-              } else if (typeof orderData.deliveryFee === 'number' && orderData.deliveryFee >= 0) {
-                finalDeliveryFee = Math.max(1000, Math.round(orderData.deliveryFee));
-              }
+              // Frais de livraison : STRICTEMENT 1 000 XAF FIXE DANS TOUT YAOUNDÉ
+              const finalDeliveryFee = 1000;
 
+              // Total à payer : Sous-total + Livraison
               const totalPrice = lineTotal + finalDeliveryFee;
 
               const orderRef = db.collection('orders').doc();
@@ -2852,6 +2979,7 @@ Exemple conforme :
                     lineTotal,
                   },
                 ],
+                subtotal: lineTotal,
                 deliveryFee: finalDeliveryFee,
                 totalPrice,
                 deliveryDetails: {
