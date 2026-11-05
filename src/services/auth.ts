@@ -181,3 +181,34 @@ export async function deleteUserCompletely(uid: string): Promise<void> {
   // 5. Delete user main document
   await deleteDoc(doc(db, COLLECTIONS.USERS, uid));
 }
+
+/**
+ * Synchronise un compte utilisateur connecté (Google) avec un numéro de téléphone WhatsApp :
+ * met à jour le profil utilisateur, importe le profil santé s'il existait sur WhatsApp,
+ * et réassigne automatiquement toutes les commandes passées sous ce numéro de téléphone.
+ */
+export async function syncUserWithPhone(params: {
+  uid: string;
+  phone?: string;
+  email?: string;
+  name?: string;
+}): Promise<{ ok: boolean; phone?: string; updatedOrdersCount?: number }> {
+  try {
+    const res = await fetch('/api/sync-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn('[syncUserWithPhone] Server returned error:', err);
+      return { ok: false };
+    }
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.warn('[syncUserWithPhone] Network error:', e);
+    return { ok: false };
+  }
+}
+

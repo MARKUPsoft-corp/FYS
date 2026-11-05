@@ -432,7 +432,7 @@ Exemple strict de récapitulatif devis :
 Est-ce que cela vous convient pour valider votre commande ?"
 
 3. INTERDICTION FORMELLE : Ne mets JAMAIS le bloc :::ORDER_JSON dans ce message de devis. Le client DOIT voir le prix d'abord et valider !
-4. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu le remercies chaleureusement et insères TOUT À LA FIN le bloc technique avec les prix EXACTS convenus (pour synchronisation parfaite à 100% avec l'administration) :
+4. C'est SEULEMENT après que le client a vu le prix et qu'il a répondu OUI / confirmé explicitement son accord que tu le remercies chaleureusement, tu lui indiques avec enthousiasme que sa commande est enregistrée et qu'il pourra retrouver tout son suivi et ses factures sur son tableau de bord client FYS, et tu insères TOUT À LA FIN le bloc technique avec les prix EXACTS convenus (pour synchronisation parfaite à 100% avec l'administration) :
 :::ORDER_JSON
 {
   "cocktailName": "Nom de la recette",
@@ -1247,6 +1247,12 @@ Exemple conforme :
         } finally {
           // Nettoyer le bloc technique avant envoi au client
           aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
+
+          // Ajouter le lien direct vers le tableau de bord client FYS pour le suivi et les factures
+          const trackingUrl = `https://fys-app.com/board/orders?phone=${senderPhone}`;
+          if (!aiReply.includes('fys-app.com/board')) {
+            aiReply += `\n\n📲 *Votre Tableau de bord FYS :*\nSuivez l'état de préparation de votre commande et retrouvez toutes vos factures ici :\n👉 ${trackingUrl}`;
+          }
         }
       } else if (orderMatch) {
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();

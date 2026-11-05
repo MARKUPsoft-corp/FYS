@@ -3,7 +3,7 @@ import { PageComponent, useNavigate } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loginWithGoogle } from '@/services/auth';
+import { loginWithGoogle, syncUserWithPhone } from '@/services/auth';
 import { useAuthStore } from '@/stores/auth';
 import i18n from '@/i18n';
 
@@ -23,17 +23,48 @@ const Login: PageComponent = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
 
-  // URL de retour (ex: /lab?tab=nutrifys) — posée avant de venir ici
+  // URL de retour (ex: /board/orders?phone=2376...) — posée avant de venir ici
   const redirectPath = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('redirect')
     : null;
 
+  // Numéro de téléphone transmis pour synchronisation (ex: lien WhatsApp)
+  const phoneParam = typeof window !== 'undefined'
+    ? (new URLSearchParams(window.location.search).get('phone') ||
+       new URLSearchParams((redirectPath || '').split('?')[1] || '').get('phone'))
+    : null;
+
+  useEffect(() => {
+    if (phoneParam && typeof window !== 'undefined') {
+      sessionStorage.setItem('fys_sync_phone', phoneParam);
+    }
+  }, [phoneParam]);
+
   // Une fois connecté (y compris après le redirect Google), on repart vers la destination prévue.
   useEffect(() => {
-    if (user) afterLogin();
+    if (user) afterLogin(user);
   }, [user]);
 
-  function afterLogin() {
+  async function afterLogin(loggedInUser?: any) {
+    const activeUser = loggedInUser || user;
+    const phoneToSync = phoneParam || (typeof window !== 'undefined' ? sessionStorage.getItem('fys_sync_phone') : null);
+
+    if (activeUser && phoneToSync) {
+      try {
+        await syncUserWithPhone({
+          uid: activeUser.uid,
+          phone: phoneToSync,
+          email: activeUser.email ?? undefined,
+          name: activeUser.displayName || activeUser.name,
+        });
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('fys_sync_phone');
+        }
+      } catch (syncErr) {
+        console.warn('[login] Auto-sync phone with Google error:', syncErr);
+      }
+    }
+
     const target = redirectPath?.startsWith('/') ? redirectPath : '/board';
     navigate(target, { replace: true });
   }
@@ -44,7 +75,7 @@ const Login: PageComponent = () => {
     try {
       const googleUser = await loginWithGoogle();
       if (googleUser) {
-        afterLogin();
+        await afterLogin(googleUser);
       } else {
         setGoogleLoading(false);
       }

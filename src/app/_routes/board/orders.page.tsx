@@ -1958,7 +1958,10 @@ const Orders: PageComponent = () => {
 
   const orderParam = searchParams.get('order');
 
-  const { orders, isLoading } = useOrders(user?.uid, isAdmin);
+  const phoneParam = searchParams.get('phone');
+  const effectivePhone = user?.phone || (phoneParam ? phoneParam.replace(/\D/g, '') : undefined);
+
+  const { orders, isLoading } = useOrders(user?.uid, isAdmin, effectivePhone);
   const { order: liveOrder } = useOrder(orderParam ?? undefined, !!orderParam);
 
   const selected = useMemo(() => {

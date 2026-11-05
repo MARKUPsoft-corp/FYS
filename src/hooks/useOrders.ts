@@ -7,12 +7,12 @@ import {
   subscribeToOrdersForUser,
 } from '@/services/order';
 
-export function useOrders(userId: string | undefined, isAdmin: boolean) {
+export function useOrders(userId: string | undefined, isAdmin: boolean, userPhone?: string) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId && !userPhone) {
       setOrders([]);
       setIsLoading(false);
       return;
@@ -24,13 +24,13 @@ export function useOrders(userId: string | undefined, isAdmin: boolean) {
           setOrders(data);
           setIsLoading(false);
         })
-      : subscribeToUserOrders(userId, (data) => {
+      : subscribeToOrdersForUser(userId, userPhone, (data) => {
           setOrders(data);
           setIsLoading(false);
         });
 
     return unsubscribe;
-  }, [userId, isAdmin]);
+  }, [userId, isAdmin, userPhone]);
 
   return { orders, isLoading };
 }

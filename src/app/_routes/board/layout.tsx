@@ -7,6 +7,8 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { OnboardingModal } from '@/components/features/onboarding/OnboardingModal';
 import { ProfileFloatingButton } from '@/components/features/profile/ProfileFloatingButton';
 
+import { syncUserWithPhone } from '@/services/auth';
+
 const AppLayout: LayoutComponent = () => {
   const { user, loading } = useAuthStore();
   const { profile, loading: profileLoading, fetch: fetchProfile, save: saveProfile } = useProfileStore();
@@ -24,8 +26,24 @@ const AppLayout: LayoutComponent = () => {
     if (loading || isAuthRoute) return;
 
     if (!user) {
-      navigate('/', { replace: true });
+      const fullTarget = location.pathname + (location.search || '');
+      navigate(`/auth/login?redirect=${encodeURIComponent(fullTarget)}`, { replace: true });
       return;
+    }
+
+    // Si l'utilisateur est connecté et arrive avec un numéro de téléphone à synchroniser
+    const searchParams = new URLSearchParams(location.search);
+    const phoneInUrl = searchParams.get('phone');
+    if (user && phoneInUrl) {
+      const cleanTarget = phoneInUrl.replace(/\D/g, '');
+      if (!user.phone || !user.phone.includes(cleanTarget)) {
+        syncUserWithPhone({
+          uid: user.uid,
+          phone: phoneInUrl,
+          email: user.email,
+          name: user.name,
+        }).catch((e) => console.warn('[board/layout] Background sync error:', e));
+      }
     }
 
     const isAdminOnly = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
