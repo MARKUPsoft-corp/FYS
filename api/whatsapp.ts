@@ -633,21 +633,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           const usersRef = db.collection('users');
-          const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
-          const querySnap = await usersRef.where('phone', 'in', safeUserVariants).limit(1).get();
+          let existingUserDoc: any = null;
 
-          if (!querySnap.empty) {
-            const userData = querySnap.docs[0].data();
-            userDocRef = querySnap.docs[0].ref;
-
-            // Assurer que le document utilisateur possède bien son uid
-            if (!userData?.uid) {
-              await userDocRef.set({ uid: userDocRef.id }, { merge: true });
+          // 1. Si le brouillon web a été initié par un utilisateur connecté sur le site
+          if (webDraft?.userId && webDraft.userId !== 'guest') {
+            const draftUserSnap = await usersRef.doc(webDraft.userId).get().catch(() => null);
+            if (draftUserSnap && draftUserSnap.exists) {
+              existingUserDoc = draftUserSnap;
             }
+          }
+
+          // 2. Sinon, rechercher par les variantes du numéro WhatsApp (format local, international, etc.)
+          if (!existingUserDoc) {
+            const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
+            const querySnap = await usersRef.where('phone', 'in', safeUserVariants).limit(1).get();
+            if (!querySnap.empty) {
+              existingUserDoc = querySnap.docs[0];
+            }
+          }
+
+          if (existingUserDoc) {
+            const userData = existingUserDoc.data();
+            userDocRef = existingUserDoc.ref;
+
+            // Assurer que le document utilisateur possède bien son uid et son numéro certifié
+            const userUpdates: any = {};
+            if (!userData?.uid) userUpdates.uid = userDocRef.id;
+            if (!userData?.phone) userUpdates.phone = senderPhone;
 
             // Si le brouillon web fournit un prénom et que le nom actuel est générique, le mettre à jour
             if (webDraft?.customerName && (!userData.name || userData.name === senderPhone || userData.name === 'Client WhatsApp')) {
-              await userDocRef.set({ name: webDraft.customerName.trim() }, { merge: true });
+              userUpdates.name = webDraft.customerName.trim();
+            }
+
+            if (Object.keys(userUpdates).length > 0) {
+              await userDocRef.set(userUpdates, { merge: true });
             }
 
             // Si le brouillon web fournit un profil de santé, l'enregistrer dans le profil

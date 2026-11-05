@@ -849,6 +849,7 @@ export function generateShortOrderCode(): string {
 
 export type WhatsappDraftOrderParams = {
   orderCode?: string;
+  userId?: string;
   customerName?: string;
   customerPhone?: string;
   cocktail: Cocktail;
@@ -874,6 +875,7 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
 }> {
   const {
     orderCode: customOrderCode,
+    userId,
     customerName,
     customerPhone,
     cocktail,
@@ -896,6 +898,7 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
 
   const rawData = {
     orderCode,
+    ...(userId ? { userId } : {}),
     customerName: customerName ? customerName.trim() : '',
     customerPhone: cleanPhone,
     cocktail: {

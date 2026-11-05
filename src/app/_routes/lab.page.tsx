@@ -666,6 +666,7 @@ const FysLab: PageComponent = () => {
         // 2. Créer le brouillon dans whatsapp_drafts/{orderCode} sans demander nom ni numéro
         await createWhatsappDraftOrder({
           orderCode,
+          userId: user?.uid,
           cocktail: currentCocktail,
           healthProfile: profileToUse ? {
             healthConditions: profileToUse.healthConditions || [],
