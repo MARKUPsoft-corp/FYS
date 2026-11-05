@@ -952,21 +952,222 @@ async function sendWhatsAppDocument(to: string, mediaId: string, filename: strin
 
 async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string): Promise<Buffer | null> {
   try {
-    const { renderToBuffer } = await import('@react-pdf/renderer');
+    const pdfPkg = await import('@react-pdf/renderer');
     const React = await import('react');
-    const { FacturePDFDocument } = await import('./pdfTemplates');
+    const { Document, Page, View, Text, StyleSheet, renderToBuffer } = pdfPkg;
 
-    // Assurer la présence de toDate() sur createdAt pour le rendu FacturePDF
-    const orderForPdf = {
-      ...order,
-      createdAt: order.createdAt && typeof order.createdAt.toDate === 'function'
-        ? order.createdAt
-        : { toDate: () => new Date() },
-    };
+    const PRIMARY = '#16A34A';
+    const MUTED = '#6B7280';
+    const BORDER = '#E5E7EB';
+    const BGCARD = '#F9FAFB';
+    const TEXT = '#111827';
+    const WHITE = '#FFFFFF';
 
-    const buffer = await renderToBuffer(
-      React.createElement(FacturePDFDocument, { order: orderForPdf, ingredientsStr }) as any
+    const styles = StyleSheet.create({
+      page: { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
+      header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
+      brand: { fontSize: 28, fontFamily: 'Helvetica-Bold', color: PRIMARY, letterSpacing: -1 },
+      dot: { color: '#22D3EE' },
+      tagline: { fontSize: 9, color: MUTED, marginTop: 2 },
+      meta: { alignItems: 'flex-end' },
+      metaTitle: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: TEXT, marginBottom: 4 },
+      metaRef: { fontSize: 8, color: MUTED },
+      badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, marginTop: 6 },
+      badgeText: { fontSize: 8, fontFamily: 'Helvetica-Bold' },
+      divider: { borderBottomWidth: 1, borderBottomColor: BORDER, marginVertical: 20 },
+      sectionTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: MUTED, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+      card: { backgroundColor: BGCARD, borderRadius: 8, padding: 14, marginBottom: 16 },
+      row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+      rowLast: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+      label: { fontSize: 10, color: MUTED },
+      value: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: TEXT },
+      totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F0FDF4', borderRadius: 8, padding: 12, marginTop: 8 },
+      totalLabel: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: TEXT },
+      totalValue: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: PRIMARY },
+      addrRow: { flexDirection: 'row', marginBottom: 6 },
+      addrKey: { fontSize: 9, color: MUTED, width: 90 },
+      addrVal: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: TEXT, flex: 1 },
+      cols: { flexDirection: 'row', gap: 12 },
+      col: { flex: 1 },
+      footer: { position: 'absolute', bottom: 24, left: 40, right: 40, flexDirection: 'row', justifyContent: 'space-between' },
+      footerText: { fontSize: 8, color: MUTED },
+    });
+
+    const statusCfg = { bg: '#FEF9C3', text: '#854D0E' };
+    const statusLabel = 'En attente';
+
+    const createdDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
+    const dateStr = createdDate.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const subtotal = order.orderLines?.length
+      ? order.orderLines.reduce((sum: number, line: any) => sum + (Number(line.lineTotal) || 0), 0)
+      : (order.cocktailPriceSnapshot || 0) * (order.quantity || 1);
+
+    const shortId = (order.id || 'ORDER').slice(0, 8).toUpperCase();
+
+    const doc = React.createElement(
+      Document,
+      { title: `Facture — ${shortId}`, author: 'NutriFYS' },
+      React.createElement(
+        Page,
+        { size: 'A4', style: styles.page },
+        React.createElement(
+          View,
+          { style: styles.header },
+          React.createElement(
+            View,
+            null,
+            React.createElement(Text, { style: styles.brand }, 'FYS', React.createElement(Text, { style: styles.dot }, '.')),
+            React.createElement(Text, { style: styles.tagline }, 'For YourSelf · Boissons Santé Artisanales')
+          ),
+          React.createElement(
+            View,
+            { style: styles.meta },
+            React.createElement(Text, { style: styles.metaTitle }, 'FACTURE OFFICIELLE'),
+            React.createElement(Text, { style: styles.metaRef }, `N° ${shortId}`),
+            React.createElement(Text, { style: styles.metaRef }, `Émise le ${dateStr}`),
+            React.createElement(
+              View,
+              { style: [styles.badge, { backgroundColor: statusCfg.bg }] },
+              React.createElement(Text, { style: [styles.badgeText, { color: statusCfg.text }] }, statusLabel)
+            )
+          )
+        ),
+        React.createElement(View, { style: styles.divider }),
+        React.createElement(
+          View,
+          { style: styles.cols },
+          React.createElement(
+            View,
+            { style: styles.col },
+            React.createElement(Text, { style: styles.sectionTitle }, 'CLIENT'),
+            React.createElement(
+              View,
+              { style: styles.card },
+              React.createElement(Text, { style: [styles.value, { marginBottom: 4 }] }, order.userNameSnapshot || 'Client'),
+              order.userEmailSnapshot ? React.createElement(Text, { style: styles.label }, order.userEmailSnapshot) : null,
+              order.userPhoneSnapshot ? React.createElement(Text, { style: [styles.label, { marginTop: 2 }] }, order.userPhoneSnapshot) : null
+            )
+          ),
+          order.deliveryDetails
+            ? React.createElement(
+                View,
+                { style: styles.col },
+                React.createElement(Text, { style: styles.sectionTitle }, 'LIVRAISON'),
+                React.createElement(
+                  View,
+                  { style: styles.card },
+                  React.createElement(
+                    View,
+                    { style: styles.addrRow },
+                    React.createElement(Text, { style: styles.addrKey }, 'Quartier'),
+                    React.createElement(Text, { style: styles.addrVal }, order.deliveryDetails.district || 'Yaoundé')
+                  ),
+                  React.createElement(
+                    View,
+                    { style: styles.addrRow },
+                    React.createElement(Text, { style: styles.addrKey }, 'Téléphone'),
+                    React.createElement(Text, { style: styles.addrVal }, order.deliveryDetails.phone || order.userPhoneSnapshot || '—')
+                  ),
+                  order.deliveryDetails.instructions
+                    ? React.createElement(
+                        View,
+                        { style: styles.addrRow },
+                        React.createElement(Text, { style: styles.addrKey }, 'Indications'),
+                        React.createElement(Text, { style: styles.addrVal }, order.deliveryDetails.instructions)
+                      )
+                    : null
+                )
+              )
+            : null
+        ),
+        React.createElement(Text, { style: [styles.sectionTitle, { marginTop: 8 }] }, 'DÉTAIL DE LA COMMANDE'),
+        React.createElement(
+          View,
+          { style: styles.card },
+          React.createElement(
+            View,
+            { style: [styles.row, { borderBottomWidth: 1, borderBottomColor: BORDER, paddingBottom: 6, marginBottom: 8 }] },
+            React.createElement(Text, { style: [styles.label, { fontSize: 8, textTransform: 'uppercase' }] }, 'PRODUIT'),
+            React.createElement(Text, { style: [styles.label, { fontSize: 8, textTransform: 'uppercase' }] }, 'QTÉ'),
+            React.createElement(Text, { style: [styles.label, { fontSize: 8, textTransform: 'uppercase' }] }, 'P.U.'),
+            React.createElement(Text, { style: [styles.label, { fontSize: 8, textTransform: 'uppercase' }] }, 'TOTAL')
+          ),
+          order.orderLines?.length
+            ? order.orderLines.map((line: any, i: number) =>
+                React.createElement(
+                  View,
+                  { key: i, style: [styles.row, { marginBottom: 2 }] },
+                  React.createElement(Text, { style: [styles.value, { flex: 2 }] }, `${order.cocktailNameSnapshot || 'Cocktail Santé'} · ${line.bottleSizeLabel || '500 ml'}`),
+                  React.createElement(Text, { style: [styles.value, { width: 30, textAlign: 'center' }] }, String(line.quantity)),
+                  React.createElement(Text, { style: [styles.value, { width: 70, textAlign: 'right' }] }, `${Number(line.pricePerBottle || 0).toLocaleString()} XAF`),
+                  React.createElement(Text, { style: [styles.value, { width: 80, textAlign: 'right' }] }, `${Number(line.lineTotal || 0).toLocaleString()} XAF`)
+                )
+              )
+            : React.createElement(
+                View,
+                { style: [styles.row, { marginBottom: 2 }] },
+                React.createElement(Text, { style: [styles.value, { flex: 2 }] }, `${order.cocktailNameSnapshot || 'Cocktail Santé'} · ${order.bottleSizeLabel || '500 ml'}`),
+                React.createElement(Text, { style: [styles.value, { width: 30, textAlign: 'center' }] }, String(order.quantity || 1)),
+                React.createElement(Text, { style: [styles.value, { width: 70, textAlign: 'right' }] }, `${Number(order.cocktailPriceSnapshot || 0).toLocaleString()} XAF`),
+                React.createElement(Text, { style: [styles.value, { width: 80, textAlign: 'right' }] }, `${subtotal.toLocaleString()} XAF`)
+              ),
+          ingredientsStr
+            ? React.createElement(
+                View,
+                { style: styles.row },
+                React.createElement(Text, { style: [styles.label, { flex: 2, fontSize: 8, fontStyle: 'italic' }] }, `Composition : ${ingredientsStr}`)
+              )
+            : null,
+          React.createElement(
+            View,
+            { style: styles.row },
+            React.createElement(
+              Text,
+              { style: [styles.label, { flex: 2, fontSize: 8, fontStyle: 'italic' }] },
+              order.hasAddedSugar ? 'Option : Avec sucre ajouté' : 'Option : 100% Naturel (Sans sucre ajouté)'
+            )
+          )
+        ),
+        React.createElement(Text, { style: styles.sectionTitle }, 'RÉCAPITULATIF'),
+        React.createElement(
+          View,
+          { style: styles.card },
+          React.createElement(
+            View,
+            { style: styles.row },
+            React.createElement(Text, { style: styles.label }, 'Sous-total'),
+            React.createElement(Text, { style: styles.value }, `${subtotal.toLocaleString()} XAF`)
+          ),
+          React.createElement(
+            View,
+            { style: styles.rowLast },
+            React.createElement(Text, { style: styles.label }, 'Livraison'),
+            React.createElement(Text, { style: styles.value }, `${(Number(order.deliveryFee) || 1000).toLocaleString()} XAF`)
+          )
+        ),
+        React.createElement(
+          View,
+          { style: styles.totalRow },
+          React.createElement(Text, { style: styles.totalLabel }, 'TOTAL À PAYER'),
+          React.createElement(Text, { style: styles.totalValue }, `${(Number(order.totalPrice) || (subtotal + 1000)).toLocaleString()} XAF`)
+        ),
+        React.createElement(
+          View,
+          { style: styles.footer },
+          React.createElement(Text, { style: styles.footerText }, '« Tu sais ce que tu bois » · fys-app.com'),
+          React.createElement(Text, { style: styles.footerText }, 'Merci de votre confiance !')
+        )
+      )
     );
+
+    const buffer = await renderToBuffer(doc as any);
     return buffer as Buffer;
   } catch (err: any) {
     console.error('[whatsapp] Failed to generate Facture PDF buffer:', err);
@@ -991,18 +1192,210 @@ async function generateOrderNutritionPdfBuffer(
   ingredients?: string[]
 ): Promise<Buffer | null> {
   try {
-    const { renderToBuffer } = await import('@react-pdf/renderer');
+    const pdfPkg = await import('@react-pdf/renderer');
     const React = await import('react');
-    const { NutritionPDFDocument } = await import('./pdfTemplates');
+    const { Document, Page, View, Text, StyleSheet, renderToBuffer } = pdfPkg;
 
-    const buffer = await renderToBuffer(
-      React.createElement(NutritionPDFDocument, {
-        analysis,
-        cocktailName,
-        userName,
-        ingredients,
-      }) as any
+    const PRIMARY = '#16A34A';
+    const MUTED = '#6B7280';
+    const BORDER = '#E5E7EB';
+    const BGCARD = '#F9FAFB';
+    const TEXT = '#111827';
+    const WHITE = '#FFFFFF';
+
+    const styles = StyleSheet.create({
+      page: { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
+      header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+      brand: { fontSize: 24, fontFamily: 'Helvetica-Bold', color: PRIMARY },
+      dot: { color: '#22D3EE' },
+      tagline: { fontSize: 9, color: MUTED, marginTop: 2 },
+      metaTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: TEXT, textAlign: 'right' },
+      metaSub: { fontSize: 9, color: MUTED, textAlign: 'right', marginTop: 2 },
+      divider: { borderBottomWidth: 1, borderBottomColor: BORDER, marginVertical: 16 },
+      scoreHero: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+      scoreBig: { fontSize: 48, fontFamily: 'Helvetica-Bold', color: PRIMARY },
+      scoreLabel: { fontSize: 11, color: MUTED },
+      badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+      badgeText: { fontSize: 9, fontFamily: 'Helvetica-Bold' },
+      sectionTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: MUTED, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+      card: { backgroundColor: BGCARD, borderRadius: 8, padding: 14, marginBottom: 14 },
+      noteText: { fontSize: 10, lineHeight: 1.6, color: TEXT },
+      nutriRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: BORDER },
+      nutriLabel: { fontSize: 10, color: TEXT },
+      nutriRight: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+      nutriVal: { fontSize: 10, color: MUTED },
+      nutriPct: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: PRIMARY, width: 42, textAlign: 'right' },
+      barBg: { height: 6, backgroundColor: BORDER, borderRadius: 3, width: 80, marginLeft: 8 },
+      barFill: { height: 6, borderRadius: 3, backgroundColor: PRIMARY },
+      benefitsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
+      chip: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
+      chipText: { fontSize: 9, fontFamily: 'Helvetica-Bold' },
+      bullet: { flexDirection: 'row', marginBottom: 6 },
+      bulletDot: { fontSize: 12, color: PRIMARY, width: 14, marginTop: -2 },
+      bulletText: { fontSize: 10, lineHeight: 1.5, color: MUTED, flex: 1 },
+      conseilCard: { backgroundColor: '#F0FDF4', borderRadius: 8, padding: 14, borderLeftWidth: 3, borderLeftColor: PRIMARY },
+      conseilText: { fontSize: 10, lineHeight: 1.5, color: '#065F46' },
+      footer: { position: 'absolute', bottom: 24, left: 40, right: 40, flexDirection: 'row', justifyContent: 'space-between' },
+      footerText: { fontSize: 8, color: MUTED },
+    });
+
+    const verdictLabel = 'Bénéfique';
+    const verdictCfg = { bg: '#DCFCE7', text: '#15803D' };
+
+    const nutrients: [string, { pourcentage: number; valeur: string }][] = analysis?.profilNutritionnel
+      ? Object.entries(analysis.profilNutritionnel)
+          .filter(([, v]) => v && typeof v === 'object') as any
+      : [];
+
+    const nutrientLabels: Record<string, string> = {
+      vitamineC: 'Vitamine C',
+      vitamineA: 'Vitamine A',
+      fibres: 'Fibres alimentaires',
+      potassium: 'Potassium',
+      sucresNaturels: 'Glucides & Sucres naturels',
+      antioxydants: 'Antioxydants (Polyphénols)',
+    };
+
+    const niveauColors: Record<string, string> = {
+      faible: '#FCA5A5',
+      modéré: '#FDE68A',
+      élevé: '#6EE7B7',
+    };
+
+    const doc = React.createElement(
+      Document,
+      { title: `Fiche Nutritionnelle — ${cocktailName || 'Cocktail Santé'}`, author: 'NutriFYS' },
+      React.createElement(
+        Page,
+        { size: 'A4', style: styles.page },
+        React.createElement(
+          View,
+          { style: styles.header },
+          React.createElement(
+            View,
+            null,
+            React.createElement(Text, { style: styles.brand }, 'FYS', React.createElement(Text, { style: styles.dot }, '.')),
+            React.createElement(Text, { style: styles.tagline }, 'NutriFYS — Votre Nutritionniste Sur-Mesure')
+          ),
+          React.createElement(
+            View,
+            null,
+            React.createElement(Text, { style: styles.metaTitle }, 'FICHE NUTRITIONNELLE'),
+            React.createElement(Text, { style: styles.metaSub }, cocktailName || 'Cocktail Santé'),
+            userName ? React.createElement(Text, { style: [styles.metaSub, { marginTop: 4, fontFamily: 'Helvetica-Bold', color: TEXT }] }, userName) : null,
+            ingredients && ingredients.length > 0 ? React.createElement(Text, { style: styles.metaSub }, ingredients.join(' · ')) : null
+          )
+        ),
+        React.createElement(View, { style: styles.divider }),
+        React.createElement(
+          View,
+          { style: styles.scoreHero },
+          React.createElement(Text, { style: styles.scoreBig }, String(analysis?.score || 92)),
+          React.createElement(
+            View,
+            null,
+            React.createElement(Text, { style: styles.scoreLabel }, 'Score Santé FYS / 100'),
+            React.createElement(
+              View,
+              { style: [styles.badge, { backgroundColor: verdictCfg.bg, marginTop: 6 }] },
+              React.createElement(Text, { style: [styles.badgeText, { color: verdictCfg.text }] }, verdictLabel)
+            )
+          )
+        ),
+        React.createElement(Text, { style: styles.sectionTitle }, 'ANALYSE DE VOTRE NUTRITIONNISTE'),
+        React.createElement(
+          View,
+          { style: styles.card },
+          React.createElement(Text, { style: styles.noteText }, analysis?.notes || 'Synergie nutritionnelle riche en antioxydants et micronutriments.')
+        ),
+        nutrients.length > 0
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { style: styles.sectionTitle }, 'PROFIL NUTRITIONNEL CLÉ'),
+              React.createElement(
+                View,
+                { style: styles.card },
+                nutrients.map(([key, info]) =>
+                  React.createElement(
+                    View,
+                    { key, style: styles.nutriRow },
+                    React.createElement(Text, { style: styles.nutriLabel }, nutrientLabels[key] || key),
+                    React.createElement(
+                      View,
+                      { style: styles.nutriRight },
+                      React.createElement(Text, { style: styles.nutriVal }, info.valeur),
+                      React.createElement(
+                        View,
+                        { style: styles.barBg },
+                        React.createElement(View, { style: [styles.barFill, { width: `${Math.min(info.pourcentage, 100)}%` }] })
+                      ),
+                      React.createElement(Text, { style: styles.nutriPct }, `${info.pourcentage}% AJR`)
+                    )
+                  )
+                )
+              )
+            )
+          : null,
+        Array.isArray(analysis?.beneficesCibles) && analysis.beneficesCibles.length > 0
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { style: styles.sectionTitle }, 'BÉNÉFICES CIBLÉS'),
+              React.createElement(
+                View,
+                { style: styles.benefitsRow },
+                analysis.beneficesCibles.map((b: any, i: number) =>
+                  React.createElement(
+                    View,
+                    { key: i, style: [styles.chip, { backgroundColor: niveauColors[b.niveau] || BGCARD }] },
+                    React.createElement(Text, { style: [styles.chipText, { color: TEXT }] }, `⚡ ${b.nom} (${b.niveau || 'élevé'})`)
+                  )
+                )
+              )
+            )
+          : null,
+        Array.isArray(analysis?.interactionsFruits) && analysis.interactionsFruits.length > 0
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { style: styles.sectionTitle }, 'SYNERGIE DES FRUITS'),
+              React.createElement(
+                View,
+                { style: styles.card },
+                analysis.interactionsFruits.map((item: string, i: number) =>
+                  React.createElement(
+                    View,
+                    { key: i, style: styles.bullet },
+                    React.createElement(Text, { style: styles.bulletDot }, '•'),
+                    React.createElement(Text, { style: styles.bulletText }, item)
+                  )
+                )
+              )
+            )
+          : null,
+        analysis?.conseil
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { style: styles.sectionTitle }, 'CONSEIL DE CONSOMMATION'),
+              React.createElement(
+                View,
+                { style: styles.conseilCard },
+                React.createElement(Text, { style: styles.conseilText }, analysis.conseil)
+              )
+            )
+          : null,
+        React.createElement(
+          View,
+          { style: styles.footer },
+          React.createElement(Text, { style: styles.footerText }, 'NutriFYS — Fiche générée par votre assistant nutritionniste 🌿'),
+          React.createElement(Text, { style: styles.footerText }, 'Consultez un professionnel de santé pour toute question médicale.')
+        )
+      )
     );
+
+    const buffer = await renderToBuffer(doc as any);
     return buffer as Buffer;
   } catch (err: any) {
     console.error('[whatsapp] Failed to generate Nutrition PDF buffer:', err);
