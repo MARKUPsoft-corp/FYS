@@ -3,11 +3,6 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { renderToBuffer } from '@react-pdf/renderer';
-import React from 'react';
-import { FacturePDF } from '../src/components/pdf/FacturePDF';
-import { NutritionPDF } from '../src/components/pdf/NutritionPDF';
-import i18n from '../src/i18n';
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -957,6 +952,10 @@ async function sendWhatsAppDocument(to: string, mediaId: string, filename: strin
 
 async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string): Promise<Buffer | null> {
   try {
+    const { renderToBuffer } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { FacturePDFDocument } = await import('./pdfTemplates');
+
     // Assurer la présence de toDate() sur createdAt pour le rendu FacturePDF
     const orderForPdf = {
       ...order,
@@ -966,7 +965,7 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
     };
 
     const buffer = await renderToBuffer(
-      React.createElement(FacturePDF, { order: orderForPdf, ingredientsStr }) as any
+      React.createElement(FacturePDFDocument, { order: orderForPdf, ingredientsStr }) as any
     );
     return buffer as Buffer;
   } catch (err: any) {
@@ -992,13 +991,16 @@ async function generateOrderNutritionPdfBuffer(
   ingredients?: string[]
 ): Promise<Buffer | null> {
   try {
+    const { renderToBuffer } = await import('@react-pdf/renderer');
+    const React = await import('react');
+    const { NutritionPDFDocument } = await import('./pdfTemplates');
+
     const buffer = await renderToBuffer(
-      React.createElement(NutritionPDF, {
+      React.createElement(NutritionPDFDocument, {
         analysis,
         cocktailName,
         userName,
         ingredients,
-        t: i18n.t.bind(i18n),
       }) as any
     );
     return buffer as Buffer;
