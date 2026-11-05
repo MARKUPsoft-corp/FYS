@@ -2062,8 +2062,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let bottle500Base = 1000;
       let bottle1LBase = 1500;
+      let maxMainFruits = 3;
+      let maxSupplements = 2;
       let deliveryFee = 1000;
-      const availableFruits: { id: string; name: string; price: number }[] = [];
+      const availableFruits: {
+        id: string;
+        name: string;
+        price: number;
+        isSupplement: boolean;
+        incompatibleIds: string[];
+      }[] = [];
 
       if (db) {
         try {
@@ -2084,7 +2092,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // Charger en parallèle la tarification et le catalogue de fruits
+          // Charger en parallèle la tarification et le catalogue de fruits complet du Lab
           const [pricingDoc, fruitsSnap] = await Promise.all([
             db.collection('settings').doc('pricing').get().catch(() => null),
             db.collection('fruits').get().catch(() => null),
@@ -2094,6 +2102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const p = pricingDoc.data();
             if (typeof p?.bottle500mlBase === 'number') bottle500Base = p.bottle500mlBase;
             if (typeof p?.bottle1LBase === 'number') bottle1LBase = p.bottle1LBase;
+            if (typeof p?.maxMainFruits === 'number') maxMainFruits = p.maxMainFruits;
+            if (typeof p?.maxSupplements === 'number') maxSupplements = p.maxSupplements;
             // Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
             deliveryFee = 1000;
           }
@@ -2108,6 +2118,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   id: doc.id,
                   name: d.name || doc.id,
                   price: typeof d.price === 'number' ? d.price : 0,
+                  isSupplement: d.isSupplement === true,
+                  incompatibleIds: Array.isArray(d.incompatibleIds) ? d.incompatibleIds : [],
                 });
               }
             });
@@ -2135,10 +2147,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // 2. Priorisation intelligente parmi les comptes trouvés pour ce numéro :
-          // Priorité 1 : Le compte Google officiel (avec adresse email)
-          // Priorité 2 : Le compte dont activeDraftCode correspond au webDraftCode
-          // Priorité 3 : Le premier compte trouvé
+          // 2. Priorisation intelligente et FUSION AUTOMATIQUE RÉELLE des doublons
+          if (allPhoneUserDocs.length > 1) {
+            const googleAccount = allPhoneUserDocs.find((d: any) => d.data()?.email);
+            if (googleAccount) {
+              existingUserDoc = googleAccount;
+              for (const waDoc of allPhoneUserDocs) {
+                if (waDoc.id !== googleAccount.id) {
+                  try {
+                    // Migrer les commandes
+                    const oldOrders = await db.collection('orders').where('userId', '==', waDoc.id).get();
+                    if (!oldOrders.empty) {
+                      const b = db.batch();
+                      oldOrders.docs.forEach((o: any) => b.update(o.ref, {
+                        userId: googleAccount.id,
+                        userEmailSnapshot: googleAccount.data()?.email || o.data().userEmailSnapshot || '',
+                      }));
+                      await b.commit();
+                      console.log(`[whatsapp-webhook] 🔗 Reassigned ${oldOrders.size} orders from duplicate ${waDoc.id} to Google user ${googleAccount.id}`);
+                    }
+                    // Migrer les notifications
+                    const oldNotifs = await db.collection('notifications').where('userId', '==', waDoc.id).get();
+                    if (!oldNotifs.empty) {
+                      const b = db.batch();
+                      oldNotifs.docs.forEach((n: any) => b.update(n.ref, { userId: googleAccount.id }));
+                      await b.commit();
+                    }
+                    // Migrer les messages WhatsApp
+                    const oldMsgs = await waDoc.ref.collection('whatsapp_messages').get();
+                    if (!oldMsgs.empty) {
+                      const targetMsgs = googleAccount.ref.collection('whatsapp_messages');
+                      for (const m of oldMsgs.docs) {
+                        await targetMsgs.doc(m.id).set(m.data(), { merge: true }).catch(() => null);
+                        await m.ref.delete().catch(() => null);
+                      }
+                    }
+                    // Supprimer le compte WhatsApp dupliqué
+                    await waDoc.ref.delete();
+                    console.log(`[whatsapp-webhook] 🗑️ Automatically fused and deleted duplicate doc ${waDoc.id} into Google account ${googleAccount.id}`);
+                  } catch (mergeErr) {
+                    console.warn('[whatsapp-webhook] Error auto-fusing duplicate doc:', mergeErr);
+                  }
+                }
+              }
+              allPhoneUserDocs = [googleAccount];
+            }
+          }
+
           if (!existingUserDoc && allPhoneUserDocs.length > 0) {
             existingUserDoc =
               allPhoneUserDocs.find((d: any) => d.data()?.email) ||
@@ -2146,23 +2201,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               allPhoneUserDocs[0];
           }
 
-          // Si un compte Google existe pour ce numéro et que le compte retenu n'a pas d'email,
-          // basculer sur le compte Google pour que les commandes soient visibles sur son tableau de bord
-          if (allPhoneUserDocs.length > 1 && (!existingUserDoc || !existingUserDoc.data()?.email)) {
-            const googleAccount = allPhoneUserDocs.find((d: any) => d.data()?.email);
-            if (googleAccount) {
-              existingUserDoc = googleAccount;
-            }
-          }
-
-          // 3. Sinon, si le message contient un email (ex: compte Google existant), lier automatiquement le compte
-          if (!existingUserDoc && senderText) {
+          // 3. Si le message contient un email (ex: client mentionne son compte Google), fusionner et lier immédiatement
+          if (senderText) {
             const emailMatch = senderText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
             if (emailMatch) {
               const email = emailMatch[1].toLowerCase().trim();
               const emailSnap = await usersRef.where('email', '==', email).limit(1).get();
               if (!emailSnap.empty) {
-                existingUserDoc = emailSnap.docs[0];
+                const googleDoc = emailSnap.docs[0];
+                if (existingUserDoc && existingUserDoc.id !== googleDoc.id) {
+                  try {
+                    const oldOrders = await db.collection('orders').where('userId', '==', existingUserDoc.id).get();
+                    if (!oldOrders.empty) {
+                      const b = db.batch();
+                      oldOrders.docs.forEach((o: any) => b.update(o.ref, {
+                        userId: googleDoc.id,
+                        userEmailSnapshot: email,
+                      }));
+                      await b.commit();
+                    }
+                    await existingUserDoc.ref.delete().catch(() => null);
+                    console.log(`[whatsapp-webhook] 🗑️ Merged temporary WhatsApp account ${existingUserDoc.id} into Google account ${googleDoc.id} via email`);
+                  } catch (e) {
+                    console.warn('[whatsapp-webhook] Email merge error:', e);
+                  }
+                }
+                existingUserDoc = googleDoc;
                 console.log(`[whatsapp-webhook] 🔗 Google account linked via email ${email} to phone ${senderPhone}`);
               }
             }
@@ -2597,7 +2661,7 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
 
       // ── DÉTERMINATION & CALCUL DE LA RECETTE ET DES PRIX DYNAMIQUES ──
-      let activeRecipeIngredients: { fruitId: string; fruitName: string; priceSnapshot: number }[] = [];
+      let activeRecipeIngredients: { fruitId: string; fruitName: string; priceSnapshot: number; isSupplement?: boolean; incompatibleIds?: string[] }[] = [];
       let activeRecipeName = '';
 
       if (webDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
@@ -2612,6 +2676,8 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
             fruitId: i.fruitId || i.id || matchedFruit?.id || 'fruit',
             fruitName: i.fruitName || i.name || matchedFruit?.name || 'Fruit',
             priceSnapshot: snapPrice > 0 ? snapPrice : (matchedFruit?.price || 0),
+            isSupplement: matchedFruit?.isSupplement ?? (i.role === 'supplement'),
+            incompatibleIds: matchedFruit?.incompatibleIds || [],
           };
         });
       } else {
@@ -2635,6 +2701,8 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
                 fruitId: fruit.id,
                 fruitName: fruit.name,
                 priceSnapshot: fruit.price,
+                isSupplement: fruit.isSupplement,
+                incompatibleIds: fruit.incompatibleIds,
               });
             }
           }
@@ -2644,17 +2712,62 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         }
       }
 
+      // Détection des incompatibilités scientifiques dans la recette courante
+      const currentIncompatibilities: string[] = [];
+      for (let i = 0; i < activeRecipeIngredients.length; i++) {
+        for (let j = i + 1; j < activeRecipeIngredients.length; j++) {
+          const f1 = activeRecipeIngredients[i];
+          const f2 = activeRecipeIngredients[j];
+          const inc1 = f1.incompatibleIds || [];
+          const inc2 = f2.incompatibleIds || [];
+          if (inc1.includes(f2.fruitId) || inc2.includes(f1.fruitId)) {
+            currentIncompatibilities.push(`"${f1.fruitName}" et "${f2.fruitName}"`);
+          }
+        }
+      }
+
+      const currentMainFruitsCount = activeRecipeIngredients.filter((i) => !i.isSupplement).length;
+      const currentSupplementsCount = activeRecipeIngredients.filter((i) => i.isSupplement).length;
+
       const activeIngredientsSum = activeRecipeIngredients.reduce((s, i) => s + i.priceSnapshot, 0);
       const activePrice500 = bottle500Base + activeIngredientsSum;
       const activePrice1L = bottle1LBase + activeIngredientsSum;
 
-      // Construction du catalogue et de la grille tarifaire interne pour NutriFYS
-      const fruitsSummary = availableFruits.length
-        ? availableFruits.map((f) => `- ${f.name} : +${f.price} XAF`).join('\n')
-        : '- Fruits standards';
+      // Construction des catalogues séparés Fruits Principaux vs Suppléments et Incompatibilités
+      const mainFruitsList = availableFruits.filter((f) => !f.isSupplement);
+      const supplementFruitsList = availableFruits.filter((f) => f.isSupplement);
+
+      const mainFruitsCatalogStr = mainFruitsList.map((f) => `  • ${f.name} (+${f.price} XAF)`).join('\n');
+      const supplementCatalogStr = supplementFruitsList.map((s) => `  • ${s.name} (+${s.price} XAF)`).join('\n');
+
+      const incompatibilityCatalogStr = availableFruits
+        .filter((f) => f.incompatibleIds.length > 0)
+        .map((f) => {
+          const names = f.incompatibleIds
+            .map((id) => availableFruits.find((x) => x.id === id)?.name || id)
+            .filter(Boolean)
+            .join(', ');
+          return `  • ${f.name} ne doit JAMAIS être mélangé avec : ${names}`;
+        })
+        .join('\n');
 
       let recipePricingDetails = '';
-      if (activeRecipeIngredients.length > 0) {
+      if (currentIncompatibilities.length > 0) {
+        recipePricingDetails = `
+🚨 ALERTE INCOMPATIBILITÉ CRITIQUE DU FYS LAB DÉTECTÉE DANS LA COMPOSITION :
+L'utilisateur a choisi des ingrédients scientifiquement incompatibles : ${currentIncompatibilities.join(', ')}.
+CONSIGNES STRICTES, CATÉGORIQUES ET INFRANGIBLES :
+1. TU DOIS REFUSER CE MÉLANGE IMMÉDIATEMENT ET DE FAÇON CATÉGORIQUE. AUCUNE NÉGOCIATION N'EST ACCEPTÉE.
+2. Explique-lui avec bienveillance mais autorité nutritionnelle pourquoi ces fruits ne peuvent pas être mélangés chez FYS (interaction enzymatique, altération digestive ou dégradation des vitamines).
+3. Propose-lui de remplacer l'un d'eux par un ingrédient compatible du catalogue en stock.
+4. NE DONNE AUCUN PRIX NI FORMAT POUR CE MÉLANGE INTERDIT. NE PROPOSE PAS DE COMMANDER.`;
+      } else if (currentMainFruitsCount > maxMainFruits || currentSupplementsCount > maxSupplements) {
+        recipePricingDetails = `
+🚨 ALERTE DÉPASSEMENT DES LIMITES OFFICIELLES DU FYS LAB :
+L'utilisateur a choisi ${currentMainFruitsCount} fruits principaux (maximum autorisé : ${maxMainFruits}) ou ${currentSupplementsCount} suppléments (maximum autorisé : ${maxSupplements}).
+CONSIGNE FERME :
+Informe-le avec bienveillance de la règle d'équilibre du FYS Lab : chaque bouteille comporte au maximum ${maxMainFruits} fruits principaux et ${maxSupplements} suppléments pour garantir un dosage thérapeutique efficace et un goût harmonieux. Demande-lui poliment de retirer l'ingrédient en trop pour respecter la règle du Lab.`;
+      } else if (activeRecipeIngredients.length > 0) {
         const ingredientsListStr = activeRecipeIngredients.map((i) => `${i.fruitName} (+${i.priceSnapshot} XAF)`).join(', ');
         recipePricingDetails = `
 RECETTE DÉTECTÉE EN COURS : "${activeRecipeName}"
@@ -2674,11 +2787,18 @@ Tu DOIS STRICTEMENT utiliser ces tarifs exacts (${activePrice500} XAF pour 500ml
 ATTENTION : AUCUN FRUIT NI RECETTE N'A ENCORE ÉTÉ CHOISI PAR LE CLIENT !
 RÈGLE COMMERCIALE CRITIQUE :
 Tant que les fruits du cocktail ne sont pas connus, TU NE PEUX PAS calculer de prix ni présenter de devis ou de format !
-Si le client veut commander ou demande le prix, guide-le d'abord pour choisir 2 à 4 fruits parmi le catalogue officiel en stock ci-dessous afin de composer sa recette et calculer son prix exact selon la formule FYS.`;
+Si le client veut commander ou demande le prix, guide-le d'abord pour choisir 1 à ${maxMainFruits} fruits principaux et au maximum ${maxSupplements} suppléments parmi le catalogue officiel en stock ci-dessous afin de composer sa recette et calculer son prix exact selon la formule FYS.`;
       }
 
-      const dynamicPricingContext = `\n\nCATALOGUE OFFICIEL DES FRUITS & INGRÉDIENTS FYS EN STOCK (LISTE EXCLUSIVE) :
-${fruitsSummary}
+      const dynamicPricingContext = `\n\nCATALOGUE OFFICIEL DU FYS LAB (EN STOCK DÉFINITIF) :
+A. FRUITS PRINCIPAUX (Base du cocktail - Maximum ${maxMainFruits} par bouteille) :
+${mainFruitsCatalogStr}
+
+B. SUPPLÉMENTS & BOOSTERS (Accents thérapeutiques - Maximum ${maxSupplements} par bouteille) :
+${supplementCatalogStr}
+
+RÈGLES D'INCOMPATIBILITÉ SCIENTIFIQUE DU FYS LAB (STRICTES ET INFRANGIBLES) :
+${incompatibilityCatalogStr}
 
 FORMULE OFFICIELLE STRICTE DU CALCUL DES PRIX FYS :
 1. Prix par bouteille = Prix de base du contenant (${bottle500Base} XAF en 500ml, ${bottle1LBase} XAF en 1L) + Somme exacte des prix des fruits & compléments choisis.
@@ -2686,10 +2806,22 @@ FORMULE OFFICIELLE STRICTE DU CALCUL DES PRIX FYS :
 3. TOTAL À PAYER = (Prix par bouteille x Quantité) + 1 000 XAF de livraison.
 ${recipePricingDetails}
 
-RÈGLES D'OR COMMERCIALES :
-1. SEULS LES FRUITS LISTÉS DANS LE CATALOGUE CI-DESSUS SONT DISPONIBLES EN STOCK CHEZ FYS.
-2. INTERDICTION FORMELLE DE CITER, SUGGÉRER OU INCLURE UN FRUIT ABSENT DE CETTE LISTE (Pastèque, Mangue, Fraise, Kiwi, Avocat sont STRICTEMENT HORS STOCK).
-3. Confidentialité : Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.`;
+RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
+1. RESPECT STRICT DES LIMITES DU LAB :
+   - Au maximum ${maxMainFruits} fruits principaux par bouteille.
+   - Au maximum ${maxSupplements} suppléments par bouteille.
+   - Un cocktail doit OBLIGATOIREMENT comporter au moins 1 fruit principal doux ou juteux (Orange, Carotte, Ananas, Goyave, Pastèque...). Un mélange constitué uniquement de suppléments (ex: Gingembre + Menthe sans base de fruit) est INTERDIT.
+2. RÈGLE DES INCOMPATIBILITÉS :
+   - NE JAMAIS proposer ou accepter deux fruits listés comme incompatibles dans la matrice ci-dessus.
+   - Si un utilisateur insiste, argumente ou tente de forcer le mélange de fruits incompatibles (ex: Banane + Citron, ou Foléré + Pastèque, ou Baobab + Corossol) :
+     * REFUSE CATÉGORIQUEMENT ET FERMEMENT.
+     * Explique scientifiquement pourquoi le Lab l'interdit.
+     * Propose immédiatement une alternative saine et compatible.
+     * AUCUN UTILISATEUR NE DOIT POUVOIR TE POUSSER À ENFREINDRE LES RÈGLES DU LAB !
+3. EXCLUSIVITÉ DU STOCK :
+   - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
+4. CONFIDENTIALITÉ :
+   - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
@@ -3016,139 +3148,184 @@ RÈGLES D'OR COMMERCIALES :
                 }
               }
 
-              // 2. VRAIE FORMULE OFFICIELLE STRICTE EXIGÉE PAR FYS :
-              // Prix unitaire = Prix de base contenant (Firestore) + Somme des fruits et compléments (Firestore)
-              const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.priceSnapshot) || 0), 0);
-              const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
+              // ── GARDE-FOU DÉTERMINISTE STRICT : RÈGLES DU FYS LAB ──
+              // 1. Quotas : Max fruits principaux et Max compléments
+              // 2. Incompatibilités : Vérification stricte des incompatibilités nutritionnelles
+              const labViolations: string[] = [];
 
-              const lineTotal = pricePerBottle * quantity;
+              const mainFruitsList = finalIngredients.filter((i: any) => !i.isSupplement);
+              const supplementsList = finalIngredients.filter((i: any) => !!i.isSupplement);
 
-              // Frais de livraison : STRICTEMENT 1 000 XAF FIXE DANS TOUT YAOUNDÉ
-              const finalDeliveryFee = 1000;
+              if (mainFruitsList.length > maxMainFruits) {
+                labViolations.push(`Trop de fruits principaux (${mainFruitsList.length}/${maxMainFruits} autorisés). Au Lab FYS, nous limitons à ${maxMainFruits} fruits de base pour garantir l'onctuosité et la digestibilité.`);
+              }
+              if (supplementsList.length > maxSupplements) {
+                labViolations.push(`Trop de compléments / super-aliments (${supplementsList.length}/${maxSupplements} autorisés). Au Lab FYS, nous limitons à ${maxSupplements} compléments pour une biodisponibilité optimale.`);
+              }
 
-              // Total à payer : Sous-total + Livraison
-              const totalPrice = lineTotal + finalDeliveryFee;
+              // Vérification des paires incompatibles
+              for (let i = 0; i < finalIngredients.length; i++) {
+                for (let j = i + 1; j < finalIngredients.length; j++) {
+                  const ingA = finalIngredients[i];
+                  const ingB = finalIngredients[j];
 
-              const orderRef = db.collection('orders').doc();
-              const newOrderDoc = {
-                id: orderRef.id,
-                orderCode: webDraftCode || null,
-                type: 'classic',
-                source: 'whatsapp',
-                whatsappMessageId: messageId || null,
-                status: 'pending',
-                userId: userDocRef?.id || 'whatsapp_customer',
-                userNameSnapshot: (isWebDraft && webDraft.customerName?.trim()) || senderName,
-                userPhoneSnapshot: senderPhone,
-                userEmailSnapshot: matchedUserEmail || (isWebDraft && webDraft.customerEmail) || '',
-                cocktailId: (isWebDraft && webDraft.cocktail?.id) || 'whatsapp-custom',
-                cocktailNameSnapshot: finalCocktailName,
-                cocktailIngredientsSnapshot: finalIngredients,
-                hasAddedSugar: isWebDraft ? (webDraft.hasAddedSugar ?? false) : (orderData.hasAddedSugar !== undefined ? !!orderData.hasAddedSugar : false),
-                quantity,
-                bottleSize,
-                bottleSizeLabel,
-                bottleBasePriceSnapshot: baseBottlePrice,
-                cocktailPriceSnapshot: pricePerBottle,
-                orderLines: [
-                  {
-                    bottleSize,
-                    bottleSizeLabel,
-                    quantity,
-                    bottleBasePriceSnapshot: baseBottlePrice,
-                    pricePerBottle,
-                    lineTotal,
-                  },
-                ],
-                subtotal: lineTotal,
-                deliveryFee: finalDeliveryFee,
-                totalPrice,
-                deliveryDetails: {
-                  district: orderData.district || 'Yaoundé',
-                  phone: senderPhone,
-                  instructions: orderData.instructions || 'Commande directe WhatsApp',
-                },
-                ...(isWebDraft && webDraft.aiAnalysis ? { aiAnalysisSnapshot: webDraft.aiAnalysis } : {}),
-                createdAt: FieldValue.serverTimestamp(),
-                updatedAt: FieldValue.serverTimestamp(),
-              };
+                  const fruitA = availableFruits.find((f: any) => f.id.toLowerCase() === ingA.fruitId.toLowerCase() || f.name.toLowerCase() === ingA.fruitName.toLowerCase());
+                  const fruitB = availableFruits.find((f: any) => f.id.toLowerCase() === ingB.fruitId.toLowerCase() || f.name.toLowerCase() === ingB.fruitName.toLowerCase());
 
-              await orderRef.set(newOrderDoc);
-              console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
+                  const aIncompatibleWithB = (fruitA?.incompatibleIds || []).some((id: string) => id.toLowerCase() === (fruitB?.id || '').toLowerCase());
+                  const bIncompatibleWithA = (fruitB?.incompatibleIds || []).some((id: string) => id.toLowerCase() === (fruitA?.id || '').toLowerCase());
 
-              createdOrderInfo = {
-                orderId: orderRef.id,
-                orderDoc: newOrderDoc,
-                ingredients: finalIngredients,
-              };
-
-              // Marquer le brouillon web comme converti dans whatsapp_drafts et nettoyer activeDraftCode
-              if (webDraftCode) {
-                await db.collection('whatsapp_drafts').doc(webDraftCode).update({
-                  status: 'converted',
-                  orderId: orderRef.id,
-                  convertedAt: FieldValue.serverTimestamp(),
-                }).catch((e: any) => console.warn('[whatsapp-webhook] Could not mark draft as converted:', e));
-
-                if (userDocRef) {
-                  await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch((e: any) => console.warn('[whatsapp-webhook] Could not clear activeDraftCode:', e));
-                }
-                if (allPhoneUserDocs && allPhoneUserDocs.length > 0) {
-                  for (const pDoc of allPhoneUserDocs) {
-                    await pDoc.ref.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
+                  if (aIncompatibleWithB || bIncompatibleWithA) {
+                    labViolations.push(`Incompatibilité nutritionnelle : **${ingA.fruitName}** et **${ingB.fruitName}** ne peuvent pas être associés dans un même jus.`);
                   }
                 }
               }
 
-              // ── Notifications Administrateurs (In-App + FCM Web Push) ──
-              try {
-                const adminsSnap = await db.collection('users').where('role', '==', 'admin').get();
-                if (!adminsSnap.empty) {
-                  const notifTitle = 'Nouvelle commande WhatsApp !';
-                  const notifMessage = `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice.toLocaleString()} XAF).`;
-                  const notifLink = `/board/orders?order=${orderRef.id}`;
+              if (labViolations.length > 0) {
+                console.warn(`[whatsapp-webhook] 🚫 Order blocked due to strict FYS Lab rules violations:`, labViolations);
+                aiReply = `⚠️ *Commande non validée - Règles strictes du FYS Lab*\n\n` +
+                  `Au FYS Lab, la santé de nos clients et la qualité nutritionnelle de nos jus sont prioritaires. Votre composition ne peut pas être préparée pour les raisons suivantes :\n\n` +
+                  labViolations.map((v: string) => `• ${v}`).join('\n') +
+                  `\n\nSouhaitez-vous retirer un ingrédient ou que je vous propose une alternative savoureuse et compatible ?`;
+                buttonsToSend = [
+                  { id: 'btn_order', title: 'Modifier la recette' },
+                  { id: 'btn_nutrition', title: 'Conseil NutriFYS' },
+                ];
+              } else {
+                // 2. VRAIE FORMULE OFFICIELLE STRICTE EXIGÉE PAR FYS :
+                // Prix unitaire = Prix de base contenant (Firestore) + Somme des fruits et compléments (Firestore)
+                const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.priceSnapshot) || 0), 0);
+                const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
 
-                  // 1. Notification in-app dans la collection "notifications" pour chaque admin
-                  const batch = db.batch();
-                  adminsSnap.docs.forEach((aDoc: any) => {
-                    const notifRef = db.collection('notifications').doc();
-                    batch.set(notifRef, {
-                      id: notifRef.id,
-                      userId: aDoc.id,
-                      title: notifTitle,
-                      message: notifMessage,
-                      link: notifLink,
-                      isRead: false,
-                      createdAt: FieldValue.serverTimestamp(),
-                    });
-                  });
-                  await batch.commit().catch((e: any) => console.warn('[whatsapp-webhook] In-app notification batch error:', e));
+                const lineTotal = pricePerBottle * quantity;
 
-                  // 2. Notification push FCM vers les navigateurs/smartphones des admins connectés
-                  const adminUids = adminsSnap.docs.map((d: any) => d.id);
-                  const tokensSnap = await db.collection('fcm_tokens').where('uid', 'in', adminUids.slice(0, 30)).get();
-                  if (!tokensSnap.empty) {
-                    const tokens = tokensSnap.docs.map((d: any) => d.data()?.token).filter(Boolean);
-                    if (tokens.length > 0) {
-                      const messaging = getAdminMessaging();
-                      if (messaging) {
-                        await messaging.sendEachForMulticast({
-                          tokens,
-                          notification: {
-                            title: notifTitle,
-                            body: notifMessage,
-                          },
-                          data: {
-                            url: notifLink,
-                            tag: `order-new-${orderRef.id}`,
-                          },
-                        }).catch((e: any) => console.warn('[whatsapp-webhook] FCM multicast error:', e));
-                      }
+                // Frais de livraison : STRICTEMENT 1 000 XAF FIXE DANS TOUT YAOUNDÉ
+                const finalDeliveryFee = 1000;
+
+                // Total à payer : Sous-total + Livraison
+                const totalPrice = lineTotal + finalDeliveryFee;
+
+                const orderRef = db.collection('orders').doc();
+                const newOrderDoc = {
+                  id: orderRef.id,
+                  orderCode: webDraftCode || null,
+                  type: 'classic',
+                  source: 'whatsapp',
+                  whatsappMessageId: messageId || null,
+                  status: 'pending',
+                  userId: userDocRef?.id || 'whatsapp_customer',
+                  userNameSnapshot: (isWebDraft && webDraft.customerName?.trim()) || senderName,
+                  userPhoneSnapshot: senderPhone,
+                  userEmailSnapshot: matchedUserEmail || (isWebDraft && webDraft.customerEmail) || '',
+                  cocktailId: (isWebDraft && webDraft.cocktail?.id) || 'whatsapp-custom',
+                  cocktailNameSnapshot: finalCocktailName,
+                  cocktailIngredientsSnapshot: finalIngredients,
+                  hasAddedSugar: isWebDraft ? (webDraft.hasAddedSugar ?? false) : (orderData.hasAddedSugar !== undefined ? !!orderData.hasAddedSugar : false),
+                  quantity,
+                  bottleSize,
+                  bottleSizeLabel,
+                  bottleBasePriceSnapshot: baseBottlePrice,
+                  cocktailPriceSnapshot: pricePerBottle,
+                  orderLines: [
+                    {
+                      bottleSize,
+                      bottleSizeLabel,
+                      quantity,
+                      bottleBasePriceSnapshot: baseBottlePrice,
+                      pricePerBottle,
+                      lineTotal,
+                    },
+                  ],
+                  subtotal: lineTotal,
+                  deliveryFee: finalDeliveryFee,
+                  totalPrice,
+                  deliveryDetails: {
+                    district: orderData.district || 'Yaoundé',
+                    phone: senderPhone,
+                    instructions: orderData.instructions || 'Commande directe WhatsApp',
+                  },
+                  ...(isWebDraft && webDraft.aiAnalysis ? { aiAnalysisSnapshot: webDraft.aiAnalysis } : {}),
+                  createdAt: FieldValue.serverTimestamp(),
+                  updatedAt: FieldValue.serverTimestamp(),
+                };
+
+                await orderRef.set(newOrderDoc);
+                console.log(`[whatsapp-webhook] ✅ Created WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${totalPrice} XAF)`);
+
+                createdOrderInfo = {
+                  orderId: orderRef.id,
+                  orderDoc: newOrderDoc,
+                  ingredients: finalIngredients,
+                };
+
+                // Marquer le brouillon web comme converti dans whatsapp_drafts et nettoyer activeDraftCode
+                if (webDraftCode) {
+                  await db.collection('whatsapp_drafts').doc(webDraftCode).update({
+                    status: 'converted',
+                    orderId: orderRef.id,
+                    convertedAt: FieldValue.serverTimestamp(),
+                  }).catch((e: any) => console.warn('[whatsapp-webhook] Could not mark draft as converted:', e));
+
+                  if (userDocRef) {
+                    await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch((e: any) => console.warn('[whatsapp-webhook] Could not clear activeDraftCode:', e));
+                  }
+                  if (allPhoneUserDocs && allPhoneUserDocs.length > 0) {
+                    for (const pDoc of allPhoneUserDocs) {
+                      await pDoc.ref.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
                     }
                   }
                 }
-              } catch (adminNotifErr) {
-                console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
+
+                // ── Notifications Administrateurs (In-App + FCM Web Push) ──
+                try {
+                  const adminsSnap = await db.collection('users').where('role', '==', 'admin').get();
+                  if (!adminsSnap.empty) {
+                    const notifTitle = 'Nouvelle commande WhatsApp !';
+                    const notifMessage = `${senderName} a commandé ${quantity}× ${bottleSize} (${newOrderDoc.cocktailNameSnapshot}) pour ${orderData.district || 'Yaoundé'} (${totalPrice.toLocaleString()} XAF).`;
+                    const notifLink = `/board/orders?order=${orderRef.id}`;
+
+                    // 1. Notification in-app dans la collection "notifications" pour chaque admin
+                    const batch = db.batch();
+                    adminsSnap.docs.forEach((aDoc: any) => {
+                      const notifRef = db.collection('notifications').doc();
+                      batch.set(notifRef, {
+                        id: notifRef.id,
+                        userId: aDoc.id,
+                        title: notifTitle,
+                        message: notifMessage,
+                        link: notifLink,
+                        isRead: false,
+                        createdAt: FieldValue.serverTimestamp(),
+                      });
+                    });
+                    await batch.commit().catch((e: any) => console.warn('[whatsapp-webhook] In-app notification batch error:', e));
+
+                    // 2. Notification push FCM vers les navigateurs/smartphones des admins connectés
+                    const adminUids = adminsSnap.docs.map((d: any) => d.id);
+                    const tokensSnap = await db.collection('fcm_tokens').where('uid', 'in', adminUids.slice(0, 30)).get();
+                    if (!tokensSnap.empty) {
+                      const tokens = tokensSnap.docs.map((d: any) => d.data()?.token).filter(Boolean);
+                      if (tokens.length > 0) {
+                        const messaging = getAdminMessaging();
+                        if (messaging) {
+                          await messaging.sendEachForMulticast({
+                            tokens,
+                            notification: {
+                              title: notifTitle,
+                              body: notifMessage,
+                            },
+                            data: {
+                              url: notifLink,
+                              tag: `order-new-${orderRef.id}`,
+                            },
+                          }).catch((e: any) => console.warn('[whatsapp-webhook] FCM multicast error:', e));
+                        }
+                      }
+                    }
+                  }
+                } catch (adminNotifErr) {
+                  console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
+                }
               }
             }
           }

@@ -34,7 +34,7 @@ export async function createUserDoc(uid: string, name: string, email: string) {
   });
 }
 
-/** Crée le doc Firestore uniquement pour un tout premier compte OAuth (Google / Apple). */
+/** Crée le doc Firestore uniquement pour un tout premier compte OAuth (Google / Apple) et fusionne automatiquement tout compte WhatsApp préexistant. */
 async function createOAuthUserDocIfNew(credential: UserCredential, method: 'google' | 'apple') {
   const { user } = credential;
   const additionalUserInfo = getAdditionalUserInfo(credential);
@@ -48,6 +48,14 @@ async function createOAuthUserDocIfNew(credential: UserCredential, method: 'goog
   } else {
     trackEvent('login', { method });
   }
+
+  // Fusion automatique bidirectionnelle : si un compte temporaire WhatsApp existait pour cet email/téléphone, le fusionner immédiatement
+  syncUserWithPhone({
+    uid: user.uid,
+    email: user.email ?? undefined,
+    name: user.displayName ?? undefined,
+    phone: user.phoneNumber ?? undefined,
+  }).catch((e) => console.warn('[auth] Background syncUserWithPhone skipped:', e));
 }
 
 export async function registerWithEmail(name: string, email: string, password: string) {

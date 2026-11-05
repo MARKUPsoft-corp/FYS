@@ -85,33 +85,85 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 2. Fusionner le profil de santé s'il existait déjà un compte temporaire WhatsApp
     let syncedProfile = false;
+    const candidateDocsToMerge: any[] = [];
+
     if (phoneVariants.length > 0) {
       const waUsersSnap = await db.collection('users')
         .where('phone', 'in', phoneVariants.slice(0, 30))
         .get();
+      for (const d of waUsersSnap.docs) {
+        if (d.id !== uid) candidateDocsToMerge.push(d);
+      }
+    }
 
-      for (const waDoc of waUsersSnap.docs) {
-        if (waDoc.id !== uid) {
-          const waData = waDoc.data();
-          const currentData = userSnap.exists ? userSnap.data() : {};
-          
-          if ((!currentData?.healthConditions || currentData.healthConditions.length === 0) && waData?.healthConditions?.length) {
-            userUpdates.healthConditions = waData.healthConditions;
-            syncedProfile = true;
-          }
-          if ((!currentData?.allergies || currentData.allergies.length === 0) && waData?.allergies?.length) {
-            userUpdates.allergies = waData.allergies;
-            syncedProfile = true;
-          }
-          if ((!currentData?.goals || currentData.goals.length === 0) && waData?.goals?.length) {
-            userUpdates.goals = waData.goals;
-            syncedProfile = true;
-          }
-          if (waData?.hasHealthProfile) {
-            userUpdates.hasHealthProfile = true;
-          }
+    if (email) {
+      const emailUsersSnap = await db.collection('users')
+        .where('email', '==', email.toLowerCase().trim())
+        .get();
+      for (const d of emailUsersSnap.docs) {
+        if (d.id !== uid && !candidateDocsToMerge.some(x => x.id === d.id)) {
+          candidateDocsToMerge.push(d);
         }
       }
+    }
+
+    for (const waDoc of candidateDocsToMerge) {
+      const waData = waDoc.data();
+      const currentData = userSnap.exists ? userSnap.data() : {};
+
+      if (!userUpdates.phone && waData.phone) {
+        userUpdates.phone = waData.phone;
+      }
+      if ((!currentData?.healthConditions || currentData.healthConditions.length === 0) && waData?.healthConditions?.length) {
+        userUpdates.healthConditions = waData.healthConditions;
+        syncedProfile = true;
+      }
+      if ((!currentData?.allergies || currentData.allergies.length === 0) && waData?.allergies?.length) {
+        userUpdates.allergies = waData.allergies;
+        syncedProfile = true;
+      }
+      if ((!currentData?.goals || currentData.goals.length === 0) && waData?.goals?.length) {
+        userUpdates.goals = waData.goals;
+        syncedProfile = true;
+      }
+      if (waData?.hasHealthProfile) {
+        userUpdates.hasHealthProfile = true;
+      }
+      if (waData?.activeDraftCode && !userUpdates.activeDraftCode) {
+        userUpdates.activeDraftCode = waData.activeDraftCode;
+      }
+
+      // Migrer les notifications de l'ancien compte vers le compte Google
+      try {
+        const notifsSnap = await db.collection('notifications').where('userId', '==', waDoc.id).get();
+        if (!notifsSnap.empty) {
+          const nBatch = db.batch();
+          for (const nDoc of notifsSnap.docs) {
+            nBatch.update(nDoc.ref, { userId: uid });
+          }
+          await nBatch.commit();
+        }
+      } catch (nErr) {
+        console.warn('[api/sync-user] Error transferring notifications:', nErr);
+      }
+
+      // Migrer les messages WhatsApp
+      try {
+        const msgsSnap = await waDoc.ref.collection('whatsapp_messages').get();
+        if (!msgsSnap.empty) {
+          const targetMsgs = userDocRef.collection('whatsapp_messages');
+          for (const mDoc of msgsSnap.docs) {
+            await targetMsgs.doc(mDoc.id).set(mDoc.data(), { merge: true }).catch(() => null);
+            await mDoc.ref.delete().catch(() => null);
+          }
+        }
+      } catch (mErr) {
+        console.warn('[api/sync-user] Error transferring messages:', mErr);
+      }
+
+      // Supprimer l'ancien document WhatsApp dupliqué pour ne laisser qu'un compte unique
+      await waDoc.ref.delete().catch((e: any) => console.warn('[api/sync-user] Error deleting duplicate doc:', e));
+      console.log(`[api/sync-user] 🗑️ Deleted duplicate temporary WhatsApp user ${waDoc.id} into official account ${uid}`);
     }
 
     await userDocRef.set(userUpdates, { merge: true });
