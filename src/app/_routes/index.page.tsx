@@ -294,11 +294,10 @@ const RootIndex: PageComponent = () => {
   const toggleTheme = () => setTheme(actualTheme === 'dark' ? 'light' : 'dark');
 
   const handleCocktailClick = (cocktailId: string) => {
-    const targetUrl = `/board/catalogue?cocktail=${encodeURIComponent(cocktailId)}`;
     if (user) {
-      navigate(targetUrl);
+      navigate(`/board/catalogue?cocktail=${encodeURIComponent(cocktailId)}`);
     } else {
-      navigate(`/auth/login?redirect=${encodeURIComponent(targetUrl)}`);
+      navigate(`/lab?load=${encodeURIComponent(cocktailId)}`);
     }
   };
 
@@ -393,12 +392,14 @@ const RootIndex: PageComponent = () => {
 
             {/* ── Desktop CTA Buttons ── */}
             <div className="hidden sm:flex items-center gap-2">
-              <Link
-                to="/auth/login"
-                className="h-9 px-3.5 rounded-full text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all whitespace-nowrap flex items-center"
-              >
-                {t('landing.nav.signIn')}
-              </Link>
+              {user && (
+                <Link
+                  to="/board"
+                  className="h-9 px-3.5 rounded-full text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all whitespace-nowrap flex items-center"
+                >
+                  Tableau de bord
+                </Link>
+              )}
               <Link
                 to="/lab"
                 className="h-9 px-4 rounded-full bg-primary text-primary-foreground text-xs lg:text-sm font-bold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-sm whitespace-nowrap"
@@ -478,12 +479,14 @@ const RootIndex: PageComponent = () => {
                   </div>
                   
                   <div className="mt-auto flex flex-col gap-4 pb-8">
-                    <Link
-                      to="/auth/login"
-                      className="h-12 w-full rounded-full border-2 border-border/80 text-base font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all text-foreground"
-                    >
-                      {t('landing.nav.signIn')}
-                    </Link>
+                    {user && (
+                      <Link
+                        to="/board"
+                        className="h-12 w-full rounded-full border-2 border-border/80 text-base font-bold flex items-center justify-center gap-2 hover:bg-muted/50 transition-all text-foreground"
+                      >
+                        Tableau de bord
+                      </Link>
+                    )}
                     <Link
                       to="/lab"
                       className="h-12 w-full rounded-full bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20"
@@ -983,7 +986,7 @@ const RootIndex: PageComponent = () => {
                    if (user) {
                      navigate('/board/catalogue');
                    } else {
-                     navigate('/auth/login?redirect=/board/catalogue');
+                     navigate('/lab');
                    }
                  }}
                  size="lg"
@@ -1160,14 +1163,16 @@ const RootIndex: PageComponent = () => {
               </p>
 
               <div className="pt-2">
-                <Link
-                  to="/auth/login?redirect=/board/events"
+                <a
+                  href={`https://wa.me/237691850125?text=${encodeURIComponent("Bonjour FYS ! Je souhaite des informations / un devis pour un événement d'entreprise ou privé.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 h-14 px-8 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
                   <Building2 className="size-5" />
                   {t('landing.events.cta')}
                   <ArrowRight className="size-4" />
-                </Link>
+                </a>
                 <p className="text-[11px] text-white/60 mt-2 font-medium">
                   {t('landing.events.card3Desc')}
                 </p>

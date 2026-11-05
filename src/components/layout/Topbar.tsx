@@ -49,15 +49,7 @@ export function Topbar() {
     navigate('/');
   }
 
-  const signInButton = (
-    <Link
-      to="/auth/login"
-      className="flex items-center gap-2 h-10 px-4 rounded-full bg-primary text-white text-sm font-bold shadow-[0_4px_14px_rgba(63,109,78,0.25)] hover:bg-primary/90 active:scale-95 transition-all"
-    >
-      <LogIn className="size-4" />
-      {t('topbar.signIn')}
-    </Link>
-  );
+  const signInButton = null;
 
   return (
     <header
