@@ -222,7 +222,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Sparkles,
     roles: [UserRole.ADMIN],
     showInMobileTab: false,
-    showInDesktopNav: true,
+    showInDesktopNav: false, // Désactivé de l'écran (navigation) - route et code conservés
   },
 ];
 

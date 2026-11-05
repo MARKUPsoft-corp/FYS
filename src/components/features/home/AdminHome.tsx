@@ -94,6 +94,9 @@ function RecentOrderRow({ order }: { order: Order }) {
 
 export function AdminHome({ name }: Props) {
   const { t } = useTranslation();
+  // Flag de désactivation de l'écran pour la dégustation privée (code conservé)
+  const SHOW_TASTING_ADMIN = false;
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: getAdminStats,
@@ -137,7 +140,7 @@ export function AdminHome({ name }: Props) {
   ];
 
   const quickActions = [
-    {
+    ...(SHOW_TASTING_ADMIN ? [{
       label: t('home.admin.quick.degustationTitle'),
       description: t('home.admin.quick.degustationDesc'),
       icon: Sparkles,
@@ -145,7 +148,7 @@ export function AdminHome({ name }: Props) {
       iconColor: 'text-amber-500',
       path: '/board/degustation',
       cta: t('home.admin.quick.degustationCta'),
-    },
+    }] : []),
     {
       label: t('home.admin.quick.programsTitle'),
       description: t('home.admin.quick.programsDesc'),
@@ -222,13 +225,15 @@ export function AdminHome({ name }: Props) {
       imageUrl="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200"
       actions={
         <div className="flex items-center gap-2.5 pb-2 flex-wrap justify-end">
-          <Link
-            to="/board/degustation"
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all cursor-pointer"
-          >
-            <Sparkles className="size-4.5" />
-            Dégustation 18 Octobre
-          </Link>
+          {SHOW_TASTING_ADMIN && (
+            <Link
+              to="/board/degustation"
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all cursor-pointer"
+            >
+              <Sparkles className="size-4.5" />
+              Dégustation 18 Octobre
+            </Link>
+          )}
           <Link
             to="/board/programs-admin"
             className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-secondary text-secondary-foreground font-bold text-xs sm:text-sm shadow-md hover:bg-secondary/90 active:scale-98 transition-all cursor-pointer"
@@ -274,33 +279,35 @@ export function AdminHome({ name }: Props) {
         })}
       </div>
 
-      {/* ── BANDEAU SPÉCIAL DÉGUSTATION 18 OCTOBRE ── */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 p-6 md:p-8 shadow-sm">
-        <AfricanCornerPattern variant="ndop-cross" size="lg" className="opacity-15" />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="size-3.5 animate-pulse text-amber-500" />
-              Événement Privé • Dimanche 18 Octobre 2026
+      {/* ── BANDEAU SPÉCIAL DÉGUSTATION 18 OCTOBRE (Désactivé à l'écran - code conservé) ── */}
+      {SHOW_TASTING_ADMIN && (
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 p-6 md:p-8 shadow-sm">
+          <AfricanCornerPattern variant="ndop-cross" size="lg" className="opacity-15" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="size-3.5 animate-pulse text-amber-500" />
+                Événement Privé • Dimanche 18 Octobre 2026
+              </div>
+              <h3 className="font-display font-extrabold text-xl sm:text-2xl text-foreground">
+                Monitoring Dégustation Privée FYS
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Consultez en direct les inscrits, les pass d'accès téléchargés, les présences confirmées et les commandes de cocktails VIP à 1000 F.
+              </p>
             </div>
-            <h3 className="font-display font-extrabold text-xl sm:text-2xl text-foreground">
-              Monitoring Dégustation Privée FYS
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Consultez en direct les inscrits, les pass d'accès téléchargés, les présences confirmées et les commandes de cocktails VIP à 1000 F.
-            </p>
-          </div>
-          <div className="shrink-0">
-            <Button asChild size="default" className="rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md">
-              <Link to="/board/degustation" className="inline-flex items-center gap-2">
-                <Sparkles className="size-4" />
-                Accéder au monitoring
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
+            <div className="shrink-0">
+              <Button asChild size="default" className="rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md">
+                <Link to="/board/degustation" className="inline-flex items-center gap-2">
+                  <Sparkles className="size-4" />
+                  Accéder au monitoring
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── 2. CHARTS & PERFORMANCE FINANCIÈRE ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">

@@ -1917,6 +1917,8 @@ const Orders: PageComponent = () => {
   const isAdmin = user?.role === UserRole.ADMIN;
 
   const tabParam = searchParams.get('tab');
+  // Flag de désactivation de l'écran pour la dégustation privée (code conservé)
+  const SHOW_TASTING_TAB = false;
   const [orderTypeTab, setOrderTypeTab] = useState<'classic' | 'degustation' | 'program'>(
     tabParam === 'degustation' || tabParam === 'tasting'
       ? 'degustation'
@@ -2115,25 +2117,27 @@ const Orders: PageComponent = () => {
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabChange('degustation')}
-              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
-                orderTypeTab === 'degustation'
-                  ? 'bg-[#E0982E] text-white border-[#E0982E] shadow-md'
-                  : 'border-transparent text-amber-700 dark:text-amber-400 hover:text-foreground hover:bg-amber-500/10'
-              }`}
-            >
-              <Sparkles className="size-4 shrink-0" />
-              <span className="truncate">🍷 Dégustation</span>
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                orderTypeTab === 'degustation'
-                  ? 'bg-white/25 text-white'
-                  : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-              }`}>
-                {tastingOrdersCount}
-              </span>
-            </button>
+            {(SHOW_TASTING_TAB || orderTypeTab === 'degustation') && (
+              <button
+                type="button"
+                onClick={() => handleTabChange('degustation')}
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
+                  orderTypeTab === 'degustation'
+                    ? 'bg-[#E0982E] text-white border-[#E0982E] shadow-md'
+                    : 'border-transparent text-amber-700 dark:text-amber-400 hover:text-foreground hover:bg-amber-500/10'
+                }`}
+              >
+                <Sparkles className="size-4 shrink-0" />
+                <span className="truncate">🍷 Dégustation</span>
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                  orderTypeTab === 'degustation'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+                }`}>
+                  {tastingOrdersCount}
+                </span>
+              </button>
+            )}
 
             <button
               type="button"

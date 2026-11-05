@@ -89,6 +89,8 @@ export function CustomerHome(_props: Props) {
     queryFn: getPrograms,
   });
 
+  // Flag de désactivation de l'écran pour la dégustation privée (code conservé)
+  const SHOW_TASTING_EVENT = false;
   const [suggestedProgram, setSuggestedProgram] = useState<Program | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
@@ -280,153 +282,158 @@ export function CustomerHome(_props: Props) {
 
 
         {/* ── CAROUSEL : ÉVÉNEMENT VIP + PROGRAMME ACTIF ── */}
-        <div 
-          className="relative rounded-[2.5rem] overflow-hidden mb-6 group"
-          onTouchStart={activeProgram ? handleTouchStart : undefined}
-          onTouchMove={activeProgram ? handleTouchMove : undefined}
-          onTouchEnd={activeProgram ? handleTouchEnd : undefined}
-        >
+        {(SHOW_TASTING_EVENT || activeProgram) && (
           <div 
-            className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            className="relative rounded-[2.5rem] overflow-hidden mb-6 group"
+            onTouchStart={SHOW_TASTING_EVENT && activeProgram ? handleTouchStart : undefined}
+            onTouchMove={SHOW_TASTING_EVENT && activeProgram ? handleTouchMove : undefined}
+            onTouchEnd={SHOW_TASTING_EVENT && activeProgram ? handleTouchEnd : undefined}
           >
-                    {/* ── FYS PROGRAM WIDGET / DISCOVERY BANNER (CHARTE FYS, IMAGES VÉRIFIÉES & ZÉRO EMOJI) ── */}
-        
-        {/* ── EVENEMENT VIP (TOUJOURS VISIBLE) ── */}
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group w-full shrink-0">
-            <AfricanCornerPattern variant="ndop-cross" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
-            {/* Background photography */}
-            <div className="absolute inset-0 bg-muted">
-              <img
-                src="/degustation/Bouteille FYS, ananas et gingembre-1.png"
-                alt="Événement Dégustation"
-                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1a1f1b]/85 to-black/60" />
-            </div>
+            <div 
+              className="flex transition-transform duration-500 ease-out"
+              style={{ transform: SHOW_TASTING_EVENT ? `translateX(-${currentSlide * 100}%)` : 'none' }}
+            >
+              {/* ── EVENEMENT VIP (Désactivé à l'écran - code conservé) ── */}
+              {SHOW_TASTING_EVENT && (
+                <div className="relative rounded-[2.5rem] overflow-hidden shadow-md border border-[#E0982E]/30 text-white group w-full shrink-0">
+                  <AfricanCornerPattern variant="ndop-cross" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
+                  {/* Background photography */}
+                  <div className="absolute inset-0 bg-muted">
+                    <img
+                      src="/degustation/Bouteille FYS, ananas et gingembre-1.png"
+                      alt="Événement Dégustation"
+                      className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1a1f1b]/85 to-black/60" />
+                  </div>
 
-            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-2xl">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E0982E] text-white shadow-xs">
-                    <Sparkles className="size-3.5 text-white" />
-                    Dégustation Privée • VIP
-                  </span>
-                  <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    Dimanche 18 Octobre 2026
-                  </span>
+                  <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-3 max-w-2xl">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E0982E] text-white shadow-xs">
+                          <Sparkles className="size-3.5 text-white" />
+                          Dégustation Privée • VIP
+                        </span>
+                        <span className="text-xs text-white/80 font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                          Dimanche 18 Octobre 2026
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
+                        Dégustation Privée FYS : L'expérience sur mesure
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
+                        Vous êtes invité(e) ! En tant qu'utilisateur de l'application, obtenez votre pass VIP et créez dès maintenant votre propre jus exclusif à 1 000 FCFA. Votre création sera préparée sous vos yeux lors de l'événement.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
+                        <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
+                          <GlassWater className="size-3 text-[#E0982E]" /> Cocktail Personnalisé
+                        </span>
+                        <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
+                          <Banknote className="size-3 text-[#3F6D4E]" /> Tarif spécial : 1000 XAF
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 shrink-0">
+                      <Link to="/degustation-18-octobre">
+                        <Button className="rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer animate-pulse hover:animate-none">
+                          Mon Pass & Composer mon jus
+                          <ArrowRight className="size-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
-                  Dégustation Privée FYS : L'expérience sur mesure
-                </h3>
+              {activeProgram && (
+                <div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group w-full shrink-0">
+                  <AfricanCornerPattern variant="totem-seal" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
 
-                <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
-                  Vous êtes invité(e) ! En tant qu'utilisateur de l'application, obtenez votre pass VIP et créez dès maintenant votre propre jus exclusif à 1 000 FCFA. Votre création sera préparée sous vos yeux lors de l'événement.
-                </p>
+                  {/* Background photo with subtle zoom */}
+                  <div className="absolute inset-0 bg-muted">
+                    <img
+                      src={activeProgram.programSnapshot?.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+                      alt={activeProgram.programTitle}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
+                      }}
+                      className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#142219]/95 via-[#1F3326]/85 to-black/60" />
+                  </div>
 
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-white/80 font-semibold">
-                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <GlassWater className="size-3 text-[#E0982E]" /> Cocktail Personnalisé
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-0.5 rounded-md backdrop-blur-xs">
-                    <Banknote className="size-3 text-[#3F6D4E]" /> Tarif spécial : 1000 XAF
-                  </span>
+                  <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-3 max-w-xl">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
+                          <CalendarCheck className="size-3.5" />
+                          {t('programs.activeCureTitle')}
+                        </span>
+                        <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
+                          {t('programs.activeCureDay', { current: activeProgram.currentDay, total: activeProgram.durationDays })}
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
+                        {activeProgram.programTitle}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+                        {activeProgram.checkins?.length || 0} / {activeProgram.durationDays} {t('programs.dayCompleted')}
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 shrink-0">
+                      <Link to="/board/programs">
+                        <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
+                          {t('programs.viewSchedule')}
+                          <ArrowRight className="size-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div className="relative z-10 shrink-0">
-                <Link to="/degustation-18-octobre">
-                  <Button className="rounded-2xl bg-[#E0982E] hover:bg-[#c48225] text-white font-bold text-xs sm:text-sm h-12 px-7 shadow-md transition-all active:scale-98 cursor-pointer animate-pulse hover:animate-none">
-                    Mon Pass & Composer mon jus
-                    <ArrowRight className="size-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-            {activeProgram && (<div className="relative rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/40 text-white group w-full shrink-0">
-            <AfricanCornerPattern variant="totem-seal" size="lg" className="z-20 text-white/30 group-hover:text-white/60 pointer-events-none" />
-
-            {/* Background photo with subtle zoom */}
-            <div className="absolute inset-0 bg-muted">
-              <img
-                src={activeProgram.programSnapshot?.imageUrl || "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200"}
-                alt={activeProgram.programTitle}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                }}
-                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#142219]/95 via-[#1F3326]/85 to-black/60" />
+              )}
             </div>
 
-            <div className="relative z-10 p-7 sm:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
-                    <CalendarCheck className="size-3.5" />
-                    {t('programs.activeCureTitle')}
-                  </span>
-                  <span className="text-xs text-white/80 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs border border-white/10">
-                    {t('programs.activeCureDay', { current: activeProgram.currentDay, total: activeProgram.durationDays })}
-                  </span>
+            {SHOW_TASTING_EVENT && activeProgram && (
+              <>
+                {/* Pagination Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                  <button 
+                    onClick={() => setCurrentSlide(0)} 
+                    className={`size-2.5 rounded-full transition-colors ${currentSlide === 0 ? 'bg-white' : 'bg-white/40'}`} 
+                    aria-label="Slide 1"
+                  />
+                  <button 
+                    onClick={() => setCurrentSlide(1)} 
+                    className={`size-2.5 rounded-full transition-colors ${currentSlide === 1 ? 'bg-white' : 'bg-white/40'}`} 
+                    aria-label="Slide 2"
+                  />
                 </div>
-
-                <h3 className="text-2xl sm:text-3xl font-bold font-display text-white leading-tight">
-                  {activeProgram.programTitle}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-                  {activeProgram.checkins?.length || 0} / {activeProgram.durationDays} {t('programs.dayCompleted')}
-                </p>
-              </div>
-
-              <div className="relative z-10 shrink-0">
-                <Link to="/board/programs">
-                  <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs sm:text-sm h-12 px-7 shadow-lg transition-all active:scale-98 cursor-pointer">
-                    {t('programs.viewSchedule')}
-                    <ArrowRight className="size-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
+                
+                {/* Arrows for Desktop (Hidden on mobile by default but good to have) */}
+                <button 
+                  onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronLeft className="size-5" />
+                </button>
+                <button 
+                  onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronRight className="size-5" />
+                </button>
+              </>
+            )}
           </div>
         )}
-          </div>
 
-          {activeProgram && (
-            <>
-              {/* Pagination Dots */}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
-                <button 
-                  onClick={() => setCurrentSlide(0)} 
-                  className={`size-2.5 rounded-full transition-colors ${currentSlide === 0 ? 'bg-white' : 'bg-white/40'}`} 
-                  aria-label="Slide 1"
-                />
-                <button 
-                  onClick={() => setCurrentSlide(1)} 
-                  className={`size-2.5 rounded-full transition-colors ${currentSlide === 1 ? 'bg-white' : 'bg-white/40'}`} 
-                  aria-label="Slide 2"
-                />
-              </div>
-              
-              {/* Arrows for Desktop (Hidden on mobile by default but good to have) */}
-              <button 
-                onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <ChevronLeft className="size-5" />
-              </button>
-              <button 
-                onClick={() => setCurrentSlide(prev => prev === 0 ? 1 : 0)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 size-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <ChevronRight className="size-5" />
-              </button>
-            </>
-          )}
-        </div>
 
 
 

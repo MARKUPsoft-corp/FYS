@@ -44,13 +44,16 @@ const RootIndex: PageComponent = () => {
   const [coveredCatalogue, setCoveredCatalogue] = useState<Record<number, boolean>>({});
 
   const [activeSection, setActiveSection] = useState('home');
-  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  // Flag de désactivation de l'écran pour la dégustation privée (code conservé)
+  const SHOW_TASTING_HERO = false;
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(SHOW_TASTING_HERO ? 0 : 1);
   
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const targetDate = useMemo(() => new Date('2026-10-18T15:00:00'), []);
 
   useEffect(() => {
+    if (!SHOW_TASTING_HERO) return;
     const timer = setInterval(() => {
       const now = new Date();
       const difference = targetDate.getTime() - now.getTime();
@@ -64,15 +67,16 @@ const RootIndex: PageComponent = () => {
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [targetDate, SHOW_TASTING_HERO]);
 
   const nextSlide = () => setCurrentHeroSlide((prev) => (prev + 1) % 2);
   const prevSlide = () => setCurrentHeroSlide((prev) => (prev === 0 ? 1 : 0));
 
   useEffect(() => {
+    if (!SHOW_TASTING_HERO) return;
     const timer = setInterval(nextSlide, 8000);
     return () => clearInterval(timer);
-  }, [currentHeroSlide]);
+  }, [currentHeroSlide, SHOW_TASTING_HERO]);
 
 
   const { data: catalogCocktails = [] } = useQuery({
@@ -500,54 +504,56 @@ const RootIndex: PageComponent = () => {
       {/* ━━━ HERO SLIDER ━━━ */}
       <section className="relative w-full h-dvh min-h-[500px] bg-card overflow-hidden border-b border-border/40 group">
         
-        {/* Slide 1: EVENT */}
-        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center bg-[#FAF9F6] dark:bg-[#0c100d] ${currentHeroSlide === 0 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Bouteille FYS, ananas et gingembre-1.png')" }} />
-          <div className="absolute inset-0 bg-white/70 dark:bg-black/75 backdrop-blur-[2px]" />
-          
-          <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16 flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E0982E]/40 text-[#E0982E] font-extrabold text-xs mb-5 md:mb-6 bg-[#E0982E]/10 dark:bg-[#E0982E]/15 backdrop-blur-md shadow-sm animate-pop-in-cute tracking-wide uppercase">
-              <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
-              Événement Exclusif • Dégustation Privée
-            </div>
+        {/* Slide 1: EVENT (Désactivé à l'écran - code conservé) */}
+        {SHOW_TASTING_HERO && (
+          <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center bg-[#FAF9F6] dark:bg-[#0c100d] ${currentHeroSlide === 0 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
+            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/degustation/Bouteille FYS, ananas et gingembre-1.png')" }} />
+            <div className="absolute inset-0 bg-white/70 dark:bg-black/75 backdrop-blur-[2px]" />
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
-              Dégustation Privée <span className="text-[#E0982E]">FYS</span>
-            </h1>
-            
-            <p className="text-base md:text-2xl text-gray-700 dark:text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
-              Une dégustation privée exclusive de créations pressées à froid le <span className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</span> à Yaoundé. Réservez votre place, obtenez votre pass VIP et créez votre jus d'exception.
-            </p>
+            <div className="max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 relative z-10 pt-16 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E0982E]/40 text-[#E0982E] font-extrabold text-xs mb-5 md:mb-6 bg-[#E0982E]/10 dark:bg-[#E0982E]/15 backdrop-blur-md shadow-sm animate-pop-in-cute tracking-wide uppercase">
+                <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
+                Événement Exclusif • Dégustation Privée
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#3F6D4E] dark:text-[#AECBB2] mb-4 md:mb-6 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
+                Dégustation Privée <span className="text-[#E0982E]">FYS</span>
+              </h1>
+              
+              <p className="text-base md:text-2xl text-gray-700 dark:text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
+                Une dégustation privée exclusive de créations pressées à froid le <span className="text-[#E0982E] font-bold">Dimanche 18 Octobre 2026</span> à Yaoundé. Réservez votre place, obtenez votre pass VIP et créez votre jus d'exception.
+              </p>
 
-            {/* Countdown in Hero */}
-            <div className="flex gap-3 md:gap-4 mb-8 justify-center w-full">
-              {[
-                { label: 'Jours', value: timeLeft.days },
-                { label: 'Heures', value: timeLeft.hours },
-                { label: 'Minutes', value: timeLeft.minutes },
-                { label: 'Secondes', value: timeLeft.seconds }
-              ].map((unit, i) => (
-                <div key={i} className="flex flex-col items-center bg-white/70 dark:bg-black/60 backdrop-blur-md p-3 md:p-4 rounded-2xl border border-[#3F6D4E]/20 dark:border-white/10 min-w-[70px] md:min-w-[90px] shadow-sm">
-                  <div className="text-3xl md:text-4xl font-black text-[#3F6D4E] dark:text-[#AECBB2] font-display leading-none mb-1">
-                    {unit.value.toString().padStart(2, '0')}
+              {/* Countdown in Hero */}
+              <div className="flex gap-3 md:gap-4 mb-8 justify-center w-full">
+                {[
+                  { label: 'Jours', value: timeLeft.days },
+                  { label: 'Heures', value: timeLeft.hours },
+                  { label: 'Minutes', value: timeLeft.minutes },
+                  { label: 'Secondes', value: timeLeft.seconds }
+                ].map((unit, i) => (
+                  <div key={i} className="flex flex-col items-center bg-white/70 dark:bg-black/60 backdrop-blur-md p-3 md:p-4 rounded-2xl border border-[#3F6D4E]/20 dark:border-white/10 min-w-[70px] md:min-w-[90px] shadow-sm">
+                    <div className="text-3xl md:text-4xl font-black text-[#3F6D4E] dark:text-[#AECBB2] font-display leading-none mb-1">
+                      {unit.value.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] md:text-xs font-bold text-[#E0982E] uppercase">{unit.label}</div>
                   </div>
-                  <div className="text-[10px] md:text-xs font-bold text-[#E0982E] uppercase">{unit.label}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/degustation-18-octobre" className="h-13 sm:h-14 px-6 sm:px-8 rounded-2xl text-sm sm:text-base md:text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2.5">
-                <Sparkles className="size-4.5 sm:size-5 text-[#E0982E] shrink-0" />
-                <span>Accéder à la Dégustation Privée</span>
-                <ArrowRight className="size-4.5 sm:size-5 shrink-0" />
-              </Link>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link to="/degustation-18-octobre" className="h-13 sm:h-14 px-6 sm:px-8 rounded-2xl text-sm sm:text-base md:text-lg font-bold bg-[#3F6D4E] hover:bg-[#2c3e32] text-white shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2.5">
+                  <Sparkles className="size-4.5 sm:size-5 text-[#E0982E] shrink-0" />
+                  <span>Accéder à la Dégustation Privée</span>
+                  <ArrowRight className="size-4.5 sm:size-5 shrink-0" />
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Slide 2: STANDARD HERO */}
-        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center ${currentHeroSlide === 1 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
+        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex flex-col justify-center ${!SHOW_TASTING_HERO || currentHeroSlide === 1 ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 to-transparent opacity-50 pointer-events-none" />
           
           {/* Subtle Background Image */}
@@ -611,29 +617,31 @@ const RootIndex: PageComponent = () => {
           </div>
         </div>
 
-        {/* Slider Controls & Arrows */}
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-6 z-40 bg-background/30 dark:bg-background/50 backdrop-blur-md px-4 py-2.5 rounded-full border border-border/30 shadow-sm">
-          <button onClick={prevSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Précédent">
-            <ChevronLeft className="size-5" />
-          </button>
+        {/* Slider Controls & Arrows (Désactivés lorsque seul le hero standard est actif) */}
+        {SHOW_TASTING_HERO && (
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-6 z-40 bg-background/30 dark:bg-background/50 backdrop-blur-md px-4 py-2.5 rounded-full border border-border/30 shadow-sm">
+            <button onClick={prevSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Précédent">
+              <ChevronLeft className="size-5" />
+            </button>
 
-          <div className="flex gap-3 items-center">
-            <button 
-              onClick={() => setCurrentHeroSlide(0)} 
-              className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 0 ? 'bg-[#3F6D4E] w-6' : 'bg-[#3F6D4E]/30 dark:bg-white/30 hover:bg-[#3F6D4E]/50'}`}
-              aria-label="Slide Événement"
-            />
-            <button 
-              onClick={() => setCurrentHeroSlide(1)} 
-              className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 1 ? 'bg-primary w-6' : 'bg-primary/30 dark:bg-white/30 hover:bg-primary/50'}`}
-              aria-label="Slide Bar à jus"
-            />
+            <div className="flex gap-3 items-center">
+              <button 
+                onClick={() => setCurrentHeroSlide(0)} 
+                className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 0 ? 'bg-[#3F6D4E] w-6' : 'bg-[#3F6D4E]/30 dark:bg-white/30 hover:bg-[#3F6D4E]/50'}`}
+                aria-label="Slide Événement"
+              />
+              <button 
+                onClick={() => setCurrentHeroSlide(1)} 
+                className={`w-2.5 h-2.5 rounded-full transition-all ${currentHeroSlide === 1 ? 'bg-primary w-6' : 'bg-primary/30 dark:bg-white/30 hover:bg-primary/50'}`}
+                aria-label="Slide Bar à jus"
+              />
+            </div>
+
+            <button onClick={nextSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Suivant">
+              <ChevronRight className="size-5" />
+            </button>
           </div>
-
-          <button onClick={nextSlide} className="p-1.5 rounded-full hover:bg-background/80 text-foreground transition-all" aria-label="Suivant">
-            <ChevronRight className="size-5" />
-          </button>
-        </div>
+        )}
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-0 animate-fade-in hover:opacity-100 transition-opacity cursor-pointer z-30" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} style={{ animationDelay: '800ms' }}>
