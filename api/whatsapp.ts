@@ -2036,6 +2036,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let previousSupersededDraftName = '';
       let previousSupersededDraftCode = '';
       let allPhoneUserDocs: any[] = [];
+      let existingUserDoc: any = null;
       let matchedUserEmail = '';
       let buttonsToSend: WhatsAppInteractiveButton[] = [];
       let listToSend: WhatsAppListData | null = null;
@@ -2126,7 +2127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           const usersRef = db.collection('users');
-          let existingUserDoc: any = null;
+          existingUserDoc = null;
 
           // Récupérer tous les documents utilisateur associés à ce numéro WhatsApp
           const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
@@ -3739,6 +3740,12 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
       return res.status(200).json({ status: 'success', sent });
     } catch (err: any) {
       console.error('[whatsapp-webhook] Processing error:', err);
+      if (messageId) {
+        try {
+          const db = getAdminDb();
+          if (db) await db.collection('processed_whatsapp_messages').doc(messageId).delete().catch(() => null);
+        } catch (_) {}
+      }
       return res.status(500).json({ error: err?.message || 'Internal Error' });
     }
   }
