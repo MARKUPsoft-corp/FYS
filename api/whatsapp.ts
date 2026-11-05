@@ -1176,8 +1176,9 @@ Exemple conforme :
             systemInstruction: fullSystemPrompt,
             generationConfig: {
               temperature: 0.7,
-              maxOutputTokens: 600,
-            },
+              maxOutputTokens: 1200,
+              thinkingConfig: { thinkingBudget: 0 },
+            } as any,
           });
           console.log(`[whatsapp-webhook] Calling Gemini (${modelCandidate}) with conversation history & dynamic pricing...`);
           const result = await Promise.race([

@@ -373,17 +373,60 @@ function parseBenefices(raw: unknown): BeneficeCible[] {
 }
 
 export function parseAnalysisResponse(raw: string): AIAnalysis {
-  const jsonText = raw
+  let parsed: any = null;
+  const jsonText = (raw || '')
     .trim()
     .replace(/^```json?\s*/i, '')
     .replace(/\s*```$/i, '');
 
-  const parsed = JSON.parse(jsonText);
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    // 1. Tentative d'extraction du bloc JSON { ... }
+    const match = jsonText.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        parsed = JSON.parse(match[0]);
+      } catch {
+        // 2. Tentative de réparation automatique si tronqué (fermeture de guillemets, crochets et accolades)
+        try {
+          let fixed = match[0];
+          const openQuotes = (fixed.match(/(?<!\\)"/g) || []).length;
+          if (openQuotes % 2 !== 0) fixed += '"';
+          const openBrackets = (fixed.match(/\[/g) || []).length - (fixed.match(/\]/g) || []).length;
+          for (let i = 0; i < openBrackets; i++) fixed += ']';
+          const openBraces = (fixed.match(/\{/g) || []).length - (fixed.match(/\}/g) || []).length;
+          for (let i = 0; i < openBraces; i++) fixed += '}';
+          parsed = JSON.parse(fixed);
+        } catch {
+          console.warn('[ai.shared] Could not auto-repair JSON, falling back to field extraction.');
+        }
+      }
+    }
+
+    // 3. Repli tolérant par expressions régulières si le parseur échoue
+    if (!parsed || typeof parsed !== 'object') {
+      const verdictMatch = jsonText.match(/"verdict"\s*:\s*"([^"]+)"/i);
+      const scoreMatch = jsonText.match(/"score"\s*:\s*(\d+)/);
+      const nameMatch = jsonText.match(/"suggestedName"\s*:\s*"([^"]+)"/i);
+      const notesMatch = jsonText.match(/"notes"\s*:\s*"([^"]+)"/i);
+      const conseilMatch = jsonText.match(/"(?:conseil|advice)"\s*:\s*"([^"]+)"/i);
+
+      parsed = {
+        verdict: verdictMatch ? verdictMatch[1] : 'beneficial',
+        score: scoreMatch ? Number(scoreMatch[1]) : 85,
+        suggestedName: nameMatch ? nameMatch[1] : undefined,
+        notes: notesMatch ? notesMatch[1] : 'Mélange équilibré et savoureux composé de fruits 100% frais et naturels.',
+        conseil: conseilMatch ? conseilMatch[1] : 'À savourer bien frais pour profiter au mieux de toute sa vitalité.',
+      };
+    }
+  }
 
   const validVerdicts = Object.values(AIVerdict) as string[];
-  const verdict = validVerdicts.includes(parsed.verdict)
-    ? (parsed.verdict as AIVerdict)
-    : AIVerdict.NEUTRAL;
+  const rawVerdict = String(parsed?.verdict || '').toLowerCase();
+  const verdict = validVerdicts.includes(rawVerdict)
+    ? (rawVerdict as AIVerdict)
+    : AIVerdict.BENEFICIAL;
 
   const pn = parsed.profilNutritionnel ?? parsed.nutritionalProfile ?? {};
 

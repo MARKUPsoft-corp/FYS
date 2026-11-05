@@ -83,10 +83,14 @@ async function executeGeminiRequest(params: GeminiCallParams): Promise<string> {
     let lastDevErr: any = null;
     for (const mName of modelCandidates) {
       try {
+        const genConfig = {
+          ...(sanitizedParams.generationConfig || {}),
+          thinkingConfig: { thinkingBudget: 0 },
+        };
         const model = devGenAIInstance.getGenerativeModel({
           model: mName,
           ...(sanitizedParams.systemInstruction ? { systemInstruction: sanitizedParams.systemInstruction } : {}),
-          ...(sanitizedParams.generationConfig ? { generationConfig: sanitizedParams.generationConfig } : {}),
+          generationConfig: genConfig as any,
         });
 
         const payload = sanitizedParams.contents ? { contents: sanitizedParams.contents } : (sanitizedParams.prompt || '');
@@ -162,7 +166,7 @@ export async function analyzeWithGemini(
     prompt,
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 650,
+      maxOutputTokens: 2048,
     },
   });
 

@@ -59,10 +59,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   for (const modelName of modelQueue) {
     try {
+      const effectiveGenConfig = {
+        ...(generationConfig || {}),
+        maxOutputTokens: Math.max(2048, Number(generationConfig?.maxOutputTokens) || 2048),
+        thinkingConfig: { thinkingBudget: 0 },
+      };
       const generativeModel = genAI.getGenerativeModel({
         model: modelName,
         ...(systemInstruction ? { systemInstruction } : {}),
-        ...(generationConfig ? { generationConfig } : {}),
+        generationConfig: effectiveGenConfig as any,
       });
 
       // Timeout strict de 5 secondes par tentative pour éviter tout blocage
