@@ -376,6 +376,29 @@ async function getQrCodeBase64(targetUrl: string): Promise<string | null> {
   }
 }
 
+// ── Configuration SMTP Pooled Singleton (Évite 454 Too Many Logins) ────────
+let sharedSmtpTransporter: nodemailer.Transporter | null = null;
+
+function getSharedSmtpTransporter(smtpHost: string, smtpPort: number, smtpUser: string, smtpPass: string) {
+  if (!sharedSmtpTransporter) {
+    sharedSmtpTransporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      pool: true, // Réutilise la même session SMTP connectée (évite 454 Too many logins)
+      maxConnections: 1, // 1 seule connexion persistante vers Google
+      maxMessages: 100, // Permet d'envoyer jusqu'à 100 emails sur cette même session
+      rateDelta: 1000,
+      rateLimit: 1, // Maximum 1 email par seconde
+    });
+  }
+  return sharedSmtpTransporter;
+}
+
 // ── Fonction d'Envoi d'Email Multi-Fournisseurs (Resend ou SMTP/Gmail) ─────────
 
 async function sendEmail(options: {
@@ -419,15 +442,7 @@ async function sendEmail(options: {
   async function trySmtp() {
     if (!smtpUser || !smtpPass || !smtpHost) return null;
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
+      const transporter = getSharedSmtpTransporter(smtpHost, smtpPort, smtpUser, smtpPass);
 
       const fromAddress = process.env.SMTP_FROM || `"FYS - For YourSelf" <${smtpUser}>`;
       const mailOptions: any = {
@@ -454,6 +469,8 @@ async function sendEmail(options: {
     } catch (e: any) {
       console.error('[send-email-campaign] SMTP failed:', e);
       lastError = e?.message || 'SMTP error';
+      // Si la connexion a été coupée, réinitialiser le pool pour la prochaine tentative
+      sharedSmtpTransporter = null;
       return null;
     }
   }
