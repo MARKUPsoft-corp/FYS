@@ -51,11 +51,12 @@ export function EmailCampaignPanel() {
   const [campaignStatus, setCampaignStatus] = useState<'idle' | 'confirm' | 'sending' | 'success' | 'error'>('idle');
   const [campaignResult, setCampaignResult] = useState<{ sentCount: number; failedCount: number } | null>(null);
   const [campaignError, setCampaignError] = useState('');
+  const [campaignProgress, setCampaignProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
 
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // ── État Onglet 2 : Message Personnalisé & Pièces Jointes ──────────────────
-  const [customSubject, setCustomSubject] = useState('🌿 Des nouvelles fraîches de votre atelier FYS');
+  const [customSubject, setCustomSubject] = useState('Des nouvelles fraîches de votre atelier FYS');
   const [customHeadline, setCustomHeadline] = useState('Votre bien-être au quotidien avec FYS');
   const [customMessage, setCustomMessage] = useState(
     'Bonjour {{name}},\n\nToute l\'équipe FYS — For YourSelf espère que vous passez une excellente journée !\n\nNous vous écrivons pour vous partager nos dernières créations, nos conseils vitalité et nos offres exclusives de la semaine.\n\nPrenez soin de vous naturellement avec nos jus et cocktails fraîchement pressés.'
@@ -73,6 +74,7 @@ export function EmailCampaignPanel() {
   const [customCampaignStatus, setCustomCampaignStatus] = useState<'idle' | 'confirm' | 'sending' | 'success' | 'error'>('idle');
   const [customCampaignResult, setCustomCampaignResult] = useState<{ sentCount: number; failedCount: number } | null>(null);
   const [customCampaignError, setCustomCampaignError] = useState('');
+  const [customCampaignProgress, setCustomCampaignProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
 
   const [showCustomPreviewModal, setShowCustomPreviewModal] = useState(false);
   const [customPreviewHtml, setCustomPreviewHtml] = useState<string>('');
@@ -146,28 +148,52 @@ export function EmailCampaignPanel() {
   async function handleLaunchCampaign() {
     setCampaignStatus('sending');
     setCampaignError('');
+    const totalCount = stats?.eligibleEmailCount ?? 92;
+    setCampaignProgress({ current: 0, total: totalCount });
+
+    let currentOffset: number | null = 0;
+    const batchSize = 8;
+    let totalSent = 0;
+    let totalFailed = 0;
+    let hasMore = true;
+
     try {
-      const res = await fetch(getApiUrl('/api/send-email-campaign'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'send_campaign',
-        }),
-      });
-      const text = await res.text();
-      let data: any = {};
-      try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+      while (hasMore && currentOffset !== null) {
+        const res = await fetch(getApiUrl('/api/send-email-campaign'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send_campaign',
+            offset: currentOffset,
+            limit: batchSize,
+          }),
+        });
+        const text = await res.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+        }
+        if (!res.ok) {
+          throw new Error(data.error || 'Erreur lors de la campagne');
+        }
+
+        totalSent += data.sentCount || 0;
+        totalFailed += data.failedCount || 0;
+        hasMore = Boolean(data.hasMore);
+        currentOffset = data.nextOffset;
+
+        setCampaignProgress({
+          current: Math.min(currentOffset ?? (data.totalRecipients || totalCount), data.totalRecipients || totalCount),
+          total: data.totalRecipients || totalCount,
+        });
       }
-      if (!res.ok) {
-        throw new Error(data.error || 'Erreur lors du lancement de la campagne');
-      }
+
       setCampaignStatus('success');
       setCampaignResult({
-        sentCount: data.sentCount || 0,
-        failedCount: data.failedCount || 0,
+        sentCount: totalSent,
+        failedCount: totalFailed,
       });
     } catch (err: any) {
       setCampaignStatus('error');
@@ -301,34 +327,58 @@ export function EmailCampaignPanel() {
 
     setCustomCampaignStatus('sending');
     setCustomCampaignError('');
+    const totalCount = stats?.eligibleEmailCount ?? 92;
+    setCustomCampaignProgress({ current: 0, total: totalCount });
+
+    let currentOffset: number | null = 0;
+    const batchSize = 8;
+    let totalSent = 0;
+    let totalFailed = 0;
+    let hasMore = true;
+
     try {
-      const res = await fetch(getApiUrl('/api/send-email-campaign'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'send_custom_campaign',
-          customSubject,
-          customHeadline,
-          customMessage,
-          ctaText,
-          ctaUrl,
-          attachments,
-        }),
-      });
-      const text = await res.text();
-      let data: any = {};
-      try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+      while (hasMore && currentOffset !== null) {
+        const res = await fetch(getApiUrl('/api/send-email-campaign'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send_custom_campaign',
+            customSubject,
+            customHeadline,
+            customMessage,
+            ctaText,
+            ctaUrl,
+            attachments,
+            offset: currentOffset,
+            limit: batchSize,
+          }),
+        });
+        const text = await res.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+        }
+        if (!res.ok) {
+          throw new Error(data.error || 'Erreur lors de la diffusion personnalisée');
+        }
+
+        totalSent += data.sentCount || 0;
+        totalFailed += data.failedCount || 0;
+        hasMore = Boolean(data.hasMore);
+        currentOffset = data.nextOffset;
+
+        setCustomCampaignProgress({
+          current: Math.min(currentOffset ?? (data.totalRecipients || totalCount), data.totalRecipients || totalCount),
+          total: data.totalRecipients || totalCount,
+        });
       }
-      if (!res.ok) {
-        throw new Error(data.error || 'Erreur lors de la diffusion personnalisée');
-      }
+
       setCustomCampaignStatus('success');
       setCustomCampaignResult({
-        sentCount: data.sentCount || 0,
-        failedCount: data.failedCount || 0,
+        sentCount: totalSent,
+        failedCount: totalFailed,
       });
     } catch (err: any) {
       setCustomCampaignStatus('error');
@@ -452,6 +502,14 @@ export function EmailCampaignPanel() {
               {stats?.activeProvider === 'resend' ? 'Resend API (3 000/mois gratuit)' : (stats?.activeProvider === 'smtp' ? 'SMTP / Gmail' : 'Configuré')}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Bannière Conseils Délivrabilité & Anti-Spam ── */}
+      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3.5 flex items-start gap-3">
+        <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-muted-foreground leading-relaxed">
+          <strong className="text-foreground">Optimisation Anti-Spam activée :</strong> En-têtes conformes Google &amp; Yahoo (désinscription en 1 clic), version texte alternatif RFC 2046 et QR Code embarqué en interne (CID). Les envois collectifs sont désormais automatiquement espacés de 1 seconde par client pour éviter le classement en indésirables.
         </div>
       </div>
 
@@ -580,9 +638,25 @@ export function EmailCampaignPanel() {
                 )}
 
                 {campaignStatus === 'sending' && (
-                  <div className="flex items-center justify-center gap-2.5 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-xl">
-                    <Loader2 className="size-4 animate-spin" />
-                    Envoi des emails en cours... Veuillez patienter.
+                  <div className="space-y-2 py-3 px-4 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-xl">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="size-4 animate-spin" />
+                        Envoi progressif anti-spam...
+                      </span>
+                      <span>
+                        {campaignProgress.current} / {campaignProgress.total} ({campaignProgress.total > 0 ? Math.round((campaignProgress.current / campaignProgress.total) * 100) : 0}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-emerald-200/50 dark:bg-emerald-950/50 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${campaignProgress.total > 0 ? Math.round((campaignProgress.current / campaignProgress.total) * 100) : 5}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Chaque email est espacé de 1 sec pour garantir la délivrabilité et éviter les filtres spam.
+                    </p>
                   </div>
                 )}
 
@@ -934,9 +1008,25 @@ export function EmailCampaignPanel() {
                 )}
 
                 {customCampaignStatus === 'sending' && (
-                  <div className="flex items-center justify-center gap-2.5 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-xl">
-                    <Loader2 className="size-4 animate-spin" />
-                    Diffusion en cours aux {stats?.eligibleEmailCount ?? 0} clients... Veuillez patienter.
+                  <div className="space-y-2 py-3 px-4 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-xl">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="size-4 animate-spin" />
+                        Diffusion progressive anti-spam...
+                      </span>
+                      <span>
+                        {customCampaignProgress.current} / {customCampaignProgress.total} ({customCampaignProgress.total > 0 ? Math.round((customCampaignProgress.current / customCampaignProgress.total) * 100) : 0}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-emerald-200/50 dark:bg-emerald-950/50 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${customCampaignProgress.total > 0 ? Math.round((customCampaignProgress.current / customCampaignProgress.total) * 100) : 5}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Chaque email est espacé de 1 sec pour garantir la délivrabilité et éviter les filtres spam.
+                    </p>
                   </div>
                 )}
 

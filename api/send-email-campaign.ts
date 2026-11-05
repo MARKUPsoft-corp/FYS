@@ -38,9 +38,11 @@ export function generateCampaignHtml(options: {
   userName: string;
   userEmail?: string;
   waUrl: string;
-  qrCodeUrl: string;
+  qrCodeUrl?: string;
+  qrCodeSrc?: string;
 }): string {
-  const { userName, waUrl, qrCodeUrl } = options;
+  const { userName, waUrl, qrCodeUrl, qrCodeSrc } = options;
+  const qrImage = qrCodeSrc || qrCodeUrl || getQrCodeUrl(waUrl);
   const firstName = userName && userName !== 'Client WhatsApp' && userName !== 'Client'
     ? userName.split(' ')[0]
     : 'cher(e) client(e)';
@@ -107,7 +109,7 @@ export function generateCampaignHtml(options: {
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                       </svg>
                       <strong style="color: #065F46; font-size: 14px; vertical-align: middle; display: inline-block;">
-                        1. Bilan santé express &amp; offert
+                        1. Bilan vitalité &amp; conseils sur-mesure
                       </strong>
                     </div>
                     <span style="color: #4B5563; font-size: 13px; line-height: 1.5; display: block;">
@@ -125,7 +127,7 @@ export function generateCampaignHtml(options: {
                         <path d="M6 8h12"/>
                       </svg>
                       <strong style="color: #065F46; font-size: 14px; vertical-align: middle; display: inline-block;">
-                        2. Commande personnalisée en 30 secondes
+                        2. Commandes personnalisées et livraison
                       </strong>
                     </div>
                     <span style="color: #4B5563; font-size: 13px; line-height: 1.5; display: block;">
@@ -182,7 +184,7 @@ export function generateCampaignHtml(options: {
                       <span style="vertical-align: middle;">Vous lisez cet email sur votre ordinateur ?</span>
                     </p>
                     <div style="display: inline-block; padding: 10px; background-color: #FFFFFF; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #E5E7EB;">
-                      <img src="${qrCodeUrl}" width="160" height="160" alt="Scannez pour ouvrir WhatsApp" style="display: block; border-radius: 8px;" />
+                      <img src="${qrImage}" width="160" height="160" alt="Scannez pour ouvrir WhatsApp" style="display: block; border-radius: 8px;" />
                     </div>
                     <p style="font-size: 12px; color: #4B5563; margin: 10px 0 0 0;">
                       Pointez l'appareil photo de votre téléphone sur le QR Code pour rejoindre NutriFYS instantanément !
@@ -194,7 +196,7 @@ export function generateCampaignHtml(options: {
             </td>
           </tr>
 
-          <!-- Pied de page Officiel FYS For YourSelf -->
+          <!-- Pied de page Officiel FYS For YourSelf (Conforme Anti-Spam) -->
           <tr>
             <td style="background-color: #F9FAFB; border-top: 1px solid #E5E7EB; padding: 24px 30px; text-align: center; font-size: 12px; color: #6B7280; line-height: 1.6;">
               <p style="margin: 0 0 6px 0; font-weight: 700; color: #1F2937;">
@@ -204,7 +206,7 @@ export function generateCampaignHtml(options: {
                 Atelier artisanal de jus et cocktails frais 100% naturels, sans conservateurs ni sucre ajouté.
               </p>
               <p style="margin: 0; font-size: 11px; color: #9CA3AF;">
-                Vous recevez cet email car vous avez un compte sur <a href="https://fys-app.com" target="_blank" style="color: #064E3B; font-weight: 600; text-decoration: underline;">fys-app.com</a>.
+                Vous recevez cet email car vous êtes client sur <a href="https://fys-app.com" target="_blank" style="color: #064E3B; font-weight: 600; text-decoration: underline;">fys-app.com</a>. Pour ne plus recevoir nos annonces ou gérer vos préférences, <a href="https://fys-app.com/profile" target="_blank" style="color: #064E3B; text-decoration: underline;">cliquez ici</a> ou répondez « STOP » à cet email.
               </p>
             </td>
           </tr>
@@ -315,7 +317,7 @@ export function generateCustomEmailHtml(options: {
             </td>
           </tr>
 
-          <!-- Pied de page Officiel FYS For YourSelf -->
+          <!-- Pied de page Officiel FYS For YourSelf (Conforme Anti-Spam) -->
           <tr>
             <td style="background-color: #F9FAFB; border-top: 1px solid #E5E7EB; padding: 24px 30px; text-align: center; font-size: 12px; color: #6B7280; line-height: 1.6;">
               <p style="margin: 0 0 6px 0; font-weight: 700; color: #1F2937;">
@@ -325,7 +327,7 @@ export function generateCustomEmailHtml(options: {
                 Atelier artisanal de jus et cocktails frais 100% naturels, sans conservateurs ni sucre ajouté.
               </p>
               <p style="margin: 0; font-size: 11px; color: #9CA3AF;">
-                Vous recevez cet email car vous êtes inscrit sur <a href="https://fys-app.com" target="_blank" style="color: #064E3B; font-weight: 600; text-decoration: underline;">fys-app.com</a>.
+                Vous recevez cet email car vous êtes client sur <a href="https://fys-app.com" target="_blank" style="color: #064E3B; font-weight: 600; text-decoration: underline;">fys-app.com</a>. Pour ne plus recevoir nos annonces ou gérer vos préférences, <a href="https://fys-app.com/profile" target="_blank" style="color: #064E3B; text-decoration: underline;">cliquez ici</a> ou répondez « STOP » à cet email.
               </p>
             </td>
           </tr>
@@ -338,19 +340,57 @@ export function generateCustomEmailHtml(options: {
 </html>`;
 }
 
+// ── Conversion HTML vers Plain-Text (Nécessaire Anti-Spam RFC 2046) ──────────
+
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n')
+    .replace(/<p[^>]*>(.*?)<\/p>/gi, '\n$1\n')
+    .replace(/<br\s*[\/]?>/gi, '\n')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, '• $1\n')
+    .replace(/<a[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+let cachedQrCodeBase64: string | null = null;
+async function getQrCodeBase64(targetUrl: string): Promise<string | null> {
+  if (cachedQrCodeBase64) return cachedQrCodeBase64;
+  try {
+    const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=png&data=${encodeURIComponent(targetUrl)}`);
+    if (!res.ok) return null;
+    const arrayBuf = await res.arrayBuffer();
+    cachedQrCodeBase64 = Buffer.from(arrayBuf).toString('base64');
+    return cachedQrCodeBase64;
+  } catch {
+    return null;
+  }
+}
+
 // ── Fonction d'Envoi d'Email Multi-Fournisseurs (Resend ou SMTP/Gmail) ─────────
 
 async function sendEmail(options: {
   to: string;
   subject: string;
   html: string;
+  text?: string;
   attachments?: Array<{
     filename: string;
     content: string; // base64
     contentType?: string;
+    cid?: string;
   }>;
 }): Promise<{ success: boolean; error?: string; provider: string }> {
-  const { to, subject, html, attachments } = options;
+  const { to, subject, html, text, attachments } = options;
 
   let lastError = '';
 
@@ -364,6 +404,17 @@ async function sendEmail(options: {
   const isUnverifiedResendDomain = fromEmail.includes('@resend.dev');
 
   const preferSmtp = Boolean(smtpUser && smtpPass && smtpHost && (isUnverifiedResendDomain || !hasResendKey));
+
+  const antiSpamHeaders = {
+    'List-Unsubscribe': `<mailto:${smtpUser || 'fysappcameroun@gmail.com'}?subject=Unsubscribe>, <https://www.fys-app.com/profile>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'Precedence': 'bulk',
+    'X-Entity-Ref-ID': `fys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    'X-Auto-Response-Suppress': 'OOF, AutoReply',
+    'X-Mailer': 'FYS For YourSelf Mailer',
+  };
+
+  const plainTextContent = text || htmlToPlainText(html);
 
   async function trySmtp() {
     if (!smtpUser || !smtpPass || !smtpHost) return null;
@@ -384,6 +435,8 @@ async function sendEmail(options: {
         to,
         subject,
         html,
+        text: plainTextContent,
+        headers: antiSpamHeaders,
       };
 
       if (attachments && attachments.length > 0) {
@@ -391,6 +444,7 @@ async function sendEmail(options: {
           filename: att.filename,
           content: Buffer.from(att.content, 'base64'),
           contentType: att.contentType,
+          ...(att.cid ? { cid: att.cid } : {}),
         }));
       }
 
@@ -412,12 +466,15 @@ async function sendEmail(options: {
         to: [to],
         subject,
         html,
+        text: plainTextContent,
+        headers: antiSpamHeaders,
       };
 
       if (attachments && attachments.length > 0) {
         bodyPayload.attachments = attachments.map((att) => ({
           filename: att.filename,
           content: att.content,
+          ...(att.cid ? { content_id: att.cid } : {}),
         }));
       }
 
@@ -534,7 +591,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { action, testEmail, customSubject } = req.body || {};
-    const subject = customSubject || '🌿 Votre nutritionniste personnel NutriFYS vous attend sur WhatsApp !';
+    const subject = customSubject || 'NutriFYS sur WhatsApp : vos jus personnalisés avec FYS';
 
     // ── 2. Envoi d'un email de test ──
     if (action === 'send_test') {
@@ -547,17 +604,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const waUrl = getWhatsAppUrl(waMsg);
       const qrCodeUrl = getQrCodeUrl(waUrl);
 
+      // Préparer le QR code en pièce jointe CID pour éviter le blocage par les filtres antispam
+      const genericWaUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent('Bonjour NutriFYS ! Je souhaite activer mon suivi nutritionnel sur WhatsApp')}`;
+      const qrBase64 = await getQrCodeBase64(genericWaUrl);
+
+      const emailAttachments: any[] = [];
+      let qrCodeSrc: string | undefined = undefined;
+      if (qrBase64) {
+        emailAttachments.push({
+          filename: 'nutrifys-qr.png',
+          content: qrBase64,
+          contentType: 'image/png',
+          cid: 'nutrifys-qr@fys-app.com',
+        });
+        qrCodeSrc = 'cid:nutrifys-qr@fys-app.com';
+      }
+
       const html = generateCampaignHtml({
         userName: 'Admin / Testeur FYS',
         userEmail: recipient,
         waUrl,
         qrCodeUrl,
+        qrCodeSrc,
       });
 
       const sendResult = await sendEmail({
         to: recipient,
         subject: `[TEST FYS] ${subject}`,
         html,
+        attachments: emailAttachments,
       });
 
       if (!sendResult.success) {
@@ -574,7 +649,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // ── 3. Lancement de la campagne collective à tous les utilisateurs ──
+    // ── 3. Lancement de la campagne collective à tous les utilisateurs (Support par Lots) ──
     if (action === 'send_campaign') {
       const usersSnap = await db.collection('users').get();
       const recipients: Array<{ uid: string; name: string; email: string }> = [];
@@ -597,14 +672,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Aucun utilisateur avec adresse email trouvé.' });
       }
 
-      console.log(`[send-email-campaign] Starting WhatsApp drainage email campaign for ${recipients.length} recipients...`);
+      const isBatched = typeof req.body?.offset === 'number';
+      const offset = Number(req.body?.offset) || 0;
+      const limit = Number(req.body?.limit) || (isBatched ? 10 : recipients.length);
+      const currentBatch = recipients.slice(offset, offset + limit);
+
+      console.log(`[send-email-campaign] WhatsApp campaign: processing batch ${offset + 1}-${offset + currentBatch.length} of ${recipients.length}...`);
+
+      const genericWaUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent('Bonjour NutriFYS ! Je souhaite activer mon suivi nutritionnel sur WhatsApp')}`;
+      const qrBase64 = await getQrCodeBase64(genericWaUrl);
+
+      const emailAttachments: any[] = [];
+      let qrCodeSrc: string | undefined = undefined;
+      if (qrBase64) {
+        emailAttachments.push({
+          filename: 'nutrifys-qr.png',
+          content: qrBase64,
+          contentType: 'image/png',
+          cid: 'nutrifys-qr@fys-app.com',
+        });
+        qrCodeSrc = 'cid:nutrifys-qr@fys-app.com';
+      }
 
       let sentCount = 0;
       let failedCount = 0;
       const failures: Array<{ email: string; error: string }> = [];
 
-      // Envoi séquentiel avec léger délai pour respecter les quotas des fournisseurs (100ms)
-      for (const user of recipients) {
+      for (const user of currentBatch) {
         const personalizedWaMsg = `Bonjour NutriFYS ! Je suis ${user.name} (${user.email}) et je souhaite activer mon suivi nutritionnel sur WhatsApp 🌿`;
         const waUrl = getWhatsAppUrl(personalizedWaMsg);
         const qrCodeUrl = getQrCodeUrl(waUrl);
@@ -614,12 +708,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           userEmail: user.email,
           waUrl,
           qrCodeUrl,
+          qrCodeSrc,
         });
 
         const resEmail = await sendEmail({
           to: user.email,
           subject,
           html,
+          attachments: emailAttachments,
         });
 
         if (resEmail.success) {
@@ -629,28 +725,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           failures.push({ email: user.email, error: resEmail.error || 'Inconnu' });
         }
 
-        // Pause de 80ms entre chaque envoi pour fluidité
-        await new Promise((r) => setTimeout(r, 80));
+        // Délai de 1000ms entre chaque email pour protéger la réputation d'envoi et éviter les filtres spam
+        await new Promise((r) => setTimeout(r, 1000));
       }
 
-      console.log(`[send-email-campaign] Campaign completed: ${sentCount} sent, ${failedCount} failed.`);
+      const hasMore = offset + limit < recipients.length;
+      const nextOffset = hasMore ? offset + limit : null;
 
-      // Enregistrer un journal dans Firestore de la campagne
-      await db.collection('email_campaigns').add({
-        type: 'whatsapp_drainage',
-        subject,
-        recipientsTotal: recipients.length,
-        sentCount,
-        failedCount,
-        failures: failures.slice(0, 20),
-        sentAt: new Date(),
-      }).catch((e) => console.warn('[send-email-campaign] Failed to log campaign to Firestore:', e));
+      if (!hasMore || !isBatched) {
+        await db.collection('email_campaigns').add({
+          type: 'whatsapp_drainage',
+          subject,
+          recipientsTotal: recipients.length,
+          sentCount,
+          failedCount,
+          failures: failures.slice(0, 20),
+          sentAt: new Date(),
+        }).catch((e) => console.warn('[send-email-campaign] Failed to log campaign to Firestore:', e));
+      }
 
       return res.status(200).json({
         success: true,
         sentCount,
         failedCount,
         totalRecipients: recipients.length,
+        offset,
+        limit,
+        hasMore,
+        nextOffset,
         failures,
       });
     }
@@ -768,13 +870,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Aucun utilisateur avec adresse email trouvé.' });
       }
 
-      console.log(`[send-email-campaign] Starting custom email broadcast for ${recipients.length} recipients...`);
+      const isBatched = typeof req.body?.offset === 'number';
+      const offset = Number(req.body?.offset) || 0;
+      const limit = Number(req.body?.limit) || (isBatched ? 10 : recipients.length);
+      const currentBatch = recipients.slice(offset, offset + limit);
+
+      console.log(`[send-email-campaign] Custom broadcast: processing batch ${offset + 1}-${offset + currentBatch.length} of ${recipients.length}...`);
 
       let sentCount = 0;
       let failedCount = 0;
       const failures: Array<{ email: string; error: string }> = [];
 
-      for (const user of recipients) {
+      for (const user of currentBatch) {
         const html = generateCustomEmailHtml({
           userName: user.name,
           userEmail: user.email,
@@ -799,29 +906,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           failures.push({ email: user.email, error: resEmail.error || 'Inconnu' });
         }
 
-        await new Promise((r) => setTimeout(r, 80));
+        // Délai de 1000ms entre chaque envoi pour respecter les filtres anti-spam
+        await new Promise((r) => setTimeout(r, 1000));
       }
 
-      console.log(`[send-email-campaign] Custom broadcast completed: ${sentCount} sent, ${failedCount} failed.`);
+      const hasMore = offset + limit < recipients.length;
+      const nextOffset = hasMore ? offset + limit : null;
 
-      await db.collection('email_campaigns').add({
-        type: 'custom_broadcast',
-        subject,
-        headline: customHeadline || null,
-        attachmentsCount: attachments.length,
-        attachmentsNames: attachments.map((a: any) => a.filename),
-        recipientsTotal: recipients.length,
-        sentCount,
-        failedCount,
-        failures: failures.slice(0, 20),
-        sentAt: new Date(),
-      }).catch((e) => console.warn('[send-email-campaign] Failed to log custom campaign to Firestore:', e));
+      if (!hasMore || !isBatched) {
+        await db.collection('email_campaigns').add({
+          type: 'custom_broadcast',
+          subject,
+          headline: customHeadline || null,
+          attachmentsCount: attachments.length,
+          attachmentsNames: attachments.map((a: any) => a.filename),
+          recipientsTotal: recipients.length,
+          sentCount,
+          failedCount,
+          failures: failures.slice(0, 20),
+          sentAt: new Date(),
+        }).catch((e) => console.warn('[send-email-campaign] Failed to log custom campaign to Firestore:', e));
+      }
 
       return res.status(200).json({
         success: true,
         sentCount,
         failedCount,
         totalRecipients: recipients.length,
+        offset,
+        limit,
+        hasMore,
+        nextOffset,
         failures,
       });
     }
