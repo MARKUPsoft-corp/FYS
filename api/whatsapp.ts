@@ -108,6 +108,118 @@ async function sendWhatsAppMessage(to: string, text: string) {
   }
 }
 
+// ── Envoi de messages interactifs natifs avec boutons cliquables Meta ──────────
+
+interface WhatsAppInteractiveButton {
+  id: string;
+  title: string;
+}
+
+async function sendWhatsAppInteractiveButtons(
+  to: string,
+  bodyText: string,
+  buttons: WhatsAppInteractiveButton[],
+  headerText?: string,
+  footerText = 'NutriFYS · Votre nutritionniste sur-mesure'
+): Promise<boolean> {
+  if (!WHATSAPP_API_TOKEN) {
+    console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
+    return false;
+  }
+
+  // Meta autorise entre 1 et 3 boutons de réponse rapide max
+  const safeButtons = (buttons || [])
+    .filter((b) => b && typeof b.title === 'string' && b.title.trim().length > 0)
+    .slice(0, 3)
+    .map((b, idx) => ({
+      type: 'reply' as const,
+      reply: {
+        id: b.id || `btn_${idx}`,
+        // Limite stricte de Meta : 20 caractères max par titre de bouton
+        title: b.title.slice(0, 20).trim(),
+      },
+    }));
+
+  if (safeButtons.length === 0) {
+    return sendWhatsAppMessage(to, bodyText);
+  }
+
+  const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+  // Meta limite body.text à 1024 caractères pour les messages interactifs
+  let textForBody = bodyText;
+  let prefixTextToSendFirst: string | null = null;
+  if (textForBody.length > 1000) {
+    const splitIndex = textForBody.lastIndexOf('\n\n', 950);
+    const cutAt = splitIndex > 300 ? splitIndex : 900;
+    prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
+    textForBody = textForBody.slice(cutAt).trim();
+    if (textForBody.length > 1000) {
+      textForBody = textForBody.slice(-1000);
+    }
+  }
+
+  if (prefixTextToSendFirst) {
+    await sendWhatsAppMessage(to, prefixTextToSendFirst);
+  }
+
+  const interactivePayload: any = {
+    type: 'button',
+    body: {
+      text: textForBody || 'Que souhaitez-vous faire ?',
+    },
+    action: {
+      buttons: safeButtons,
+    },
+  };
+
+  if (headerText && headerText.length <= 60) {
+    interactivePayload.header = {
+      type: 'text',
+      text: headerText,
+    };
+  }
+
+  if (footerText && footerText.length <= 60) {
+    interactivePayload.footer = {
+      type: 'text',
+      text: footerText,
+    };
+  }
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'interactive',
+    interactive: interactivePayload,
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    console.log('[whatsapp] Meta interactive buttons response status:', response.status, responseText);
+
+    if (!response.ok) {
+      console.warn('[whatsapp] Interactive message not accepted by Meta, falling back to text message...');
+      return sendWhatsAppMessage(to, textForBody);
+    }
+
+    return true;
+  } catch (fetchErr) {
+    console.error('[whatsapp] Network error sending interactive buttons, falling back to text:', fetchErr);
+    return sendWhatsAppMessage(to, textForBody);
+  }
+}
+
 // ── Marquer le message comme lu & Activer l'indicateur visuel "en train d'écrire..." ──
 
 async function markWhatsAppMessageAsReadAndTyping(messageId: string): Promise<boolean> {
@@ -467,7 +579,35 @@ Quand le client t'envoie une image ou photo :
 STYLE DE COMMUNICATION WHATSAPP :
 - Réponses aérées, faciles à lire sur un écran de smartphone (puces claires, émojis sobres).
 - Phrases chaleureuses, empathiques et accessibles sans jargon médical hermétique.
-- Pose UNE seule question à la fois pour laisser le client respirer et répondre aisément.`;
+- Pose UNE seule question à la fois pour laisser le client respirer et répondre aisément.
+
+BOUTONS D'INTERACTION CLIC-DIRECT META WHATSAPP :
+Pour éviter au client de taper du texte au clavier, tu peux ajouter TOUT À LA FIN de ton message un bloc de boutons cliquables :::BUTTONS [...] ::: (maximum 3 boutons, titre de chaque bouton STRICTEMENT inférieur ou égal à 20 caractères) :
+
+1. À l'accueil d'un brouillon web FYS (#FYS-XXXX) :
+Propose le choix entre commander directement ou voir sa fiche santé :
+:::BUTTONS
+[
+  {"id": "btn_order", "title": "🛒 Commander"},
+  {"id": "btn_nutrition", "title": "📊 Fiche santé"}
+]
+:::
+
+2. Lors du choix du format de bouteille :
+:::BUTTONS
+[
+  {"id": "btn_format_500ml", "title": "Format 500ml"},
+  {"id": "btn_format_1l", "title": "Format 1 Litre"}
+]
+:::
+
+3. Lors de la présentation du devis récapitulatif pour validation en 1 clic :
+:::BUTTONS
+[
+  {"id": "btn_confirm_order", "title": "✅ Oui, je valide"},
+  {"id": "btn_edit_order", "title": "✏️ Modifier"}
+]
+:::`;
 
 // ── Handler principal ─────────────────────────────────────────────────────────
 
@@ -493,13 +633,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
 
-      // Vérifier si un message texte, audio ou image est présent
+      // Vérifier si un message texte, audio, image ou interactif (bouton cliqué) est présent
       const message = changes?.messages?.[0];
       const isAudioMessage = message?.type === 'audio' || message?.type === 'voice';
       const isImageMessage = message?.type === 'image';
       const isTextMessage = message?.type === 'text';
+      const isInteractiveMessage = message?.type === 'interactive';
 
-      if (!message || (!isTextMessage && !isAudioMessage && !isImageMessage)) {
+      if (!message || (!isTextMessage && !isAudioMessage && !isImageMessage && !isInteractiveMessage)) {
         return res.status(200).json({ status: 'ignored_unsupported_type' });
       }
 
@@ -507,6 +648,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
       let senderText = message.text?.body?.trim() || message.image?.caption?.trim() || '';
       const senderName = changes?.contacts?.[0]?.profile?.name || 'Cher client';
+      let interactiveButtonId = '';
+
+      if (isInteractiveMessage) {
+        const btnReply = message.interactive?.button_reply;
+        const listReply = message.interactive?.list_reply;
+        const chosen = btnReply || listReply;
+        if (chosen) {
+          interactiveButtonId = chosen.id || '';
+          senderText = chosen.title?.trim() || chosen.id || '';
+          console.log(`[whatsapp-webhook] 🔘 Interactive response tapped: "${senderText}" (ID: ${interactiveButtonId}) from ${senderPhone}`);
+        }
+      }
 
       // Télécharger le fichier audio si le client a envoyé un vocal
       let audioBuffer: Buffer | null = null;
@@ -556,7 +709,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `00237${local9}`,
       ].filter(Boolean)));
 
-      const messageKind = isAudioMessage ? 'audio' : isImageMessage ? 'image' : 'text';
+      const messageKind = isAudioMessage ? 'audio' : isImageMessage ? 'image' : isInteractiveMessage ? 'interactive_button' : 'text';
       console.log(`[whatsapp-webhook] Processing ${messageKind} message ${messageId || ''} from ${senderPhone} (${senderName}): "${senderText}"`);
 
       // Initialiser la base Firestore (si disponible) et charger le contexte client & tarifaire
@@ -1261,6 +1414,55 @@ Exemple conforme :
         aiReply = aiReply.replace(/:::ORDER_JSON[\s\S]*?:::?/g, '').trim();
       }
 
+      // ── Extraction et détection des boutons interactifs Meta ────────────
+      let buttonsToSend: WhatsAppInteractiveButton[] = [];
+      const buttonsMatch = aiReply.match(/:::BUTTONS\s*([\s\S]*?):::/);
+      if (buttonsMatch) {
+        try {
+          const parsed = JSON.parse(buttonsMatch[1].trim());
+          if (Array.isArray(parsed)) {
+            buttonsToSend = parsed.filter((b: any) => b && typeof b.title === 'string');
+          }
+        } catch (bErr) {
+          console.warn('[whatsapp-webhook] Failed to parse :::BUTTONS JSON:', bErr);
+        }
+        aiReply = aiReply.replace(/:::BUTTONS[\s\S]*?:::?/g, '').trim();
+      }
+
+      // Détection automatique intelligente en renfort si l'IA n'a pas inclus le bloc :::BUTTONS :
+      // 1. Accueil d'un brouillon Web FYS (#FYS-XXXX)
+      if (webDraftCode && buttonsToSend.length === 0 && !orderMatch) {
+        buttonsToSend = [
+          { id: 'btn_order', title: '🛒 Commander' },
+          { id: 'btn_nutrition', title: '📊 Fiche santé' },
+        ];
+      }
+
+      // 2. Devis récapitulatif demandant confirmation
+      if (
+        buttonsToSend.length === 0 &&
+        !orderMatch &&
+        aiReply.includes('TOTAL À PAYER') &&
+        (aiReply.toLowerCase().includes('convient') || aiReply.toLowerCase().includes('valider'))
+      ) {
+        buttonsToSend = [
+          { id: 'btn_confirm_order', title: '✅ Oui, je valide' },
+          { id: 'btn_edit_order', title: '✏️ Modifier' },
+        ];
+      }
+
+      // 3. Choix du format si la question du format est posée
+      if (
+        buttonsToSend.length === 0 &&
+        !orderMatch &&
+        (aiReply.toLowerCase().includes('quel format') || aiReply.toLowerCase().includes('format souhaité') || aiReply.toLowerCase().includes('500ml ou 1l'))
+      ) {
+        buttonsToSend = [
+          { id: 'btn_format_500ml', title: 'Format 500ml' },
+          { id: 'btn_format_1l', title: 'Format 1 Litre' },
+        ];
+      }
+
       // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
       let sentAudio = false;
       if (isAudioMessage && GEMINI_API_KEY) {
@@ -1279,9 +1481,21 @@ Exemple conforme :
         }
       }
 
-      // Envoyer le récapitulatif textuel (toujours présent pour garder la trace des recettes/prix)
-      const sent = await sendWhatsAppMessage(senderPhone, aiReply);
-      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio });
+      // Envoyer le message : avec boutons natifs interactifs si présents, sinon texte standard
+      let sent = false;
+      if (buttonsToSend.length > 0) {
+        console.log(`[whatsapp-webhook] 🔘 Sending message with ${buttonsToSend.length} interactive buttons to ${senderPhone}...`);
+        sent = await sendWhatsAppInteractiveButtons(
+          senderPhone,
+          aiReply,
+          buttonsToSend,
+          '🌿 NutriFYS · FYS',
+          'NutriFYS · Votre nutritionniste sur-mesure'
+        );
+      } else {
+        sent = await sendWhatsAppMessage(senderPhone, aiReply);
+      }
+      console.log('[whatsapp-webhook] Message sent to WhatsApp successfully:', { sent, sentAudio, interactive: buttonsToSend.length > 0 });
 
       // Enregistrer la réponse de l'IA dans Firestore pour garder l'historique de discussion
       if (db) {
