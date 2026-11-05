@@ -187,42 +187,19 @@ async function sendEmail(options: {
 
   let lastError = '';
 
-  // 1. Resend API (si clé RESEND_API_KEY présente)
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'FYS Fresh & Young Spirit <onboarding@resend.dev>';
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [to],
-          subject,
-          html,
-        }),
-      });
-
-      const data = (await res.json().catch(() => ({}))) as any;
-      if (!res.ok) {
-        throw new Error(data?.message || `Resend error HTTP ${res.status}`);
-      }
-      return { success: true, provider: 'resend' };
-    } catch (e: any) {
-      lastError = e?.message || String(e);
-      console.warn('[send-email-campaign] Resend failed, trying fallback:', lastError);
-    }
-  }
-
-  // 2. Nodemailer / SMTP (Gmail ou SMTP personnalisé)
   const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
   const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
   const smtpHost = process.env.SMTP_HOST || (smtpUser?.includes('@gmail.com') ? 'smtp.gmail.com' : undefined);
   const smtpPort = Number(process.env.SMTP_PORT) || 465;
 
-  if (smtpUser && smtpPass && smtpHost) {
+  const hasResendKey = Boolean(process.env.RESEND_API_KEY);
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'FYS Fresh & Young Spirit <onboarding@resend.dev>';
+  const isUnverifiedResendDomain = fromEmail.includes('@resend.dev');
+
+  const preferSmtp = Boolean(smtpUser && smtpPass && smtpHost && (isUnverifiedResendDomain || !hasResendKey));
+
+  async function trySmtp() {
+    if (!smtpUser || !smtpPass || !smtpHost) return null;
     try {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -245,15 +222,56 @@ async function sendEmail(options: {
       return { success: true, provider: 'smtp' };
     } catch (e: any) {
       console.error('[send-email-campaign] SMTP failed:', e);
-      return { success: false, error: e?.message || 'SMTP error', provider: 'smtp' };
+      lastError = e?.message || 'SMTP error';
+      return null;
     }
   }
 
-  // Si aucun fournisseur configuré ou échec de Resend
+  async function tryResend() {
+    if (!hasResendKey) return null;
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as any;
+      if (!res.ok) {
+        throw new Error(data?.message || `Resend error HTTP ${res.status}`);
+      }
+      return { success: true, provider: 'resend' };
+    } catch (e: any) {
+      lastError = e?.message || String(e);
+      console.warn('[send-email-campaign] Resend failed, trying fallback:', lastError);
+      return null;
+    }
+  }
+
+  if (preferSmtp) {
+    const smtpRes = await trySmtp();
+    if (smtpRes) return smtpRes;
+    const resendRes = await tryResend();
+    if (resendRes) return resendRes;
+  } else {
+    const resendRes = await tryResend();
+    if (resendRes) return resendRes;
+    const smtpRes = await trySmtp();
+    if (smtpRes) return smtpRes;
+  }
+
   return {
     success: false,
     error: lastError || 'Aucun fournisseur email configuré (veuillez ajouter RESEND_API_KEY ou SMTP_USER/SMTP_PASS).',
-    provider: process.env.RESEND_API_KEY ? 'resend' : 'none',
+    provider: preferSmtp ? 'smtp' : (hasResendKey ? 'resend' : 'none'),
   };
 }
 
@@ -300,16 +318,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         qrCodeUrl,
       });
 
-      const providerConfigured = Boolean(
-        process.env.RESEND_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASS) || (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
+      const smtpConfigured = Boolean(
+        (process.env.SMTP_USER && process.env.SMTP_PASS) ||
+        (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
       );
+      const resendConfigured = Boolean(process.env.RESEND_API_KEY);
+      const resendFrom = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      const isVerifiedResend = resendConfigured && !resendFrom.includes('@resend.dev');
+
+      let activeProvider = 'none';
+      if (isVerifiedResend) activeProvider = 'resend';
+      else if (smtpConfigured) activeProvider = 'smtp';
+      else if (resendConfigured) activeProvider = 'resend';
 
       return res.status(200).json({
         totalUsers: usersSnap.size,
         eligibleEmailCount: eligibleUsers.length,
         eligibleUsers: eligibleUsers.slice(0, 50),
-        providerConfigured,
-        activeProvider: process.env.RESEND_API_KEY ? 'resend' : (process.env.SMTP_USER ? 'smtp' : 'none'),
+        providerConfigured: smtpConfigured || resendConfigured,
+        activeProvider,
         previewHtml,
         sampleWaUrl: waUrl,
         sampleQrCodeUrl: qrCodeUrl,
