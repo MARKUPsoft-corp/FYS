@@ -19,9 +19,11 @@ import {
   type UserProgram,
   type ProgramDayItem,
   PROGRAM_TIMING_LABELS,
+  UserRole,
 } from '@/entities';
 import { createNotification, notifyAdmins } from '@/services/notifications';
 import { sendPushNotification } from '@/services/push';
+import { saveProfile } from '@/services/profile';
 import i18n from '@/i18n';
 
 const statusLabel = (status: OrderStatus): string => i18n.t(`orders.${status === OrderStatus.CANCELLED ? 'canceled' : status}`);
@@ -833,6 +835,168 @@ export async function updateOrderExpenses(
     expenses,
     updatedAt: serverTimestamp(),
   });
+}
+
+/** Génère un code de commande court et mémorable (ex: FYS-7K2X) */
+export function generateShortOrderCode(): string {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `FYS-${code}`;
+}
+
+export type WhatsappDraftOrderParams = {
+  customerName: string;
+  customerPhone: string;
+  cocktail: Cocktail;
+  healthProfile?: {
+    healthConditions: string[];
+    allergies: string[];
+    goals: string[];
+  };
+  aiAnalysis?: any;
+  hasAddedSugar?: boolean;
+  estimatedPrice?: number;
+  deliveryFee?: number;
+  promoCode?: string;
+};
+
+/**
+ * Crée ou met à jour l'utilisateur dans Firestore sans mot de passe (via son numéro WhatsApp),
+ * enregistre la recette et crée une commande "pending" prête à être traitée par NutriFYS sur WhatsApp.
+ */
+export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams): Promise<{
+  orderId: string;
+  orderCode: string;
+  userUid: string;
+}> {
+  const {
+    customerName,
+    customerPhone,
+    cocktail,
+    healthProfile,
+    aiAnalysis,
+    hasAddedSugar = false,
+    estimatedPrice = 2000,
+    deliveryFee = 500,
+    promoCode,
+  } = params;
+
+  // Nettoyage et normalisation du numéro
+  const digitsOnly = customerPhone.replace(/\D/g, '');
+  const cleanPhone = digitsOnly.startsWith('237') ? digitsOnly : `237${digitsOnly.replace(/^0+/, '')}`;
+  const userUid = `wa_${cleanPhone}`;
+
+  // 1. Création / mise à jour silencieuse de l'utilisateur
+  const userRef = doc(db, COLLECTIONS.USERS, userUid);
+  await setDoc(
+    userRef,
+    {
+      uid: userUid,
+      id: userUid,
+      name: customerName.trim(),
+      phone: customerPhone.trim(),
+      email: '',
+      role: UserRole.CUSTOMER,
+      channel: 'whatsapp',
+      healthConditions: healthProfile?.healthConditions || [],
+      allergies: healthProfile?.allergies || [],
+      goals: healthProfile?.goals || [],
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  // 2. Enregistrement du profil santé dans sa sous-collection
+  if (healthProfile) {
+    try {
+      await saveProfile(userUid, healthProfile);
+    } catch (e) {
+      console.warn('[order] Subcollection profile write skipped:', e);
+    }
+  }
+
+  // 3. Enregistrement du cocktail si nouveau
+  const cocktailCol = collection(db, COLLECTIONS.COCKTAILS);
+  const cocktailDocRef = doc(cocktailCol);
+  const finalCocktailId = cocktail.id && cocktail.id !== 'draft' ? cocktail.id : cocktailDocRef.id;
+
+  if (!cocktail.id || cocktail.id === 'draft') {
+    await setDoc(cocktailDocRef, {
+      ...cocktail,
+      id: finalCocktailId,
+      createdBy: userUid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  // 4. Création de la commande draft dans orders
+  const orderRef = doc(collection(db, COLLECTIONS.ORDERS));
+  const orderCode = generateShortOrderCode();
+
+  const orderLine: OrderLine = {
+    bottleSize: '500ml',
+    bottleSizeLabel: BOTTLE_LABELS['500ml'],
+    quantity: 1,
+    bottleBasePriceSnapshot: estimatedPrice,
+    pricePerBottle: estimatedPrice,
+    lineTotal: estimatedPrice,
+  };
+
+  const orderData: Omit<Order, 'createdAt' | 'updatedAt'> = {
+    id: orderRef.id,
+    orderCode,
+    type: 'classic',
+    source: 'whatsapp',
+    userId: userUid,
+    userNameSnapshot: customerName.trim(),
+    userEmailSnapshot: '',
+    userPhoneSnapshot: customerPhone.trim(),
+    cocktailId: finalCocktailId,
+    cocktailNameSnapshot: cocktail.name || 'Mon Jus FYS',
+    cocktailIngredientsSnapshot: cocktail.ingredients ?? [],
+    hasAddedSugar,
+    orderLines: [orderLine],
+    deliveryFee,
+    totalPrice: estimatedPrice + deliveryFee,
+    status: OrderStatus.PENDING,
+    deliveryDetails: {
+      district: 'À préciser sur WhatsApp',
+      phone: customerPhone.trim(),
+      instructions: 'Commande passée via le Lab FYS avec NutriFYS',
+    },
+    ...(aiAnalysis ? { aiAnalysisSnapshot: aiAnalysis } : {}),
+    ...(cocktail.imageUrl ? { cocktailImageSnapshot: cocktail.imageUrl } : {}),
+    ...(promoCode ? { promoCodeApplied: promoCode } : {}),
+  };
+
+  await setDoc(orderRef, {
+    ...orderData,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // 5. Notification de l'équipe d'administration
+  try {
+    await notifyAdmins({
+      title: `Nouvelle commande WhatsApp (${orderCode})`,
+      message: `${customerName} a composé "${cocktail.name}" et continue sur WhatsApp.`,
+      type: 'order',
+      link: `/board/orders?order=${orderRef.id}`,
+    });
+  } catch (notifErr) {
+    console.warn('[order] Admin notification failed:', notifErr);
+  }
+
+  return {
+    orderId: orderRef.id,
+    orderCode,
+    userUid,
+  };
 }
 
 

@@ -57,6 +57,8 @@ export interface OrderExpenses {
 
 export interface Order {
   id: string;
+  /** Code de commande court et lisible (ex: FYS-7K2X) pour suivi WhatsApp */
+  orderCode?: string;
   userId: string;
   userNameSnapshot: string;
   userEmailSnapshot: string;

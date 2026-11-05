@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import { Save, Sparkles, ChevronRight } from 'lucide-react';
+import { Save, Sparkles, ChevronRight, ShoppingBag } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,11 @@ import { cn } from '@/lib/utils';
 import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
 import { ComposeTab, type ComposeStep } from '@/components/features/lab/ComposeTab';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
+import { WhatsappOrderSheet } from '@/components/features/cocktail/WhatsappOrderSheet';
 import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
-import type { CocktailIngredient, AIAnalysis, Cocktail, Fruit } from '@/entities';
+import type { CocktailIngredient, AIAnalysis, Cocktail, Fruit, HealthProfile } from '@/entities';
 import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle } from '@/entities';
 import { getPricingSettings } from '@/services/settings';
 import { createCocktail, getCocktailById } from '@/services/cocktail';
@@ -83,6 +84,20 @@ const FysLab: PageComponent = () => {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [showOnboardingForAnalysis, setShowOnboardingForAnalysis] = useState(false);
+  const pendingOpenOrderAfterOnboardingRef = useRef(false);
+
+  // Profil invité persistant dans le localStorage si l'utilisateur n'est pas connecté
+  const [guestProfile, setGuestProfile] = useState<HealthProfile | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = localStorage.getItem('fys_guest_health_profile');
+      return saved ? (JSON.parse(saved) as HealthProfile) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const effectiveProfile = user ? profile : guestProfile;
 
   const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -373,11 +388,6 @@ const FysLab: PageComponent = () => {
   }
 
   async function fetchSupplementRecommendations(mains: Map<string, number>) {
-    // L'analyse NutriFYS nécessite une connexion (profil santé)
-    if (!user) {
-      setAiRecommendation(null);
-      return;
-    }
     if (mains.size === 0 || supplements.length === 0) {
       setAiRecommendation(null);
       return;
@@ -406,7 +416,7 @@ const FysLab: PageComponent = () => {
         return !isConflicting;
       });
 
-      const result = await recommendSupplements(ingredients, profile, compatibleSupplements);
+      const result = await recommendSupplements(ingredients, effectiveProfile, compatibleSupplements);
       setAiRecommendation(result);
       // NutriFYS propose ses suggestions et son explication, mais NE pré-sélectionne
       // plus automatiquement de supplément : l'utilisateur décide de son propre chef.
@@ -480,17 +490,25 @@ const FysLab: PageComponent = () => {
   }
 
   function openOrderSheet() {
-    // Commander nécessite une connexion
-    if (!user) {
+    // Si l'utilisateur n'a pas encore renseigné son profil de santé,
+    // on lui propose l'onboarding d'abord pour personnaliser sa formule
+    if (!isProfileComplete(effectiveProfile)) {
+      pendingOpenOrderAfterOnboardingRef.current = true;
       saveLabMix({
         mains: selectedIngredients,
         supps: selectedSupplements,
         name: cocktailName,
         hasAddedSugar,
       });
-      requireAuth('order');
+      setShowOnboardingForAnalysis(true);
       return;
     }
+
+    // Si l'analyse n'a pas encore été générée, on la lance
+    if (!analysis) {
+      handleAnalyze().catch(console.error);
+    }
+
     pushHistoryParam(setSearchParams, 'sheet', 'order');
   }
 
@@ -509,25 +527,16 @@ const FysLab: PageComponent = () => {
     forcedMains?: Map<string, number>,
     forcedSupps?: Map<string, number>,
     forcedSugar?: boolean,
+    forcedProfile?: HealthProfile | null,
   ) {
     const sugarOption = forcedSugar !== undefined ? forcedSugar : hasAddedSugar;
-    // L'analyse NutriFYS nécessite une connexion (profil santé)
-    if (!user) {
-      saveLabMix({
-        mains: forcedMains ?? selectedIngredients,
-        supps: forcedSupps ?? selectedSupplements,
-        name: cocktailName,
-        hasAddedSugar: sugarOption,
-      });
-      requireAuth('analyze');
-      return;
-    }
+    const profileToUse = forcedProfile !== undefined ? forcedProfile : effectiveProfile;
 
-    // Si le profil de santé est incomplet (et bien chargé), afficher l'onboarding d'abord.
-    // Ne pas déclencher l'onboarding si le profil n'a pas encore été récupéré depuis Firebase
-    // (profileFetched = false) car le profil pourrait être complet mais pas encore arrivé.
-    if (user.role === UserRole.CUSTOMER && profileFetched && !isProfileComplete(profile)) {
-      // Mémoriser le mix pour ne pas perdre la sélection
+    // Si le profil de santé est incomplet, ouvrir l'onboarding santé
+    // (pour les invités ou les clients connectés dont le profil est chargé)
+    const isCustomerLoaded = user ? (user.role === UserRole.CUSTOMER && profileFetched) : true;
+    if (isCustomerLoaded && !isProfileComplete(profileToUse)) {
+      pendingOpenOrderAfterOnboardingRef.current = false;
       saveLabMix({
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
@@ -537,17 +546,16 @@ const FysLab: PageComponent = () => {
       setShowOnboardingForAnalysis(true);
       return;
     }
-    // Si le profil n'a pas encore été chargé, on attend qu'il soit prêt
-    if (user.role === UserRole.CUSTOMER && !profileFetched) {
-      // Sauvegarder le mix et réessayer quand le profil sera chargé
+    if (user?.role === UserRole.CUSTOMER && !profileFetched) {
       saveLabMix({
         mains: forcedMains ?? selectedIngredients,
         supps: forcedSupps ?? selectedSupplements,
         name: cocktailName,
         hasAddedSugar: sugarOption,
       });
-      return; // Le useEffect sur profileFetched reprendra l'action
+      return;
     }
+
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);
     if (combined.size === 0) return;
@@ -562,7 +570,7 @@ const FysLab: PageComponent = () => {
         fruit: fruits.find((f) => f.id === fruitId)!,
         grams,
       })).filter((i) => i.fruit);
-      const result = await analyzeCocktail(ingredients, profile, { hasAddedSugar: sugarOption });
+      const result = await analyzeCocktail(ingredients, profileToUse, { hasAddedSugar: sugarOption });
       setAnalysis(result);
       trackEvent('generate_custom_mix', {
         item_count: ingredients.length,
@@ -593,14 +601,14 @@ const FysLab: PageComponent = () => {
     : ingredientsOnlyTotal + 1500;
 
   const draftCocktail = useMemo(() => {
-    if (!user || selectedIngredients.size === 0) return null;
+    if (selectedIngredients.size === 0) return null;
     const ingredients = buildIngredients();
     const base = pricing?.bottle500mlBase ?? 1500;
     return {
       id: 'draft',
       name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || t('lab.defaultName'),
       type: CocktailType.CUSTOM,
-      createdBy: user.uid,
+      createdBy: user?.uid || 'guest',
       isActive: true,
       isPublic: false,
       ingredients,
@@ -798,31 +806,65 @@ const FysLab: PageComponent = () => {
             promoCode={promoParam || undefined}
           />
         )}
+
+        {draftCocktail && !user && (
+          <WhatsappOrderSheet
+            open={showOrderSheet}
+            onOpenChange={closeOrderSheet}
+            cocktail={draftCocktail}
+            fruits={fruits}
+            analysis={analysis}
+            healthProfile={effectiveProfile}
+            hasAddedSugar={hasAddedSugar}
+            promoCode={promoParam || undefined}
+            whatsappSupportNumber={(pricing as any)?.whatsappNumber || '237691850125'}
+          />
+        )}
       </div>
 
-      {/* Onboarding modal déclenché par l'analyse si profil incomplet */}
-      {user && (
-        <OnboardingModal
-          open={showOnboardingForAnalysis}
-          onSkip={() => setShowOnboardingForAnalysis(false)}
-          onComplete={async (data) => {
-            if (!user) return;
+      {/* Onboarding modal déclenché par l'analyse ou la commande si profil incomplet */}
+      <OnboardingModal
+        open={showOnboardingForAnalysis}
+        onSkip={() => {
+          setShowOnboardingForAnalysis(false);
+          if (pendingOpenOrderAfterOnboardingRef.current || sheetParam === 'order') {
+            pushHistoryParam(setSearchParams, 'sheet', 'order');
+          }
+        }}
+        onComplete={async (data) => {
+          if (user) {
             await saveProfile(user.uid, data);
             await fetchProfile(user.uid);
-            setShowOnboardingForAnalysis(false);
-            // Reprendre l'analyse avec le mix sauvegardé
-            const mix = loadLabMix();
-            if (mix) {
-              setSelectedIngredients(mix.mains);
-              setSelectedSupplements(mix.supps);
-              if (mix.name) setCocktailName(mix.name);
-              setTimeout(() => handleAnalyze(mix.mains, mix.supps), 200);
-            } else {
-              setTimeout(() => handleAnalyze(), 200);
+          } else {
+            setGuestProfile(data);
+            try {
+              localStorage.setItem('fys_guest_health_profile', JSON.stringify(data));
+            } catch (e) {
+              console.error(e);
             }
-          }}
-        />
-      )}
+          }
+          setShowOnboardingForAnalysis(false);
+
+          const shouldOpenOrder = pendingOpenOrderAfterOnboardingRef.current || sheetParam === 'order';
+          pendingOpenOrderAfterOnboardingRef.current = false;
+
+          // Reprendre l'analyse avec le mix sauvegardé et le profil complété
+          const mix = loadLabMix();
+          const mainsToUse = mix ? mix.mains : selectedIngredients;
+          const suppsToUse = mix ? mix.supps : selectedSupplements;
+          const sugarToUse = mix?.hasAddedSugar ?? hasAddedSugar;
+          if (mix) {
+            setSelectedIngredients(mix.mains);
+            setSelectedSupplements(mix.supps);
+            if (mix.name) setCocktailName(mix.name);
+          }
+          await handleAnalyze(mainsToUse, suppsToUse, sugarToUse, data);
+
+          if (shouldOpenOrder) {
+            pushHistoryParam(setSearchParams, 'sheet', 'order');
+          }
+        }}
+      />
 
       {/* ── Mobile sticky bottom bar (OUTSIDE main container) ─────────────────────────────────────────── */}
       {activeTab === 'compose' && (
@@ -860,14 +902,23 @@ const FysLab: PageComponent = () => {
 
             {composeStep === 1 ? (
               analysis ? (
-                <Button
-                  size="lg"
-                  className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
-                  style={{ background: '#3F6D4E', color: '#fff', boxShadow: '0 8px 25px rgba(63,109,78,0.3)' }}
-                  onClick={openRenameSheet}
-                >
-                  <Save className="size-5" /> {t('common.save')}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-14 rounded-full font-bold text-[15px] px-5 border-primary/30 text-primary"
+                    onClick={openRenameSheet}
+                  >
+                    <Save className="size-5" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="flex-1 h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-2 bg-primary text-white shadow-[0_8px_25px_rgba(63,109,78,0.3)]"
+                    onClick={openOrderSheet}
+                  >
+                    <ShoppingBag className="size-5" /> {t('lab.order', 'Commander')}
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <Button
@@ -882,23 +933,38 @@ const FysLab: PageComponent = () => {
                 </div>
               )
             ) : (
-              <Button
-                size="lg"
-                className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
-                style={analysis
-                  ? { background: '#3F6D4E', color: '#fff', boxShadow: '0 8px 25px rgba(63,109,78,0.3)' }
-                  : { background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }
-                }
-                disabled={selectedIngredients.size === 0 || analyzing}
-                onClick={analysis ? openRenameSheet : () => handleAnalyze()}
-              >
-                {analyzing
-                  ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> {t('lab.analyzingShort')}</>
-                  : analysis
-                  ? <><Save className="size-5" /> {t('common.save')}</>
-                  : <><Sparkles className="size-5" /> {t('lab.analyzeWith')}</>
-                }
-              </Button>
+              analysis ? (
+                <div className="flex gap-2">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-14 rounded-full font-bold text-[15px] px-5 border-primary/30 text-primary"
+                    onClick={openRenameSheet}
+                  >
+                    <Save className="size-5" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="flex-1 h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-2 bg-primary text-white shadow-[0_8px_25px_rgba(63,109,78,0.3)]"
+                    onClick={openOrderSheet}
+                  >
+                    <ShoppingBag className="size-5" /> {t('lab.order', 'Commander')}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-3"
+                  style={{ background: '#E0982E', color: '#fff', boxShadow: '0 8px 25px rgba(224,152,46,0.3)' }}
+                  disabled={selectedIngredients.size === 0 || analyzing}
+                  onClick={() => handleAnalyze()}
+                >
+                  {analyzing
+                    ? <><span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" /> {t('lab.analyzingShort')}</>
+                    : <><Sparkles className="size-5" /> {t('lab.analyzeWith')}</>
+                  }
+                </Button>
+              )
             )}
           </div>
         </div>

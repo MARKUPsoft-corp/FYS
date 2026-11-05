@@ -845,6 +845,17 @@ export function SavePanel({
               </>
             )}
           </Button>
+          {analysis && (
+            <Button
+              size="lg"
+              type="button"
+              className="w-full h-12 rounded-2xl bg-[#E0982E] hover:bg-[#E0982E]/90 text-white font-bold shadow-[0_8px_25px_rgba(224,152,46,0.3)] active:scale-95 transition-all gap-2"
+              onClick={onOrderRequest}
+            >
+              <ShoppingBag className="size-4" />
+              {t('lab.order', 'Commander ce cocktail')}
+            </Button>
+          )}
           {!analysis && composeStep === 2 && selectedMainCount > 0 && (
             <p className="text-center text-[11px] text-muted-foreground">
               {t('lab.analyzeFirst')}
