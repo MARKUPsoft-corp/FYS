@@ -561,6 +561,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const chatHistoryForGemini: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
       const db = getAdminDb();
       let userDocRef: any = null;
+      let webDraftCode = '';
+      let webDraft: any = null;
 
       // DÉDUPLICATION 1 (META RETRIES) : Ignorer les retries réseau automatiques de Meta sur le même message ID
       if (db && messageId) {
@@ -589,6 +591,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (db) {
         try {
+          // ── Détection d'un brouillon de commande web FYS (ex: #FYS-7K2X) ──
+          const draftMatch = senderText.match(/#?(FYS-[A-Z0-9]{4})/i);
+          if (draftMatch) {
+            webDraftCode = draftMatch[1].toUpperCase();
+            try {
+              const draftSnap = await db.collection('whatsapp_drafts').doc(webDraftCode).get();
+              if (draftSnap.exists) {
+                webDraft = draftSnap.data();
+                console.log(`[whatsapp-webhook] 🍹 Web draft detected: ${webDraftCode} for client:`, webDraft.customerName);
+              }
+            } catch (dErr) {
+              console.warn('[whatsapp-webhook] Failed to load web draft:', dErr);
+            }
+          }
+
           // Charger en parallèle la tarification et le catalogue de fruits
           const [pricingDoc, fruitsSnap] = await Promise.all([
             db.collection('settings').doc('pricing').get().catch(() => null),
@@ -628,6 +645,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               await userDocRef.set({ uid: userDocRef.id }, { merge: true });
             }
 
+            // Si le brouillon web fournit un prénom et que le nom actuel est générique, le mettre à jour
+            if (webDraft?.customerName && (!userData.name || userData.name === senderPhone || userData.name === 'Client WhatsApp')) {
+              await userDocRef.set({ name: webDraft.customerName.trim() }, { merge: true });
+            }
+
+            // Si le brouillon web fournit un profil de santé, l'enregistrer dans le profil
+            if (webDraft?.healthProfile) {
+              const hp = webDraft.healthProfile;
+              if (hp.healthConditions?.length || hp.allergies?.length || hp.goals?.length) {
+                await userDocRef.set({
+                  healthConditions: hp.healthConditions || [],
+                  allergies: hp.allergies || [],
+                  goals: hp.goals || [],
+                  hasHealthProfile: true,
+                  updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+
+                try {
+                  await userDocRef.collection('profile').doc('main').set({
+                    userId: userDocRef.id,
+                    healthConditions: hp.healthConditions || [],
+                    allergies: hp.allergies || [],
+                    goals: hp.goals || [],
+                    channel: 'whatsapp',
+                    updatedAt: FieldValue.serverTimestamp(),
+                  }, { merge: true });
+                } catch (e) {
+                  console.warn('[whatsapp-webhook] Subcollection profile write skipped:', e);
+                }
+              }
+            }
+
             let conditions: string[] = [];
             let allergies: string[] = [];
             let goals: string[] = [];
@@ -654,16 +703,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               goals = userData.goals;
             }
 
-            const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
-            if (hasProfile) {
-              userProfileContext = `\n\nPROFIL DE SANTÉ COMPLET DU CLIENT (DÉJÀ ENREGISTRÉ DANS FYS) :
+            if (webDraft) {
+              const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
+              const ingredientsNames = Array.isArray(webDraft.cocktail?.ingredients)
+                ? webDraft.cocktail.ingredients.map((i: any) => i.fruitName || i.name).filter(Boolean).join(', ')
+                : 'Fruits frais';
+              const sugarMention = webDraft.hasAddedSugar ? 'Avec sucre ajouté' : 'Sans sucre ajouté (100% pur)';
+              const customerGreetingName = webDraft.customerName?.trim() || userData.name || senderName;
+
+              userProfileContext = `\n\nCOMMANDE EN COURS INITIÉE SUR LE SITE FYS (RÉFÉRENCE #${webDraftCode}) :
+- Client : ${customerGreetingName}
+- Cocktail composé sur le web : "${cocktailName}"
+- Ingrédients du mélange : ${ingredientsNames}
+- Sucre : ${sugarMention}
+- Profil de santé du client :
+  * Objectifs : ${goals.length ? goals.join(', ') : (webDraft.healthProfile?.goals?.join(', ') || 'Forme & Bien-être')}
+  * Conditions médicales : ${conditions.length ? conditions.join(', ') : (webDraft.healthProfile?.healthConditions?.join(', ') || 'Aucune condition particulière')}
+  * Allergies / Intolérances : ${allergies.length ? allergies.join(', ') : (webDraft.healthProfile?.allergies?.join(', ') || 'Aucune allergie')}
+
+CONSIGNE CRITIQUE D'ACCUEIL POUR CE CLIENT WEB :
+1. Accueille très chaleureusement ${customerGreetingName} par son prénom.
+2. Confirme-lui expressément que sa commande #${webDraftCode} pour le jus "${cocktailName}" (${ingredientsNames}) et son profil de santé ont bien été reçus.
+3. NE LUI REPOSE SURTOUT PAS le questionnaire de santé (son profil est déjà enregistré).
+4. Propose-lui simplement de choisir le format de sa bouteille (500ml ou 1L) et demande-lui dans quel quartier de Yaoundé il souhaite être livré pour finaliser la commande.`;
+            } else {
+              const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
+              if (hasProfile) {
+                userProfileContext = `\n\nPROFIL DE SANTÉ COMPLET DU CLIENT (DÉJÀ ENREGISTRÉ DANS FYS) :
 - Objectifs bien-être : ${goals.length ? goals.join(', ') : 'Général'}
 - Conditions médicales / Antécédents : ${conditions.length ? conditions.join(', ') : 'Aucune condition particulière'}
 - Allergies & Intolérances : ${allergies.length ? allergies.join(', ') : 'Aucune allergie signalée'}
 CONSIGNE PROFIL : Ce profil est déjà complet. Travaille avec ces données tout au long de la discussion pour lui recommander les meilleurs jus et respecter toutes ses contre-indications. Ne lui repose pas le questionnaire.`;
-            } else {
-              userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : AUCUN PROFIL ENREGISTRÉ (NOUVEAU CLIENT).
+              } else {
+                userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : AUCUN PROFIL ENREGISTRÉ (NOUVEAU CLIENT).
 CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur et empathie (ses objectifs bien-être, ses conditions de santé comme diabète/tension/ulcère ou s'il n'en a aucune, et ses allergies). Dès que tu as ses réponses, valide son profil et ajoute :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour qu'il soit enregistré dans FYS.`;
+              }
             }
 
             // Récupérer les 8 derniers messages pour garder le fil naturel
@@ -685,21 +759,73 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
               }
             }
           } else {
+            // NOUVEAU CLIENT : Création officielle du compte avec son numéro au moment de l'envoi WhatsApp
             const newDocRef = usersRef.doc();
+            const initialName = webDraft?.customerName?.trim() || senderName;
+            const initialConditions = webDraft?.healthProfile?.healthConditions || [];
+            const initialAllergies = webDraft?.healthProfile?.allergies || [];
+            const initialGoals = webDraft?.healthProfile?.goals || [];
+            const hasWebProfile = initialConditions.length > 0 || initialAllergies.length > 0 || initialGoals.length > 0;
+
             await newDocRef.set({
               uid: newDocRef.id,
               id: newDocRef.id,
-              name: senderName,
+              name: initialName,
               phone: senderPhone,
               email: '',
               role: 'customer',
               channel: 'whatsapp',
+              healthConditions: initialConditions,
+              allergies: initialAllergies,
+              goals: initialGoals,
+              hasHealthProfile: hasWebProfile,
               createdAt: FieldValue.serverTimestamp(),
               updatedAt: FieldValue.serverTimestamp(),
             });
             userDocRef = newDocRef;
-            userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
+
+            if (hasWebProfile) {
+              try {
+                await newDocRef.collection('profile').doc('main').set({
+                  userId: newDocRef.id,
+                  healthConditions: initialConditions,
+                  allergies: initialAllergies,
+                  goals: initialGoals,
+                  channel: 'whatsapp',
+                  createdAt: FieldValue.serverTimestamp(),
+                  updatedAt: FieldValue.serverTimestamp(),
+                });
+              } catch (e) {
+                console.warn('[whatsapp-webhook] Initial profile/main write skipped:', e);
+              }
+            }
+
+            if (webDraft) {
+              const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
+              const ingredientsNames = Array.isArray(webDraft.cocktail?.ingredients)
+                ? webDraft.cocktail.ingredients.map((i: any) => i.fruitName || i.name).filter(Boolean).join(', ')
+                : 'Fruits frais';
+              const sugarMention = webDraft.hasAddedSugar ? 'Avec sucre ajouté' : 'Sans sucre ajouté (100% pur)';
+
+              userProfileContext = `\n\nCOMMANDE EN COURS INITIÉE SUR LE SITE FYS (RÉFÉRENCE #${webDraftCode}) :
+- Client : ${initialName}
+- Cocktail composé sur le web : "${cocktailName}"
+- Ingrédients du mélange : ${ingredientsNames}
+- Sucre : ${sugarMention}
+- Profil de santé du client :
+  * Objectifs : ${initialGoals.length ? initialGoals.join(', ') : 'Forme & Bien-être'}
+  * Conditions médicales : ${initialConditions.length ? initialConditions.join(', ') : 'Aucune condition particulière'}
+  * Allergies / Intolérances : ${initialAllergies.length ? initialAllergies.join(', ') : 'Aucune allergie'}
+
+CONSIGNE CRITIQUE D'ACCUEIL POUR CE CLIENT WEB :
+1. Accueille très chaleureusement ${initialName} par son prénom.
+2. Confirme-lui expressément que sa commande #${webDraftCode} pour le jus "${cocktailName}" (${ingredientsNames}) et son profil de santé ont bien été reçus.
+3. NE LUI REPOSE SURTOUT PAS le questionnaire de santé (son profil est déjà enregistré).
+4. Propose-lui simplement de choisir le format de sa bouteille (500ml ou 1L) et demande-lui dans quel quartier de Yaoundé il souhaite être livré pour finaliser la commande.`;
+            } else {
+              userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
+            }
           }
 
           if (userDocRef) {
@@ -923,18 +1049,19 @@ Exemple :
               const orderRef = db.collection('orders').doc();
               const newOrderDoc = {
                 id: orderRef.id,
+                orderCode: webDraftCode || null,
                 type: 'classic',
                 source: 'whatsapp',
                 whatsappMessageId: messageId || null,
                 status: 'pending',
                 userId: userDocRef?.id || 'whatsapp_customer',
-                userNameSnapshot: senderName,
+                userNameSnapshot: webDraft?.customerName?.trim() || senderName,
                 userPhoneSnapshot: senderPhone,
                 userEmailSnapshot: '',
                 cocktailId: 'whatsapp-custom',
-                cocktailNameSnapshot: orderData.cocktailName || 'Cocktail Santé WhatsApp',
+                cocktailNameSnapshot: orderData.cocktailName || webDraft?.cocktail?.name || 'Cocktail Santé WhatsApp',
                 cocktailIngredientsSnapshot: matchedIngredients,
-                hasAddedSugar: !!orderData.hasAddedSugar,
+                hasAddedSugar: orderData.hasAddedSugar !== undefined ? !!orderData.hasAddedSugar : (webDraft?.hasAddedSugar ?? false),
                 // Champs rétro-compatibles & structurés
                 quantity,
                 bottleSize,
@@ -958,6 +1085,7 @@ Exemple :
                   phone: senderPhone,
                   instructions: orderData.instructions || 'Commande directe WhatsApp',
                 },
+                ...(webDraft?.aiAnalysis ? { aiAnalysisSnapshot: webDraft.aiAnalysis } : {}),
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
               };

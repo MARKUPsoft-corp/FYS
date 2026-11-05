@@ -93,7 +93,7 @@ export function WhatsappOrderSheet({
       // 3. Préparation du message prérempli WhatsApp
       const cocktailName = cocktail.name || 'Mon Jus FYS';
       const cleanWaNumber = whatsappSupportNumber.replace(/\D/g, '');
-      const message = `Bonjour NutriFYS ! Je viens de composer mon jus "${cocktailName}" sur le site FYS. Voici le numéro de ma commande : #${orderCode} 🍍`;
+      const message = `Bonjour NutriFYS ! Je m'appelle ${name.trim()}. Je viens de composer mon jus "${cocktailName}" sur le site FYS. Voici le numéro de ma commande : #${orderCode} 🍍`;
       const waUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(message)}`;
 
       // 4. Fermer la sheet et rediriger vers WhatsApp
