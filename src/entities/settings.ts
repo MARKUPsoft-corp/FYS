@@ -56,7 +56,7 @@ export interface PricingSettings {
 export const DEFAULT_PRICING: PricingSettings = {
   bottle500mlBase: 1500,
   bottle1LBase: 2500,
-  deliveryFee: 500,
+  deliveryFee: 1000,
   promoFlyerDiscount: 500,
   promoFlyerActive: false,
   promoPublicCode: 'FLYER',

@@ -9,6 +9,15 @@ export default defineConfig(async () => {
     ssr: false,
     prerender: true,
     vite: {
+      server: {
+        proxy: {
+          '/api': {
+            target: 'https://www.fys-app.com',
+            changeOrigin: true,
+            secure: false,
+          },
+        },
+      },
       plugins: [
         tailwindcss(),
         rasengan({

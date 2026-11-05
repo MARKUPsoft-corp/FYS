@@ -219,7 +219,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   }, [isEventMode, ordered, user, phone]);
 
 
-  const deliveryFee = isEventMode ? 0 : (pricing?.deliveryFee ?? 500);
+  const deliveryFee = isEventMode ? 0 : (pricing?.deliveryFee ?? 1000);
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
   const subtotal = hasContainers ? containerSubtotal : (subtotal500 + subtotal1L);

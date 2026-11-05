@@ -426,7 +426,7 @@ Quand le client souhaite commander (soit directement à l'étape 2, soit après 
 Exemple strict de récapitulatif devis :
 "Voici le récapitulatif de votre commande :
 • [Quantité] bouteille(s) [Format: 500ml ou 1L] de [Nom du jus] : [Prix unitaire] XAF (soit [Sous-total] XAF)
-• Livraison à [Quartier] : [Frais livraison] XAF
+• Livraison à [Quartier] : [Frais livraison à partir de 1 000 XAF selon la zone] XAF
 👉 TOTAL À PAYER : [Total] XAF (Paiement par Mobile Money ou au comptant à la livraison).
 
 Est-ce que cela vous convient pour valider votre commande ?"
@@ -440,8 +440,8 @@ Est-ce que cela vous convient pour valider votre commande ?"
   "bottleSize": "500ml",
   "quantity": 1,
   "unitPrice": 2000,
-  "deliveryFee": 500,
-  "totalPrice": 2500,
+  "deliveryFee": 1000,
+  "totalPrice": 3000,
   "district": "Quartier de livraison",
   "instructions": "Précisions particulières",
   "hasAddedSugar": false
@@ -590,7 +590,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let bottle500Base = 1500;
       let bottle1LBase = 2500;
-      let deliveryFee = 500;
+      let deliveryFee = 1000;
       const availableFruits: { id: string; name: string; price: number }[] = [];
 
       if (db) {
@@ -620,7 +620,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const p = pricingDoc.data();
             if (typeof p?.bottle500mlBase === 'number') bottle500Base = p.bottle500mlBase;
             if (typeof p?.bottle1LBase === 'number') bottle1LBase = p.bottle1LBase;
-            if (typeof p?.deliveryFee === 'number') deliveryFee = p.deliveryFee;
+            if (typeof p?.deliveryFee === 'number') deliveryFee = Math.max(1000, p.deliveryFee);
           }
 
           if (fruitsSnap) {
@@ -643,7 +643,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ? webDraft.cocktail.totalPrice
             : (bottle500Base + webDraftIngredientsSum);
           const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-          const exactDraftDeliveryFee = typeof webDraft?.deliveryFee === 'number' ? webDraft.deliveryFee : deliveryFee;
+          const exactDraftDeliveryFee = typeof webDraft?.deliveryFee === 'number'
+            ? Math.max(1000, webDraft.deliveryFee)
+            : Math.max(1000, deliveryFee);
 
           const usersRef = db.collection('users');
           let existingUserDoc: any = null;
@@ -771,14 +773,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 TARIFS OFFICIELS DU SITE POUR CETTE RECETTE (PRIX FERMES ET DÉFINITIFS, NE RECALCULE RIEN) :
 - Format 500ml : ${exactDraftPrice500} XAF par bouteille
 - Format 1L : ${exactDraftPrice1L} XAF par bouteille
-- Frais de livraison Yaoundé : ${exactDraftDeliveryFee} XAF
+- Frais de livraison Yaoundé : à partir de ${exactDraftDeliveryFee} XAF (selon le quartier)
 
 CONSIGNE CRITIQUE D'ACCUEIL & DE TARIFICATION :
 1. Accueille très chaleureusement ${customerGreetingName} par son prénom.
 2. Confirme-lui expressément que sa commande #${webDraftCode} pour le jus "${cocktailName}" (${ingredientsNames}) et son profil de santé ont bien été reçus.
 3. NE LUI REPOSE SURTOUT PAS le questionnaire de santé (son profil est déjà enregistré).
 4. Propose-lui simplement de choisir le format de sa bouteille (500ml ou 1L) et demande son quartier de livraison pour finaliser.
-5. RÈGLE COMMERCIALE CRITIQUE SUR LE PRIX : Utilise UNIQUEMENT les tarifs officiels ci-dessus (${exactDraftPrice500} XAF pour 500ml, ou ${exactDraftPrice1L} XAF pour 1L) + la livraison (${exactDraftDeliveryFee} XAF). INTERDICTION FORMELLE de mentionner le coût de la bouteille vide ou le prix des fruits au détail. Tu annonces UNIQUEMENT le prix de vente total par bouteille.`;
+5. RÈGLE COMMERCIALE CRITIQUE SUR LE PRIX : Utilise UNIQUEMENT les tarifs officiels ci-dessus (${exactDraftPrice500} XAF pour 500ml, ou ${exactDraftPrice1L} XAF pour 1L) + la livraison (à partir de ${exactDraftDeliveryFee} XAF, minimum 1 000 XAF selon le quartier). INTERDICTION FORMELLE d'annoncer 500 XAF. Tu annonces UNIQUEMENT le prix de vente total par bouteille.`;
             } else {
               const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
               if (hasProfile) {
@@ -873,14 +875,14 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
 TARIFS OFFICIELS DU SITE POUR CETTE RECETTE (PRIX FERMES ET DÉFINITIFS, NE RECALCULE RIEN) :
 - Format 500ml : ${exactDraftPrice500} XAF par bouteille
 - Format 1L : ${exactDraftPrice1L} XAF par bouteille
-- Frais de livraison Yaoundé : ${exactDraftDeliveryFee} XAF
+- Frais de livraison Yaoundé : à partir de ${exactDraftDeliveryFee} XAF (selon le quartier)
 
 CONSIGNE CRITIQUE D'ACCUEIL & DE TARIFICATION :
 1. Accueille très chaleureusement ${initialName} par son prénom.
 2. Confirme-lui expressément que sa commande #${webDraftCode} pour le jus "${cocktailName}" (${ingredientsNames}) et son profil de santé ont bien été reçus.
 3. NE LUI REPOSE SURTOUT PAS le questionnaire de santé (son profil est déjà enregistré).
 4. Propose-lui simplement de choisir le format de sa bouteille (500ml ou 1L) et demande son quartier de livraison pour finaliser.
-5. RÈGLE COMMERCIALE CRITIQUE SUR LE PRIX : Utilise UNIQUEMENT les tarifs officiels ci-dessus (${exactDraftPrice500} XAF pour 500ml, ou ${exactDraftPrice1L} XAF pour 1L) + la livraison (${exactDraftDeliveryFee} XAF). INTERDICTION FORMELLE de mentionner le coût de la bouteille vide ou le prix des fruits au détail. Tu annonces UNIQUEMENT le prix de vente total par bouteille.`;
+5. RÈGLE COMMERCIALE CRITIQUE SUR LE PRIX : Utilise UNIQUEMENT les tarifs officiels ci-dessus (${exactDraftPrice500} XAF pour 500ml, ou ${exactDraftPrice1L} XAF pour 1L) + la livraison (à partir de ${exactDraftDeliveryFee} XAF, minimum 1 000 XAF selon le quartier). INTERDICTION FORMELLE d'annoncer 500 XAF. Tu annonces UNIQUEMENT le prix de vente total par bouteille.`;
             } else {
               userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
@@ -923,7 +925,7 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
 Barème interne (uniquement pour les créations en direct sur WhatsApp sans commande préalable du site) :
 - Bouteille 500ml : base ${bottle500Base} XAF + suppléments fruits
 - Bouteille 1L : base ${bottle1LBase} XAF + suppléments fruits
-- Livraison Yaoundé : ${deliveryFee} XAF
+- Frais de livraison Yaoundé : à partir de ${deliveryFee} XAF (selon quartier)
 Suppléments fruits disponibles :
 ${fruitsSummary}
 
@@ -933,9 +935,10 @@ RÈGLE COMMERCIALE CRITIQUE (OBLIGATION ABSOLUE) :
 - Ne mentionne JAMAIS le prix d'ajout individuel de chaque fruit.
 - Ne montre JAMAIS d'opération mathématique ("${bottle500Base} + ...").
 - Le client doit voir UNIQUEMENT le prix de vente unitaire final de la bouteille composée.
+- Frais de livraison : À PARTIR DE 1 000 XAF (minimum 1 000 XAF selon la distance et le quartier à Yaoundé). INTERDICTION FORMELLE d'annoncer 500 XAF ou tout montant inférieur à 1 000 XAF.
 Exemple conforme :
 "• 1 bouteille 500ml [Nom du jus] : [Prix unitaire final calculé] XAF
-• Livraison à [Quartier] : ${deliveryFee} XAF
+• Livraison à [Quartier] : [Frais de livraison, à partir de ${deliveryFee} XAF] XAF
 👉 TOTAL À PAYER : [Total] XAF"`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -1125,12 +1128,12 @@ Exemple conforme :
 
               const lineTotal = pricePerBottle * quantity;
 
-              // Frais de livraison : priorité au draft web, puis au prix convenu dans orderData, sinon barème par défaut
-              let finalDeliveryFee = deliveryFee;
+              // Frais de livraison : priorité au draft web, puis au prix convenu dans orderData, sinon barème par défaut (minimum 1000 XAF)
+              let finalDeliveryFee = Math.max(1000, deliveryFee);
               if (webDraft && typeof webDraft.deliveryFee === 'number') {
-                finalDeliveryFee = webDraft.deliveryFee;
+                finalDeliveryFee = Math.max(1000, webDraft.deliveryFee);
               } else if (typeof orderData.deliveryFee === 'number' && orderData.deliveryFee >= 0) {
-                finalDeliveryFee = Math.round(orderData.deliveryFee);
+                finalDeliveryFee = Math.max(1000, Math.round(orderData.deliveryFee));
               }
 
               const totalPrice = lineTotal + finalDeliveryFee;

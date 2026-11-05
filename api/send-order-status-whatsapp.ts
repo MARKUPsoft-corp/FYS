@@ -32,12 +32,19 @@ function getAdminDb() {
 }
 
 function formatWhatsAppRecipient(rawPhone: string): string {
-  const digits = rawPhone.replace(/\D/g, '');
-  if (digits.startsWith('237') && digits.length >= 12) {
-    return digits;
+  if (!rawPhone) return '';
+  let digits = rawPhone.replace(/\D/g, '');
+  if (digits.startsWith('00')) {
+    digits = digits.slice(2);
+  }
+  if (digits.length === 10 && digits.startsWith('0')) {
+    digits = digits.slice(1);
   }
   if (digits.length === 9) {
     return `237${digits}`;
+  }
+  if (digits.startsWith('237') && digits.length >= 12) {
+    return digits;
   }
   return digits;
 }
@@ -142,6 +149,14 @@ Si vous avez la moindre question ou si vous souhaitez reprogrammer votre recette
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -163,7 +178,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const orderData = orderDoc.data() || {};
-    const recipientPhone = orderData.userPhoneSnapshot || orderData.deliveryDetails?.phone;
+    let recipientPhone = orderData.userPhoneSnapshot || orderData.deliveryDetails?.phone;
+
+    // Fallback: rechercher le numéro dans le compte utilisateur si absent de la commande
+    if (!recipientPhone && orderData.userId && orderData.userId !== 'whatsapp_customer') {
+      try {
+        const uDoc = await db.collection('users').doc(orderData.userId).get();
+        if (uDoc.exists && uDoc.data()?.phone) {
+          recipientPhone = uDoc.data()?.phone;
+          await orderDoc.ref.update({ userPhoneSnapshot: recipientPhone });
+        }
+      } catch (uErr) {
+        console.warn('[whatsapp-status] Error fetching user phone fallback:', uErr);
+      }
+    }
 
     if (!recipientPhone) {
       console.warn(`[whatsapp-status] No phone number found for order ${orderId}`);
@@ -226,6 +254,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [status]: {
           sent: sendResult.ok,
           timestamp: FieldValue.serverTimestamp(),
+          recipient: recipientPhone,
+          metaStatus: sendResult.status ?? (sendResult.ok ? 200 : 500),
+          ...(sendResult.ok ? {} : { error: sendResult.data || sendResult.error || 'Failed' }),
         },
       },
     }, { merge: true });

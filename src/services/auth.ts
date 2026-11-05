@@ -194,7 +194,15 @@ export async function syncUserWithPhone(params: {
   name?: string;
 }): Promise<{ ok: boolean; phone?: string; updatedOrdersCount?: number }> {
   try {
-    const res = await fetch('/api/sync-user', {
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+    const apiUrl = isLocal
+      ? 'https://www.fys-app.com/api/sync-user'
+      : '/api/sync-user';
+
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),

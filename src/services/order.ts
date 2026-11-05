@@ -750,7 +750,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
     });
 
     // Envoi de la notification automatique WhatsApp par NutriFYS au client
-    sendWhatsAppOrderStatus(orderId, status).catch((err) => {
+    await sendWhatsAppOrderStatus(orderId, status).catch((err) => {
       console.warn('[order] Automated WhatsApp status notification skipped or failed:', err);
     });
   }
@@ -806,12 +806,23 @@ export async function cancelOrder(orderId: string): Promise<void> {
  */
 export async function sendWhatsAppOrderStatus(orderId: string, status: OrderStatus): Promise<boolean> {
   try {
-    const res = await fetch('/api/send-order-status-whatsapp', {
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+    const apiUrl = isLocal
+      ? 'https://www.fys-app.com/api/send-order-status-whatsapp'
+      : '/api/send-order-status-whatsapp';
+
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, status }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.warn('[order] sendWhatsAppOrderStatus HTTP status:', res.status);
+      return false;
+    }
     const data = await res.json();
     return !!data.sent;
   } catch (e) {
@@ -883,7 +894,7 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
     aiAnalysis,
     hasAddedSugar = false,
     estimatedPrice = 2000,
-    deliveryFee = 500,
+    deliveryFee = 1000,
     promoCode,
   } = params;
 
