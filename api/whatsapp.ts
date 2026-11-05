@@ -1493,21 +1493,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     // Diagnostique et déclenchement direct du dispatch PDF (Facture + Fiche Nutritionnelle)
     if (req.query.test_pdf_order) {
-      const testOrderId = String(req.query.test_pdf_order);
-      const db = getAdminDb();
-      if (!db) return res.status(500).json({ error: 'No db instance' });
-      const snap = await db.collection('orders').doc(testOrderId).get();
-      if (!snap.exists) return res.status(404).json({ error: 'Order not found', testOrderId });
-      const orderData = snap.data()!;
-      const phone = String(req.query.to || orderData.userPhoneSnapshot || '237675108876');
-      const ingredients = orderData.cocktailIngredientsSnapshot || [];
-      const result = await sendOrderPdfsToCustomer(phone, orderData, testOrderId, ingredients);
-      return res.status(200).json({
-        status: 'tested',
-        testOrderId,
-        phone,
-        result,
-      });
+      try {
+        const testOrderId = String(req.query.test_pdf_order);
+        const db = getAdminDb();
+        if (!db) return res.status(200).json({ error: 'No db instance' });
+        const snap = await db.collection('orders').doc(testOrderId).get();
+        if (!snap.exists) return res.status(200).json({ error: 'Order not found', testOrderId });
+        const orderData = snap.data()!;
+        const phone = String(req.query.to || orderData.userPhoneSnapshot || '237675108876');
+        const ingredients = orderData.cocktailIngredientsSnapshot || [];
+        const result = await sendOrderPdfsToCustomer(phone, orderData, testOrderId, ingredients);
+        return res.status(200).json({
+          status: 'tested',
+          testOrderId,
+          phone,
+          result,
+        });
+      } catch (err: any) {
+        return res.status(200).json({
+          status: 'error',
+          error: err?.message || String(err),
+          stack: err?.stack || null,
+        });
+      }
     }
 
     const mode = req.query['hub.mode'];
