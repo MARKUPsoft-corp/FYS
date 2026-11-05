@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-const API_URL = '/api/send-notification';
+const API_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'https://www.fys-app.com/api/send-notification'
+  : '/api/send-notification';
 
 export function AdminPushPanel() {
   const { t } = useTranslation();

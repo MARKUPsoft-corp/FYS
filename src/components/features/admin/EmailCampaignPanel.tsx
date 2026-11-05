@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
+function getApiUrl(path: string) {
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return `https://www.fys-app.com${path}`;
+  }
+  return path;
+}
+
 export function EmailCampaignPanel() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [stats, setStats] = useState<{
@@ -33,10 +40,18 @@ export function EmailCampaignPanel() {
   async function fetchStats() {
     setLoadingStats(true);
     try {
-      const res = await fetch('/api/send-email-campaign?action=preview');
-      const data = await res.json();
+      const res = await fetch(getApiUrl('/api/send-email-campaign?action=preview'));
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error(`Réponse non-JSON (${res.status}): ${text.slice(0, 80)}`);
+      }
       if (res.ok) {
         setStats(data);
+      } else {
+        console.warn('API error:', data.error);
       }
     } catch (e) {
       console.warn('Failed to load email campaign stats:', e);
@@ -59,7 +74,7 @@ export function EmailCampaignPanel() {
     setTestStatus('sending');
     setTestMsg('');
     try {
-      const res = await fetch('/api/send-email-campaign', {
+      const res = await fetch(getApiUrl('/api/send-email-campaign'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +82,13 @@ export function EmailCampaignPanel() {
           testEmail: testEmail.trim(),
         }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Erreur lors de l\'envoi du test');
       }
@@ -83,14 +104,20 @@ export function EmailCampaignPanel() {
     setCampaignStatus('sending');
     setCampaignError('');
     try {
-      const res = await fetch('/api/send-email-campaign', {
+      const res = await fetch(getApiUrl('/api/send-email-campaign'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'send_campaign',
         }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error(`Erreur serveur (${res.status}): ${text.slice(0, 80)}`);
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Erreur lors du lancement de la campagne');
       }
