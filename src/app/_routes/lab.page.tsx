@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
-import { Save, Sparkles, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Save, Sparkles, ChevronRight, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
 import { LabHeader, type LabTab } from '@/components/features/lab/LabHeader';
 import { ComposeTab, type ComposeStep } from '@/components/features/lab/ComposeTab';
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
-import { WhatsappOrderSheet } from '@/components/features/cocktail/WhatsappOrderSheet';
 import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
+import { createWhatsappDraftOrder } from '@/services/order';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail, Fruit, HealthProfile } from '@/entities';
 import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle } from '@/entities';
@@ -544,7 +544,7 @@ const FysLab: PageComponent = () => {
         hasAddedSugar: sugarOption,
       });
       setShowOnboardingForAnalysis(true);
-      return;
+      return null;
     }
     if (user?.role === UserRole.CUSTOMER && !profileFetched) {
       saveLabMix({
@@ -553,12 +553,12 @@ const FysLab: PageComponent = () => {
         name: cocktailName,
         hasAddedSugar: sugarOption,
       });
-      return;
+      return null;
     }
 
     const mains = forcedMains ?? selectedIngredients;
     const combined = buildCombinedMap(mains, forcedSupps ?? selectedSupplements);
-    if (combined.size === 0) return;
+    if (combined.size === 0) return null;
     
     // 🎵 Play analysis start sound + ambient loop
     labSounds.analysisStart();
@@ -582,6 +582,7 @@ const FysLab: PageComponent = () => {
       
       // 🎵 Play completion sound
       labSounds.analysisComplete();
+      return result;
     } catch (err) {
       // Stop ambient on error
       labSounds.stopAmbient();
@@ -618,6 +619,107 @@ const FysLab: PageComponent = () => {
       ...(analysis ? { aiAnalysis: analysis } : {}),
     } as Cocktail;
   }, [user, fruits, selectedIngredients, selectedSupplements, cocktailName, defaultBottleTotal, analysis, pricing, hasAddedSugar]);
+
+  const [redirectingToWa, setRedirectingToWa] = useState(false);
+
+  const handleContinueToWhatsApp = useCallback(
+    async (customProfile?: HealthProfile | null, customAnalysis?: AIAnalysis | null) => {
+      const profileToUse = customProfile !== undefined ? customProfile : effectiveProfile;
+
+      // 1. Si le profil de santé est incomplet, ouvrir la modale d'onboarding santé
+      if (!isProfileComplete(profileToUse)) {
+        pendingOpenOrderAfterOnboardingRef.current = true;
+        saveLabMix({
+          mains: selectedIngredients,
+          supps: selectedSupplements,
+          name: cocktailName,
+          hasAddedSugar,
+        });
+        setShowOnboardingForAnalysis(true);
+        return;
+      }
+
+      if (selectedIngredients.size === 0) return;
+
+      setRedirectingToWa(true);
+      try {
+        const ingredients = buildIngredients();
+        const base = pricing?.bottle500mlBase ?? 1500;
+        const analysisToUse = customAnalysis || analysis;
+
+        const currentCocktail: Cocktail = draftCocktail ?? ({
+          id: 'draft',
+          name: cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || t('lab.defaultName'),
+          type: CocktailType.CUSTOM,
+          createdBy: user?.uid || 'guest',
+          isActive: true,
+          isPublic: false,
+          ingredients,
+          basePrice: base,
+          totalPrice: defaultBottleTotal,
+          hasAddedSugar,
+          ...(analysisToUse ? { aiAnalysis: analysisToUse } : {}),
+        } as Cocktail);
+
+        // 2. Créer le brouillon dans whatsapp_drafts/{orderCode} sans demander nom ni numéro
+        const res = await createWhatsappDraftOrder({
+          cocktail: currentCocktail,
+          healthProfile: profileToUse ? {
+            healthConditions: profileToUse.healthConditions || [],
+            allergies: profileToUse.allergies || [],
+            goals: profileToUse.goals || [],
+          } : undefined,
+          aiAnalysis: analysisToUse,
+          hasAddedSugar,
+          estimatedPrice: defaultBottleTotal,
+          promoCode: promoParam || undefined,
+        });
+
+        // 3. Pré-remplir le message WhatsApp avec le code court
+        const rawNumber = (pricing as any)?.whatsappNumber || '237691850125';
+        const cleanWaNumber = rawNumber.replace(/[^0-9]/g, '');
+
+        const lines = [
+          `Bonjour NutriFYS ! 🌿`,
+          `Je viens de composer mon cocktail santé *"${currentCocktail.name}"* sur le site.`,
+          `Code de ma commande : *#${res.orderCode}*`,
+          ``,
+          `Je souhaite finaliser ma commande avec toi !`,
+        ];
+        const message = lines.join('\n');
+        const waUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(message)}`;
+
+        // 4. Ouverture directe de la conversation WhatsApp avec NutriFYS
+        window.location.href = waUrl;
+      } catch (err) {
+        console.error('[lab] Erreur création draft WhatsApp:', err);
+        const rawNumber = (pricing as any)?.whatsappNumber || '237691850125';
+        const cleanWaNumber = rawNumber.replace(/[^0-9]/g, '');
+        const cName = cocktailName.trim() || 'santé';
+        const fallbackUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(
+          `Bonjour NutriFYS ! 🌿 Je souhaite finaliser la commande de mon cocktail "${cName}".`
+        )}`;
+        window.location.href = fallbackUrl;
+      } finally {
+        setRedirectingToWa(false);
+      }
+    },
+    [
+      effectiveProfile,
+      selectedIngredients,
+      selectedSupplements,
+      cocktailName,
+      hasAddedSugar,
+      draftCocktail,
+      pricing,
+      defaultBottleTotal,
+      analysis,
+      promoParam,
+      user,
+      t,
+      buildIngredients,
+    ]
+  );
 
   async function handleSave() {
     if (!user) {
@@ -763,7 +865,7 @@ const FysLab: PageComponent = () => {
               analysis={analysis}
               onAnalyze={() => handleAnalyze()}
               analyzing={analyzing}
-              onOrderRequest={openOrderSheet}
+              onOrderRequest={handleContinueToWhatsApp}
               aiRecommendation={aiRecommendation}
               loadingAI={loadingAI}
               maxMainFruits={maxMainFruits}
@@ -806,20 +908,6 @@ const FysLab: PageComponent = () => {
             promoCode={promoParam || undefined}
           />
         )}
-
-        {draftCocktail && !user && (
-          <WhatsappOrderSheet
-            open={showOrderSheet}
-            onOpenChange={closeOrderSheet}
-            cocktail={draftCocktail}
-            fruits={fruits}
-            analysis={analysis}
-            healthProfile={effectiveProfile}
-            hasAddedSugar={hasAddedSugar}
-            promoCode={promoParam || undefined}
-            whatsappSupportNumber={(pricing as any)?.whatsappNumber || '237691850125'}
-          />
-        )}
       </div>
 
       {/* Onboarding modal déclenché par l'analyse ou la commande si profil incomplet */}
@@ -828,7 +916,8 @@ const FysLab: PageComponent = () => {
         onSkip={() => {
           setShowOnboardingForAnalysis(false);
           if (pendingOpenOrderAfterOnboardingRef.current || sheetParam === 'order') {
-            pushHistoryParam(setSearchParams, 'sheet', 'order');
+            pendingOpenOrderAfterOnboardingRef.current = false;
+            handleContinueToWhatsApp(effectiveProfile);
           }
         }}
         onComplete={async (data) => {
@@ -845,7 +934,7 @@ const FysLab: PageComponent = () => {
           }
           setShowOnboardingForAnalysis(false);
 
-          const shouldOpenOrder = pendingOpenOrderAfterOnboardingRef.current || sheetParam === 'order';
+          const shouldContinueToWa = pendingOpenOrderAfterOnboardingRef.current || sheetParam === 'order';
           pendingOpenOrderAfterOnboardingRef.current = false;
 
           // Reprendre l'analyse avec le mix sauvegardé et le profil complété
@@ -858,10 +947,10 @@ const FysLab: PageComponent = () => {
             setSelectedSupplements(mix.supps);
             if (mix.name) setCocktailName(mix.name);
           }
-          await handleAnalyze(mainsToUse, suppsToUse, sugarToUse, data);
+          const analysisResult = await handleAnalyze(mainsToUse, suppsToUse, sugarToUse, data);
 
-          if (shouldOpenOrder) {
-            pushHistoryParam(setSearchParams, 'sheet', 'order');
+          if (shouldContinueToWa) {
+            await handleContinueToWhatsApp(data, analysisResult);
           }
         }}
       />
@@ -913,10 +1002,16 @@ const FysLab: PageComponent = () => {
                   </Button>
                   <Button
                     size="lg"
-                    className="flex-1 h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-2 bg-primary text-white shadow-[0_8px_25px_rgba(63,109,78,0.3)]"
-                    onClick={openOrderSheet}
+                    className="flex-1 h-14 rounded-full font-bold text-[16px] active:scale-95 transition-all gap-2 bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-[0_8px_25px_rgba(37,211,102,0.3)]"
+                    disabled={redirectingToWa}
+                    onClick={() => handleContinueToWhatsApp()}
                   >
-                    <ShoppingBag className="size-5" /> {t('lab.order', 'Commander')}
+                    {redirectingToWa ? (
+                      <span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />
+                    ) : (
+                      <MessageCircle className="size-5" />
+                    )}
+                    Continuer sur WhatsApp
                   </Button>
                 </div>
               ) : (
@@ -945,10 +1040,16 @@ const FysLab: PageComponent = () => {
                   </Button>
                   <Button
                     size="lg"
-                    className="flex-1 h-14 rounded-full font-bold text-[17px] active:scale-95 transition-all gap-2 bg-primary text-white shadow-[0_8px_25px_rgba(63,109,78,0.3)]"
-                    onClick={openOrderSheet}
+                    className="flex-1 h-14 rounded-full font-bold text-[16px] active:scale-95 transition-all gap-2 bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-[0_8px_25px_rgba(37,211,102,0.3)]"
+                    disabled={redirectingToWa}
+                    onClick={() => handleContinueToWhatsApp()}
                   >
-                    <ShoppingBag className="size-5" /> {t('lab.order', 'Commander')}
+                    {redirectingToWa ? (
+                      <span className="size-5 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />
+                    ) : (
+                      <MessageCircle className="size-5" />
+                    )}
+                    Continuer sur WhatsApp
                   </Button>
                 </div>
               ) : (

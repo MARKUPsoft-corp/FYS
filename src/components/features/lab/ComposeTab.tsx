@@ -4,7 +4,7 @@ import {
   Plus, FlaskConical, Sparkles, Save, Loader2,
   Shield, Zap, Leaf, Droplets, Heart, Moon, Wind,
   Lightbulb, Link2, ClipboardList, ShoppingBag,
-  Check, ChevronLeft, ChevronRight,
+  Check, ChevronLeft, ChevronRight, MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -271,14 +271,14 @@ function NutritionalSheetContent({
         )}
       </div>
 
-      {/* Footer: Commander */}
+      {/* Footer: Continuer sur WhatsApp */}
       <div className="shrink-0 border-t border-border/40 px-6 py-4">
         <Button
           size="lg"
-          className="w-full h-12 rounded-xl gap-2 text-sm font-bold bg-primary hover:bg-primary/90 text-white shadow-[0_8px_25px_rgba(63,109,78,0.25)] active:scale-95 transition-all"
+          className="w-full h-12 rounded-xl gap-2 text-sm font-bold bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-[0_8px_25px_rgba(37,211,102,0.3)] active:scale-95 transition-all"
           onClick={onOrderRequest}
         >
-          <ShoppingBag className="size-4" /> {t('lab.order')}
+          <MessageCircle className="size-5" /> Continuer sur WhatsApp
         </Button>
       </div>
     </div>
@@ -849,11 +849,11 @@ export function SavePanel({
             <Button
               size="lg"
               type="button"
-              className="w-full h-12 rounded-2xl bg-[#E0982E] hover:bg-[#E0982E]/90 text-white font-bold shadow-[0_8px_25px_rgba(224,152,46,0.3)] active:scale-95 transition-all gap-2"
+              className="w-full h-12 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold shadow-[0_8px_25px_rgba(37,211,102,0.3)] active:scale-95 transition-all gap-2"
               onClick={onOrderRequest}
             >
-              <ShoppingBag className="size-4" />
-              {t('lab.order', 'Commander ce cocktail')}
+              <MessageCircle className="size-5" />
+              Continuer sur WhatsApp
             </Button>
           )}
           {!analysis && composeStep === 2 && selectedMainCount > 0 && (

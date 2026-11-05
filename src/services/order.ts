@@ -848,8 +848,8 @@ export function generateShortOrderCode(): string {
 }
 
 export type WhatsappDraftOrderParams = {
-  customerName: string;
-  customerPhone: string;
+  customerName?: string;
+  customerPhone?: string;
   cocktail: Cocktail;
   healthProfile?: {
     healthConditions: string[];
@@ -883,16 +883,18 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
     promoCode,
   } = params;
 
-  // Nettoyage et normalisation du numéro
-  const digitsOnly = customerPhone.replace(/\D/g, '');
-  const cleanPhone = digitsOnly.startsWith('237') ? digitsOnly : `237${digitsOnly.replace(/^0+/, '')}`;
+  // Nettoyage et normalisation du numéro si fourni
+  const digitsOnly = customerPhone ? customerPhone.replace(/\D/g, '') : '';
+  const cleanPhone = digitsOnly
+    ? (digitsOnly.startsWith('237') ? digitsOnly : `237${digitsOnly.replace(/^0+/, '')}`)
+    : '';
 
   const orderCode = generateShortOrderCode();
   const draftRef = doc(db, 'whatsapp_drafts', orderCode);
 
   await setDoc(draftRef, {
     orderCode,
-    customerName: customerName.trim(),
+    customerName: customerName ? customerName.trim() : '',
     customerPhone: cleanPhone,
     cocktail: {
       id: cocktail.id || 'draft',
