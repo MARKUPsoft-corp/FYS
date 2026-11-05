@@ -848,6 +848,7 @@ export function generateShortOrderCode(): string {
 }
 
 export type WhatsappDraftOrderParams = {
+  orderCode?: string;
   customerName?: string;
   customerPhone?: string;
   cocktail: Cocktail;
@@ -872,6 +873,7 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
   orderCode: string;
 }> {
   const {
+    orderCode: customOrderCode,
     customerName,
     customerPhone,
     cocktail,
@@ -889,10 +891,10 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
     ? (digitsOnly.startsWith('237') ? digitsOnly : `237${digitsOnly.replace(/^0+/, '')}`)
     : '';
 
-  const orderCode = generateShortOrderCode();
+  const orderCode = customOrderCode || generateShortOrderCode();
   const draftRef = doc(db, 'whatsapp_drafts', orderCode);
 
-  await setDoc(draftRef, {
+  const rawData = {
     orderCode,
     customerName: customerName ? customerName.trim() : '',
     customerPhone: cleanPhone,
@@ -915,8 +917,15 @@ export async function createWhatsappDraftOrder(params: WhatsappDraftOrderParams)
     estimatedPrice,
     deliveryFee,
     ...(promoCode ? { promoCode } : {}),
-    createdAt: serverTimestamp(),
     status: 'draft',
+  };
+
+  // Éliminer les propriétés 'undefined' non supportées par Firestore
+  const cleanData = JSON.parse(JSON.stringify(rawData));
+
+  await setDoc(draftRef, {
+    ...cleanData,
+    createdAt: serverTimestamp(),
   });
 
   return {

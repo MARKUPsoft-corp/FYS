@@ -10,7 +10,7 @@ import { ComposeTab, type ComposeStep } from '@/components/features/lab/ComposeT
 import { OrderSheet } from '@/components/features/cocktail/OrderSheet';
 import { SaveCocktailDialog } from '@/components/features/lab/SaveCocktailDialog';
 import { NutrifysComposeTab } from '@/components/features/lab/NutrifysComposeTab';
-import { createWhatsappDraftOrder } from '@/services/order';
+import { createWhatsappDraftOrder, generateShortOrderCode } from '@/services/order';
 import type { CocktailProposal } from '@/data/nutrifys-chat';
 import type { CocktailIngredient, AIAnalysis, Cocktail, Fruit, HealthProfile } from '@/entities';
 import { CocktailType, isUsableAsMainFruit, isUsableAsSupplement, isUsableFruit, areFruitsIncompatible, sumIngredientPrices, pricePerBottle } from '@/entities';
@@ -642,6 +642,8 @@ const FysLab: PageComponent = () => {
       if (selectedIngredients.size === 0) return;
 
       setRedirectingToWa(true);
+      const orderCode = generateShortOrderCode();
+
       try {
         const ingredients = buildIngredients();
         const base = pricing?.bottle500mlBase ?? 1500;
@@ -662,7 +664,8 @@ const FysLab: PageComponent = () => {
         } as Cocktail);
 
         // 2. Créer le brouillon dans whatsapp_drafts/{orderCode} sans demander nom ni numéro
-        const res = await createWhatsappDraftOrder({
+        await createWhatsappDraftOrder({
+          orderCode,
           cocktail: currentCocktail,
           healthProfile: profileToUse ? {
             healthConditions: profileToUse.healthConditions || [],
@@ -682,7 +685,7 @@ const FysLab: PageComponent = () => {
         const lines = [
           `Bonjour NutriFYS ! 🌿`,
           `Je viens de composer mon cocktail santé *"${currentCocktail.name}"* sur le site.`,
-          `Code de ma commande : *#${res.orderCode}*`,
+          `Code de ma commande : *#${orderCode}*`,
           ``,
           `Je souhaite finaliser ma commande avec toi !`,
         ];
@@ -695,9 +698,16 @@ const FysLab: PageComponent = () => {
         console.error('[lab] Erreur création draft WhatsApp:', err);
         const rawNumber = (pricing as any)?.whatsappNumber || '237650437427';
         const cleanWaNumber = rawNumber.replace(/[^0-9]/g, '');
-        const cName = cocktailName.trim() || 'santé';
+        const cName = cocktailName.trim() || provisionalNameFromIds(selectedIngredients.keys()) || 'Mon Jus Santé';
+        const fallbackLines = [
+          `Bonjour NutriFYS ! 🌿`,
+          `Je viens de composer mon cocktail santé *"${cName}"* sur le site.`,
+          `Code de ma commande : *#${orderCode}*`,
+          ``,
+          `Je souhaite finaliser ma commande avec toi !`,
+        ];
         const fallbackUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(
-          `Bonjour NutriFYS ! 🌿 Je souhaite finaliser la commande de mon cocktail "${cName}".`
+          fallbackLines.join('\n')
         )}`;
         window.location.href = fallbackUrl;
       } finally {
