@@ -185,10 +185,12 @@ async function sendEmail(options: {
 }): Promise<{ success: boolean; error?: string; provider: string }> {
   const { to, subject, html } = options;
 
+  let lastError = '';
+
   // 1. Resend API (si clé RESEND_API_KEY présente)
   if (process.env.RESEND_API_KEY) {
     try {
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'FYS Fresh & Young Spirit <contact@fys-app.com>';
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'FYS Fresh & Young Spirit <onboarding@resend.dev>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -209,7 +211,8 @@ async function sendEmail(options: {
       }
       return { success: true, provider: 'resend' };
     } catch (e: any) {
-      console.warn('[send-email-campaign] Resend failed, trying fallback:', e?.message || e);
+      lastError = e?.message || String(e);
+      console.warn('[send-email-campaign] Resend failed, trying fallback:', lastError);
     }
   }
 
@@ -246,11 +249,11 @@ async function sendEmail(options: {
     }
   }
 
-  // Si aucun fournisseur configuré
+  // Si aucun fournisseur configuré ou échec de Resend
   return {
     success: false,
-    error: 'Aucun fournisseur email configuré (veuillez ajouter RESEND_API_KEY ou SMTP_USER/SMTP_PASS).',
-    provider: 'none',
+    error: lastError || 'Aucun fournisseur email configuré (veuillez ajouter RESEND_API_KEY ou SMTP_USER/SMTP_PASS).',
+    provider: process.env.RESEND_API_KEY ? 'resend' : 'none',
   };
 }
 
