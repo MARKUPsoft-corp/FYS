@@ -2033,6 +2033,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let webDraftCode = '';
       let webDraft: any = null;
       let isNewDraftCodeInMessage = false;
+      let previousSupersededDraftName = '';
+      let previousSupersededDraftCode = '';
+      let allPhoneUserDocs: any[] = [];
       let matchedUserEmail = '';
       let buttonsToSend: WhatsAppInteractiveButton[] = [];
       let listToSend: WhatsAppListData | null = null;
@@ -2113,6 +2116,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const usersRef = db.collection('users');
           let existingUserDoc: any = null;
 
+          // Récupérer tous les documents utilisateur associés à ce numéro WhatsApp
+          const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
+          try {
+            const phoneUsersSnap = await usersRef.where('phone', 'in', safeUserVariants).get();
+            if (!phoneUsersSnap.empty) {
+              allPhoneUserDocs = phoneUsersSnap.docs;
+            }
+          } catch (pErr) {
+            console.warn('[whatsapp-webhook] Phone users query error:', pErr);
+          }
+
           // 1. Si le brouillon web a été initié par un utilisateur connecté sur le site
           if (webDraft?.userId && webDraft.userId !== 'guest') {
             const draftUserSnap = await usersRef.doc(webDraft.userId).get().catch(() => null);
@@ -2121,12 +2135,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // 2. Sinon, rechercher par les variantes du numéro WhatsApp (format local, international, etc.)
-          const safeUserVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
-          if (!existingUserDoc) {
-            const querySnap = await usersRef.where('phone', 'in', safeUserVariants).limit(1).get();
-            if (!querySnap.empty) {
-              existingUserDoc = querySnap.docs[0];
+          // 2. Priorisation intelligente parmi les comptes trouvés pour ce numéro :
+          // Priorité 1 : Le compte Google officiel (avec adresse email)
+          // Priorité 2 : Le compte dont activeDraftCode correspond au webDraftCode
+          // Priorité 3 : Le premier compte trouvé
+          if (!existingUserDoc && allPhoneUserDocs.length > 0) {
+            existingUserDoc =
+              allPhoneUserDocs.find((d: any) => d.data()?.email) ||
+              allPhoneUserDocs.find((d: any) => d.data()?.activeDraftCode) ||
+              allPhoneUserDocs[0];
+          }
+
+          // Si un compte Google existe pour ce numéro et que le compte retenu n'a pas d'email,
+          // basculer sur le compte Google pour que les commandes soient visibles sur son tableau de bord
+          if (allPhoneUserDocs.length > 1 && (!existingUserDoc || !existingUserDoc.data()?.email)) {
+            const googleAccount = allPhoneUserDocs.find((d: any) => d.data()?.email);
+            if (googleAccount) {
+              existingUserDoc = googleAccount;
             }
           }
 
@@ -2139,6 +2164,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               if (!emailSnap.empty) {
                 existingUserDoc = emailSnap.docs[0];
                 console.log(`[whatsapp-webhook] 🔗 Google account linked via email ${email} to phone ${senderPhone}`);
+              }
+            }
+          }
+
+          // ── GESTION DES CONFLITS DE COMMANDES (NOUVEAU BROUILLON LAB VS ANCIEN EN COURS) ──
+          if (isNewDraftCodeInMessage && existingUserDoc && webDraftCode) {
+            const currentActiveDraft = existingUserDoc.data()?.activeDraftCode;
+            if (currentActiveDraft && currentActiveDraft !== webDraftCode) {
+              try {
+                const prevSnap = await db.collection('whatsapp_drafts').doc(currentActiveDraft).get();
+                if (prevSnap.exists) {
+                  const prevData = prevSnap.data();
+                  if (prevData?.status !== 'converted') {
+                    previousSupersededDraftCode = currentActiveDraft;
+                    previousSupersededDraftName = prevData?.cocktail?.name || 'Recette précédente';
+                    await db.collection('whatsapp_drafts').doc(currentActiveDraft).update({
+                      status: 'superseded',
+                      supersededBy: webDraftCode,
+                      supersededAt: FieldValue.serverTimestamp(),
+                    }).catch(() => null);
+                    console.log(`[whatsapp-webhook] 🔄 Superseded older pending draft #${previousSupersededDraftCode} (${previousSupersededDraftName}) by new draft #${webDraftCode}`);
+                  }
+                }
+              } catch (err) {
+                console.warn('[whatsapp-webhook] Error superseding previous draft:', err);
               }
             }
           }
@@ -2233,6 +2283,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               await userDocRef.set(userUpdates, { merge: true });
             }
 
+            // Synchroniser activeDraftCode sur TOUS les documents associés à ce numéro pour éviter tout désalignement
+            if (webDraftCode && allPhoneUserDocs.length > 0) {
+              for (const pDoc of allPhoneUserDocs) {
+                if (pDoc.id !== userDocRef.id && pDoc.data()?.activeDraftCode !== webDraftCode) {
+                  await pDoc.ref.set({ activeDraftCode: webDraftCode }, { merge: true }).catch(() => null);
+                }
+              }
+            }
+
             // Lier le numéro et nom du client dans whatsapp_drafts si pas encore fait
             if (webDraftCode) {
               await db.collection('whatsapp_drafts').doc(webDraftCode).set({
@@ -2319,6 +2378,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .replace(/\s+/g, ' ')
                 .trim() || 'cher client';
 
+              const supersedeContextNotice = previousSupersededDraftName
+                ? `\n\n⚠️ RÈGLE DE REMPLACEMENT D'ANCIENNE COMMANDE NON FINALISÉE :
+Le client avait commencé une commande pour son cocktail "${previousSupersededDraftName}" (#${previousSupersededDraftCode}) mais ne l'avait pas finalisée. Il vient de composer au Lab Web cette NOUVELLE création : "${cocktailName}" (#${webDraftCode}).
+Consigne d'accueil : Informe-le avec enthousiasme et bienveillance que nous passons bien sur sa nouvelle recette "${cocktailName}" (#${webDraftCode}) (l'ancienne commande non validée a été annulée/remplacée). Demande-lui quel format il souhaite (500ml ou 1L).`
+                : '';
+
               userProfileContext = `\n\nCOMMANDE EN COURS DU LAB WEB FYS (RÉFÉRENCE OFFICIELLE #${webDraftCode}) :
 - Client : ${customerGreetingName}
 - Recette composée au Lab FYS : "${cocktailName}"
@@ -2327,7 +2392,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - Tarifs fermes et définitifs FYS (Calculés selon la vraie formule) :
   * Bouteille 500ml : ${exactDraftPrice500} XAF (Base contenant ${bottle500Base} XAF + ${webDraftIngredientsSum} XAF de fruits)
   * Bouteille 1L : ${exactDraftPrice1L} XAF (Base contenant ${bottle1LBase} XAF + ${webDraftIngredientsSum} XAF de fruits)
-  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)
+  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)${supersedeContextNotice}
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
@@ -2355,21 +2420,26 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
               }
             }
 
-            // Récupérer les 8 derniers messages pour garder le fil naturel
-            const historySnap = await userDocRef
-              .collection('whatsapp_messages')
-              .orderBy('timestamp', 'desc')
-              .limit(8)
-              .get();
+            // Récupérer les messages récents pour garder le fil naturel
+            // IMPORTANT ANTI-CONFLIT : Si le client arrive avec un NOUVEAU brouillon (#FYS-XXXX),
+            // NE PAS charger l'historique des discussions précédentes, car cela polluerait l'IA avec
+            // les questions/ingrédients d'une ancienne commande !
+            if (!isNewDraftCodeInMessage) {
+              const historySnap = await userDocRef
+                .collection('whatsapp_messages')
+                .orderBy('timestamp', 'desc')
+                .limit(8)
+                .get();
 
-            if (!historySnap.empty) {
-              const rawHistory = historySnap.docs.map((d: any) => d.data()).reverse();
-              for (const m of rawHistory) {
-                if (m.text) {
-                  chatHistoryForGemini.push({
-                    role: m.sender === 'user' ? 'user' : 'model',
-                    parts: [{ text: m.text }],
-                  });
+              if (!historySnap.empty) {
+                const rawHistory = historySnap.docs.map((d: any) => d.data()).reverse();
+                for (const m of rawHistory) {
+                  if (m.text) {
+                    chatHistoryForGemini.push({
+                      role: m.sender === 'user' ? 'user' : 'model',
+                      parts: [{ text: m.text }],
+                    });
+                  }
                 }
               }
             }
@@ -2381,11 +2451,15 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
                 const draftsSnap = await db.collection('whatsapp_drafts')
                   .where('customerPhone', 'in', safeUserVariants)
                   .where('status', '==', 'draft')
-                  .orderBy('createdAt', 'desc')
-                  .limit(1)
+                  .limit(10)
                   .get();
                 if (!draftsSnap.empty) {
-                  const dDoc = draftsSnap.docs[0];
+                  const sorted = draftsSnap.docs.sort((a: any, b: any) => {
+                    const aT = a.data()?.createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
+                    const bT = b.data()?.createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
+                    return bT - aT;
+                  });
+                  const dDoc = sorted[0];
                   webDraftCode = dDoc.id;
                   webDraft = dDoc.data();
                   console.log(`[whatsapp-webhook] 🔄 Restored active draft #${webDraftCode} for new user from phone query:`, webDraft.cocktail?.name);
@@ -3018,6 +3092,11 @@ RÈGLES D'OR COMMERCIALES :
 
                 if (userDocRef) {
                   await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch((e: any) => console.warn('[whatsapp-webhook] Could not clear activeDraftCode:', e));
+                }
+                if (allPhoneUserDocs && allPhoneUserDocs.length > 0) {
+                  for (const pDoc of allPhoneUserDocs) {
+                    await pDoc.ref.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
+                  }
                 }
               }
 
