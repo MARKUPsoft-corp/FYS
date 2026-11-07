@@ -3798,6 +3798,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
         ) {
           const chosenFormat: '500ml' | '1L' = interactiveButtonId.includes('500ml') ? '500ml' : '1L';
           const formatLabel = chosenFormat === '1L' ? '1 Litre' : '500ml';
+          const isAll = interactiveButtonId.startsWith('btn_format_all_');
 
           // Filet de sécurité anti-amnésie : Si le panier n'est pas encore instancié, récupérer la recette
           if (!activeCart && activeRecipeIngredients.length > 0) {
