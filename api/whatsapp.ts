@@ -1103,11 +1103,22 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
             ? order.orderLines.map((line: any, i: number) =>
                 React.createElement(
                   View,
-                  { key: i, style: [styles.row, { marginBottom: 2 }] },
-                  React.createElement(Text, { style: [styles.value, { flex: 2 }] }, `${order.cocktailNameSnapshot || 'Cocktail Santé'} · ${line.bottleSizeLabel || '500 ml'}`),
-                  React.createElement(Text, { style: [styles.value, { width: 30, textAlign: 'center' }] }, String(line.quantity)),
-                  React.createElement(Text, { style: [styles.value, { width: 70, textAlign: 'right' }] }, `${Number(line.pricePerBottle || 0).toLocaleString()} XAF`),
-                  React.createElement(Text, { style: [styles.value, { width: 80, textAlign: 'right' }] }, `${Number(line.lineTotal || 0).toLocaleString()} XAF`)
+                  { key: i, style: [{ marginBottom: 6 }] },
+                  React.createElement(
+                    View,
+                    { style: [styles.row, { marginBottom: 2 }] },
+                    React.createElement(Text, { style: [styles.value, { flex: 2 }] }, `${line.cocktailName || order.cocktailNameSnapshot || 'Cocktail Santé'} · ${line.bottleSizeLabel || '1 L'}`),
+                    React.createElement(Text, { style: [styles.value, { width: 30, textAlign: 'center' }] }, String(line.quantity || 1)),
+                    React.createElement(Text, { style: [styles.value, { width: 70, textAlign: 'right' }] }, `${Number(line.pricePerBottle || line.unitPrice || 0).toLocaleString()} XAF`),
+                    React.createElement(Text, { style: [styles.value, { width: 80, textAlign: 'right' }] }, `${Number(line.lineTotal || 0).toLocaleString()} XAF`)
+                  ),
+                  line.fruits?.length
+                    ? React.createElement(
+                        Text,
+                        { style: [styles.label, { fontSize: 8, fontStyle: 'italic', paddingLeft: 4 }] },
+                        `Fruits : ${Array.isArray(line.fruits) ? line.fruits.join(', ') : line.fruits}`
+                      )
+                    : null
                 )
               )
             : React.createElement(
@@ -1533,7 +1544,153 @@ Renvoie UNIQUEMENT un objet JSON avec cette structure :
   };
 }
 
-// ── Envoi groupé Facture PDF + Fiche Nutritionnelle PDF au client WhatsApp ────
+// ── Interfaces & Moteur de Calcul Déterministe du Panier (Cart Multi-Articles) ──
+
+export interface WhatsAppCartItem {
+  id: string;
+  cocktailName: string;
+  fruits: string[];
+  ingredients: Array<{
+    fruitId: string;
+    fruitName: string;
+    priceSnapshot: number;
+    isSupplement?: boolean;
+    incompatibleIds?: string[];
+  }>;
+  bottleSize: '500ml' | '1L';
+  bottleSizeLabel: string;
+  quantity: number;
+  baseBottlePrice: number;
+  ingredientsPriceSum: number;
+  unitPrice: number;
+  lineTotal: number;
+  hasAddedSugar?: boolean;
+}
+
+export interface WhatsAppCart {
+  items: WhatsAppCartItem[];
+  subtotal: number;
+  deliveryFee: number;
+  totalPrice: number;
+  district?: string;
+  updatedAt: number;
+}
+
+export function computeCartFromRawItems(
+  rawItems: Array<{
+    cocktailName?: string;
+    fruits?: string[];
+    bottleSize?: string;
+    quantity?: number;
+    hasAddedSugar?: boolean;
+  }>,
+  availableFruits: any[],
+  bottle500Base: number,
+  bottle1LBase: number,
+  existingDistrict?: string
+): WhatsAppCart {
+  const items: WhatsAppCartItem[] = [];
+
+  rawItems.forEach((raw, idx) => {
+    const rawFruits = Array.isArray(raw.fruits) ? raw.fruits : [];
+    const resolvedIngs: any[] = [];
+    for (const fn of rawFruits) {
+      const clean = String(fn).trim().toLowerCase();
+      const found = availableFruits.find((af) => {
+        const afClean = af.name.toLowerCase();
+        const afId = af.id.toLowerCase();
+        return afClean === clean || afId === clean || afClean.includes(clean) || clean.includes(afClean);
+      });
+      if (found && !resolvedIngs.some((x) => x.fruitId === found.id)) {
+        resolvedIngs.push({
+          fruitId: found.id,
+          fruitName: found.name,
+          priceSnapshot: found.price,
+          isSupplement: found.isSupplement,
+          incompatibleIds: found.incompatibleIds || [],
+        });
+      }
+    }
+
+    if (resolvedIngs.length === 0) {
+      const defaultFruit = availableFruits.find((f) => f.name.toLowerCase().includes('ananas')) || availableFruits[0];
+      if (defaultFruit) {
+        resolvedIngs.push({
+          fruitId: defaultFruit.id,
+          fruitName: defaultFruit.name,
+          priceSnapshot: defaultFruit.price,
+          isSupplement: defaultFruit.isSupplement,
+          incompatibleIds: defaultFruit.incompatibleIds || [],
+        });
+      }
+    }
+
+    const bottleSize: '500ml' | '1L' = raw.bottleSize === '500ml' ? '500ml' : '1L';
+    const bottleSizeLabel = bottleSize === '1L' ? '1 Litre' : '500ml';
+    const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
+    const ingredientsPriceSum = resolvedIngs.reduce((sum, ing) => sum + (Number(ing.priceSnapshot) || 0), 0);
+    const unitPrice = baseBottlePrice + ingredientsPriceSum;
+    const quantity = Math.max(1, Number(raw.quantity) || 1);
+    const lineTotal = unitPrice * quantity;
+
+    items.push({
+      id: `item_${idx + 1}`,
+      cocktailName: raw.cocktailName || `Cocktail Santé ${idx + 1}`,
+      fruits: resolvedIngs.map((i) => i.fruitName),
+      ingredients: resolvedIngs,
+      bottleSize,
+      bottleSizeLabel,
+      quantity,
+      baseBottlePrice,
+      ingredientsPriceSum,
+      unitPrice,
+      lineTotal,
+      hasAddedSugar: !!raw.hasAddedSugar,
+    });
+  });
+
+  const subtotal = items.reduce((sum, it) => sum + it.lineTotal, 0);
+  const deliveryFee = 1000;
+  const totalPrice = subtotal + deliveryFee;
+
+  return {
+    items,
+    subtotal,
+    deliveryFee,
+    totalPrice,
+    district: existingDistrict || undefined,
+    updatedAt: Date.now(),
+  };
+}
+
+export function generateCartDevisText(cart: WhatsAppCart, district?: string): string {
+  const targetDistrict = district || cart.district || 'Yaoundé';
+  const lines: string[] = ['Voici le récapitulatif de votre commande :'];
+  cart.items.forEach((item) => {
+    const fruitsList = item.fruits.join(', ');
+    lines.push(`• ${item.quantity} bouteille(s) (${item.bottleSizeLabel}) de notre mélange « ${item.cocktailName} » (${fruitsList}) : ${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille (soit ${item.lineTotal.toLocaleString('fr-FR')} XAF)`);
+  });
+  lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
+  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
+  lines.push('');
+  lines.push('Est-ce que tout est bon pour vous pour valider cette commande ?');
+  return lines.join('\n');
+}
+
+export function generateCartConfirmationText(cart: WhatsAppCart, district?: string): string {
+  const targetDistrict = district || cart.district || 'Yaoundé';
+  const lines: string[] = ['📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE'];
+  cart.items.forEach((item) => {
+    const fruitsList = item.fruits.join(', ');
+    lines.push(`• Cocktail : ${item.cocktailName} (${fruitsList})`);
+    lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel} (${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille)`);
+  });
+  lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
+  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+  return lines.join('\n');
+}
+
+// ── Envoi groupé Facture PDF + Fiches Nutritionnelles PDF au client WhatsApp ────
 
 async function sendOrderPdfsToCustomer(
   to: string,
@@ -1546,7 +1703,6 @@ async function sendOrderPdfsToCustomer(
 
   const shortId = orderId.slice(0, 8).toUpperCase();
   const cocktailName = order.cocktailNameSnapshot || 'Cocktail Santé FYS';
-  const cocktailNameClean = cocktailName.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
   const fruitNames = (ingredients || []).map((i: any) => i.fruitName || i.name || 'Fruit').filter(Boolean);
   const ingredientsStr = fruitNames.join(', ');
 
@@ -1564,43 +1720,18 @@ async function sendOrderPdfsToCustomer(
   }
 
   try {
-    // 1. Analyse nutritionnelle
-    const nutritionAnalysis = await resolveOrGenerateNutritionAnalysis(
-      cocktailName,
-      fruitNames,
-      Boolean(order.hasAddedSugar),
-      order.aiAnalysisSnapshot,
-      GEMINI_API_KEY
+    // 1. Facture PDF officielle détaillée
+    const factureBuffer = await generateOrderFacturePdfBuffer(
+      {
+        ...order,
+        id: orderId,
+        createdAt: order.createdAt && typeof order.createdAt.toDate === 'function'
+          ? order.createdAt
+          : { toDate: () => new Date() },
+      },
+      ingredientsStr
     );
 
-    // Mettre à jour l'analyse dans Firestore si elle était absente
-    if (db && !order.aiAnalysisSnapshot && nutritionAnalysis) {
-      db.collection('orders').doc(orderId).update({
-        aiAnalysisSnapshot: nutritionAnalysis,
-      }).catch((e: any) => console.warn('[whatsapp] Could not attach aiAnalysisSnapshot to order in Firestore:', e));
-    }
-
-    // 2. Génération en parallèle des 2 buffers PDF
-    const [factureBuffer, nutritionBuffer] = await Promise.all([
-      generateOrderFacturePdfBuffer(
-        {
-          ...order,
-          id: orderId,
-          createdAt: order.createdAt && typeof order.createdAt.toDate === 'function'
-            ? order.createdAt
-            : { toDate: () => new Date() },
-        },
-        ingredientsStr
-      ),
-      generateOrderNutritionPdfBuffer(
-        nutritionAnalysis,
-        cocktailName,
-        order.userNameSnapshot,
-        fruitNames
-      ),
-    ]);
-
-    // 3. Téléversement et envoi de la FACTURE PDF
     if (factureBuffer) {
       const factureFilename = `Facture_${shortId}.pdf`;
       const factureMediaId = await uploadWhatsAppDocument(factureBuffer, factureFilename);
@@ -1616,23 +1747,64 @@ async function sendOrderPdfsToCustomer(
       console.error('[whatsapp] Facture buffer generation returned null');
     }
 
-    // Petite temporisation pour respecter l'ordre d'affichage WhatsApp
     await new Promise((r) => setTimeout(r, 350));
 
-    // 4. Téléversement et envoi de la FICHE NUTRITIONNELLE PDF
-    if (nutritionBuffer) {
-      const nutritionFilename = `Fiche_NutriFYS_${cocktailNameClean}.pdf`;
-      const nutritionMediaId = await uploadWhatsAppDocument(nutritionBuffer, nutritionFilename);
-      if (nutritionMediaId) {
-        nutritionSent = await sendWhatsAppDocument(
-          to,
-          nutritionMediaId,
-          nutritionFilename,
-          `🌿 Voici la fiche nutritionnelle officielle de votre cocktail ${cocktailName} élaborée par NutriFYS.`
-        );
+    // 2. Fiches Nutritionnelles PDF pour chaque cocktail unique de la commande
+    const uniqueCocktails: Array<{ name: string; fruits: string[]; hasSugar: boolean }> = [];
+    if (Array.isArray(order.orderLines) && order.orderLines.length > 0) {
+      for (const line of order.orderLines) {
+        const cName = line.cocktailName || order.cocktailNameSnapshot || 'Cocktail Santé FYS';
+        if (!uniqueCocktails.some((c) => c.name.toLowerCase() === cName.toLowerCase())) {
+          const fNames = Array.isArray(line.fruits) && line.fruits.length > 0
+            ? line.fruits
+            : (Array.isArray(line.ingredients) ? line.ingredients.map((i: any) => i.fruitName || i.name) : fruitNames);
+          uniqueCocktails.push({
+            name: cName,
+            fruits: fNames,
+            hasSugar: Boolean(order.hasAddedSugar),
+          });
+        }
       }
     } else {
-      console.error('[whatsapp] Nutrition buffer generation returned null');
+      uniqueCocktails.push({
+        name: cocktailName,
+        fruits: fruitNames,
+        hasSugar: Boolean(order.hasAddedSugar),
+      });
+    }
+
+    for (const cocktail of uniqueCocktails) {
+      const nutritionAnalysis = await resolveOrGenerateNutritionAnalysis(
+        cocktail.name,
+        cocktail.fruits,
+        cocktail.hasSugar,
+        order.aiAnalysisSnapshot,
+        GEMINI_API_KEY
+      );
+
+      const nutritionBuffer = await generateOrderNutritionPdfBuffer(
+        nutritionAnalysis,
+        cocktail.name,
+        order.userNameSnapshot,
+        cocktail.fruits
+      );
+
+      if (nutritionBuffer) {
+        const cocktailClean = cocktail.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const nutritionFilename = `Fiche_NutriFYS_${cocktailClean}.pdf`;
+        const nutritionMediaId = await uploadWhatsAppDocument(nutritionBuffer, nutritionFilename);
+        if (nutritionMediaId) {
+          const sent = await sendWhatsAppDocument(
+            to,
+            nutritionMediaId,
+            nutritionFilename,
+            `🌿 Voici la fiche nutritionnelle officielle de votre cocktail ${cocktail.name} élaborée par NutriFYS.`
+          );
+          if (sent) nutritionSent = true;
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 350));
     }
 
     if (db) {
@@ -1642,8 +1814,7 @@ async function sendOrderPdfsToCustomer(
         to,
         factureSent,
         nutritionSent,
-        factureBufferSize: factureBuffer ? factureBuffer.length : null,
-        nutritionBufferSize: nutritionBuffer ? nutritionBuffer.length : null,
+        cocktailsCount: uniqueCocktails.length,
         createdAt: FieldValue.serverTimestamp(),
       }).catch(() => null);
     }
@@ -1827,15 +1998,11 @@ Inclus OBLIGATOIREMENT le bloc :::LIST :
 
 Sous-étape 4.4 : CALCUL COMMERCIAL DU PRIX & DEVIS RÉCAPITULATIF (Validation en 1 clic)
 Dès que le quartier est renseigné (sélectionné dans la liste ou écrit par le client) :
-1. Tu calcules le montant total selon la vraie formule officielle FYS :
-   • Prix unitaire de la bouteille = Base contenant + Somme des fruits et compléments de la recette.
-   • Sous-total = Prix unitaire x Quantité.
-   • Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (ne facture JAMAIS 1 500 XAF !).
-   • TOTAL À PAYER = Sous-total + 1 000 XAF.
-2. CONFIDENTIALITÉ STRICTE : Tu n'affiches JAMAIS le coût individuel des fruits ou du contenant vide au client, seulement le prix unitaire tout compris de la bouteille finie.
-3. Tu présentes le récapitulatif clair :
+1. Si un panier calculé est fourni par le système FYS, utilise STRICTEMENT ses montants exacts !
+2. Tu présentes le récapitulatif clair de TOUTES les boissons demandées :
 "Voici le récapitulatif de votre commande :
-• [Quantité] bouteille(s) [Format] de [Nom de la recette] : [Prix unitaire] XAF la bouteille (soit [Sous-total] XAF)
+• [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 1] » ([Fruits 1]) : [Prix unitaire 1] XAF la bouteille (soit [Sous-total 1] XAF)
+• [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 2] » ([Fruits 2]) : [Prix unitaire 2] XAF la bouteille (si une 2ème boisson est commandée)
 • Livraison à [Quartier] : 1 000 XAF
 👉 TOTAL À PAYER : [Total] XAF (Paiement Mobile Money ou à la livraison).
 
@@ -1850,21 +2017,7 @@ Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
 
 Sous-étape 4.5 : ENREGISTREMENT DE LA COMMANDE
 C'est SEULEMENT après que le client a cliqué sur 'Valider commande' (ou dit oui / confirmé) :
-Tu le remercies chaleureusement, tu lui annonces avec enthousiasme que sa commande est validée et part en préparation, et qu'il reçoit immédiatement ci-dessous sa facture officielle FYS ainsi que la fiche nutritionnelle de son cocktail en PDF ! Tu insères TOUT À LA FIN le bloc technique :
-:::ORDER_JSON
-{
-  "cocktailName": "Nom de la recette",
-  "fruits": ["Fruit1", "Fruit2", "Fruit3"],
-  "bottleSize": "500ml",
-  "quantity": 1,
-  "unitPrice": 2000,
-  "deliveryFee": 1000,
-  "totalPrice": 3000,
-  "district": "Quartier de livraison",
-  "instructions": "Précisions particulières",
-  "hasAddedSugar": false
-}
-:::
+Tu le remercies chaleureusement, tu lui annonces avec enthousiasme que sa commande est validée et part en préparation dans notre Lab à Yaoundé, et qu'il reçoit immédiatement ci-dessous sa facture officielle FYS ainsi que les fiches nutritionnelles de ses cocktails en PDF !
 
 VISION & ANALYSE D'IMAGES REÇUES DU CLIENT (MULTIMODALITÉ PHOTO) :
 Quand le client t'envoie une image ou photo :
@@ -2637,11 +2790,51 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.`
         : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
 
+      // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
+      let activeCart: WhatsAppCart | null = null;
+      const rawUserCart = existingUserDoc?.data()?.activeWhatsAppCart;
+      if (rawUserCart && Array.isArray(rawUserCart.items) && rawUserCart.items.length > 0) {
+        // Expiration stricte après 2 heures d'inactivité
+        const cartAgeMs = Date.now() - (rawUserCart.updatedAt || 0);
+        if (cartAgeMs > 2 * 3600 * 1000) {
+          console.log(`[whatsapp-webhook] ⏰ activeWhatsAppCart expiré pour ${senderPhone} (${Math.round(cartAgeMs / 60000)} mins). Réinitialisation.`);
+          if (userDocRef) {
+            await userDocRef.set({ activeWhatsAppCart: FieldValue.delete() }, { merge: true }).catch(() => null);
+          }
+        } else {
+          // Recalculer immédiatement avec les tarifs et catalogue à jour (0% hallucination)
+          activeCart = computeCartFromRawItems(
+            rawUserCart.items,
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            rawUserCart.district
+          );
+        }
+      }
+
+      // Détection de volonté d'annulation / recommencer / changer de commande
+      const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?recette|autre\s+(?:recette|jus|cocktail)|nouvelle\s+recette)/i;
+      if (senderText && resetIntentRegex.test(senderText)) {
+        console.log(`[whatsapp-webhook] 🔄 Intention de réinitialisation détectée ("${senderText}"). Nettoyage du panier.`);
+        activeCart = null;
+        if (userDocRef) {
+          await userDocRef.set({
+            activeWhatsAppCart: FieldValue.delete(),
+            activeWhatsAppDraft: FieldValue.delete(),
+          }, { merge: true }).catch(() => null);
+        }
+      }
+
       // ── DÉTERMINATION & CALCUL DE LA RECETTE ET DES PRIX DYNAMIQUES ──
       let activeRecipeIngredients: { fruitId: string; fruitName: string; priceSnapshot: number; isSupplement?: boolean; incompatibleIds?: string[] }[] = [];
       let activeRecipeName = '';
 
-      if (webDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
+      if (activeCart && activeCart.items.length > 0) {
+        // Priorité 1 : Panier multi-boissons en cours déjà calculé par le serveur
+        activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+        activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+      } else if (webDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
         activeRecipeName = webDraft.cocktail?.name || 'Mon Jus Personnalisé FYS';
         activeRecipeIngredients = webDraft.cocktail.ingredients.map((i: any) => {
           const snapPrice = Number(i.priceSnapshot);
@@ -2759,6 +2952,26 @@ CONSIGNES STRICTES, CATÉGORIQUES ET INFRANGIBLES :
 L'utilisateur a choisi ${currentMainFruitsCount} fruits principaux (maximum autorisé : ${maxMainFruits}) ou ${currentSupplementsCount} suppléments (maximum autorisé : ${maxSupplements}).
 CONSIGNE FERME :
 Informe-le avec bienveillance de la règle d'équilibre du FYS Lab : chaque bouteille comporte au maximum ${maxMainFruits} fruits principaux et ${maxSupplements} suppléments pour garantir un dosage thérapeutique efficace et un goût harmonieux. Demande-lui poliment de retirer l'ingrédient en trop pour respecter la règle du Lab.`;
+      } else if (activeCart && activeCart.items.length > 0) {
+        const cartItemsSummary = activeCart.items.map((it, idx) =>
+          `• Boisson ${idx + 1} : « ${it.cocktailName} » (${it.fruits.join(', ')})
+  - Format : ${it.bottleSizeLabel}
+  - Quantité : ${it.quantity}
+  - Prix unitaire calculé par le serveur FYS : ${it.unitPrice.toLocaleString('fr-FR')} XAF la bouteille
+  - Sous-total : ${it.lineTotal.toLocaleString('fr-FR')} XAF`
+        ).join('\n');
+
+        recipePricingDetails = `
+🛒 PANIER MULTI-BOISSONS EN COURS (CALCULÉ DIRECTEMENT PAR LE BACKEND FYS) :
+${cartItemsSummary}
+• Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
+• Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF
+👉 TOTAL À PAYER EXACT DE LA COMMANDE : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF
+
+CONSIGNES STRICTES ET CATÉGORIQUES ANTI-HALLUCINATION :
+1. LE CLIENT COMMANDE CE PANIER EXACT CONTENANT ${activeCart.items.length} BOISSON(S).
+2. NE FAIS AUCUN CALCUL ARITHMÉTIQUE TOI-MÊME : recopie STRICTEMENT et fidèlement les chiffres ci-dessus !
+3. N'OUBLIE AUCUNE BOISSON DU PANIER DANS TON RÉCAPITULATIF OU TA CONFIRMATION : mentionne-les TOUTES !`;
       } else if (activeRecipeIngredients.length > 0) {
         const ingredientsListStr = activeRecipeIngredients.map((i) => `${i.fruitName} (+${i.priceSnapshot} XAF)`).join(', ');
         recipePricingDetails = `
@@ -2815,21 +3028,26 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
 4. CONFIDENTIALITÉ :
    - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.
 
-RÈGLE OBLIGATOIRE DE MÉMORISATION DES RECETTES SUR WHATSAPP (:::RECIPE_JSON) :
-Dès que tu proposes une recette au client ou qu'il valide/choisit ses fruits (ex: Orange + Ananas) :
-1. Donne un nom valorisant et inspirant au cocktail (ex: "Énergie Solaire à l'Orange").
-2. Inclus TOUJOURS à la toute fin de ton message le bloc technique suivant pour mémoriser définitivement sa recette :
-:::RECIPE_JSON { "cocktailName": "Nom de la recette", "fruits": ["Fruit 1", "Fruit 2"], "hasAddedSugar": false } :::
-Ce bloc enregistre la recette dans Firestore afin qu'elle reste verrouillée et mémorisée tout au long de la commande (format, quantité, quartier).
+RÈGLE OBLIGATOIRE DE DÉTECTION DU PANIER MULTI-BOISSONS (:::CART_ITEMS) :
+Dès que tu proposes des recettes au client ou qu'il valide/choisit ses fruits (pour 1 ou plusieurs cocktails) :
+1. Donne un nom valorisant et inspirant à chaque cocktail (ex: « L'Éclat Tropical », « Le Duo Exotique »).
+2. Inclus TOUJOURS à la toute fin de ton message le bloc technique :::CART_ITEMS avec la liste des cocktails demandés :
+:::CART_ITEMS
+[
+  { "cocktailName": "L'Éclat Tropical", "fruits": ["Cassimango", "Gingembre", "Citron"], "bottleSize": "1L", "quantity": 1 },
+  { "cocktailName": "Le Duo Exotique", "fruits": ["Ananas", "Cassimango"], "bottleSize": "1L", "quantity": 1 }
+]
+:::
+NE CALCULE AUCUN PRIX DANS CE BLOC : Le serveur FYS calcule les prix officiels au centime près directement depuis Firestore (base contenant + somme des fruits).
 
-RÈGLE D'AFFICHAGE DU RÉCAPITULATIF DE COMMANDE (:::ORDER_JSON) :
+RÈGLE D'AFFICHAGE DU RÉCAPITULATIF DE COMMANDE :
 Lorsque la commande est prête à être validée ou vient d'être confirmée :
-1. Tu DOIS TOUJOURS écrire en texte clair et visible le récapitulatif complet de la commande :
-   * Nom du cocktail et ses fruits exacts
-   * Quantité et format
-   * Frais de livraison (1 000 XAF)
-   * TOTAL À PAYER en XAF
-2. Ce texte récapitulatif DOIT ÊTRE ENTIÈREMENT VISIBLE DANS LE MESSAGE TEXTE, AVANT ou APRÈS le bloc :::ORDER_JSON. Ne laisse JAMAIS un espace vide ou un texte coupé !`;
+1. Tu DOIS TOUJOURS écrire en texte clair et visible le récapitulatif complet de TOUTES les boissons :
+   * Nom de chaque cocktail et ses fruits exacts
+   * Quantité et format de chaque boisson
+   * Frais de livraison (1 000 XAF fixe)
+   * TOTAL À PAYER en XAF (strictement le montant calculé par FYS !)
+2. Ce texte récapitulatif DOIT ÊTRE ENTIÈREMENT VISIBLE DANS LE MESSAGE TEXTE. Ne laisse JAMAIS un espace vide ou un texte coupé !`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       let aiReply = '';
@@ -2867,36 +3085,91 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
           }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
-        } else if (interactiveButtonId.startsWith('btn_format_500ml')) {
-          if (activeRecipeIngredients.length === 0) {
-            explicitAction = `[Le client a cliqué sur 'Format 500ml', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format 500ml, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
+        } else if (interactiveButtonId.startsWith('btn_format_500ml') || interactiveButtonId.startsWith('btn_format_1l')) {
+          const chosenFormat: '500ml' | '1L' = interactiveButtonId.startsWith('btn_format_500ml') ? '500ml' : '1L';
+          const formatLabel = chosenFormat === '1L' ? '1 Litre' : '500ml';
+          if (activeCart && activeCart.items.length > 0) {
+            const updatedRaw = activeCart.items.map((it) => ({
+              cocktailName: it.cocktailName,
+              fruits: it.fruits,
+              bottleSize: chosenFormat,
+              quantity: it.quantity,
+              hasAddedSugar: it.hasAddedSugar,
+            }));
+            activeCart = computeCartFromRawItems(updatedRaw, availableFruits, bottle500Base, bottle1LBase, activeCart.district);
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+            }
+            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour ses boissons (${activeCart.items.map(i => i.cocktailName).join(', ')}). RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+          } else if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
           } else {
-            explicitAction = `[Le client a sélectionné le format 500ml pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
-          }
-        } else if (interactiveButtonId.startsWith('btn_format_1l')) {
-          if (activeRecipeIngredients.length === 0) {
-            explicitAction = `[Le client a cliqué sur 'Format 1 Litre', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format 1L, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
-          } else {
-            explicitAction = `[Le client a sélectionné le format 1 Litre pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
           }
         } else if (interactiveButtonId.startsWith('btn_qty_')) {
-          if (activeRecipeIngredients.length === 0) {
+          const qtyMatch = interactiveButtonId.match(/\d+/) || senderText.match(/\d+/);
+          const chosenQty = qtyMatch ? parseInt(qtyMatch[0], 10) : 1;
+          if (activeCart && activeCart.items.length > 0) {
+            const updatedRaw = activeCart.items.map((it) => ({
+              cocktailName: it.cocktailName,
+              fruits: it.fruits,
+              bottleSize: it.bottleSize,
+              quantity: chosenQty,
+              hasAddedSugar: it.hasAddedSugar,
+            }));
+            activeCart = computeCartFromRawItems(updatedRaw, availableFruits, bottle500Base, bottle1LBase, activeCart.district);
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+            }
+            explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) de chaque boisson. RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+          } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur la quantité : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits il souhaite mélanger].`;
           } else {
             explicitAction = `[Le client a choisi la quantité : "${senderText}". RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
           }
         } else if (interactiveButtonId.startsWith('loc_')) {
-          if (activeRecipeIngredients.length === 0) {
-            explicitAction = `[Le client a choisi son quartier : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits composer].`;
+          const chosenDistrict = senderText.trim();
+          if (activeCart && activeCart.items.length > 0) {
+            activeCart.district = chosenDistrict;
+            activeCart = computeCartFromRawItems(
+              activeCart.items,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              chosenDistrict
+            );
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+            }
+            const devisExact = generateCartDevisText(activeCart, chosenDistrict);
+            explicitAction = `[Le client a choisi son quartier de livraison : "${chosenDistrict}".
+LE SERVEUR FYS A DÉJÀ CALCULÉ LE DEVIS OFFICIEL EXACT :
+${devisExact}
+
+CONSIGNE STRICTE ET ABSOLUE :
+Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
+Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`;
+          } else if (activeRecipeIngredients.length === 0) {
+            explicitAction = `[Le client a choisi son quartier : "${chosenDistrict}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits composer].`;
           } else {
-            explicitAction = `[Le client a choisi son quartier de livraison : "${senderText}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul exact du prix : (Prix unitaire x Quantité) + 1 000 XAF de livraison fixe à Yaoundé. Demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
+            explicitAction = `[Le client a choisi son quartier de livraison : "${chosenDistrict}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul exact du prix : (Prix unitaire x Quantité) + 1 000 XAF de livraison fixe à Yaoundé. Demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
           }
         } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
-          explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus (livraison = 1000 XAF)].`;
-          if (webDraft) {
-            const draftIngredients = Array.isArray(webDraft.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
-            const fruitNames = draftIngredients.map((i: any) => i.fruitName || i.name);
-            explicitAction += ` [RAPPEL STRICT : Cette commande concerne la création du Lab FYS "${webDraft.cocktail?.name}". Dans :::ORDER_JSON, "cocktailName" DOIT être strictement "${webDraft.cocktail?.name}", "fruits" DOIT être strictement ${JSON.stringify(fruitNames)}].`;
+          if (activeCart && activeCart.items.length > 0) {
+            const recapText = generateCartConfirmationText(activeCart, activeCart.district);
+            explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis !
+RÈGLE STRICTE :
+Remercie-le chaleureusement et confirme que sa commande est officiellement validée.
+Affiche le récapitulatif officiel suivant :
+${recapText}
+Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
+          } else {
+            explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus (livraison = 1000 XAF)].`;
+            if (webDraft) {
+              const draftIngredients = Array.isArray(webDraft.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
+              const fruitNames = draftIngredients.map((i: any) => i.fruitName || i.name);
+              explicitAction += ` [RAPPEL STRICT : Cette commande concerne la création du Lab FYS "${webDraft.cocktail?.name}". Dans :::ORDER_JSON, "cocktailName" DOIT être strictement "${webDraft.cocktail?.name}", "fruits" DOIT être strictement ${JSON.stringify(fruitNames)}].`;
+            }
           }
         } else if (interactiveButtonId.startsWith('btn_edit_order')) {
           explicitAction = `[Le client a cliqué sur 'Modifier' : demande-lui avec bienveillance ce qu'il souhaite modifier : fruits, format, quantité ou adresse de livraison].`;
@@ -2990,14 +3263,58 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
 
+      // 0. Traitement automatique du panier multi-boissons WhatsApp (:::CART_ITEMS)
+      const cartMatch = aiReply.match(/:::CART_ITEMS\s*([\s\S]*?)\s*:::?/);
+      if (cartMatch) {
+        try {
+          const parsedCartRaw = parseSafeJson<any[]>(cartMatch[1]);
+          if (Array.isArray(parsedCartRaw) && parsedCartRaw.length > 0) {
+            console.log(`[whatsapp-webhook] 🛒 :::CART_ITEMS detected with ${parsedCartRaw.length} item(s):`, parsedCartRaw);
+            activeCart = computeCartFromRawItems(
+              parsedCartRaw,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart?.district
+            );
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              console.log(`[whatsapp-webhook] 💾 Persisted activeWhatsAppCart to userDoc: ${activeCart.items.map(i => i.cocktailName).join(', ')} (Total: ${activeCart.totalPrice} XAF)`);
+            }
+          }
+        } catch (cErr) {
+          console.warn('[whatsapp-webhook] Error parsing :::CART_ITEMS:', cErr);
+        } finally {
+          aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
+        }
+      } else {
+        aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
+      }
+
       // ── NORMALISATION & SÉCURISATION DU TEXTE AFFICHÉ AU CLIENT ──
       // 1. Frais de livraison : STRICTEMENT 1 000 XAF fixe (élimination des hallucinations à 1 500 XAF ou 2 000 XAF)
       aiReply = aiReply.replace(/(Livraison\s*(?:à|a)?\s*[^:\n]+:\s*)(?:1\s*500|2\s*000|[0-9]{4,5})\s*XAF/gi, '$11 000 XAF');
       aiReply = aiReply.replace(/à partir de 1\s*000\s*XAF/gi, '1 000 XAF');
       aiReply = aiReply.replace(/frais de livraison à partir de 1\s*000\s*XAF/gi, 'frais de livraison : 1 000 XAF');
 
-      // 2. Vérification et recalcul exact du TOTAL si un récapitulatif devis est affiché
-      if (activeRecipeIngredients.length > 0 && aiReply.includes('TOTAL À PAYER')) {
+      // 2. Vérification et recalcul exact du TOTAL et du DEVIS si un récapitulatif devis est affiché
+      if (activeCart && activeCart.items.length > 0) {
+        // Remplacement strict de la ligne TOTAL À PAYER par le total officiel FYS
+        aiReply = aiReply.replace(/(👉\s*TOTAL\s*(?:À|A)\s*PAYER\s*:\s*)[0-9\s.,]+XAF/gi, `$1${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`);
+
+        // Si l'utilisateur a choisi son quartier ou si le devis est présenté avant confirmation
+        const isConfirmingOrder = interactiveButtonId?.startsWith('btn_confirm_order');
+        if (!isConfirmingOrder && (interactiveButtonId?.startsWith('loc_') || aiReply.includes('TOTAL À PAYER') || aiReply.includes('Voici le récapitulatif'))) {
+          const devisOfficial = generateCartDevisText(activeCart, activeCart.district);
+          if (aiReply.includes('Voici le récapitulatif') || aiReply.includes('TOTAL À PAYER')) {
+            // Remplacer le récapitulatif incomplet ou erroné de l'IA par le devis officiel complet
+            aiReply = aiReply.replace(/(?:Voici\s+le\s+récapitulatif[\s\S]*?(?:valider\s+cette\s+commande\s*\??|convient\s*\??|souhaitez-vous\s+valider\s*\??))/i, devisOfficial);
+            if (!aiReply.includes(activeCart.totalPrice.toLocaleString('fr-FR'))) {
+              aiReply = devisOfficial;
+            }
+          }
+        }
+      } else if (activeRecipeIngredients.length > 0 && aiReply.includes('TOTAL À PAYER')) {
         const is1L = /1\s*(?:litre|l)\b/i.test(aiReply);
         const unitP = is1L ? activePrice1L : activePrice500;
         const qtyMatch = aiReply.match(/•\s*(\d+)\s*bouteille/i);
@@ -3103,39 +3420,211 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
       } | null = null;
 
       const orderMatch = aiReply.match(/:::ORDER_JSON\s*([\s\S]*?)\s*:::?/);
-      if (orderMatch && db) {
+      const isConfirmedViaButton = isInteractiveMessage && interactiveButtonId === 'btn_confirm_order';
+
+      if ((orderMatch || (isConfirmedViaButton && activeCart && activeCart.items.length > 0)) && db) {
         try {
-          const orderData = parseSafeJson(orderMatch[1]);
-          if (!orderData) {
-            console.warn('[whatsapp-webhook] Could not parse ORDER_JSON from AI reply');
-          } else {
-            console.log('[whatsapp-webhook] Order detected from WhatsApp:', orderData);
+          const orderData = orderMatch ? (parseSafeJson(orderMatch[1]) || {}) : {};
+          console.log('[whatsapp-webhook] Order detected or confirmed from WhatsApp:', { hasOrderMatch: Boolean(orderMatch), isConfirmedViaButton, activeCartItems: activeCart?.items?.length || 0 });
 
-            // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
-            // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
-            const safePhoneVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
-            const recentOrdersSnap = await db.collection('orders')
-              .where('userPhoneSnapshot', 'in', safePhoneVariants)
-              .limit(5)
-              .get();
+          // DÉDUPLICATION 2 (PROTECTION STRICTE CONTRE LES DOUBLONS D'ENREGISTREMENT) :
+          // Vérifier si une commande WhatsApp a déjà été enregistrée pour ce client il y a moins de 120 secondes
+          const safePhoneVariants = phoneVariants.length > 0 ? phoneVariants.slice(0, 30) : [senderPhone];
+          const recentOrdersSnap = await db.collection('orders')
+            .where('userPhoneSnapshot', 'in', safePhoneVariants)
+            .limit(5)
+            .get();
 
-            const isDuplicateOrder = recentOrdersSnap.docs.some((doc: any) => {
-              const d = doc.data();
-              if (d.source !== 'whatsapp') return false;
-              if (messageId && d.whatsappMessageId === messageId) return true;
-              const createdAtMs = d.createdAt?.toMillis
-                ? d.createdAt.toMillis()
-                : (d.createdAt?._seconds ? d.createdAt._seconds * 1000 : 0);
-              return Date.now() - createdAtMs < 120 * 1000;
-            });
+          const isDuplicateOrder = recentOrdersSnap.docs.some((doc: any) => {
+            const d = doc.data();
+            if (d.source !== 'whatsapp') return false;
+            if (messageId && d.whatsappMessageId === messageId) return true;
+            const createdAtMs = d.createdAt?.toMillis
+              ? d.createdAt.toMillis()
+              : (d.createdAt?._seconds ? d.createdAt._seconds * 1000 : 0);
+            return Date.now() - createdAtMs < 120 * 1000;
+          });
 
-            if (isDuplicateOrder) {
-              console.warn(`[whatsapp-webhook] ⚠️ Duplicate order blocked for ${senderPhone}: an order was already registered in the last 120 seconds.`);
+          if (isDuplicateOrder) {
+            console.warn(`[whatsapp-webhook] ⚠️ Duplicate order blocked for ${senderPhone}: an order was already registered in the last 120 seconds.`);
+          } else if (activeCart && activeCart.items.length > 0) {
+            // ── CRÉATION MULTI-ARTICLES À PARTIR DU PANIER CALCULÉ PAR LE SERVEUR FYS ──
+            const labViolations: string[] = [];
+
+            // Validation des quotas et des incompatibilités pour chaque boisson du panier
+            for (const item of activeCart.items) {
+              const mainFruits = item.ingredients.filter((i: any) => !i.isSupplement);
+              const supps = item.ingredients.filter((i: any) => !!i.isSupplement);
+              if (mainFruits.length > maxMainFruits) {
+                labViolations.push(`Trop de fruits principaux dans « ${item.cocktailName} » (${mainFruits.length}/${maxMainFruits} max).`);
+              }
+              if (supps.length > maxSupplements) {
+                labViolations.push(`Trop de compléments dans « ${item.cocktailName} » (${supps.length}/${maxSupplements} max).`);
+              }
+
+              for (let i = 0; i < item.ingredients.length; i++) {
+                for (let j = i + 1; j < item.ingredients.length; j++) {
+                  const ingA = item.ingredients[i];
+                  const ingB = item.ingredients[j];
+                  const fruitA = availableFruits.find((f: any) => f.id.toLowerCase() === ingA.fruitId.toLowerCase() || f.name.toLowerCase() === ingA.fruitName.toLowerCase());
+                  const fruitB = availableFruits.find((f: any) => f.id.toLowerCase() === ingB.fruitId.toLowerCase() || f.name.toLowerCase() === ingB.fruitName.toLowerCase());
+                  const aIncompatibleWithB = (fruitA?.incompatibleIds || []).some((id: string) => id.toLowerCase() === (fruitB?.id || '').toLowerCase());
+                  const bIncompatibleWithA = (fruitB?.incompatibleIds || []).some((id: string) => id.toLowerCase() === (fruitA?.id || '').toLowerCase());
+                  if (aIncompatibleWithB || bIncompatibleWithA) {
+                    labViolations.push(`Incompatibilité dans « ${item.cocktailName} » : ${ingA.fruitName} et ${ingB.fruitName} ne peuvent pas être associés.`);
+                  }
+                }
+              }
+            }
+
+            if (labViolations.length > 0) {
+              console.warn(`[whatsapp-webhook] 🚫 Order blocked due to strict FYS Lab rules violations:`, labViolations);
+              aiReply = `⚠️ *Commande non validée - Règles strictes du FYS Lab*\n\n` +
+                `Au FYS Lab, la santé de nos clients et la qualité nutritionnelle de nos jus sont prioritaires :\n\n` +
+                labViolations.map((v: string) => `• ${v}`).join('\n') +
+                `\n\nSouhaitez-vous retirer un ingrédient ou que je vous propose une alternative savoureuse et compatible ?`;
+              buttonsToSend = [
+                { id: 'btn_order', title: 'Modifier la recette' },
+                { id: 'btn_nutrition', title: 'Conseil NutriFYS' },
+              ];
             } else {
               const isWebDraft = Boolean(webDraft);
-              const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
-              const bottleSizeLabel = bottleSize === '1L' ? '1 L' : '500 ml';
-              const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
+              const orderLines = activeCart.items.map((it) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                ingredients: it.ingredients,
+                bottleSize: it.bottleSize,
+                bottleSizeLabel: it.bottleSizeLabel,
+                quantity: it.quantity,
+                bottleBasePriceSnapshot: it.baseBottlePrice,
+                pricePerBottle: it.unitPrice,
+                lineTotal: it.lineTotal,
+              }));
+
+              const totalQuantity = activeCart.items.reduce((s, it) => s + it.quantity, 0);
+              const allIngredients = activeCart.items.flatMap((it) => it.ingredients);
+              const combinedCocktailName = activeCart.items.map((it) => it.cocktailName).join(' + ');
+
+              const orderRef = db.collection('orders').doc();
+              const newOrderDoc = {
+                id: orderRef.id,
+                orderCode: webDraftCode || null,
+                type: 'classic',
+                source: 'whatsapp',
+                whatsappMessageId: messageId || null,
+                status: 'pending',
+                userId: userDocRef?.id || 'whatsapp_customer',
+                userNameSnapshot: (isWebDraft && webDraft.customerName?.trim()) || senderName,
+                userPhoneSnapshot: senderPhone,
+                userEmailSnapshot: matchedUserEmail || (isWebDraft && webDraft.customerEmail) || '',
+                cocktailId: (isWebDraft && webDraft.cocktail?.id) || 'whatsapp-custom',
+                cocktailNameSnapshot: combinedCocktailName,
+                cocktailIngredientsSnapshot: allIngredients,
+                hasAddedSugar: activeCart.items.some((i) => i.hasAddedSugar),
+                quantity: totalQuantity,
+                bottleSize: activeCart.items[0]?.bottleSize || '1L',
+                bottleSizeLabel: activeCart.items.map((i) => `${i.quantity}x ${i.bottleSizeLabel}`).join(', '),
+                bottleBasePriceSnapshot: activeCart.items[0]?.baseBottlePrice || bottle1LBase,
+                cocktailPriceSnapshot: activeCart.items[0]?.unitPrice || activeCart.subtotal,
+                orderLines,
+                subtotal: activeCart.subtotal,
+                deliveryFee: 1000,
+                totalPrice: activeCart.totalPrice,
+                deliveryDetails: {
+                  district: activeCart.district || (orderData && orderData.district) || 'Yaoundé',
+                  phone: senderPhone,
+                  instructions: (orderData && orderData.instructions) || 'Commande directe WhatsApp',
+                },
+                ...(isWebDraft && webDraft.aiAnalysis ? { aiAnalysisSnapshot: webDraft.aiAnalysis } : {}),
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+              };
+
+              await orderRef.set(newOrderDoc);
+              console.log(`[whatsapp-webhook] ✅ Created Multi-Item WhatsApp Order ${orderRef.id} for ${senderName} (Total: ${activeCart.totalPrice} XAF)`);
+
+              createdOrderInfo = {
+                orderId: orderRef.id,
+                orderDoc: newOrderDoc,
+                ingredients: allIngredients,
+              };
+
+              // Marquer le brouillon web comme converti dans whatsapp_drafts et nettoyer activeDraftCode
+              if (webDraftCode) {
+                await db.collection('whatsapp_drafts').doc(webDraftCode).update({
+                  status: 'converted',
+                  orderId: orderRef.id,
+                  convertedAt: FieldValue.serverTimestamp(),
+                }).catch((e: any) => console.warn('[whatsapp-webhook] Could not mark draft as converted:', e));
+
+                if (userDocRef) {
+                  await userDocRef.set({ activeDraftCode: FieldValue.delete() }, { merge: true }).catch(() => null);
+                }
+              }
+
+              // Nettoyer activeWhatsAppCart et activeWhatsAppDraft dans Firestore
+              if (userDocRef) {
+                await userDocRef.set({
+                  activeWhatsAppCart: FieldValue.delete(),
+                  activeWhatsAppDraft: FieldValue.delete(),
+                }, { merge: true }).catch(() => null);
+              }
+
+              // Notifications Administrateurs (In-App + FCM Web Push)
+              try {
+                const adminsSnap = await db.collection('users').where('role', '==', 'admin').get();
+                if (!adminsSnap.empty) {
+                  const notifTitle = 'Nouvelle commande WhatsApp !';
+                  const notifMessage = `${senderName} a commandé ${totalQuantity} bouteille(s) (${combinedCocktailName}) pour ${newOrderDoc.deliveryDetails.district} (${activeCart.totalPrice.toLocaleString()} XAF).`;
+                  const notifLink = `/board/orders?order=${orderRef.id}`;
+
+                  const batch = db.batch();
+                  adminsSnap.docs.forEach((aDoc: any) => {
+                    const notifRef = db.collection('notifications').doc();
+                    batch.set(notifRef, {
+                      id: notifRef.id,
+                      userId: aDoc.id,
+                      title: notifTitle,
+                      message: notifMessage,
+                      link: notifLink,
+                      isRead: false,
+                      createdAt: FieldValue.serverTimestamp(),
+                    });
+                  });
+                  await batch.commit().catch((e: any) => console.warn('[whatsapp-webhook] In-app notification batch error:', e));
+
+                  const adminUids = adminsSnap.docs.map((d: any) => d.id);
+                  const tokensSnap = await db.collection('fcm_tokens').where('uid', 'in', adminUids.slice(0, 30)).get();
+                  if (!tokensSnap.empty) {
+                    const tokens = tokensSnap.docs.map((d: any) => d.data()?.token).filter(Boolean);
+                    if (tokens.length > 0) {
+                      const messaging = getAdminMessaging();
+                      if (messaging) {
+                        await messaging.sendEachForMulticast({
+                          tokens,
+                          notification: {
+                            title: notifTitle,
+                            body: notifMessage,
+                          },
+                          data: {
+                            url: notifLink,
+                            tag: `order-new-${orderRef.id}`,
+                          },
+                        }).catch((e: any) => console.warn('[whatsapp-webhook] FCM multicast error:', e));
+                      }
+                    }
+                  }
+                }
+              } catch (adminNotifErr) {
+                console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
+              }
+            }
+          } else {
+            // Création mono-article classique (fallback si panier non initialisé)
+            const isWebDraft = Boolean(webDraft);
+            const bottleSize: '500ml' | '1L' = orderData.bottleSize === '1L' ? '1L' : '500ml';
+            const bottleSizeLabel = bottleSize === '1L' ? '1 L' : '500 ml';
+            const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
               const quantity = Math.max(1, Number(orderData.quantity) || 1);
 
               // 1. Ingrédients et Nom du Cocktail :
@@ -3418,12 +3907,17 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
           // 3. Garantir qu'un récapitulatif complet et propre est TOUJOURS visible pour le client
           if (createdOrderInfo) {
             const o = createdOrderInfo.orderDoc;
-            const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
-            const recapBlock = `📋 *RÉCAPITULATIF OFFICIEL DE LA COMMANDE*\n` +
-              `• Cocktail : *${o.cocktailNameSnapshot}* (${ingNames})\n` +
-              `• Format : ${o.quantity}× ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString()} XAF la bouteille)\n` +
-              `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
-              `👉 *TOTAL À PAYER : ${o.totalPrice.toLocaleString()} XAF* (Paiement Mobile Money ou à la livraison)`;
+            let recapBlock = '';
+            if (activeCart && activeCart.items.length > 0) {
+              recapBlock = generateCartConfirmationText(activeCart, o.deliveryDetails?.district);
+            } else {
+              const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
+              recapBlock = `📋 *RÉCAPITULATIF OFFICIEL DE LA COMMANDE*\n` +
+                `• Cocktail : *${o.cocktailNameSnapshot}* (${ingNames})\n` +
+                `• Format : ${o.quantity}× ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString()} XAF la bouteille)\n` +
+                `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
+                `👉 *TOTAL À PAYER : ${o.totalPrice.toLocaleString()} XAF* (Paiement Mobile Money ou à la livraison)`;
+            }
 
             // Si le message contenait "Voici d'ailleurs le récapitulatif..." sans détails ou vide, y insérer le récapitulatif
             if (aiReply.includes('récapitulatif')) {
@@ -3550,8 +4044,9 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
         !listToSend &&
         buttonsToSend.length === 0 &&
         !orderMatch &&
+        !createdOrderInfo &&
         aiReply.includes('TOTAL À PAYER') &&
-        (aiReply.toLowerCase().includes('convient') || aiReply.toLowerCase().includes('valider'))
+        (aiReply.toLowerCase().includes('convient') || aiReply.toLowerCase().includes('valider') || aiReply.toLowerCase().includes('bon pour vous'))
       ) {
         buttonsToSend = [
           { id: 'btn_confirm_order', title: 'Valider commande' },
