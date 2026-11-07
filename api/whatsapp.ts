@@ -1702,6 +1702,38 @@ async function saveActiveWhatsAppCart(docRef: any, cart: WhatsAppCart | null) {
   }
 }
 
+export const normalizeTextForMatching = (s: string): string =>
+  (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+export const escapeRegexString = (s: string): string =>
+  s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+export const FRUIT_TYPO_SYNONYMS: Record<string, string[]> = {
+  gingembre: ['gingembre', 'gingimbre', 'ginginbre', 'gingenbre', 'ginger', 'dja'],
+  folere: ['folere', 'foléré', 'bissap', 'hibiscus', 'zobo'],
+  coco: ['coco', 'noix de coco', 'lait de coco', 'eau de coco'],
+  pasteque: ['pasteque', 'pastèque', 'pasteques', 'pastèques', "melon d'eau"],
+  cassimango: ['cassimango', 'cassimangue', 'prune de cythere', 'prune de cythère', 'cythere', 'cythère'],
+  baobab: ['baobab', 'pain de singe', 'bouye'],
+  corossol: ['corossol', 'corosol', 'graviola', 'soursop'],
+  passion: ['passion', 'maracuja', 'maracudja', 'fruit de la passion'],
+  curcuma: ['curcuma', 'turmeric', 'safran des indes'],
+  citron: ['citron', 'citrons', 'citron vert', 'lime'],
+  betterave: ['betterave', 'betteraves'],
+  carotte: ['carotte', 'carottes'],
+  concombre: ['concombre', 'concombres'],
+  ananas: ['ananas', 'anana'],
+  orange: ['orange', 'oranges'],
+  banane: ['banane', 'bananes'],
+  pomme: ['pomme', 'pommes'],
+  mangue: ['mangue', 'mangues'],
+  avocat: ['avocat', 'avocats'],
+  papaye: ['papaye', 'papayes'],
+};
+
 export function computeCartFromRawItems(
   rawItems: Array<{
     cocktailName?: string;
@@ -1722,11 +1754,24 @@ export function computeCartFromRawItems(
     const rawFruits = Array.isArray(raw.fruits) ? raw.fruits : [];
     const resolvedIngs: any[] = [];
     for (const fn of rawFruits) {
-      const clean = String(fn).trim().toLowerCase();
+      const clean = normalizeTextForMatching(String(fn).trim());
       const found = availableFruits.find((af) => {
-        const afClean = af.name.toLowerCase();
-        const afId = af.id.toLowerCase();
-        return afClean === clean || afId === clean || afClean.includes(clean) || clean.includes(afClean);
+        const afNameNorm = normalizeTextForMatching(af.name.split('(')[0].trim());
+        const afIdNorm = normalizeTextForMatching(af.id || '');
+        if (afNameNorm === clean || afIdNorm === clean || clean.includes(afNameNorm) || afNameNorm.includes(clean)) {
+          return true;
+        }
+        for (const [key, syns] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+          if (afNameNorm.includes(key) || afIdNorm.includes(key)) {
+            if (syns.some((s) => {
+              const normS = normalizeTextForMatching(s);
+              return normS === clean || clean.includes(normS) || normS.includes(clean);
+            })) {
+              return true;
+            }
+          }
+        }
+        return false;
       });
       if (found && !resolvedIngs.some((x) => x.fruitId === found.id)) {
         resolvedIngs.push({
@@ -1857,9 +1902,22 @@ export function detectDistinctFormatsAndQuantitiesFromText(
           if (updates.has(idx)) continue;
           const item = cart.items[idx];
           const hasUniqueFruit = item.fruits.some((f) => {
-            const fLower = f.toLowerCase().split('(')[0].trim();
-            if (fLower.length <= 3 || !clause.includes(fLower)) return false;
-            const otherHasIt = cart.items.some((other, oIdx) => oIdx !== idx && other.fruits.some((of) => of.toLowerCase().includes(fLower)));
+            const normF = normalizeTextForMatching(f.split('(')[0].trim());
+            const normClause = normalizeTextForMatching(clause);
+            if (normF.length <= 3) return false;
+            const fruitKeywords = [normF, normF + 's'];
+            for (const [key, syns] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+              if (normF.includes(key)) {
+                syns.forEach((s) => fruitKeywords.push(normalizeTextForMatching(s)));
+              }
+            }
+            const matchesThis = fruitKeywords.some((kw) => {
+              const reg = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${escapeRegexString(kw)}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+              return reg.test(normClause);
+            });
+            if (!matchesThis) return false;
+
+            const otherHasIt = cart.items.some((other, oIdx) => oIdx !== idx && other.fruits.some((of) => normalizeTextForMatching(of).includes(normF)));
             return !otherHasIt;
           });
           if (hasUniqueFruit) {
@@ -1875,8 +1933,19 @@ export function detectDistinctFormatsAndQuantitiesFromText(
           if (updates.has(idx)) continue;
           const item = cart.items[idx];
           const matchesFruit = item.fruits.some((f) => {
-            const fLower = f.toLowerCase().split('(')[0].trim();
-            return fLower.length > 3 && clause.includes(fLower);
+            const normF = normalizeTextForMatching(f.split('(')[0].trim());
+            const normClause = normalizeTextForMatching(clause);
+            if (normF.length <= 3) return false;
+            const fruitKeywords = [normF, normF + 's'];
+            for (const [key, syns] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+              if (normF.includes(key)) {
+                syns.forEach((s) => fruitKeywords.push(normalizeTextForMatching(s)));
+              }
+            }
+            return fruitKeywords.some((kw) => {
+              const reg = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${escapeRegexString(kw)}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+              return reg.test(normClause);
+            });
           });
           if (matchesFruit) {
             matchedItemIndex = idx;
@@ -1948,15 +2017,39 @@ export function extractCocktailsFromText(
 
   const matchFruitInString = (str: string): any[] => {
     const found: any[] = [];
-    const cleanStr = str.toLowerCase();
+    const cleanStr = normalizeTextForMatching(str);
+
     for (const fruit of availableFruits) {
       const fNameLower = fruit.name.toLowerCase();
       const simpleName = fNameLower.split('(')[0].trim();
-      const regex = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${simpleName}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
-      const isFolereMatch = fNameLower.includes('foléré') && /(?:^|[\s,;.!?'"()•\\-–—*+])(?:bissap|foléré|folere)(?:$|[\\s,;.!?'"()•\\-–—*+])/i.test(cleanStr);
-      const isCocoMatch = fNameLower.includes('coco') && /(?:^|[\s,;.!?'"()•\\-–—*+])(?:coco|noix de coco)(?:$|[\\s,;.!?'"()•\\-–—*+])/i.test(cleanStr);
+      const normSimple = normalizeTextForMatching(simpleName);
+      const fruitIdNorm = normalizeTextForMatching(fruit.id || '');
 
-      if (regex.test(cleanStr) || isFolereMatch || isCocoMatch) {
+      const targetKeywords = new Set<string>();
+      if (normSimple.length >= 3) {
+        targetKeywords.add(normSimple);
+        targetKeywords.add(normSimple + 's');
+      }
+
+      for (const [key, synonyms] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+        if (normSimple.includes(key) || fruitIdNorm.includes(key)) {
+          for (const syn of synonyms) {
+            targetKeywords.add(normalizeTextForMatching(syn));
+          }
+        }
+      }
+
+      let isMatch = false;
+      for (const kw of targetKeywords) {
+        if (kw.length < 3) continue;
+        const regex = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${escapeRegexString(kw)}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+        if (regex.test(cleanStr)) {
+          isMatch = true;
+          break;
+        }
+      }
+
+      if (isMatch) {
         if (!found.some((f) => f.id === fruit.id)) {
           found.push(fruit);
         }
@@ -3255,9 +3348,12 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
         }
       }
 
+      // Détection explicite de l'intention d'ajouter une boisson à la commande existante
+      const isAddIntent = /(?:ajout(?:er?|e|ons)|en\s+plus|aussi|(?:une|un)\s+autre\s+(?:commande|boisson|recette|jus|cocktail|bouteille|m[ée]lange)|deuxi[eè]me|2e|second)/i.test(senderText);
+
       // Détection de volonté d'annulation / recommencer / changer de commande
-      const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?recette|autre\s+(?:recette|jus|cocktail)|nouvelle\s+recette|choisir\s+d'autres|d'autres\s+fruits?|autres?\s+fruits?)/i;
-      if (senderText && resetIntentRegex.test(senderText)) {
+      const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?(?:recette|boisson|cocktail)|autre\s+(?:truc|chose|m[ée]lange|boisson|recette|jus|cocktail)|nouvelle\s+recette|choisir\s+d'autres|d'autres\s+fruits?|autres?\s+fruits?)/i;
+      if (senderText && !isAddIntent && resetIntentRegex.test(senderText)) {
         console.log(`[whatsapp-webhook] 🔄 Intention de réinitialisation détectée ("${senderText}"). Nettoyage du panier.`);
         activeCart = null;
         if (userDocRef) {
@@ -3275,19 +3371,52 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
       // Priorité 1 : Détection déterministe de cocktails et fruits dans le message actuel
       const extractedCurrent = extractCocktailsFromText(senderText, availableFruits);
       if (extractedCurrent && extractedCurrent.length > 0) {
-        activeCart = computeCartFromRawItems(
-          extractedCurrent,
-          availableFruits,
-          bottle500Base,
-          bottle1LBase,
-          activeCart?.district,
-          undefined
-        );
-        activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
-        activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
-        if (userDocRef) {
-          await saveActiveWhatsAppCart(userDocRef, activeCart);
-          console.log(`[whatsapp-webhook] 🍹 Persisted activeWhatsAppCart from user text with ${activeCart.items.length} item(s):`, activeRecipeName);
+        if (isAddIntent && activeCart && activeCart.items.length > 0) {
+          // Conserver les cocktails existants et ajouter le(s) nouveau(x) cocktail(s)
+          const existingRaw = activeCart.items.map((it) => ({
+            cocktailName: it.cocktailName,
+            fruits: it.fruits,
+            bottleSize: it.bottleSize,
+            quantity: it.quantity,
+            hasAddedSugar: it.hasAddedSugar,
+          }));
+          const newRaw = extractedCurrent.map((c, idx) => ({
+            cocktailName: (c.cocktailName && c.cocktailName !== 'Cocktail Santé Sur-Mesure')
+              ? c.cocktailName
+              : `Cocktail ${existingRaw.length + idx + 1}`,
+            fruits: c.fruits,
+            bottleSize: '500ml' as const,
+            quantity: 1,
+          }));
+          activeCart = computeCartFromRawItems(
+            [...existingRaw, ...newRaw],
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            activeCart.district,
+            activeCart
+          );
+          activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+          activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+            console.log(`[whatsapp-webhook] ➕ Appended ${newRaw.length} cocktail(s) to activeWhatsAppCart. Total items: ${activeCart.items.length}`);
+          }
+        } else {
+          activeCart = computeCartFromRawItems(
+            extractedCurrent,
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            activeCart?.district,
+            undefined
+          );
+          activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+          activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+            console.log(`[whatsapp-webhook] 🍹 Persisted activeWhatsAppCart from user text with ${activeCart.items.length} item(s):`, activeRecipeName);
+          }
         }
       } else if (activeCart && activeCart.items.length > 0) {
         // Priorité 2 : Panier multi-boissons en cours déjà calculé par le serveur
@@ -3605,7 +3734,7 @@ RÈGLES STRICTES DE PRÉSENTATION :
           interactiveButtonId.includes('valider') ||
           /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange)/i.test(senderText)
         ) {
-          if (!activeCart && activeRecipeIngredients.length > 0) {
+          if (activeRecipeIngredients.length > 0) {
             activeCart = computeCartFromRawItems(
               [{
                 cocktailName: activeRecipeName || 'Cocktail Santé FYS',
@@ -3713,13 +3842,25 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           }
 
           if (activeCart && activeCart.items.length > 0) {
-            const updatedRaw = activeCart.items.map((it) => ({
-              cocktailName: it.cocktailName,
-              fruits: it.fruits,
-              bottleSize: chosenFormat,
-              quantity: it.quantity,
-              hasAddedSugar: it.hasAddedSugar,
-            }));
+            let updatedRaw: any[] = [];
+            if (isAll || activeCart.items.length === 1) {
+              updatedRaw = activeCart.items.map((it) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: chosenFormat,
+                quantity: it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+              }));
+            } else {
+              // Panier multi-cocktails et format individuel choisi (ex: pour le dernier cocktail ajouté)
+              updatedRaw = activeCart.items.map((it, idx) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: (idx === activeCart!.items.length - 1) ? chosenFormat : it.bottleSize,
+                quantity: it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+              }));
+            }
             activeCart = computeCartFromRawItems(
               updatedRaw,
               availableFruits,
@@ -3731,8 +3872,11 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             if (userDocRef) {
               await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
-            if (activeCart.items.length > 1) {
+            if (isAll && activeCart.items.length > 1) {
               explicitAction = `[Le client a choisi le format ${formatLabel} pour TOUTES ses boissons (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_each_1", "title": "1 de chaque"}, {"id": "btn_qty_each_2", "title": "2 de chaque"}, {"id": "btn_qty_diff", "title": "Quantités perso"}]. Précise aussi qu'il peut indiquer des formats différents s'il le souhaite.]`;
+            } else if (!isAll && activeCart.items.length > 1) {
+              const lastItem = activeCart.items[activeCart.items.length - 1];
+              explicitAction = `[Le client a sélectionné le format ${formatLabel} pour son nouveau cocktail « ${lastItem.cocktailName} » (${lastItem.fruits.join(', ')}). RÈGLE STRICTE : Remercie-le et demande UNIQUEMENT le nombre de bouteilles pour ce cocktail avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
             } else {
               explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
             }
@@ -3751,7 +3895,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           interactiveButtonId.startsWith('btn_qty_')
         ) {
           let chosenQty = 1;
-          if (interactiveButtonId.startsWith('btn_qty_each_')) {
+          const isEach = interactiveButtonId.startsWith('btn_qty_each_');
+          if (isEach) {
             const match = interactiveButtonId.match(/\d+/);
             chosenQty = match ? parseInt(match[0], 10) : 1;
           } else {
@@ -3779,13 +3924,25 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           }
 
           if (activeCart && activeCart.items.length > 0) {
-            const updatedRaw = activeCart.items.map((it) => ({
-              cocktailName: it.cocktailName,
-              fruits: it.fruits,
-              bottleSize: it.bottleSize,
-              quantity: chosenQty,
-              hasAddedSugar: it.hasAddedSugar,
-            }));
+            let updatedRaw: any[] = [];
+            if (isEach || activeCart.items.length === 1) {
+              updatedRaw = activeCart.items.map((it) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: it.bottleSize,
+                quantity: chosenQty,
+                hasAddedSugar: it.hasAddedSugar,
+              }));
+            } else {
+              // Panier multi-cocktails et quantité individuelle choisie (ex: pour le dernier cocktail ajouté)
+              updatedRaw = activeCart.items.map((it, idx) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: it.bottleSize,
+                quantity: (idx === activeCart!.items.length - 1) ? chosenQty : it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+              }));
+            }
             activeCart = computeCartFromRawItems(
               updatedRaw,
               availableFruits,
@@ -3797,7 +3954,19 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             if (userDocRef) {
               await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
-            explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) de chaque boisson (${activeCart.items.map((i) => `${i.cocktailName} en ${i.bottleSizeLabel}`).join(', ')}). RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+
+            if (activeCart.district) {
+              const devisExact = generateCartDevisText(activeCart, activeCart.district);
+              explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) ${isEach ? 'de chaque boisson' : `pour « ${activeCart.items[activeCart.items.length - 1]?.cocktailName} »`}.
+LE SERVEUR FYS A DÉJÀ CALCULÉ LE DEVIS OFFICIEL EXACT AVEC LIVRAISON À ${activeCart.district} :
+${devisExact}
+
+CONSIGNE STRICTE ET ABSOLUE :
+Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
+Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`;
+            } else {
+              explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) ${isEach ? 'de chaque boisson' : `pour « ${activeCart.items[activeCart.items.length - 1]?.cocktailName} »`} (${activeCart.items.map((i) => `${i.cocktailName} en ${i.bottleSizeLabel}`).join(', ')}). RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+            }
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur la quantité : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits il souhaite mélanger].`;
           } else {
@@ -3932,9 +4101,50 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         // Détection intelligente de formats ou de quantités pour un panier multi-boissons en cours
         let textHandled = false;
 
+        // 0. Ajout d'une autre boisson / cocktail à une commande en cours par texte
+        if (!textHandled && isAddIntent && activeCart && activeCart.items.length >= 2) {
+          const lastItem = activeCart.items[activeCart.items.length - 1];
+          const summaryAll = activeCart.items
+            .map((it, idx) => `• Boisson ${idx + 1} : « ${it.cocktailName} » (${it.fruits.join(', ')})`)
+            .join('\n');
+          currentUserParts.push({
+            text: `${senderText}\n\n[SYSTÈME FYS : Le client a demandé d'ajouter un nouveau cocktail (« ${lastItem.cocktailName} » : ${lastItem.fruits.join(', ')}) à sa commande en cours.
+Sa commande comporte désormais ${activeCart.items.length} boisson(s) :
+${summaryAll}
+RÈGLE STRICTE :
+1. Remercie-le chaleureusement et confirme l'ajout de ce nouveau cocktail à son panier.
+2. Demande-lui UNIQUEMENT quel format il souhaite pour CE nouveau cocktail (« ${lastItem.cocktailName} ») avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}].
+Ne pose aucune autre question !]`,
+          });
+          textHandled = true;
+        }
+
         // 1. Validation de la composition du cocktail par texte ("je valide", "valider ce mélange", "c'est bon")
         const isValidateMixText = /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange)/i.test(senderText);
-        if (isValidateMixText && (activeCart || activeRecipeIngredients.length > 0)) {
+        if (!textHandled && isValidateMixText && activeRecipeIngredients.length > 0) {
+          activeCart = computeCartFromRawItems(
+            [{
+              cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+              fruits: activeRecipeIngredients.map((i) => i.fruitName),
+              bottleSize: '500ml',
+              quantity: 1,
+            }],
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            undefined,
+            undefined
+          );
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+            await userDocRef.set({
+              activeWhatsAppDraft: {
+                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                ingredients: activeRecipeIngredients,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+            }, { merge: true }).catch(() => null);
+          }
           const cocktailTitle = activeRecipeName || (activeCart?.items?.map(i => i.cocktailName).join(' + ')) || 'Cocktail Santé FYS';
           const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || (activeCart?.items?.flatMap(i => i.fruits).join(', ')) || 'fruits sélectionnés';
           currentUserParts.push({
@@ -4053,6 +4263,77 @@ RÈGLES STRICTES DE PRÉSENTATION :
                 text: `${senderText}\n\n[SYSTÈME FYS : Le client a défini les formats de ses boissons : ${summaryFormats}. Le serveur FYS a recalculé les prix officiels exacts (sous-total: ${activeCart.subtotal.toLocaleString('fr-FR')} XAF, total avec livraison: ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement, confirme clairement ces formats attribués et demande dans quel quartier de Yaoundé il souhaite être livré avec la liste :::LIST !]`,
               });
               textHandled = true;
+            } else if (/^(?:format\s+)?(?:500\s*(?:ml)?|1\s*(?:l|litre)|1000\s*ml)$/i.test(cleanSenderLower)) {
+              // Cas D : L'utilisateur envoie simplement "500ml" ou "1L" pour le dernier cocktail ajouté
+              const is500 = /500/i.test(cleanSenderLower);
+              const chosenSize: '500ml' | '1L' = is500 ? '500ml' : '1L';
+              const label = chosenSize === '1L' ? '1 Litre' : '500ml';
+              const lastIdx = activeCart.items.length - 1;
+              const updatedRaw = activeCart.items.map((it, idx) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: (idx === lastIdx) ? chosenSize : it.bottleSize,
+                quantity: it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+              }));
+              activeCart = computeCartFromRawItems(
+                updatedRaw,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart.district,
+                activeCart
+              );
+              if (userDocRef) {
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
+              }
+              const lastItem = activeCart.items[lastIdx];
+              currentUserParts.push({
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour « ${lastItem.cocktailName} ». RÈGLE STRICTE : Remercie-le et demande UNIQUEMENT la quantité souhaitée pour ce cocktail avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande pas encore le quartier !]`,
+              });
+              textHandled = true;
+            } else if (/^(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?$/i.test(cleanSenderLower)) {
+              // Cas E : L'utilisateur envoie une quantité (ex: "1" ou "1 bouteille") pour le dernier cocktail ajouté
+              const parsedQty = parseInt(cleanSenderLower.match(/\d+/)![0], 10);
+              if (parsedQty > 0 && parsedQty <= 20) {
+                const lastIdx = activeCart.items.length - 1;
+                const updatedRaw = activeCart.items.map((it, idx) => ({
+                  cocktailName: it.cocktailName,
+                  fruits: it.fruits,
+                  bottleSize: it.bottleSize,
+                  quantity: (idx === lastIdx) ? parsedQty : it.quantity,
+                  hasAddedSugar: it.hasAddedSugar,
+                }));
+                activeCart = computeCartFromRawItems(
+                  updatedRaw,
+                  availableFruits,
+                  bottle500Base,
+                  bottle1LBase,
+                  activeCart.district,
+                  activeCart
+                );
+                if (userDocRef) {
+                  await saveActiveWhatsAppCart(userDocRef, activeCart);
+                }
+                const lastItem = activeCart.items[lastIdx];
+                if (activeCart.district) {
+                  const devisExact = generateCartDevisText(activeCart, activeCart.district);
+                  currentUserParts.push({
+                    text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${parsedQty} bouteille(s) pour « ${lastItem.cocktailName} ».
+LE SERVEUR FYS A DÉJÀ CALCULÉ LE DEVIS OFFICIEL EXACT AVEC LIVRAISON À ${activeCart.district} :
+${devisExact}
+
+CONSIGNE STRICTE ET ABSOLUE :
+Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
+Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`,
+                  });
+                } else {
+                  currentUserParts.push({
+                    text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${parsedQty} bouteille(s) pour « ${lastItem.cocktailName} ». RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
+                  });
+                }
+                textHandled = true;
+              }
             }
           }
         } else if (!textHandled && activeCart && activeCart.items.length === 1) {
