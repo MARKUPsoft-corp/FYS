@@ -56,6 +56,10 @@ function getAdminMessaging() {
   }
 }
 
+export const FYS_TEAM_PHONE_ORANGE = '691913207';
+export const FYS_TEAM_PHONE_MTN = '675108876';
+export const FYS_TEAM_CONTACTS_TEXT = `📞 / 💬 +237 691 91 32 07 (https://wa.me/237691913207)\n📞 / 💬 +237 675 10 88 76 (https://wa.me/237675108876)`;
+
 /**
  * Parse du JSON renvoyé par un LLM de manière tolérante :
  * retire les blocs markdown ```json ... ``` et extrait l'objet { ... }.
@@ -516,13 +520,13 @@ async function sendWhatsAppCtaUrl(
 
   // Meta limite body.text à 1024 caractères pour les messages interactifs
   let prefixTextToSendFirst: string | null = null;
-  if (textForBody.length > 950) {
-    const splitIndex = textForBody.lastIndexOf('\n\n', 900);
-    const cutAt = splitIndex > 250 ? splitIndex : 850;
+  if (textForBody.length > 1020) {
+    const splitIndex = textForBody.lastIndexOf('\n\n', 950);
+    const cutAt = splitIndex > 250 ? splitIndex : 900;
     prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
     textForBody = textForBody.slice(cutAt).trim();
-    if (textForBody.length > 950) {
-      textForBody = textForBody.slice(-950);
+    if (textForBody.length > 1020) {
+      textForBody = textForBody.slice(-1020);
     }
   }
 
@@ -1321,7 +1325,7 @@ async function generateOrderNutritionPdfBuffer(
         React.createElement(
           View,
           { style: styles.scoreHero },
-          React.createElement(Text, { style: styles.scoreBig }, String(analysis?.score || 92)),
+          React.createElement(Text, { style: styles.scoreBig }, String(analysis?.score || calculateDeterministicHealthScore(ingredients || [], false).score)),
           React.createElement(
             View,
             null,
@@ -1444,13 +1448,87 @@ async function generateOrderNutritionPdfBuffer(
   }
 }
 
+export function calculateDeterministicHealthScore(
+  fruitNames: string[],
+  hasSugar: boolean,
+  healthConditions?: string[]
+): { score: number; verdict: 'beneficial' | 'neutral' | 'caution' } {
+  let score = 78;
+  const lowerFruits = fruitNames.map((f) => f.toLowerCase());
+  const conditions = (healthConditions || []).map((c) => c.toLowerCase());
+
+  // Boosters de vitalité / antioxydants
+  const hasAntioxidantBooster = lowerFruits.some((f) =>
+    f.includes('gingembre') || f.includes('foléré') || f.includes('bissap') || f.includes('curcuma') || f.includes('baobab') || f.includes('corossol')
+  );
+  if (hasAntioxidantBooster) score += 7;
+
+  // Richesse en vitamine C / enzymes digestives
+  const hasVitCEnzyme = lowerFruits.some((f) =>
+    f.includes('citron') || f.includes('ananas') || f.includes('papaye') || f.includes('orange') || f.includes('cassimango')
+  );
+  if (hasVitCEnzyme) score += 5;
+
+  // Synergie multi-fruits (2 à 3 fruits variés)
+  if (fruitNames.length >= 2 && fruitNames.length <= 4) {
+    score += 4;
+  } else if (fruitNames.length === 1) {
+    score -= 4;
+  }
+
+  // Hydratation & fibres
+  const hasFibersHydration = lowerFruits.some((f) =>
+    f.includes('concombre') || f.includes('carotte') || f.includes('pomme') || f.includes('pasteque')
+  );
+  if (hasFibersHydration) score += 2;
+
+  // Pénalité sucre ajouté
+  if (hasSugar) {
+    score -= 16;
+  }
+
+  // Conditions de santé spécifiques
+  if (conditions.some((c) => c.includes('diab') || c.includes('glyc'))) {
+    const highSugarFruits = lowerFruits.filter((f) =>
+      f.includes('mangue') || f.includes('banane') || f.includes('raisin')
+    );
+    if (highSugarFruits.length >= 2) {
+      score -= 14;
+    }
+  }
+
+  if (conditions.some((c) => c.includes('ulc') || c.includes('gastr') || c.includes('acid'))) {
+    const highAcidFruits = lowerFruits.filter((f) =>
+      f.includes('citron') || f.includes('ananas')
+    );
+    if (highAcidFruits.length >= 2) {
+      score -= 12;
+    }
+  }
+
+  // Borner entre 55 et 97
+  score = Math.min(97, Math.max(55, score));
+
+  let verdict: 'beneficial' | 'neutral' | 'caution' = 'beneficial';
+  if (score < 70) {
+    verdict = 'caution';
+  } else if (score < 80) {
+    verdict = 'neutral';
+  }
+
+  return { score, verdict };
+}
+
 async function resolveOrGenerateNutritionAnalysis(
   cocktailName: string,
   fruitNames: string[],
   hasSugar: boolean,
   existingSnapshot?: any,
-  apiKey?: string
+  apiKey?: string,
+  healthConditions?: string[]
 ): Promise<any> {
+  const dynamicFallback = calculateDeterministicHealthScore(fruitNames, hasSugar, healthConditions);
+
   // 1. Analyse existante (panier web ou commande convertie)
   if (
     existingSnapshot &&
@@ -1458,8 +1536,8 @@ async function resolveOrGenerateNutritionAnalysis(
     typeof existingSnapshot.score === 'number'
   ) {
     return {
-      verdict: existingSnapshot.verdict || 'beneficial',
-      score: existingSnapshot.score || 92,
+      verdict: existingSnapshot.verdict || dynamicFallback.verdict,
+      score: existingSnapshot.score || dynamicFallback.score,
       notes: existingSnapshot.notes || `Cocktail santé équilibré et riche en nutriments essentiels.`,
       profilNutritionnel: existingSnapshot.profilNutritionnel,
       beneficesCibles: Array.isArray(existingSnapshot.beneficesCibles) ? existingSnapshot.beneficesCibles : [],
@@ -1488,11 +1566,18 @@ Génère l'analyse nutritionnelle pour ce cocktail de fruits :
 - Fruits : ${fruitNames.join(', ')}
 - Sucre ajouté : ${hasSugar ? 'Oui' : 'Non (100% naturel)'}
 
+RÈGLE DU SCORE SANTÉ :
+Calcule un score entier réaliste entre 55 et 97 basé sur la composition réelle de ce cocktail (NE METS JAMAIS 92 PAR DÉFAUT !) :
+- Synergie antioxydante et vitaminée remarquable sans sucre : 88 à 96
+- Bon mélange fruité équilibré et digeste : 80 à 87
+- Mélange très riche en sucres naturels ou mono-fruit : 70 à 79
+- Mélange avec sucre ajouté ou acidité déséquilibrée : 55 à 69
+
 Renvoie UNIQUEMENT un objet JSON avec cette structure :
 {
-  "verdict": "beneficial",
-  "score": 92,
-  "notes": "Courte synthèse nutritionnelle en 2 phrases valorisant les bienfaits de cette synergie de fruits frais.",
+  "verdict": "beneficial" | "neutral" | "caution",
+  "score": <entier calculé entre 55 et 97>,
+  "notes": "Courte synthèse nutritionnelle en 2 phrases valorisant les bienfaits concrets de cette synergie de fruits frais.",
   "profilNutritionnel": {
     "vitamineC": { "pourcentage": 85, "valeur": "70 mg" },
     "vitamineA": { "pourcentage": 35, "valeur": "280 µg" },
@@ -1521,8 +1606,8 @@ Renvoie UNIQUEMENT un objet JSON avec cette structure :
       const parsed = parseSafeJson<any>(text);
       if (parsed && parsed.score && parsed.profilNutritionnel) {
         return {
-          verdict: parsed.verdict || 'beneficial',
-          score: Math.min(100, Math.max(0, Number(parsed.score) || 90)),
+          verdict: parsed.verdict || dynamicFallback.verdict,
+          score: Math.min(100, Math.max(0, Number(parsed.score) || dynamicFallback.score)),
           notes: parsed.notes || `Synergie fruitée conçue sur-mesure pour votre vitalité.`,
           profilNutritionnel: parsed.profilNutritionnel,
           beneficesCibles: Array.isArray(parsed.beneficesCibles) ? parsed.beneficesCibles : [],
@@ -1539,8 +1624,8 @@ Renvoie UNIQUEMENT un objet JSON avec cette structure :
   // 3. Fallback déterministe scientifique (0ms de latence, 100% robuste)
   const fruitsJoined = fruitNames.length > 0 ? fruitNames.join(', ') : 'Fruits frais de saison';
   return {
-    verdict: 'beneficial',
-    score: 92,
+    verdict: dynamicFallback.verdict,
+    score: dynamicFallback.score,
     notes: `Ce cocktail artisanal ${cocktailName} associant ${fruitsJoined} offre un apport équilibré en vitamines et micronutriments protecteurs pour soutenir votre vitalité et votre bien-être au quotidien.`,
     profilNutritionnel: {
       vitamineC: { pourcentage: 82, valeur: '74 mg' },
@@ -1968,6 +2053,9 @@ export function generateCartConfirmationText(cart: WhatsAppCart, district?: stri
   });
   lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
   lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+  lines.push('');
+  lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
+  lines.push(FYS_TEAM_CONTACTS_TEXT);
   return lines.join('\n');
 }
 
@@ -2173,24 +2261,52 @@ Si le client n'a pas encore de profil de santé (nouveau client) :
 :::
 (Notre système enregistrera alors son profil dans la base de données FYS).
 
+CONTACTS OFFICIELS DE L'ÉQUIPE FYS (APPEL & WHATSAPP DIRECT) :
+L'équipe FYS est disponible pour répondre aux questions, assister pour une commande ou échanger directement :
+📞 / 💬 +237 691 91 32 07 (https://wa.me/237691913207)
+📞 / 💬 +237 675 10 88 76 (https://wa.me/237675108876)
+RÈGLES D'AFFICHAGE DES CONTACTS :
+- Ces numéros et liens cliquables WhatsApp DOIVENT IMPÉRATIVEMENT figurer dans :
+  1. Le message d'accueil pour un nouveau client.
+  2. Le message final de confirmation de chaque commande.
+- Tu peux également les donner au cours de la conversation dès que le client a besoin d'assistance humaine ou pose des questions sur l'équipe.
+
 CHEMINEMENT OBLIGATOIRE EN 4 ÉTAPES APRÈS LE BILAN :
 
 ÉTAPE 1 : CHOIX DES FRUITS DU COCKTAIL
 Conseille et cale avec le client la composition exacte de son mélange (2 à 4 fruits/ingrédients adaptés à ses besoins).
+PRÉCAUTIONS SANTÉ SANS BLOCAGE :
+Si certains fruits choisis ne sont pas idéaux pour son profil de santé (ex: fruits très sucrés pour un diabétique, ou trop acides pour un ulcère) :
+- Avertis le client avec tact, pédagogie et douceur de la précaution à prendre.
+- Propose-lui une alternative douce ou un ajustement adapté.
+- RÈGLE FONDAMENTALE : NE BLOQUE JAMAIS LA COMMANDE ! Si le client souhaite quand même maintenir sa composition, respecte son choix avec bienveillance et permets-lui de commander.
 
 ÉTAPE 2 : PROPOSITION DE LA FICHE NUTRITIONNELLE (OBLIGATOIRE !)
 Dès que les fruits du cocktail sont calés et convenus avec le client, TU NE DOIS PAS passer directement à la commande !
-Tu dois obligatoirement lui demander :
+Tu dois obligatoirement le féliciter pour son mélange et lui demander :
 "Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
+avec les boutons interactifs :
+:::BUTTONS
+[
+  { "id": "btn_order", "title": "Commander" },
+  { "id": "btn_nutrition", "title": "Fiche nutrition" }
+]
+:::
 
 ÉTAPE 3 : PRÉSENTATION DE LA FICHE NUTRITIONNELLE COMPLÈTE (SI LE CLIENT LA DEMANDE)
-Si le client répond oui ou souhaite voir la fiche nutritionnelle :
-Présente une FICHE NUTRITIONNELLE COMPLÈTE contenant exactement les mêmes informations et rubriques que l'analyse nutritionnelle de l'application web FYS :
+Si le client répond oui, clique sur "Fiche nutrition" ou demande à voir les bienfaits :
+Présente une FICHE NUTRITIONNELLE COMPLÈTE, propre, élégante et professionnelle, exactement comme sur l'application web FYS :
+
+CONSIGNES DE MISE EN FORME & QUALITÉ RÉDACTIONNELLE :
+- Propre, aérée et professionnelle : STRICTEMENT AUCUN EXCÈS D'ASTÉRISQUES (**) sur chaque mot ou chiffre. N'utilise pas de gras superflu.
+- SCORE SANTÉ DYNAMIQUE ET CALCULÉ : Ne donne JAMAIS 92 par défaut ! Calcule un score réaliste entre 55 et 97 selon la richesse en vitamines, antioxydants, synergies et éventuels sucres/acidités du mélange (ex: 88/100, 94/100, 78/100...).
+- Modèle exact à suivre :
 
 🍹 [Nom créatif du cocktail]
-⭐ Score Santé : [Score estimé 0-100]/100 — Verdict : [✦ Bénéfique / ◈ Neutre / ⚠ Précaution]
+⭐ Score Santé : [Score estimé 55-97]/100 — Verdict : [✦ Bénéfique / ◈ Neutre / ⚠ Précaution]
+
 📝 Analyse de votre nutritionniste :
-[2 à 3 phrases claires et bienveillantes expliquant pourquoi ce mélange est idéal pour son profil et ses objectifs]
+[2 à 3 phrases fluides, claires et bienveillantes expliquant pourquoi cette synergie de fruits est bienfaisante]
 
 📊 Profil Nutritionnel estimé (AJR adulte standard) :
 • Vitamine C : [X mg] ([Y]% AJR)
@@ -2201,18 +2317,19 @@ Présente une FICHE NUTRITIONNELLE COMPLÈTE contenant exactement les mêmes inf
 • Antioxydants : [X mg] ([Y]% AJR)
 
 🎯 Bénéfices ciblés :
-• [Bénéfice 1, ex: Immunité] : Niveau Élevé
+• [Bénéfice 1, ex: Immunité & Vitalité] : Niveau Élevé
 • [Bénéfice 2, ex: Digestion] : Niveau Modéré
 
 🔗 Synergies & Interactions des fruits :
-• [Explication d'une synergie ou réaction positive entre 2 fruits du mélange]
+• [Explication d'une interaction bienfaisante entre 2 fruits du mélange]
 • [Deuxième synergie si applicable]
 
 💡 Conseil de dégustation :
-[Moment idéal de consommation (ex: le matin à jeun, frais), température ou fréquence pour maximiser les bienfaits]
+[Moment idéal de dégustation (ex: le matin frais ou après l'effort) pour une assimilation maximale]
 
-Puis termine en demandant :
+Puis termine simplement en demandant :
 "Souhaitez-vous maintenant passer à la commande de cette recette ?"
+avec le bouton :::BUTTONS [{"id": "btn_order", "title": "Commander"}]
 
 ÉTAPE 4 : COMMANDE EN QUESTIONS STRICTEMENT DÉTACHÉES (1 SEULE QUESTION À LA FOIS !)
 RÈGLE D'OR COMMERCIALE & INTERACTIVE :
@@ -3080,7 +3197,10 @@ CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
    - "deliveryFee" DOIT être strictement 1000`;
             } else {
               userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
-CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies). Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
+CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies).
+Inclus obligatoirement les contacts cliquables de l'équipe FYS pour toute question ou commande directe :
+${FYS_TEAM_CONTACTS_TEXT}
+Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
             }
           }
 
@@ -3101,15 +3221,16 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         console.error('[whatsapp-webhook] GEMINI_API_KEY missing');
         await sendWhatsAppMessage(
           senderPhone,
-          `Bonjour ${senderName} ! Bienvenue chez FYS. Notre assistant NutriFYS est en cours d'initialisation. Nous vous répondons dans un instant.`,
+          `Bonjour ${senderName} ! Bienvenue chez FYS. Notre assistant NutriFYS est à votre service.\n\nBesoin d'aide ou d'informations directes ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`,
         );
         return res.status(200).json({ status: 'no_gemini_key' });
       }
 
       const hasHistory = chatHistoryForGemini.length > 0;
       const conversationRules = hasHistory
-        ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.`
-        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect.`;
+        ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.
+CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou à appeler l'équipe, donne-lui directement nos numéros cliquables :\n${FYS_TEAM_CONTACTS_TEXT}`
+        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect. Réalise son bilan de santé bienveillant et inclus IMPÉRATIVEMENT les contacts cliquables de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`;
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
@@ -3276,13 +3397,18 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
       let recipePricingDetails = '';
       if (currentIncompatibilities.length > 0) {
         recipePricingDetails = `
-🚨 ALERTE INCOMPATIBILITÉ CRITIQUE DU FYS LAB DÉTECTÉE DANS LA COMPOSITION :
-L'utilisateur a choisi des ingrédients scientifiquement incompatibles : ${currentIncompatibilities.join(', ')}.
-CONSIGNES STRICTES, CATÉGORIQUES ET INFRANGIBLES :
-1. TU DOIS REFUSER CE MÉLANGE IMMÉDIATEMENT ET DE FAÇON CATÉGORIQUE. AUCUNE NÉGOCIATION N'EST ACCEPTÉE.
-2. Explique-lui avec bienveillance mais autorité nutritionnelle pourquoi ces fruits ne peuvent pas être mélangés chez FYS (interaction enzymatique, altération digestive ou dégradation des vitamines).
-3. Propose-lui de remplacer l'un d'eux par un ingrédient compatible du catalogue en stock.
-4. NE DONNE AUCUN PRIX NI FORMAT POUR CE MÉLANGE INTERDIT. NE PROPOSE PAS DE COMMANDER.`;
+⚠️ PRÉCAUTION NUTRITIONNELLE DU FYS LAB SUR CETTE RECETTE :
+L'utilisateur a sélectionné une association de fruits faisant l'objet d'une réserve nutritionnelle : ${currentIncompatibilities.join(', ')}.
+CONSIGNES (AVERTIR SANS JAMAIS BLOQUER LA COMMANDE) :
+1. Avertis le client avec tact, bienveillance et pédagogie sur la précaution nutritionnelle (ex: interaction enzymatique, digestion ralentie ou sensibilité gastrique).
+2. Suggère-lui gentiment une alternative ou un ajustement s'il le souhaite.
+3. RÈGLE CRITIQUE : NE BLOQUE JAMAIS LA COMMANDE ! Si le client souhaite quand même maintenir sa composition, respecte son choix avec courtoisie, donne-lui les tarifs ci-dessous et permets-lui de commander son cocktail sans aucune restriction.
+
+CALCUL OFFICIEL DES TARIFS POUR CE COCKTAIL :
+- Format 500ml : ${bottle500Base} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice500} XAF la bouteille
+- Format 1L : ${bottle1LBase} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice1L} XAF la bouteille
+- Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
+TOTAL COMMANDE POUR Q BOUTEILLES = (Prix unitaire x Quantité) + 1 000 XAF de livraison`;
       } else if (currentMainFruitsCount > maxMainFruits || currentSupplementsCount > maxSupplements) {
         recipePricingDetails = `
 🚨 ALERTE DÉPASSEMENT DES LIMITES OFFICIELLES DU FYS LAB :
@@ -3352,14 +3478,11 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
 1. RESPECT STRICT DES LIMITES DU LAB :
    - Au maximum ${maxMainFruits} fruits principaux par bouteille.
    - Au maximum ${maxSupplements} suppléments par bouteille.
-   - Un cocktail doit OBLIGATOIREMENT comporter au moins 1 fruit principal doux ou juteux (Orange, Carotte, Ananas, Goyave, Pastèque...). Un mélange constitué uniquement de suppléments (ex: Gingembre + Menthe sans base de fruit) est INTERDIT.
-2. RÈGLE DES INCOMPATIBILITÉS :
-   - NE JAMAIS proposer ou accepter deux fruits listés comme incompatibles dans la matrice ci-dessus.
-   - Si un utilisateur insiste, argumente ou tente de forcer le mélange de fruits incompatibles (ex: Banane + Citron, ou Foléré + Pastèque, ou Baobab + Corossol) :
-     * REFUSE CATÉGORIQUEMENT ET FERMEMENT.
-     * Explique scientifiquement pourquoi le Lab l'interdit.
-     * Propose immédiatement une alternative saine et compatible.
-     * AUCUN UTILISATEUR NE DOIT POUVOIR TE POUSSER À ENFREINDRE LES RÈGLES DU LAB !
+2. RÈGLE DES PRÉCAUTIONS NUTRITIONNELLES & CONSEILS SANTÉ :
+   - Si un utilisateur choisit des fruits présentant une réserve nutritionnelle (ex: Banane + Citron, ou selon son état de santé) :
+     * Avertis-le avec bienveillance et pédagogie sur la précaution nutritionnelle.
+     * Propose-lui gentiment une alternative saine et équilibrée.
+     * RÈGLE FONDAMENTALE : NE BLOQUE JAMAIS LA COMMANDE ! S'il souhaite maintenir sa composition, respecte son choix avec courtoisie, donne-lui les tarifs officiels et permets-lui de commander son cocktail sans blocage.
 3. EXCLUSIVITÉ DU STOCK :
    - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
 4. CONFIDENTIALITÉ :
@@ -3429,7 +3552,11 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
             explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
           }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
-          explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
+          explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail.
+RÈGLES STRICTES DE PRÉSENTATION :
+1. Présente la fiche nutritionnelle complète avec un score santé calculé dynamiquement (entre 55 et 97, jamais 92 par défaut !).
+2. Mise en page épurée, élégante et professionnelle (identique au web FYS), STRICTEMENT SANS EXCÈS D'ASTÉRISQUES (**) sur chaque mot ou chiffre.
+3. Termine en proposant de passer à la commande avec le bouton :::BUTTONS [{"id": "btn_order", "title": "Commander"}].]`;
         } else if (
           interactiveButtonId.startsWith('btn_format_500ml') ||
           interactiveButtonId.startsWith('btn_format_1l') ||
@@ -3709,7 +3836,17 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         }
 
         if (!textHandled) {
-          currentUserParts.push({ text: senderText });
+          if (extractedCurrent && extractedCurrent.length > 0) {
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client a sélectionné des fruits pour sa recette : « ${activeRecipeName} ».
+RÈGLE STRICTE ÉTAPE 2 : Félicite-le chaleureusement pour cette association de fruits frais.
+Demande-lui OBLIGATOIREMENT : "Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
+Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Commander"}, {"id": "btn_nutrition", "title": "Fiche nutrition"}].
+Ne saute PAS directement au choix du format ou de la livraison sans proposer la fiche nutritionnelle !]`,
+            });
+          } else {
+            currentUserParts.push({ text: senderText });
+          }
         }
       }
 
@@ -4013,17 +4150,9 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
             }
 
             if (labViolations.length > 0) {
-              console.warn(`[whatsapp-webhook] 🚫 Order blocked due to strict FYS Lab rules violations:`, labViolations);
-              aiReply = `⚠️ *Commande non validée - Règles strictes du FYS Lab*\n\n` +
-                `Au FYS Lab, la santé de nos clients et la qualité nutritionnelle de nos jus sont prioritaires :\n\n` +
-                labViolations.map((v: string) => `• ${v}`).join('\n') +
-                `\n\nSouhaitez-vous retirer un ingrédient ou que je vous propose une alternative savoureuse et compatible ?`;
-              buttonsToSend = [
-                { id: 'btn_order', title: 'Modifier la recette' },
-                { id: 'btn_nutrition', title: 'Conseil NutriFYS' },
-              ];
-            } else {
-              const isWebDraft = Boolean(webDraft);
+              console.warn(`[whatsapp-webhook] ⚠️ Order health advisory notes (non-blocking):`, labViolations);
+            }
+            const isWebDraft = Boolean(webDraft);
               const orderLines = activeCart.items.map((it) => ({
                 cocktailName: it.cocktailName,
                 fruits: it.fruits,
@@ -4153,7 +4282,6 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               } catch (adminNotifErr) {
                 console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
               }
-            }
           } else {
             // Création mono-article classique (fallback si panier non initialisé)
             const isWebDraft = Boolean(webDraft);
@@ -4278,16 +4406,8 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               }
 
               if (labViolations.length > 0) {
-                console.warn(`[whatsapp-webhook] 🚫 Order blocked due to strict FYS Lab rules violations:`, labViolations);
-                aiReply = `⚠️ *Commande non validée - Règles strictes du FYS Lab*\n\n` +
-                  `Au FYS Lab, la santé de nos clients et la qualité nutritionnelle de nos jus sont prioritaires. Votre composition ne peut pas être préparée pour les raisons suivantes :\n\n` +
-                  labViolations.map((v: string) => `• ${v}`).join('\n') +
-                  `\n\nSouhaitez-vous retirer un ingrédient ou que je vous propose une alternative savoureuse et compatible ?`;
-                buttonsToSend = [
-                  { id: 'btn_order', title: 'Modifier la recette' },
-                  { id: 'btn_nutrition', title: 'Conseil NutriFYS' },
-                ];
-              } else {
+                console.warn(`[whatsapp-webhook] ⚠️ Order health advisory notes (non-blocking):`, labViolations);
+              }
                 // 2. VRAIE FORMULE OFFICIELLE STRICTE EXIGÉE PAR FYS :
                 // Prix unitaire = Prix de base contenant (Firestore) + Somme des fruits et compléments (Firestore)
                 const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.priceSnapshot) || 0), 0);
@@ -4427,7 +4547,6 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
                 } catch (adminNotifErr) {
                   console.warn('[whatsapp-webhook] Warning during admin notification dispatch:', adminNotifErr);
                 }
-              }
             }
         } catch (orderErr) {
           console.error('[whatsapp-webhook] Error creating WhatsApp order in Firestore:', orderErr);
@@ -4438,7 +4557,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
           // Nettoyer tout lien URL brut dans la réponse pour ne jamais afficher de lien long
           aiReply = aiReply.replace(/https?:\/\/fys-app\.com[^\s]*/g, '').replace(/👉\s*$/gm, '').trim();
 
-          // 3. Garantir qu'un récapitulatif complet et propre est TOUJOURS visible pour le client
+          // 3. Garantir qu'un récapitulatif complet et propre est TOUJOURS visible pour le client (sans doublon)
           if (createdOrderInfo) {
             const o = createdOrderInfo.orderDoc;
             let recapBlock = '';
@@ -4446,18 +4565,31 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               recapBlock = generateCartConfirmationText(activeCart, o.deliveryDetails?.district);
             } else {
               const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
-              recapBlock = `📋 *RÉCAPITULATIF OFFICIEL DE LA COMMANDE*\n` +
-                `• Cocktail : *${o.cocktailNameSnapshot}* (${ingNames})\n` +
-                `• Format : ${o.quantity}× ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString()} XAF la bouteille)\n` +
+              recapBlock = `📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE\n` +
+                `• Cocktail : ${o.cocktailNameSnapshot} (${ingNames})\n` +
+                `• Format : ${o.quantity}x ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString('fr-FR')} XAF la bouteille)\n` +
                 `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
-                `👉 *TOTAL À PAYER : ${o.totalPrice.toLocaleString()} XAF* (Paiement Mobile Money ou à la livraison)`;
+                `👉 TOTAL À PAYER : ${o.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)\n\n` +
+                `Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
             }
 
-            // Si le message contenait "Voici d'ailleurs le récapitulatif..." sans détails ou vide, y insérer le récapitulatif
-            if (aiReply.includes('récapitulatif')) {
-              aiReply = aiReply.replace(/(Voici(?:\s+d'ailleurs)?\s+le\s+récapitulatif[^\n]*:?\s*)/i, `$1\n\n${recapBlock}\n\n`);
-            } else if (!aiReply.includes('TOTAL À PAYER') && !aiReply.includes(o.totalPrice.toLocaleString())) {
-              aiReply = `${aiReply}\n\n${recapBlock}`;
+            // Vérifier si le message généré par l'IA contient DÉJÀ le récapitulatif complet
+            const formattedTotalFr = o.totalPrice.toLocaleString('fr-FR');
+            const hasRecapAlready =
+              (aiReply.includes('TOTAL À PAYER') && (aiReply.includes(formattedTotalFr) || aiReply.includes(String(o.totalPrice)))) ||
+              aiReply.includes('RÉCAPITULATIF OFFICIEL');
+
+            if (!hasRecapAlready) {
+              if (aiReply.includes('récapitulatif')) {
+                aiReply = aiReply.replace(/(Voici(?:\s+d'ailleurs)?\s+le\s+récapitulatif[^\n]*:?\s*)/i, `$1\n\n${recapBlock}\n\n`);
+              } else {
+                aiReply = `${aiReply}\n\n${recapBlock}`;
+              }
+            }
+
+            // S'assurer que les contacts de l'équipe apparaissent impérativement à la fin de la commande
+            if (!aiReply.includes('691913207') && !aiReply.includes('675108876')) {
+              aiReply = `${aiReply}\n\nUne question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
             }
           }
         }
@@ -4633,6 +4765,11 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         } catch (audioErr) {
           console.warn('[whatsapp-webhook] Voice reply generation skipped or failed:', audioErr);
         }
+      }
+
+      // Incursion impérative des numéros de l'équipe dans le message de bienvenue pour tout nouveau client
+      if (!hasHistory && !aiReply.includes('691913207') && !aiReply.includes('675108876')) {
+        aiReply = `${aiReply}\n\nBesoin d'informations ou d'une commande par téléphone ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
       }
 
       // Envoyer le message : avec bouton CTA URL natif si présent (zéro lien brut dans le texte), sinon liste déroulante, sinon boutons de réponse, sinon texte standard
