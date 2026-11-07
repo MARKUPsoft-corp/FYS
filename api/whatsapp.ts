@@ -34,7 +34,12 @@ function getAdminApp() {
 function getAdminDb() {
   try {
     const app = getAdminApp();
-    return app ? getFirestore(app) : null;
+    if (!app) return null;
+    const db = getFirestore(app);
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch (_) {}
+    return db;
   } catch (e) {
     console.warn('[whatsapp-webhook] Firebase Admin init bypassed:', e);
     return null;
@@ -1591,6 +1596,27 @@ export interface WhatsAppCart {
   updatedAt: number;
 }
 
+export function cleanForFirestore<T>(data: T): T {
+  try {
+    return JSON.parse(JSON.stringify(data));
+  } catch (_) {
+    return data;
+  }
+}
+
+async function saveActiveWhatsAppCart(docRef: any, cart: WhatsAppCart | null) {
+  if (!docRef) return;
+  try {
+    if (cart) {
+      await docRef.set({ activeWhatsAppCart: cleanForFirestore(cart) }, { merge: true });
+    } else {
+      await docRef.set({ activeWhatsAppCart: FieldValue.delete() }, { merge: true });
+    }
+  } catch (err) {
+    console.warn('[whatsapp-webhook] Failed to save activeWhatsAppCart:', err);
+  }
+}
+
 export function computeCartFromRawItems(
   rawItems: Array<{
     cocktailName?: string;
@@ -1621,9 +1647,9 @@ export function computeCartFromRawItems(
         resolvedIngs.push({
           fruitId: found.id,
           fruitName: found.name,
-          priceSnapshot: found.price,
-          isSupplement: found.isSupplement,
-          incompatibleIds: found.incompatibleIds || [],
+          priceSnapshot: Number(found.price) || 0,
+          isSupplement: !!found.isSupplement,
+          incompatibleIds: Array.isArray(found.incompatibleIds) ? found.incompatibleIds : [],
         });
       }
     }
@@ -1634,9 +1660,9 @@ export function computeCartFromRawItems(
         resolvedIngs.push({
           fruitId: defaultFruit.id,
           fruitName: defaultFruit.name,
-          priceSnapshot: defaultFruit.price,
-          isSupplement: defaultFruit.isSupplement,
-          incompatibleIds: defaultFruit.incompatibleIds || [],
+          priceSnapshot: Number(defaultFruit.price) || 0,
+          isSupplement: !!defaultFruit.isSupplement,
+          incompatibleIds: Array.isArray(defaultFruit.incompatibleIds) ? defaultFruit.incompatibleIds : [],
         });
       }
     }
@@ -1681,14 +1707,20 @@ export function computeCartFromRawItems(
   const deliveryFee = 1000;
   const totalPrice = subtotal + deliveryFee;
 
-  return {
+  const cart: WhatsAppCart = {
     items,
     subtotal,
     deliveryFee,
     totalPrice,
-    district: existingDistrict || existingCart?.district || undefined,
     updatedAt: Date.now(),
   };
+
+  const finalDistrict = (existingDistrict || existingCart?.district || '').trim();
+  if (finalDistrict) {
+    cart.district = finalDistrict;
+  }
+
+  return cart;
 }
 
 export function detectDistinctFormatsAndQuantitiesFromText(
@@ -3133,7 +3165,7 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
         activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
         activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
         if (userDocRef) {
-          await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+          await saveActiveWhatsAppCart(userDocRef, activeCart);
           console.log(`[whatsapp-webhook] 🍹 Persisted activeWhatsAppCart from user text with ${activeCart.items.length} item(s):`, activeRecipeName);
         }
       } else if (activeCart && activeCart.items.length > 0) {
@@ -3193,7 +3225,7 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
               activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
               activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
               if (userDocRef) {
-                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
                 console.log(`[whatsapp-webhook] 🔄 Restored activeWhatsAppCart from past chat history (${activeCart.items.length} items):`, activeRecipeName);
               }
               break;
@@ -3423,7 +3455,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
             if (activeCart.items.length > 1) {
               explicitAction = `[Le client a choisi le format ${formatLabel} pour TOUTES ses boissons (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_each_1", "title": "1 de chaque"}, {"id": "btn_qty_each_2", "title": "2 de chaque"}, {"id": "btn_qty_diff", "title": "Quantités perso"}]. Précise aussi qu'il peut indiquer des formats différents s'il le souhaite.]`;
@@ -3472,7 +3504,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
             explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) de chaque boisson (${activeCart.items.map((i) => `${i.cocktailName} en ${i.bottleSizeLabel}`).join(', ')}). RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
           } else if (activeRecipeIngredients.length === 0) {
@@ -3500,7 +3532,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
             const devisExact = generateCartDevisText(activeCart, chosenDistrict);
             explicitAction = `[Le client a choisi son quartier de livraison : "${chosenDistrict}".
@@ -3565,7 +3597,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
             currentUserParts.push({
               text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour TOUTES ses boissons (${activeCart.items.map((i) => i.cocktailName).join(', ')}). Le panier a été recalculé avec succès par le serveur FYS. Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_each_1", "title": "1 de chaque"}, {"id": "btn_qty_each_2", "title": "2 de chaque"}, {"id": "btn_qty_diff", "title": "Quantités perso"}] !]`,
@@ -3605,7 +3637,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
                 activeCart
               );
               if (userDocRef) {
-                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
               }
               const summaryFormats = activeCart.items
                 .map((i) => `« ${i.cocktailName} » en ${i.quantity}x ${i.bottleSizeLabel} (${i.unitPrice.toLocaleString('fr-FR')} XAF)`)
@@ -3641,7 +3673,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
             currentUserParts.push({
               text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour son cocktail "${activeCart.items[0].cocktailName}". Le tarif exact a été recalculé (${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}] !]`,
@@ -3666,7 +3698,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
                 activeCart
               );
               if (userDocRef) {
-                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
               }
               currentUserParts.push({
                 text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${chosenQty} bouteille(s) de "${activeCart.items[0].cocktailName}" en ${activeCart.items[0].bottleSizeLabel}. Le montant exact est de ${activeCart.subtotal.toLocaleString('fr-FR')} XAF. Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
@@ -3781,7 +3813,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               activeCart
             );
             if (userDocRef) {
-              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
               console.log(`[whatsapp-webhook] 💾 Persisted activeWhatsAppCart to userDoc: ${activeCart.items.map(i => i.cocktailName).join(', ')} (Total: ${activeCart.totalPrice} XAF)`);
             }
           }
