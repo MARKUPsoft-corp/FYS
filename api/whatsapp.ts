@@ -1706,7 +1706,8 @@ export const normalizeTextForMatching = (s: string): string =>
   (s || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[*_~`]/g, '');
 
 export const escapeRegexString = (s: string): string =>
   s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -1732,6 +1733,13 @@ export const FRUIT_TYPO_SYNONYMS: Record<string, string[]> = {
   mangue: ['mangue', 'mangues'],
   avocat: ['avocat', 'avocats'],
   papaye: ['papaye', 'papayes'],
+  menthe: ['menthe', 'menthes', 'mint', 'menthe fraiche', 'menthe fraîche'],
+  epinard: ['epinard', 'épinard', 'epinards', 'épinards', 'spinach'],
+  celeri: ['celeri', 'céleri', 'celeris', 'céleris', 'celery'],
+  spiruline: ['spiruline', 'spirulina'],
+  moringa: ['moringa'],
+  persil: ['persil', 'parsley'],
+  chia: ['chia', 'graines de chia'],
 };
 
 export function computeCartFromRawItems(
@@ -1755,6 +1763,7 @@ export function computeCartFromRawItems(
     const resolvedIngs: any[] = [];
     for (const fn of rawFruits) {
       const clean = normalizeTextForMatching(String(fn).trim());
+      if (!clean) continue;
       const found = availableFruits.find((af) => {
         const afNameNorm = normalizeTextForMatching(af.name.split('(')[0].trim());
         const afIdNorm = normalizeTextForMatching(af.id || '');
@@ -1780,6 +1789,16 @@ export function computeCartFromRawItems(
           priceSnapshot: Number(found.price) || 0,
           isSupplement: !!found.isSupplement,
           incompatibleIds: Array.isArray(found.incompatibleIds) ? found.incompatibleIds : [],
+        });
+      } else if (!found) {
+        // Préserver le fruit nommé même s'il n'est pas encore indexé par Firestore
+        const safeName = String(fn).trim().replace(/^[*_~`]+|[*_~`]+$/g, '');
+        resolvedIngs.push({
+          fruitId: clean.replace(/\s+/g, '_') || 'fruit_custom',
+          fruitName: safeName,
+          priceSnapshot: 500,
+          isSupplement: false,
+          incompatibleIds: [],
         });
       }
     }
@@ -2111,9 +2130,24 @@ export function extractCocktailsFromText(
   // 3. Détection mono-cocktail si au moins 1 fruit mentionné
   const allFruits = matchFruitInString(text);
   if (allFruits.length >= 1) {
+    let extractedName = 'Cocktail Santé Sur-Mesure';
+    const quoteMatch = text.match(/[«"“]([^»"”\r\n]{3,40})[»"”]/);
+    const cocktailPrefixMatch =
+      text.match(/(?:cocktail|cr[ée]ation|recette|m[ée]lange)\s*:\s*([^\n\r*]{3,40})/i) ||
+      text.match(/🍹\s*([^\n\r*]{3,40})/);
+
+    if (
+      quoteMatch &&
+      !/(?:commander|format|bouteille|fiche\s+nutrition|modifier|valider)/i.test(quoteMatch[1])
+    ) {
+      extractedName = quoteMatch[1].trim();
+    } else if (cocktailPrefixMatch) {
+      extractedName = cocktailPrefixMatch[1].trim();
+    }
+
     return [
       {
-        cocktailName: 'Cocktail Santé Sur-Mesure',
+        cocktailName: extractedName,
         fruits: allFruits.map((f) => f.name),
       },
     ];
@@ -3362,8 +3396,12 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
 
       // Détection de volonté d'annulation / recommencer / changer de commande
       const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?(?:recette|boisson|cocktail)|autre\s+(?:truc|chose|m[ée]lange|boisson|recette|jus|cocktail)|nouvelle\s+recette|choisir\s+d'autres|d'autres\s+fruits?|autres?\s+fruits?)/i;
-      if (senderText && !isAddIntent && resetIntentRegex.test(senderText)) {
-        console.log(`[whatsapp-webhook] 🔄 Intention de réinitialisation détectée ("${senderText}"). Nettoyage du panier.`);
+
+      // Détection explicite d'une demande de nouvelle composition / conseil pour un jus
+      const isNewRecipeIntent = !isAddIntent && /(?:compose(?:r|-moi|\s+moi)?|propose(?:r|-moi|\s+moi)?|fais(?:-moi|\s+moi)?|donne(?:-moi|\s+moi)?|cr[ée]er?|aide(?:-moi|\s+moi)?\s+(?:[àa]\s+)?composer|nouveau\s+jus|nouvelle\s+composition|nouveau\s+cocktail|nouvelle\s+boisson|nouvelle\s+recette|nouvelle\s+commande|bon\s+jus)/i.test(senderText);
+
+      if (senderText && !isAddIntent && (resetIntentRegex.test(senderText) || isNewRecipeIntent)) {
+        console.log(`[whatsapp-webhook] 🔄 Intention de nouvelle composition ou réinitialisation détectée ("${senderText}"). Nettoyage du panier.`);
         activeCart = null;
         if (userDocRef) {
           await userDocRef.set({
@@ -4129,42 +4167,67 @@ Ne pose aucune autre question !]`,
           textHandled = true;
         }
 
-        // 1. Validation de la composition du cocktail par texte ("je valide", "valider ce mélange", "c'est bon")
-        const isValidateMixText = /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange)/i.test(senderText);
-        if (!textHandled && isValidateMixText && activeRecipeIngredients.length > 0) {
-          activeCart = computeCartFromRawItems(
-            [{
-              cocktailName: activeRecipeName || 'Cocktail Santé FYS',
-              fruits: activeRecipeIngredients.map((i) => i.fruitName),
-              bottleSize: '500ml',
-              quantity: 1,
-            }],
-            availableFruits,
-            bottle500Base,
-            bottle1LBase,
-            undefined,
-            undefined
-          );
-          if (userDocRef) {
-            await saveActiveWhatsAppCart(userDocRef, activeCart);
-            await userDocRef.set({
-              activeWhatsAppDraft: {
-                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
-                ingredients: activeRecipeIngredients,
-                updatedAt: FieldValue.serverTimestamp(),
-              },
-            }, { merge: true }).catch(() => null);
+        // 1. Validation de la composition du cocktail par texte ("je valide", "valider ce mélange", "c'est bon", "on y va")
+        const isValidateMixText = /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange|on\s+y\s+va|allons-y|allons\s+y|d'accord|ça\s+marche|ca\s+marche|ça\s+me\s+va|ca\s+me\s+va|top|super|excellent|j'aime\s+bien|je\s+prends|c'est\s+parti|go\b)/i.test(senderText);
+        if (!textHandled && isValidateMixText) {
+          // Synchroniser avec la recette proposée par l'assistant dans l'historique récent
+          for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
+            const msg = chatHistoryForGemini[h];
+            if (msg.role === 'model' && msg.parts?.[0]?.text) {
+              const found = extractCocktailsFromText(msg.parts[0].text, availableFruits);
+              if (found && found.length > 0 && found[0].fruits.length >= 2) {
+                activeCart = computeCartFromRawItems(
+                  found,
+                  availableFruits,
+                  bottle500Base,
+                  bottle1LBase,
+                  activeCart?.district,
+                  undefined
+                );
+                activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                break;
+              }
+            }
           }
-          const cocktailTitle = activeRecipeName || (activeCart?.items?.map(i => i.cocktailName).join(' + ')) || 'Cocktail Santé FYS';
-          const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || (activeCart?.items?.flatMap(i => i.fruits).join(', ')) || 'fruits sélectionnés';
-          currentUserParts.push({
-            text: `${senderText}\n\n[SYSTÈME FYS : Le client valide la composition de son cocktail « ${cocktailTitle} » (${fruitListStr}).
+
+          if (activeRecipeIngredients.length > 0) {
+            if (!activeCart || activeCart.items.length === 0) {
+              activeCart = computeCartFromRawItems(
+                [{
+                  cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                  fruits: activeRecipeIngredients.map((i) => i.fruitName),
+                  bottleSize: '500ml',
+                  quantity: 1,
+                }],
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart?.district,
+                undefined
+              );
+            }
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+              await userDocRef.set({
+                activeWhatsAppDraft: {
+                  cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                  ingredients: activeRecipeIngredients,
+                  updatedAt: FieldValue.serverTimestamp(),
+                },
+              }, { merge: true }).catch(() => null);
+            }
+            const cocktailTitle = activeRecipeName || (activeCart?.items?.map(i => i.cocktailName).join(' + ')) || 'Cocktail Santé FYS';
+            const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || (activeCart?.items?.flatMap(i => i.fruits).join(', ')) || 'fruits sélectionnés';
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client valide la composition de son cocktail « ${cocktailTitle} » (${fruitListStr}).
 RÈGLE STRICTE ÉTAPE 2 :
 Félicite-le chaleureusement pour ce superbe choix de fruits et demande-lui :
 "Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
 Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Commander"}, {"id": "btn_nutrition", "title": "Fiche nutrition"}].]`,
-          });
-          textHandled = true;
+            });
+            textHandled = true;
+          }
         }
 
         // 2. Intention de commander par texte ("commander", "je veux commander", "passer la commande")
@@ -4575,10 +4638,10 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
       }
 
-      // Filet de sécurité anti-amnésie : si aucun panier n'est actif, mais que NutriFYS propose une recette dans sa réponse
-      if (!activeCart || activeCart.items.length === 0) {
-        const autoProposed = extractCocktailsFromText(aiReply, availableFruits);
-        if (autoProposed && autoProposed.length > 0 && autoProposed[0].fruits.length >= 2) {
+      // Filet de sécurité anti-amnésie : si aucun panier n'est actif OU si nouvelle composition demandée, et que NutriFYS propose une recette
+      const autoProposed = extractCocktailsFromText(aiReply, availableFruits);
+      if (autoProposed && autoProposed.length > 0 && autoProposed[0].fruits.length >= 2) {
+        if (!activeCart || activeCart.items.length === 0 || isNewRecipeIntent || resetIntentRegex.test(senderText)) {
           console.log(`[whatsapp-webhook] 🌿 Auto-persisting proposed recipe from AI reply:`, autoProposed);
           if (autoProposed.length === 1 && (!autoProposed[0].cocktailName || autoProposed[0].cocktailName.startsWith('Cocktail Santé'))) {
             autoProposed[0].cocktailName = autoProposed[0].fruits.join(' + ');
@@ -4589,7 +4652,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             bottle500Base,
             bottle1LBase,
             activeCart?.district,
-            activeCart
+            undefined
           );
           activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
           activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
@@ -5162,9 +5225,20 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                   }
                 }
 
-                // Nettoyer la recette personnalisée activeWhatsAppDraft une fois la commande validée
+                // Nettoyer la recette personnalisée activeWhatsAppDraft et le panier activeWhatsAppCart une fois la commande validée
                 if (userDocRef) {
-                  await userDocRef.set({ activeWhatsAppDraft: FieldValue.delete() }, { merge: true }).catch(() => null);
+                  await userDocRef.set({
+                    activeWhatsAppDraft: FieldValue.delete(),
+                    activeWhatsAppCart: FieldValue.delete(),
+                  }, { merge: true }).catch(() => null);
+                }
+                if (allPhoneUserDocs && allPhoneUserDocs.length > 0) {
+                  for (const pDoc of allPhoneUserDocs) {
+                    await pDoc.ref.set({
+                      activeWhatsAppDraft: FieldValue.delete(),
+                      activeWhatsAppCart: FieldValue.delete(),
+                    }, { merge: true }).catch(() => null);
+                  }
                 }
 
                 // ── Notifications Administrateurs (In-App + FCM Web Push) ──
