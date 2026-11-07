@@ -2368,6 +2368,15 @@ CHEMINEMENT OBLIGATOIRE EN 4 ÉTAPES APRÈS LE BILAN :
 
 ÉTAPE 1 : CHOIX DES FRUITS DU COCKTAIL
 Conseille et cale avec le client la composition exacte de son mélange (2 à 4 fruits/ingrédients adaptés à ses besoins).
+RÈGLE D'INTERPRÉTATION DES FRUITS ET DU PANIER :
+Tu es doté d'une intelligence linguistique avancée : interprète naturellement toutes les fautes d'orthographe, coquilles ou tournures locales (ex: 'gingimbre' -> 'Gingembre', 'folere' -> 'Foléré', 'cassimangue' -> 'Cassimango', etc.).
+Dès qu'un client compose, valide ou ajoute une boisson à sa commande, inclus TOUJOURS le bloc :::CART_ITEMS avec la liste complète et actualisée de tous les cocktails de sa commande avec les noms officiels des fruits du catalogue :
+:::CART_ITEMS
+[
+  { "cocktailName": "Nom de la boisson", "fruits": ["Fruit 1", "Fruit 2"], "bottleSize": "500ml", "quantity": 1 }
+]
+:::
+
 PRÉCAUTIONS SANTÉ SANS BLOCAGE :
 Si certains fruits choisis ne sont pas idéaux pour son profil de santé (ex: fruits très sucrés pour un diabétique, ou trop acides pour un ulcère) :
 - Avertis le client avec tact, pédagogie et douceur de la précaution à prendre.
@@ -4716,6 +4725,32 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         }
       } else if (recipeMatch) {
         aiReply = aiReply.replace(/:::RECIPE_JSON[\s\S]*?:::?/g, '').trim();
+      }
+
+      // 1.6. Synchronisation déterministe du panier à partir des cocktails interprétés par NutriFYS (:::CART_ITEMS)
+      const cartItemsMatch = aiReply.match(/:::CART_ITEMS\s*([\s\S]*?)\s*:::?/);
+      if (cartItemsMatch && userDocRef) {
+        try {
+          const rawCartItems = parseSafeJson(cartItemsMatch[1]);
+          if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
+            activeCart = computeCartFromRawItems(
+              rawCartItems,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart?.district,
+              activeCart
+            );
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+            console.log(`[whatsapp-webhook] 🛒 Synchronized activeWhatsAppCart from Gemini :::CART_ITEMS with ${activeCart.items.length} item(s)`);
+          }
+        } catch (cErr) {
+          console.warn('[whatsapp-webhook] Error saving WhatsApp cart items from Gemini:', cErr);
+        } finally {
+          aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
+        }
+      } else if (cartItemsMatch) {
+        aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
       }
 
       // 2. Traitement automatique d'une commande validée par le client
