@@ -3055,7 +3055,7 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
               const historySnap = await userDocRef
                 .collection('whatsapp_messages')
                 .orderBy('timestamp', 'desc')
-                .limit(8)
+                .limit(25)
                 .get();
 
               if (!historySnap.empty) {
@@ -3256,7 +3256,7 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
       }
 
       // Détection de volonté d'annulation / recommencer / changer de commande
-      const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?recette|autre\s+(?:recette|jus|cocktail)|nouvelle\s+recette)/i;
+      const resetIntentRegex = /(?:annuler|recommencer|laisse\s+tomber|oublie|remplacer|changer\s+(?:de\s+)?recette|autre\s+(?:recette|jus|cocktail)|nouvelle\s+recette|choisir\s+d'autres|d'autres\s+fruits?|autres?\s+fruits?)/i;
       if (senderText && resetIntentRegex.test(senderText)) {
         console.log(`[whatsapp-webhook] 🔄 Intention de réinitialisation détectée ("${senderText}"). Nettoyage du panier.`);
         activeCart = null;
@@ -3329,10 +3329,10 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
           };
         });
       } else {
-        // Priorité 5 : Détection par scan de l'historique récent (si le message actuel est un bouton ou ne contient pas de fruits)
+        // Priorité 5 : Détection par scan de l'historique récent (utilisateur OU assistant NutriFYS)
         for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
           const pastMsg = chatHistoryForGemini[h];
-          if (pastMsg.role === 'user' && pastMsg.parts?.[0]?.text) {
+          if (pastMsg.parts?.[0]?.text) {
             const pastExtracted = extractCocktailsFromText(pastMsg.parts[0].text, availableFruits);
             if (pastExtracted && pastExtracted.length > 0) {
               activeCart = computeCartFromRawItems(
@@ -3347,6 +3347,13 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
               activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
               if (userDocRef) {
                 await saveActiveWhatsAppCart(userDocRef, activeCart);
+                await userDocRef.set({
+                  activeWhatsAppDraft: {
+                    cocktailName: activeRecipeName,
+                    ingredients: activeRecipeIngredients,
+                    updatedAt: FieldValue.serverTimestamp(),
+                  },
+                }, { merge: true }).catch(() => null);
                 console.log(`[whatsapp-webhook] 🔄 Restored activeWhatsAppCart from past chat history (${activeCart.items.length} items):`, activeRecipeName);
               }
               break;
@@ -3539,6 +3546,41 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
         currentUserParts.push({ text: promptIntro });
       } else if (isInteractiveMessage && interactiveButtonId) {
         let explicitAction = `[Action interactive cliquée : "${senderText}"]`;
+
+        // Filet de sécurité anti-amnésie global : si aucun panier ni ingrédient n'est actif, chercher dans l'historique
+        if (!activeCart && activeRecipeIngredients.length === 0) {
+          for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
+            const msg = chatHistoryForGemini[h];
+            if (msg.parts?.[0]?.text) {
+              const found = extractCocktailsFromText(msg.parts[0].text, availableFruits);
+              if (found && found.length > 0) {
+                activeCart = computeCartFromRawItems(
+                  found,
+                  availableFruits,
+                  bottle500Base,
+                  bottle1LBase,
+                  undefined,
+                  undefined
+                );
+                activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                if (userDocRef) {
+                  await saveActiveWhatsAppCart(userDocRef, activeCart);
+                  await userDocRef.set({
+                    activeWhatsAppDraft: {
+                      cocktailName: activeRecipeName,
+                      ingredients: activeRecipeIngredients,
+                      updatedAt: FieldValue.serverTimestamp(),
+                    },
+                  }, { merge: true }).catch(() => null);
+                  console.log(`[whatsapp-webhook] 🛡️ Anti-amnesia recovered cocktail from history during interactive action:`, activeRecipeName);
+                }
+                break;
+              }
+            }
+          }
+        }
+
         if (interactiveButtonId.startsWith('btn_order')) {
           if (activeCart && activeCart.items.length > 0) {
             if (activeCart.items.length > 1) {
@@ -3558,6 +3600,59 @@ RÈGLES STRICTES DE PRÉSENTATION :
 2. Mise en page épurée, élégante et professionnelle (identique au web FYS), STRICTEMENT SANS EXCÈS D'ASTÉRISQUES (**) sur chaque mot ou chiffre.
 3. Termine en proposant de passer à la commande avec le bouton :::BUTTONS [{"id": "btn_order", "title": "Commander"}].]`;
         } else if (
+          interactiveButtonId.includes('melange') ||
+          interactiveButtonId.includes('mix') ||
+          interactiveButtonId.includes('valider') ||
+          /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange)/i.test(senderText)
+        ) {
+          if (!activeCart && activeRecipeIngredients.length > 0) {
+            activeCart = computeCartFromRawItems(
+              [{
+                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                fruits: activeRecipeIngredients.map((i) => i.fruitName),
+                bottleSize: '500ml',
+                quantity: 1,
+              }],
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              undefined,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+              await userDocRef.set({
+                activeWhatsAppDraft: {
+                  cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                  ingredients: activeRecipeIngredients,
+                  updatedAt: FieldValue.serverTimestamp(),
+                },
+              }, { merge: true }).catch(() => null);
+            }
+          }
+          const cocktailTitle = activeRecipeName || (activeCart?.items?.map(i => i.cocktailName).join(' + ')) || 'Cocktail Santé FYS';
+          const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || (activeCart?.items?.flatMap(i => i.fruits).join(', ')) || 'fruits sélectionnés';
+          explicitAction = `[Le client valide la composition de son cocktail « ${cocktailTitle} » (${fruitListStr}).
+RÈGLE STRICTE ÉTAPE 2 :
+Félicite-le chaleureusement pour ce superbe choix de fruits et demande-lui :
+"Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
+Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Commander"}, {"id": "btn_nutrition", "title": "Fiche nutrition"}].]`;
+        } else if (
+          interactiveButtonId.includes('autre') ||
+          interactiveButtonId.includes('change') ||
+          /(?:choisir\s+d'autres|autres?\s+fruits?)/i.test(senderText)
+        ) {
+          activeCart = null;
+          activeRecipeIngredients = [];
+          activeRecipeName = '';
+          if (userDocRef) {
+            await userDocRef.set({
+              activeWhatsAppCart: FieldValue.delete(),
+              activeWhatsAppDraft: FieldValue.delete(),
+            }, { merge: true }).catch(() => null);
+          }
+          explicitAction = `[Le client souhaite choisir d'autres fruits : invite-le chaleureusement à choisir 2 à 4 fruits parmi notre catalogue disponible en stock].`;
+        } else if (
           interactiveButtonId.startsWith('btn_format_500ml') ||
           interactiveButtonId.startsWith('btn_format_1l') ||
           interactiveButtonId.startsWith('btn_format_all_500ml') ||
@@ -3565,6 +3660,58 @@ RÈGLES STRICTES DE PRÉSENTATION :
         ) {
           const chosenFormat: '500ml' | '1L' = interactiveButtonId.includes('500ml') ? '500ml' : '1L';
           const formatLabel = chosenFormat === '1L' ? '1 Litre' : '500ml';
+
+          // Filet de sécurité anti-amnésie : Si le panier n'est pas encore instancié, récupérer la recette
+          if (!activeCart && activeRecipeIngredients.length > 0) {
+            activeCart = computeCartFromRawItems(
+              [{
+                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                fruits: activeRecipeIngredients.map((i) => i.fruitName),
+                bottleSize: chosenFormat,
+                quantity: 1,
+              }],
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              undefined,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            }
+          } else if (!activeCart && activeRecipeIngredients.length === 0) {
+            // Scanner tout l'historique récent (utilisateur OU assistant) pour restaurer les fruits discutés
+            for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
+              const msg = chatHistoryForGemini[h];
+              if (msg.parts?.[0]?.text) {
+                const found = extractCocktailsFromText(msg.parts[0].text, availableFruits);
+                if (found && found.length > 0) {
+                  activeCart = computeCartFromRawItems(
+                    found.map((c) => ({ ...c, bottleSize: chosenFormat })),
+                    availableFruits,
+                    bottle500Base,
+                    bottle1LBase,
+                    undefined,
+                    undefined
+                  );
+                  activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                  activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                  if (userDocRef) {
+                    await saveActiveWhatsAppCart(userDocRef, activeCart);
+                    await userDocRef.set({
+                      activeWhatsAppDraft: {
+                        cocktailName: activeRecipeName,
+                        ingredients: activeRecipeIngredients,
+                        updatedAt: FieldValue.serverTimestamp(),
+                      },
+                    }, { merge: true }).catch(() => null);
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
           if (activeCart && activeCart.items.length > 0) {
             const updatedRaw = activeCart.items.map((it) => ({
               cocktailName: it.cocktailName,
@@ -3589,10 +3736,8 @@ RÈGLES STRICTES DE PRÉSENTATION :
             } else {
               explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
             }
-          } else if (activeRecipeIngredients.length === 0) {
-            explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
           } else {
-            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
+            explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
           }
         } else if (interactiveButtonId === 'btn_format_diff') {
           if (activeCart && activeCart.items.length > 0) {
@@ -3612,6 +3757,25 @@ RÈGLES STRICTES DE PRÉSENTATION :
           } else {
             const match = interactiveButtonId.match(/\d+/) || senderText.match(/\d+/);
             chosenQty = match ? parseInt(match[0], 10) : 1;
+          }
+
+          if (!activeCart && activeRecipeIngredients.length > 0) {
+            activeCart = computeCartFromRawItems(
+              [{
+                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                fruits: activeRecipeIngredients.map((i) => i.fruitName),
+                bottleSize: '500ml',
+                quantity: chosenQty,
+              }],
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              undefined,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            }
           }
 
           if (activeCart && activeCart.items.length > 0) {
@@ -3648,6 +3812,24 @@ RÈGLES STRICTES DE PRÉSENTATION :
           }
         } else if (interactiveButtonId.startsWith('loc_')) {
           const chosenDistrict = senderText.trim();
+          if (!activeCart && activeRecipeIngredients.length > 0) {
+            activeCart = computeCartFromRawItems(
+              [{
+                cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+                fruits: activeRecipeIngredients.map((i) => i.fruitName),
+                bottleSize: '500ml',
+                quantity: 1,
+              }],
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              chosenDistrict,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            }
+          }
           if (activeCart && activeCart.items.length > 0) {
             activeCart.district = chosenDistrict;
             activeCart = computeCartFromRawItems(
@@ -3696,9 +3878,107 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         }
         currentUserParts.push({ text: explicitAction });
       } else {
+        // Anti-amnésie : si aucun panier actif, récupérer la recette en cours depuis les ingrédients ou l'historique
+        if (!activeCart && activeRecipeIngredients.length > 0) {
+          activeCart = computeCartFromRawItems(
+            [{
+              cocktailName: activeRecipeName || 'Cocktail Santé FYS',
+              fruits: activeRecipeIngredients.map((i) => i.fruitName),
+              bottleSize: '500ml',
+              quantity: 1,
+            }],
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            undefined,
+            undefined
+          );
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+          }
+        } else if (!activeCart && activeRecipeIngredients.length === 0) {
+          for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
+            const msg = chatHistoryForGemini[h];
+            if (msg.parts?.[0]?.text) {
+              const found = extractCocktailsFromText(msg.parts[0].text, availableFruits);
+              if (found && found.length > 0) {
+                activeCart = computeCartFromRawItems(
+                  found,
+                  availableFruits,
+                  bottle500Base,
+                  bottle1LBase,
+                  undefined,
+                  undefined
+                );
+                activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                if (userDocRef) {
+                  await saveActiveWhatsAppCart(userDocRef, activeCart);
+                  await userDocRef.set({
+                    activeWhatsAppDraft: {
+                      cocktailName: activeRecipeName,
+                      ingredients: activeRecipeIngredients,
+                      updatedAt: FieldValue.serverTimestamp(),
+                    },
+                  }, { merge: true }).catch(() => null);
+                  console.log(`[whatsapp-webhook] 🛡️ Anti-amnesia recovered cocktail in text mode:`, activeRecipeName);
+                }
+                break;
+              }
+            }
+          }
+        }
+
         // Détection intelligente de formats ou de quantités pour un panier multi-boissons en cours
         let textHandled = false;
-        if (activeCart && activeCart.items.length >= 2) {
+
+        // 1. Validation de la composition du cocktail par texte ("je valide", "valider ce mélange", "c'est bon")
+        const isValidateMixText = /(?:valider\s+(?:ce\s+)?m[ée]lange|je\s+valide|c'est\s+bon|parfait|garder\s+(?:ce\s+)?m[ée]lange)/i.test(senderText);
+        if (isValidateMixText && (activeCart || activeRecipeIngredients.length > 0)) {
+          const cocktailTitle = activeRecipeName || (activeCart?.items?.map(i => i.cocktailName).join(' + ')) || 'Cocktail Santé FYS';
+          const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || (activeCart?.items?.flatMap(i => i.fruits).join(', ')) || 'fruits sélectionnés';
+          currentUserParts.push({
+            text: `${senderText}\n\n[SYSTÈME FYS : Le client valide la composition de son cocktail « ${cocktailTitle} » (${fruitListStr}).
+RÈGLE STRICTE ÉTAPE 2 :
+Félicite-le chaleureusement pour ce superbe choix de fruits et demande-lui :
+"Votre recette sur-mesure est prête ! Souhaitez-vous directement passer à la commande, ou préférez-vous d'abord découvrir la fiche nutritionnelle complète de votre mélange ?"
+Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Commander"}, {"id": "btn_nutrition", "title": "Fiche nutrition"}].]`,
+          });
+          textHandled = true;
+        }
+
+        // 2. Intention de commander par texte ("commander", "je veux commander", "passer la commande")
+        const isOrderText = /(?:commander|passer\s+(?:[àa]\s+la\s+)?commande|je\s+commande)/i.test(senderText) && !/(?:valider\s+commande)/i.test(senderText);
+        if (!textHandled && isOrderText && (activeCart || activeRecipeIngredients.length > 0)) {
+          if (activeCart && activeCart.items.length > 1) {
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander ses cocktails (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Demande-lui quel format il préfère pour ses boissons avec les boutons :::BUTTONS [{"id": "btn_format_all_500ml", "title": "Tous en 500ml"}, {"id": "btn_format_all_1l", "title": "Tous en 1 Litre"}, {"id": "btn_format_diff", "title": "Formats différents"}]. Ne pose AUCUNE autre question !]`,
+            });
+          } else {
+            const cName = activeRecipeName || activeCart?.items?.[0]?.cocktailName || 'Cocktail Santé FYS';
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander son cocktail "${cName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`,
+            });
+          }
+          textHandled = true;
+        }
+
+        // 3. Demande de fiche nutritionnelle par texte
+        const isNutritionText = /(?:fiche\s+nutrition(?:nelle)?|valeurs?\s+nutritionnelles?)/i.test(senderText);
+        if (!textHandled && isNutritionText && (activeCart || activeRecipeIngredients.length > 0)) {
+          const cocktailTitle = activeRecipeName || activeCart?.items?.[0]?.cocktailName || 'Cocktail Santé FYS';
+          const fruitListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ') || activeCart?.items?.[0]?.fruits?.join(', ') || '';
+          currentUserParts.push({
+            text: `${senderText}\n\n[SYSTÈME FYS : Le client a demandé la fiche nutritionnelle de son cocktail « ${cocktailTitle} » (${fruitListStr}).
+RÈGLES STRICTES DE PRÉSENTATION :
+1. Présente la fiche nutritionnelle complète avec un score santé calculé dynamiquement (entre 55 et 97, jamais 92 par défaut !).
+2. Mise en page épurée, élégante et professionnelle (identique au web FYS), STRICTEMENT SANS EXCÈS D'ASTÉRISQUES (**) sur chaque mot ou chiffre.
+3. Termine en proposant de passer à la commande avec le bouton :::BUTTONS [{"id": "btn_order", "title": "Commander"}].]`,
+          });
+          textHandled = true;
+        }
+
+        if (!textHandled && activeCart && activeCart.items.length >= 2) {
           const cleanSenderLower = senderText.toLowerCase().trim();
 
           // Cas A : L'utilisateur dit "Tous en 500ml" ou "Tous en 1L" en texte libre
@@ -3775,7 +4055,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               textHandled = true;
             }
           }
-        } else if (activeCart && activeCart.items.length === 1) {
+        } else if (!textHandled && activeCart && activeCart.items.length === 1) {
           const cleanSenderLower = senderText.toLowerCase().trim();
           const is500 = /500\s*(?:ml)?/i.test(cleanSenderLower);
           const is1L = /(?:1\s*(?:l|litre)|1000\s*ml)/i.test(cleanSenderLower);
@@ -3784,11 +4064,16 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
           if (is500 || is1L) {
             const chosenSize: '500ml' | '1L' = is500 ? '500ml' : '1L';
             const label = chosenSize === '1L' ? '1 Litre' : '500ml';
+            let chosenQty = activeCart.items[0].quantity;
+            if (qtyMatch) {
+              const parsedQty = parseInt(qtyMatch[1], 10);
+              if (parsedQty > 0 && parsedQty <= 20) chosenQty = parsedQty;
+            }
             const updatedRaw = [{
               cocktailName: activeCart.items[0].cocktailName,
               fruits: activeCart.items[0].fruits,
               bottleSize: chosenSize,
-              quantity: activeCart.items[0].quantity,
+              quantity: chosenQty,
               hasAddedSugar: activeCart.items[0].hasAddedSugar,
             }];
             activeCart = computeCartFromRawItems(
@@ -3802,9 +4087,15 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
             if (userDocRef) {
               await saveActiveWhatsAppCart(userDocRef, activeCart);
             }
-            currentUserParts.push({
-              text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour son cocktail "${activeCart.items[0].cocktailName}". Le tarif exact a été recalculé (${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}] !]`,
-            });
+            if (qtyMatch) {
+              currentUserParts.push({
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} et la quantité (${chosenQty} bouteille(s)) pour son cocktail "${activeCart.items[0].cocktailName}". Le montant exact est de ${activeCart.subtotal.toLocaleString('fr-FR')} XAF. Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
+              });
+            } else {
+              currentUserParts.push({
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour son cocktail "${activeCart.items[0].cocktailName}". Le tarif exact a été recalculé (${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}] !]`,
+              });
+            }
             textHandled = true;
           } else if (qtyMatch) {
             const chosenQty = parseInt(qtyMatch[1], 10);
@@ -3833,6 +4124,36 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               textHandled = true;
             }
           }
+        }
+
+        // 4. Détection du quartier de livraison en texte libre à Yaoundé
+        const yaoundeDistrictMatch = senderText.match(/(?:(?:[àa]|vers|dans|au|sur)\s+)?\b(bastos|biyem-?assi|odza|omnisports|essos|mendong|simbock|nlongkak|elig-?essono|mokolo|madagascar|tsinga|ngousso|emombo|nkolmesseng|centre-?ville|nsimeyong|mvog-?mbi|mvog-?ada|ahala|dragages|messassi|mimboman|santa\s+barbara|damas|etoudi)\b/i);
+        if (!textHandled && yaoundeDistrictMatch && activeCart && activeCart.items.length > 0) {
+          const rawDistrictName = yaoundeDistrictMatch[1].trim();
+          const cleanDistrict = rawDistrictName.charAt(0).toUpperCase() + rawDistrictName.slice(1);
+          activeCart.district = cleanDistrict;
+          activeCart = computeCartFromRawItems(
+            activeCart.items,
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            cleanDistrict,
+            activeCart
+          );
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+          }
+          const devisExact = generateCartDevisText(activeCart, cleanDistrict);
+          currentUserParts.push({
+            text: `${senderText}\n\n[SYSTÈME FYS : Le client a indiqué son quartier de livraison : "${cleanDistrict}".
+LE SERVEUR FYS A DÉJÀ CALCULÉ LE DEVIS OFFICIEL EXACT :
+${devisExact}
+
+CONSIGNE STRICTE ET ABSOLUE :
+Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
+Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`,
+          });
+          textHandled = true;
         }
 
         if (!textHandled) {
@@ -3961,6 +4282,38 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         }
       } else {
         aiReply = aiReply.replace(/:::CART_ITEMS[\s\S]*?:::?/g, '').trim();
+      }
+
+      // Filet de sécurité anti-amnésie : si aucun panier n'est actif, mais que NutriFYS propose une recette dans sa réponse
+      if (!activeCart || activeCart.items.length === 0) {
+        const autoProposed = extractCocktailsFromText(aiReply, availableFruits);
+        if (autoProposed && autoProposed.length > 0 && autoProposed[0].fruits.length >= 2) {
+          console.log(`[whatsapp-webhook] 🌿 Auto-persisting proposed recipe from AI reply:`, autoProposed);
+          if (autoProposed.length === 1 && (!autoProposed[0].cocktailName || autoProposed[0].cocktailName.startsWith('Cocktail Santé'))) {
+            autoProposed[0].cocktailName = autoProposed[0].fruits.join(' + ');
+          }
+          activeCart = computeCartFromRawItems(
+            autoProposed,
+            availableFruits,
+            bottle500Base,
+            bottle1LBase,
+            activeCart?.district,
+            activeCart
+          );
+          activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+          activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+          if (userDocRef) {
+            await saveActiveWhatsAppCart(userDocRef, activeCart);
+            await userDocRef.set({
+              activeWhatsAppDraft: {
+                cocktailName: activeRecipeName,
+                ingredients: activeRecipeIngredients,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+            }, { merge: true }).catch(() => null);
+            console.log(`[whatsapp-webhook] 💾 Persisted proposed activeWhatsAppCart to userDoc: ${activeRecipeName}`);
+          }
+        }
       }
 
       // ── NORMALISATION & SÉCURISATION DU TEXTE AFFICHÉ AU CLIENT ──
