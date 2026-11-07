@@ -3671,19 +3671,39 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
 4. CONFIDENTIALITÉ :
    - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.
 
-RÈGLE OBLIGATOIRE DE DÉTECTION DU PANIER MULTI-BOISSONS (:::CART_ITEMS) :
-Dès que tu proposes des recettes au client ou qu'il valide/choisit ses fruits (pour 1 ou plusieurs cocktails) :
-1. Donne un nom valorisant et inspirant à chaque cocktail (ex: « L'Éclat Tropical », « Le Duo Exotique »).
-2. Inclus TOUJOURS à la toute fin de ton message le bloc technique :::CART_ITEMS avec la liste des cocktails demandés :
-:::CART_ITEMS
-[
-  { "cocktailName": "L'Éclat Tropical", "fruits": ["Cassimango", "Gingembre", "Citron"], "bottleSize": "500ml", "quantity": 1 },
-  { "cocktailName": "Le Duo Exotique", "fruits": ["Ananas", "Cassimango"], "bottleSize": "1L", "quantity": 1 }
-]
+RÈGLE CRITIQUE DU ROUTEUR SÉMANTIQUE D'INTENTIONS (:::INTENT) :
+Tu es le Cerveau IA du système FYS. Peu importe comment le client s'exprime en français naturel, argot camerounais, métaphores ou abréviations (ex: "oui oui on y va", "mets-moi le jus là", "lance seulement", "c'est bon pour moi", "en 1 litre stp", "je suis calé à Bastos", "compose moi un bon jus"), tu DOIS TOUJOURS traduire son intention et inclure à la TOUTE FIN de ton message le bloc technique :::INTENT :
+
+:::INTENT
+{
+  "action": "ACTION_CODE",
+  "cocktails": [
+    {
+      "cocktailName": "Nom Inspirant du Cocktail",
+      "fruits": ["Fruit1", "Fruit2", "Fruit3"],
+      "bottleSize": "500ml",
+      "quantity": 1
+    }
+  ],
+  "district": "Quartier si mentionné ou null"
+}
 :::
-ATTENTION : Chaque cocktail de la liste peut avoir son PROPRE format ("bottleSize": "500ml" ou "1L") et sa PROPRE quantité ("quantity": 1, 2, ...).
-Dès que le client précise ou modifie un format ou une quantité (ex: "Le premier en 500ml et l'autre en 1L"), reporte fidèlement son choix dans chaque élément du tableau :::CART_ITEMS !
-NE CALCULE AUCUN PRIX DANS CE BLOC : Le serveur FYS calcule les prix officiels au centime près directement depuis Firestore (base contenant + somme des fruits).
+
+LES CODES D'ACTION SYSTÈME OBLIGATOIRES ("action") :
+1. "NEW_RECIPE" : Dès que le client demande une composition, un conseil ou un nouveau jus (ex: "compose moi un bon jus", "propose-moi un mélange", "quel jus pour la fatigue ?"). Dans "cocktails", liste la recette que tu lui proposes avec un nom inspirant (ex: « L'Éclat Fraîcheur & Vitalité ») et les fruits exacts du catalogue en stock.
+2. "VALIDATE_RECIPE" : Dès que le client valide, accepte ou aime la composition (ex: "oui oui on y va", "ça me va", "on est ensemble", "je prends ça", "allons-y", "c'est bon", "top"). Dans "cocktails", reporte fidèlement le cocktail validé.
+3. "ORDER" : Dès que le client veut passer commande (ex: "je veux commander", "comment on passe la commande ?", "livrez-moi").
+4. "SHOW_NUTRITION" : Dès que le client demande la fiche nutritionnelle ou les bienfaits santé (ex: "fiche nutrition", "valeurs nutritionnelles", "quels sont les bienfaits ?").
+5. "SET_FORMAT" : Dès que le client choisit ou modifie un format (ex: "en 1 litre", "500ml", "le premier en 500ml et l'autre en 1L"). Reporte "bottleSize": "500ml" ou "1L" pour chaque cocktail.
+6. "SET_QUANTITY" : Dès que le client indique le nombre de bouteilles (ex: "1 bouteille", "2 de chaque", "mets m'en 3"). Reporte "quantity" pour chaque cocktail.
+7. "SET_DISTRICT" : Dès que le client donne son quartier de livraison (ex: "Biyem-Assi", "je suis à Bastos", "vers Omnisports"). Renseigne "district".
+8. "CONFIRM_ORDER" : Dès que le client valide officiellement le devis et confirme la commande (ex: "valider commande", "c'est validé", "je confirme", "envoie la facture").
+9. "ADD_COCKTAIL" : Dès que le client souhaite ajouter un autre cocktail à sa commande en cours (ex: "ajoute aussi un ananas gingembre", "je veux une deuxième bouteille").
+10. "RESET" : Dès que le client veut annuler, recommencer ou tout changer (ex: "annule", "recommencer", "laisse tomber").
+11. "QUESTION" : Simple question d'information ou de conseil sans modification de commande.
+
+CONSIGNE STRICTE :
+Le serveur FYS utilise directement ce bloc :::INTENT pour calculer les tarifs officiels sans aucune faille de formulation ni amnésie. Inclus TOUJOURS ce bloc à la fin de ta réponse !
 
 RÈGLE D'AFFICHAGE DU RÉCAPITULATIF DE COMMANDE :
 Lorsque la commande est prête à être validée ou vient d'être confirmée :
@@ -4609,7 +4629,178 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       }
       console.log('[whatsapp-webhook] NutriFYS generated reply:', aiReply);
 
-      // 0. Traitement automatique du panier multi-boissons WhatsApp (:::CART_ITEMS)
+      // 0. ROUTEUR SÉMANTIQUE D'INTENTIONS IA (:::INTENT)
+      // NutriFYS traduit les expressions naturelles du client en actions système codées en dur
+      const intentMatch = aiReply.match(/:::INTENT\s*([\s\S]*?)\s*:::?/);
+      if (intentMatch) {
+        try {
+          const parsedIntent = parseSafeJson<{
+            action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
+            cocktails?: Array<{
+              cocktailName?: string;
+              fruits?: string[];
+              bottleSize?: '500ml' | '1L';
+              quantity?: number;
+              hasAddedSugar?: boolean;
+            }>;
+            district?: string;
+            quantity?: number;
+            format?: '500ml' | '1L';
+          }>(intentMatch[1]);
+
+          if (parsedIntent && parsedIntent.action) {
+            console.log(`[whatsapp-webhook] 🧠 Semantic Intent parsed from NutriFYS: "${parsedIntent.action}"`, parsedIntent);
+
+            switch (parsedIntent.action) {
+              case 'RESET': {
+                activeCart = null;
+                activeRecipeIngredients = [];
+                activeRecipeName = '';
+                if (userDocRef) {
+                  await userDocRef.set({
+                    activeWhatsAppCart: FieldValue.delete(),
+                    activeWhatsAppDraft: FieldValue.delete(),
+                  }, { merge: true }).catch(() => null);
+                }
+                break;
+              }
+
+              case 'NEW_RECIPE':
+              case 'VALIDATE_RECIPE': {
+                if (Array.isArray(parsedIntent.cocktails) && parsedIntent.cocktails.length > 0) {
+                  activeCart = computeCartFromRawItems(
+                    parsedIntent.cocktails,
+                    availableFruits,
+                    bottle500Base,
+                    bottle1LBase,
+                    parsedIntent.district || activeCart?.district,
+                    parsedIntent.action === 'NEW_RECIPE' ? undefined : activeCart
+                  );
+                  activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                  activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                  if (userDocRef) {
+                    await saveActiveWhatsAppCart(userDocRef, activeCart);
+                    await userDocRef.set({
+                      activeWhatsAppDraft: {
+                        cocktailName: activeRecipeName,
+                        ingredients: activeRecipeIngredients,
+                        updatedAt: FieldValue.serverTimestamp(),
+                      },
+                    }, { merge: true }).catch(() => null);
+                    console.log(`[whatsapp-webhook] 💾 Synced activeWhatsAppCart from intent ${parsedIntent.action}: ${activeRecipeName}`);
+                  }
+                }
+                break;
+              }
+
+              case 'ADD_COCKTAIL': {
+                if (Array.isArray(parsedIntent.cocktails) && parsedIntent.cocktails.length > 0) {
+                  activeCart = computeCartFromRawItems(
+                    parsedIntent.cocktails,
+                    availableFruits,
+                    bottle500Base,
+                    bottle1LBase,
+                    parsedIntent.district || activeCart?.district,
+                    activeCart
+                  );
+                  activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+                  activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+                  if (userDocRef) {
+                    await saveActiveWhatsAppCart(userDocRef, activeCart);
+                  }
+                }
+                break;
+              }
+
+              case 'SET_FORMAT': {
+                if (activeCart && activeCart.items.length > 0) {
+                  let updatedRaw: any[] = [];
+                  if (Array.isArray(parsedIntent.cocktails) && parsedIntent.cocktails.length > 0) {
+                    updatedRaw = parsedIntent.cocktails;
+                  } else if (parsedIntent.format) {
+                    updatedRaw = activeCart.items.map((it) => ({
+                      ...it,
+                      bottleSize: parsedIntent.format,
+                    }));
+                  }
+                  if (updatedRaw.length > 0) {
+                    activeCart = computeCartFromRawItems(
+                      updatedRaw,
+                      availableFruits,
+                      bottle500Base,
+                      bottle1LBase,
+                      activeCart.district,
+                      activeCart
+                    );
+                    if (userDocRef) {
+                      await saveActiveWhatsAppCart(userDocRef, activeCart);
+                    }
+                  }
+                }
+                break;
+              }
+
+              case 'SET_QUANTITY': {
+                if (activeCart && activeCart.items.length > 0) {
+                  let updatedRaw: any[] = [];
+                  if (Array.isArray(parsedIntent.cocktails) && parsedIntent.cocktails.length > 0) {
+                    updatedRaw = parsedIntent.cocktails;
+                  } else if (typeof parsedIntent.quantity === 'number' && parsedIntent.quantity > 0) {
+                    updatedRaw = activeCart.items.map((it) => ({
+                      ...it,
+                      quantity: parsedIntent.quantity,
+                    }));
+                  }
+                  if (updatedRaw.length > 0) {
+                    activeCart = computeCartFromRawItems(
+                      updatedRaw,
+                      availableFruits,
+                      bottle500Base,
+                      bottle1LBase,
+                      activeCart.district,
+                      activeCart
+                    );
+                    if (userDocRef) {
+                      await saveActiveWhatsAppCart(userDocRef, activeCart);
+                    }
+                  }
+                }
+                break;
+              }
+
+              case 'SET_DISTRICT': {
+                const targetDistrict = parsedIntent.district || (Array.isArray(parsedIntent.cocktails) ? parsedIntent.district : undefined);
+                if (targetDistrict && activeCart) {
+                  activeCart.district = targetDistrict.trim();
+                  activeCart = computeCartFromRawItems(
+                    activeCart.items,
+                    availableFruits,
+                    bottle500Base,
+                    bottle1LBase,
+                    activeCart.district,
+                    activeCart
+                  );
+                  if (userDocRef) {
+                    await saveActiveWhatsAppCart(userDocRef, activeCart);
+                  }
+                }
+                break;
+              }
+
+              default:
+                break;
+            }
+          }
+        } catch (iErr) {
+          console.warn('[whatsapp-webhook] Error parsing :::INTENT:', iErr);
+        } finally {
+          aiReply = aiReply.replace(/:::INTENT[\s\S]*?:::?/g, '').trim();
+        }
+      } else {
+        aiReply = aiReply.replace(/:::INTENT[\s\S]*?:::?/g, '').trim();
+      }
+
+      // 0.1. Traitement automatique du panier multi-boissons WhatsApp (:::CART_ITEMS)
       const cartMatch = aiReply.match(/:::CART_ITEMS\s*([\s\S]*?)\s*:::?/);
       if (cartMatch) {
         try {
