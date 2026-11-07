@@ -2089,6 +2089,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 2. Traitement des messages entrants (POST)
   if (req.method === 'POST') {
+    let messageId = '';
     try {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
@@ -2104,7 +2105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ status: 'ignored_unsupported_type' });
       }
 
-      const messageId = message.id;
+      messageId = message.id || '';
       const senderPhone = message.from; // Numéro international (ex: 237699000000)
       const rawSenderName = changes?.contacts?.[0]?.profile?.name || '';
       const cleanSenderName = rawSenderName
@@ -3894,7 +3895,6 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
                 }
               }
             }
-          }
         } catch (orderErr) {
           console.error('[whatsapp-webhook] Error creating WhatsApp order in Firestore:', orderErr);
         } finally {
