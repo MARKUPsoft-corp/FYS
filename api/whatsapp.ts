@@ -1587,7 +1587,8 @@ export function computeCartFromRawItems(
   availableFruits: any[],
   bottle500Base: number,
   bottle1LBase: number,
-  existingDistrict?: string
+  existingDistrict?: string,
+  existingCart?: WhatsAppCart | null
 ): WhatsAppCart {
   const items: WhatsAppCartItem[] = [];
 
@@ -1625,17 +1626,29 @@ export function computeCartFromRawItems(
       }
     }
 
-    const bottleSize: '500ml' | '1L' = raw.bottleSize === '500ml' ? '500ml' : '1L';
+    const existingItem = existingCart?.items?.[idx] || existingCart?.items?.find(
+      (it) => it.cocktailName.toLowerCase() === (raw.cocktailName || '').toLowerCase()
+    );
+
+    let bottleSize: '500ml' | '1L' = '1L';
+    if (raw.bottleSize === '500ml') {
+      bottleSize = '500ml';
+    } else if (raw.bottleSize === '1L') {
+      bottleSize = '1L';
+    } else if (existingItem?.bottleSize) {
+      bottleSize = existingItem.bottleSize;
+    }
+
     const bottleSizeLabel = bottleSize === '1L' ? '1 Litre' : '500ml';
     const baseBottlePrice = bottleSize === '1L' ? bottle1LBase : bottle500Base;
     const ingredientsPriceSum = resolvedIngs.reduce((sum, ing) => sum + (Number(ing.priceSnapshot) || 0), 0);
     const unitPrice = baseBottlePrice + ingredientsPriceSum;
-    const quantity = Math.max(1, Number(raw.quantity) || 1);
+    const quantity = Math.max(1, Number(raw.quantity) || existingItem?.quantity || 1);
     const lineTotal = unitPrice * quantity;
 
     items.push({
       id: `item_${idx + 1}`,
-      cocktailName: raw.cocktailName || `Cocktail Santé ${idx + 1}`,
+      cocktailName: raw.cocktailName || existingItem?.cocktailName || `Cocktail Santé ${idx + 1}`,
       fruits: resolvedIngs.map((i) => i.fruitName),
       ingredients: resolvedIngs,
       bottleSize,
@@ -1645,7 +1658,7 @@ export function computeCartFromRawItems(
       ingredientsPriceSum,
       unitPrice,
       lineTotal,
-      hasAddedSugar: !!raw.hasAddedSugar,
+      hasAddedSugar: raw.hasAddedSugar !== undefined ? !!raw.hasAddedSugar : !!existingItem?.hasAddedSugar,
     });
   });
 
@@ -1658,9 +1671,141 @@ export function computeCartFromRawItems(
     subtotal,
     deliveryFee,
     totalPrice,
-    district: existingDistrict || undefined,
+    district: existingDistrict || existingCart?.district || undefined,
     updatedAt: Date.now(),
   };
+}
+
+export function detectDistinctFormatsAndQuantitiesFromText(
+  text: string,
+  cart: WhatsAppCart
+): Array<{ index: number; bottleSize?: '500ml' | '1L'; quantity?: number }> | null {
+  if (!cart || !Array.isArray(cart.items) || cart.items.length < 2) return null;
+  const clean = text.toLowerCase().trim();
+
+  const mentions500 = /500\s*(?:ml)?\b/i.test(clean);
+  const mentions1L = /(?:1\s*(?:l|litre)|1000\s*ml)\b/i.test(clean);
+
+  if (/formats?\s+diff[ée]rents?/i.test(clean) && !mentions500 && !mentions1L) {
+    return null;
+  }
+
+  const updates: Map<number, { bottleSize?: '500ml' | '1L'; quantity?: number }> = new Map();
+  const clauses = clean.split(/(?:,|\bet\b|;|\bpuis\b|\balors que\b|\bmais\b|\n)+/).map((s) => s.trim()).filter(Boolean);
+
+  clauses.forEach((clause, clauseIdx) => {
+    let matchedItemIndex = -1;
+
+    // Check ordinal keywords
+    if (/\b(?:premier|premi[eè]re|1er|1ere|1[eè]re|n°\s*1|n[uú]m[eé]ro\s*1|cocktail\s*1)\b/i.test(clause)) {
+      matchedItemIndex = 0;
+    } else if (/\b(?:deuxi[eè]me|second|seconde|2eme|2[eè]me|2e|n°\s*2|n[uú]m[eé]ro\s*2|cocktail\s*2|l'autre|autre)\b/i.test(clause)) {
+      matchedItemIndex = 1;
+    } else if (/\b(?:troisi[eè]me|3eme|3[eè]me|3e|n°\s*3|n[uú]m[eé]ro\s*3|cocktail\s*3)\b/i.test(clause)) {
+      matchedItemIndex = 2;
+    }
+
+    // Match cocktail name or fruit names
+    if (matchedItemIndex === -1) {
+      // 1. Check cocktail name first
+      for (let idx = 0; idx < cart.items.length; idx++) {
+        if (updates.has(idx)) continue;
+        const item = cart.items[idx];
+        const cNameLower = item.cocktailName.toLowerCase();
+        const nameKeywords = cNameLower.split(/\s+/).filter((w) => w.length > 3 && !['cocktail', 'sante', 'santé', 'mélange', 'melange', 'pour', 'avec'].includes(w));
+        if (nameKeywords.some((kw) => clause.includes(kw))) {
+          matchedItemIndex = idx;
+          break;
+        }
+      }
+
+      // 2. Check unique fruits (fruits that ONLY belong to this cocktail in the cart)
+      if (matchedItemIndex === -1) {
+        for (let idx = 0; idx < cart.items.length; idx++) {
+          if (updates.has(idx)) continue;
+          const item = cart.items[idx];
+          const hasUniqueFruit = item.fruits.some((f) => {
+            const fLower = f.toLowerCase().split('(')[0].trim();
+            if (fLower.length <= 3 || !clause.includes(fLower)) return false;
+            const otherHasIt = cart.items.some((other, oIdx) => oIdx !== idx && other.fruits.some((of) => of.toLowerCase().includes(fLower)));
+            return !otherHasIt;
+          });
+          if (hasUniqueFruit) {
+            matchedItemIndex = idx;
+            break;
+          }
+        }
+      }
+
+      // 3. Check any fruit (prefer items not yet updated)
+      if (matchedItemIndex === -1) {
+        for (let idx = 0; idx < cart.items.length; idx++) {
+          if (updates.has(idx)) continue;
+          const item = cart.items[idx];
+          const matchesFruit = item.fruits.some((f) => {
+            const fLower = f.toLowerCase().split('(')[0].trim();
+            return fLower.length > 3 && clause.includes(fLower);
+          });
+          if (matchesFruit) {
+            matchedItemIndex = idx;
+            break;
+          }
+        }
+      }
+    }
+
+    // Match by clause index if multiple clauses mention format
+    if (matchedItemIndex === -1 && clauseIdx < cart.items.length) {
+      if (/500\s*(?:ml)?\b/i.test(clause) || /(?:1\s*(?:l|litre)|1000\s*ml)\b/i.test(clause)) {
+        matchedItemIndex = clauseIdx;
+      }
+    }
+
+    if (matchedItemIndex >= 0 && matchedItemIndex < cart.items.length) {
+      let bSize: '500ml' | '1L' | undefined = undefined;
+      if (/500\s*(?:ml)?\b/i.test(clause)) {
+        bSize = '500ml';
+      } else if (/(?:1\s*(?:l|litre)|1000\s*ml)\b/i.test(clause)) {
+        bSize = '1L';
+      }
+
+      let qty: number | undefined = undefined;
+      const qtyMatch = clause.match(/(\d+)\s*(?:bouteilles?|x)\b/i) || clause.match(/(?:^|\s)(\d+)\s*(?:en|de)\s*(?:500ml|1l|1\s*litre)/i);
+      if (qtyMatch) {
+        qty = parseInt(qtyMatch[1], 10);
+      }
+
+      if (bSize || (qty !== undefined && qty > 0)) {
+        const curr = updates.get(matchedItemIndex) || {};
+        if (bSize) curr.bottleSize = bSize;
+        if (qty && qty > 0) curr.quantity = qty;
+        updates.set(matchedItemIndex, curr);
+      }
+    }
+  });
+
+  // Pattern 2 : "un en 500ml et un en 1L" / "un 500ml et un 1L" / "500ml pour l'un et 1l pour l'autre"
+  if (updates.size === 0 && mentions500 && mentions1L && cart.items.length === 2) {
+    const pos500 = clean.search(/500\s*(?:ml)?\b/i);
+    const pos1L = clean.search(/(?:1\s*(?:l|litre)|1000\s*ml)\b/i);
+    if (pos500 !== -1 && pos1L !== -1) {
+      if (pos500 < pos1L) {
+        updates.set(0, { bottleSize: '500ml' });
+        updates.set(1, { bottleSize: '1L' });
+      } else {
+        updates.set(0, { bottleSize: '1L' });
+        updates.set(1, { bottleSize: '500ml' });
+      }
+    }
+  }
+
+  if (updates.size === 0) return null;
+
+  return Array.from(updates.entries()).map(([index, val]) => ({
+    index,
+    bottleSize: val.bottleSize,
+    quantity: val.quantity,
+  }));
 }
 
 export function generateCartDevisText(cart: WhatsAppCart, district?: string): string {
@@ -1942,7 +2087,9 @@ Si le client veut commander (clic sur "Commander", message "je veux commander", 
 TU NE DOIS PAS demander le format ni donner de prix ! Tu dois d'abord lui dire avec bienveillance que pour préparer sa bouteille et calculer son prix exact selon la formule FYS, il doit d'abord choisir ses fruits (2 à 4 fruits parmi notre catalogue disponible).
 
 Sous-étape 4.1 : CHOIX DU FORMAT (Uniquement le format !)
-Quand les fruits de la recette sont connus et calés, et que le client veut commander :
+Quand les fruits de la ou des recettes sont connus et calés, et que le client veut commander :
+
+CAS A : Si la commande concerne 1 SEUL cocktail :
 Demande UNIQUEMENT le format souhaité :
 "Pour préparer votre cocktail [Nom de la recette], quel format préférez-vous ?"
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
@@ -1952,10 +2099,34 @@ Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
   {"id": "btn_format_1l", "title": "Format 1 Litre"}
 ]
 :::
+
+CAS B : Si la commande comporte PLUSIEURS cocktails (2 ou plus) :
+Demande si le client préfère le même format pour toutes ses bouteilles ou des formats différents pour chaque boisson :
+"Pour préparer vos cocktails (« [Nom 1] » et « [Nom 2] »), quel format préférez-vous ?"
+Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_format_all_500ml", "title": "Tous en 500ml"},
+  {"id": "btn_format_all_1l", "title": "Tous en 1 Litre"},
+  {"id": "btn_format_diff", "title": "Formats différents"}
+]
+:::
+
+Si le client clique sur "Formats différents" ou indique par message des formats distincts (ex: "Le premier en 500ml et le deuxième en 1L", ou "Cassimango en 1L et Ananas en 500ml") :
+- Remercie-le chaleureusement et confirme les formats attribués à chaque boisson.
+- Reporte STRICTEMENT chaque format individuel ('500ml' ou '1L') dans le bloc :::CART_ITEMS :
+:::CART_ITEMS
+[
+  { "cocktailName": "Nom 1", "fruits": ["..."], "bottleSize": "500ml", "quantity": 1 },
+  { "cocktailName": "Nom 2", "fruits": ["..."], "bottleSize": "1L", "quantity": 1 }
+]
+:::
+- Passe ensuite à la sous-étape 4.2 (Quantité).
 (INTERDICTION FORMELLE de demander le nombre de bouteilles ou le quartier à cette sous-étape !).
 
 Sous-étape 4.2 : CHOIX DE LA QUANTITÉ (Uniquement la quantité !)
-Dès que le format est choisi par le client (ex: 500ml ou 1L) :
+Dès que les formats sont choisis par le client (ex: 500ml, 1L, ou formats mixtes) :
+CAS A : Pour 1 seul cocktail :
 Remercie-le et demande UNIQUEMENT le nombre de bouteilles :
 "C'est noté pour le format [Format] ! Combien de bouteilles souhaitez-vous commander ? (Vous pouvez choisir ci-dessous ou taper directement un autre chiffre)"
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
@@ -1966,6 +2137,19 @@ Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
   {"id": "btn_qty_3", "title": "3 Bouteilles"}
 ]
 :::
+
+CAS B : Pour plusieurs cocktails :
+Remercie-le et demande le nombre de bouteilles souhaité pour chacune :
+"C'est parfaitement noté pour les formats ! Combien de bouteilles souhaitez-vous commander pour chacune de vos boissons ?"
+Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_qty_each_1", "title": "1 de chaque"},
+  {"id": "btn_qty_each_2", "title": "2 de chaque"},
+  {"id": "btn_qty_diff", "title": "Quantités perso"}
+]
+:::
+(Le client peut également préciser des quantités distinctes en message, ex: "1 bouteille du premier et 2 du deuxième". Reporte fidèlement chaque quantité dans :::CART_ITEMS).
 (INTERDICTION de demander le quartier à cette sous-étape !).
 
 Sous-étape 4.3 : CHOIX DU QUARTIER DE LIVRAISON (Liste déroulante native)
@@ -3035,10 +3219,12 @@ Dès que tu proposes des recettes au client ou qu'il valide/choisit ses fruits (
 2. Inclus TOUJOURS à la toute fin de ton message le bloc technique :::CART_ITEMS avec la liste des cocktails demandés :
 :::CART_ITEMS
 [
-  { "cocktailName": "L'Éclat Tropical", "fruits": ["Cassimango", "Gingembre", "Citron"], "bottleSize": "1L", "quantity": 1 },
+  { "cocktailName": "L'Éclat Tropical", "fruits": ["Cassimango", "Gingembre", "Citron"], "bottleSize": "500ml", "quantity": 1 },
   { "cocktailName": "Le Duo Exotique", "fruits": ["Ananas", "Cassimango"], "bottleSize": "1L", "quantity": 1 }
 ]
 :::
+ATTENTION : Chaque cocktail de la liste peut avoir son PROPRE format ("bottleSize": "500ml" ou "1L") et sa PROPRE quantité ("quantity": 1, 2, ...).
+Dès que le client précise ou modifie un format ou une quantité (ex: "Le premier en 500ml et l'autre en 1L"), reporte fidèlement son choix dans chaque élément du tableau :::CART_ITEMS !
 NE CALCULE AUCUN PRIX DANS CE BLOC : Le serveur FYS calcule les prix officiels au centime près directement depuis Firestore (base contenant + somme des fruits).
 
 RÈGLE D'AFFICHAGE DU RÉCAPITULATIF DE COMMANDE :
@@ -3086,8 +3272,13 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
           }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
-        } else if (interactiveButtonId.startsWith('btn_format_500ml') || interactiveButtonId.startsWith('btn_format_1l')) {
-          const chosenFormat: '500ml' | '1L' = interactiveButtonId.startsWith('btn_format_500ml') ? '500ml' : '1L';
+        } else if (
+          interactiveButtonId.startsWith('btn_format_500ml') ||
+          interactiveButtonId.startsWith('btn_format_1l') ||
+          interactiveButtonId.startsWith('btn_format_all_500ml') ||
+          interactiveButtonId.startsWith('btn_format_all_1l')
+        ) {
+          const chosenFormat: '500ml' | '1L' = interactiveButtonId.includes('500ml') ? '500ml' : '1L';
           const formatLabel = chosenFormat === '1L' ? '1 Litre' : '500ml';
           if (activeCart && activeCart.items.length > 0) {
             const updatedRaw = activeCart.items.map((it) => ({
@@ -3097,19 +3288,47 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               quantity: it.quantity,
               hasAddedSugar: it.hasAddedSugar,
             }));
-            activeCart = computeCartFromRawItems(updatedRaw, availableFruits, bottle500Base, bottle1LBase, activeCart.district);
+            activeCart = computeCartFromRawItems(
+              updatedRaw,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart.district,
+              activeCart
+            );
             if (userDocRef) {
               await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
             }
-            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour ses boissons (${activeCart.items.map(i => i.cocktailName).join(', ')}). RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+            if (activeCart.items.length > 1) {
+              explicitAction = `[Le client a choisi le format ${formatLabel} pour TOUTES ses boissons (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_each_1", "title": "1 de chaque"}, {"id": "btn_qty_each_2", "title": "2 de chaque"}, {"id": "btn_qty_diff", "title": "Quantités perso"}]. Précise aussi qu'il peut indiquer des formats différents s'il le souhaite.]`;
+            } else {
+              explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
+            }
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
           } else {
-            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS (1 Bouteille, 2 Bouteilles, 3 Bouteilles). Ne demande PAS encore le quartier !]`;
+            explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeRecipeName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
           }
-        } else if (interactiveButtonId.startsWith('btn_qty_')) {
-          const qtyMatch = interactiveButtonId.match(/\d+/) || senderText.match(/\d+/);
-          const chosenQty = qtyMatch ? parseInt(qtyMatch[0], 10) : 1;
+        } else if (interactiveButtonId === 'btn_format_diff') {
+          if (activeCart && activeCart.items.length > 0) {
+            const cocktailList = activeCart.items.map((i, idx) => `Boisson ${idx + 1} : « ${i.cocktailName} »`).join(', ');
+            explicitAction = `[Le client a cliqué sur 'Formats différents' : il souhaite des formats distincts pour ses cocktails (${cocktailList}). RÈGLE STRICTE : Demande-lui avec bienveillance quel format (500ml ou 1L) il souhaite pour chaque boisson (ex: "Quel format préférez-vous pour « ${activeCart.items[0]?.cocktailName} » et quel format pour « ${activeCart.items[1]?.cocktailName} » ?"). Précise qu'il peut simplement l'écrire en message (ex: "Le premier en 500ml et le deuxième en 1L"). Ne pose aucune autre question !]`;
+          } else {
+            explicitAction = `[Le client souhaite des formats différents : demande-lui quels formats (500ml ou 1L) il souhaite pour chacune de ses boissons.]`;
+          }
+        } else if (
+          interactiveButtonId.startsWith('btn_qty_each_') ||
+          interactiveButtonId.startsWith('btn_qty_')
+        ) {
+          let chosenQty = 1;
+          if (interactiveButtonId.startsWith('btn_qty_each_')) {
+            const match = interactiveButtonId.match(/\d+/);
+            chosenQty = match ? parseInt(match[0], 10) : 1;
+          } else {
+            const match = interactiveButtonId.match(/\d+/) || senderText.match(/\d+/);
+            chosenQty = match ? parseInt(match[0], 10) : 1;
+          }
+
           if (activeCart && activeCart.items.length > 0) {
             const updatedRaw = activeCart.items.map((it) => ({
               cocktailName: it.cocktailName,
@@ -3118,15 +3337,29 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               quantity: chosenQty,
               hasAddedSugar: it.hasAddedSugar,
             }));
-            activeCart = computeCartFromRawItems(updatedRaw, availableFruits, bottle500Base, bottle1LBase, activeCart.district);
+            activeCart = computeCartFromRawItems(
+              updatedRaw,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart.district,
+              activeCart
+            );
             if (userDocRef) {
               await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
             }
-            explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) de chaque boisson. RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+            explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) de chaque boisson (${activeCart.items.map((i) => `${i.cocktailName} en ${i.bottleSizeLabel}`).join(', ')}). RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur la quantité : "${senderText}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits il souhaite mélanger].`;
           } else {
             explicitAction = `[Le client a choisi la quantité : "${senderText}". RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
+          }
+        } else if (interactiveButtonId === 'btn_qty_diff') {
+          if (activeCart && activeCart.items.length > 0) {
+            const cocktailList = activeCart.items.map((i) => `« ${i.cocktailName} » (${i.bottleSizeLabel})`).join(', ');
+            explicitAction = `[Le client a cliqué sur 'Quantités perso' : il souhaite des quantités différentes pour ses boissons (${cocktailList}). RÈGLE STRICTE : Demande-lui avec bienveillance combien de bouteilles il désire pour chaque cocktail (ex: "Combien de bouteilles souhaitez-vous pour « ${activeCart.items[0]?.cocktailName} » et combien pour « ${activeCart.items[1]?.cocktailName} » ?"). Précise qu'il peut simplement l'écrire en message (ex: "1 du premier et 2 du deuxième").]`;
+          } else {
+            explicitAction = `[Le client souhaite des quantités différentes : demande-lui combien de bouteilles il souhaite pour chaque boisson.]`;
           }
         } else if (interactiveButtonId.startsWith('loc_')) {
           const chosenDistrict = senderText.trim();
@@ -3137,7 +3370,8 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               availableFruits,
               bottle500Base,
               bottle1LBase,
-              chosenDistrict
+              chosenDistrict,
+              activeCart
             );
             if (userDocRef) {
               await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
@@ -3177,7 +3411,90 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         }
         currentUserParts.push({ text: explicitAction });
       } else {
-        currentUserParts.push({ text: senderText });
+        // Détection intelligente de formats ou de quantités pour un panier multi-boissons en cours
+        let textHandled = false;
+        if (activeCart && activeCart.items.length >= 2) {
+          const cleanSenderLower = senderText.toLowerCase().trim();
+
+          // Cas A : L'utilisateur dit "Tous en 500ml" ou "Tous en 1L" en texte libre
+          const isAll500 = /(?:tous|toutes?|les\s+(?:deux|2|trois|3)|chacun(?:e)?)\s+(?:en\s+)?500\s*(?:ml)?/i.test(cleanSenderLower);
+          const isAll1L = /(?:tous|toutes?|les\s+(?:deux|2|trois|3)|chacun(?:e)?)\s+(?:en\s+)?(?:1\s*(?:l|litre)|1000\s*ml)/i.test(cleanSenderLower);
+
+          if (isAll500 || isAll1L) {
+            const chosenSize: '500ml' | '1L' = isAll500 ? '500ml' : '1L';
+            const label = chosenSize === '1L' ? '1 Litre' : '500ml';
+            const updatedRaw = activeCart.items.map((it) => ({
+              cocktailName: it.cocktailName,
+              fruits: it.fruits,
+              bottleSize: chosenSize,
+              quantity: it.quantity,
+              hasAddedSugar: it.hasAddedSugar,
+            }));
+            activeCart = computeCartFromRawItems(
+              updatedRaw,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart.district,
+              activeCart
+            );
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+            }
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour TOUTES ses boissons (${activeCart.items.map((i) => i.cocktailName).join(', ')}). Le panier a été recalculé avec succès par le serveur FYS. Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_each_1", "title": "1 de chaque"}, {"id": "btn_qty_each_2", "title": "2 de chaque"}, {"id": "btn_qty_diff", "title": "Quantités perso"}] !]`,
+            });
+            textHandled = true;
+          } else if (
+            /(?:formats?\s+diff[ée]rents?|pas\s+le\s+m[êe]me\s+format|tailles?\s+diff[ée]rentes?)/i.test(cleanSenderLower) &&
+            !/500\s*(?:ml)?|1\s*(?:l|litre)/i.test(cleanSenderLower)
+          ) {
+            // Cas B : L'utilisateur dit juste qu'il veut des formats différents sans encore préciser lesquels
+            const cocktailList = activeCart.items.map((i, idx) => `Boisson ${idx + 1} : « ${i.cocktailName} »`).join(', ');
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client a indiqué souhaiter des formats différents pour ses boissons (${cocktailList}). RÈGLE STRICTE : Demande-lui avec bienveillance quel format (500ml ou 1L) il souhaite pour chaque boisson (ex: "Quel format préférez-vous pour « ${activeCart.items[0]?.cocktailName} » et quel format pour « ${activeCart.items[1]?.cocktailName} » ?"). Précise qu'il peut simplement l'écrire en message (ex: "Le premier en 500ml et le deuxième en 1L"). Ne pose aucune autre question !]`,
+            });
+            textHandled = true;
+          } else {
+            // Cas C : Détection fine de formats et/ou quantités distincts spécifiés
+            const distinctUpdates = detectDistinctFormatsAndQuantitiesFromText(senderText, activeCart);
+            if (distinctUpdates && distinctUpdates.length > 0) {
+              console.log('[whatsapp-webhook] 🎯 Distinct formats/quantities detected from text:', distinctUpdates);
+              const updatedRaw = activeCart.items.map((it, idx) => {
+                const u = distinctUpdates.find((d) => d.index === idx);
+                return {
+                  cocktailName: it.cocktailName,
+                  fruits: it.fruits,
+                  bottleSize: u?.bottleSize || it.bottleSize,
+                  quantity: u?.quantity !== undefined ? u.quantity : it.quantity,
+                  hasAddedSugar: it.hasAddedSugar,
+                };
+              });
+              activeCart = computeCartFromRawItems(
+                updatedRaw,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart.district,
+                activeCart
+              );
+              if (userDocRef) {
+                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              }
+              const summaryFormats = activeCart.items
+                .map((i) => `« ${i.cocktailName} » en ${i.quantity}x ${i.bottleSizeLabel} (${i.unitPrice.toLocaleString('fr-FR')} XAF)`)
+                .join(' + ');
+              currentUserParts.push({
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a défini les formats de ses boissons : ${summaryFormats}. Le serveur FYS a recalculé les prix officiels exacts (sous-total: ${activeCart.subtotal.toLocaleString('fr-FR')} XAF, total avec livraison: ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement, confirme clairement ces formats attribués et demande dans quel quartier de Yaoundé il souhaite être livré avec la liste :::LIST !]`,
+              });
+              textHandled = true;
+            }
+          }
+        }
+
+        if (!textHandled) {
+          currentUserParts.push({ text: senderText });
+        }
       }
 
       const contentsPayload = [
@@ -3276,7 +3593,8 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
               availableFruits,
               bottle500Base,
               bottle1LBase,
-              activeCart?.district
+              activeCart?.district,
+              activeCart
             );
             if (userDocRef) {
               await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
@@ -4006,7 +4324,7 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
         listToSend = YAOUNDE_DISTRICTS_LIST;
       }
 
-      // 2. Choix de la quantité de bouteilles (Boutons 1, 2, 3)
+      // 2. Choix de la quantité de bouteilles (Boutons)
       if (
         !listToSend &&
         buttonsToSend.length === 0 &&
@@ -4016,11 +4334,19 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
          aiReply.toLowerCase().includes('quantité de bouteilles') ||
          aiReply.toLowerCase().includes('combien de bouteille'))
       ) {
-        buttonsToSend = [
-          { id: 'btn_qty_1', title: '1 Bouteille' },
-          { id: 'btn_qty_2', title: '2 Bouteilles' },
-          { id: 'btn_qty_3', title: '3 Bouteilles' },
-        ];
+        if (activeCart && activeCart.items.length > 1) {
+          buttonsToSend = [
+            { id: 'btn_qty_each_1', title: '1 de chaque' },
+            { id: 'btn_qty_each_2', title: '2 de chaque' },
+            { id: 'btn_qty_diff', title: 'Quantités perso' },
+          ];
+        } else {
+          buttonsToSend = [
+            { id: 'btn_qty_1', title: '1 Bouteille' },
+            { id: 'btn_qty_2', title: '2 Bouteilles' },
+            { id: 'btn_qty_3', title: '3 Bouteilles' },
+          ];
+        }
       }
 
       // 3. Choix du format si la question du format est posée
@@ -4033,10 +4359,18 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
          aiReply.toLowerCase().includes('format préférez-vous') ||
          aiReply.toLowerCase().includes('500ml ou 1l'))
       ) {
-        buttonsToSend = [
-          { id: 'btn_format_500ml', title: 'Format 500ml' },
-          { id: 'btn_format_1l', title: 'Format 1 Litre' },
-        ];
+        if (activeCart && activeCart.items.length > 1) {
+          buttonsToSend = [
+            { id: 'btn_format_all_500ml', title: 'Tous en 500ml' },
+            { id: 'btn_format_all_1l', title: 'Tous en 1 Litre' },
+            { id: 'btn_format_diff', title: 'Formats différents' },
+          ];
+        } else {
+          buttonsToSend = [
+            { id: 'btn_format_500ml', title: 'Format 500ml' },
+            { id: 'btn_format_1l', title: 'Format 1 Litre' },
+          ];
+        }
       }
 
       // 4. Devis récapitulatif demandant confirmation
