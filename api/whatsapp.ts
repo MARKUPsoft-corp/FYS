@@ -134,11 +134,26 @@ async function sendWhatsAppInteractiveButtons(
   // Nettoyer strictement les titres de boutons : Meta INTERDIT formellement les emojis et le markdown dans reply.title
   const cleanButtonTitle = (raw: string, fallback: string): string => {
     if (!raw || typeof raw !== 'string') return fallback.slice(0, 20);
-    const stripped = raw
+    let stripped = raw
       .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
       .replace(/[*_~`#|]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+
+    // Remplacement intelligent des intitulés trop longs pour éviter la troncature Meta (max 20 car)
+    const lower = stripped.toLowerCase();
+    if (lower.includes('1 bouteille de chaque') || lower.includes('1 de chaqu')) {
+      stripped = '1 de chaque';
+    } else if (lower.includes('2 bouteilles de chaque') || lower.includes('2 de chaqu')) {
+      stripped = '2 de chaque';
+    } else if (lower.includes('3 bouteilles de chaque') || lower.includes('3 de chaqu')) {
+      stripped = '3 de chaque';
+    } else if (lower.includes('quantités différentes') || lower.includes('quantité différente') || lower.includes('quantités sur-mesure')) {
+      stripped = 'Quantités perso';
+    } else if (lower.includes('formats différents') || lower.includes('format différent')) {
+      stripped = 'Formats différents';
+    }
+
     const finalTitle = stripped.slice(0, 20).trim();
     return finalTitle.length > 0 ? finalTitle : fallback.slice(0, 20);
   };
@@ -1808,6 +1823,95 @@ export function detectDistinctFormatsAndQuantitiesFromText(
   }));
 }
 
+export function extractCocktailsFromText(
+  text: string,
+  availableFruits: any[]
+): Array<{ cocktailName: string; fruits: string[] }> | null {
+  if (!text || typeof text !== 'string') return null;
+
+  const matchFruitInString = (str: string): any[] => {
+    const found: any[] = [];
+    const cleanStr = str.toLowerCase();
+    for (const fruit of availableFruits) {
+      const fNameLower = fruit.name.toLowerCase();
+      const simpleName = fNameLower.split('(')[0].trim();
+      const regex = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${simpleName}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+      const isFolereMatch = fNameLower.includes('foléré') && /(?:^|[\s,;.!?'"()•\\-–—*+])(?:bissap|foléré|folere)(?:$|[\\s,;.!?'"()•\\-–—*+])/i.test(cleanStr);
+      const isCocoMatch = fNameLower.includes('coco') && /(?:^|[\s,;.!?'"()•\\-–—*+])(?:coco|noix de coco)(?:$|[\\s,;.!?'"()•\\-–—*+])/i.test(cleanStr);
+
+      if (regex.test(cleanStr) || isFolereMatch || isCocoMatch) {
+        if (!found.some((f) => f.id === fruit.id)) {
+          found.push(fruit);
+        }
+      }
+    }
+    return found;
+  };
+
+  // 1. Découpage par lignes / puces
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const candidateCocktails: Array<{ cocktailName: string; fruits: string[] }> = [];
+
+  if (lines.length > 1) {
+    let itemCounter = 0;
+    for (const line of lines) {
+      const lineFruits = matchFruitInString(line);
+      if (lineFruits.length > 0) {
+        itemCounter++;
+        let cName = `Cocktail ${itemCounter}`;
+        const cleanLine = line.replace(/^[•*\-\d.)\s:]+/, '').trim();
+        if (cleanLine.includes(':')) {
+          const prefix = cleanLine.split(':')[0].trim();
+          if (prefix.length > 0 && prefix.length < 30) {
+            cName = prefix;
+          }
+        }
+        candidateCocktails.push({
+          cocktailName: cName,
+          fruits: lineFruits.map((f) => f.name),
+        });
+      }
+    }
+    if (candidateCocktails.length >= 2) {
+      return candidateCocktails;
+    }
+  }
+
+  // 2. Découpage par clauses textuelles ("un avec ... et un autre avec ...", "1er cocktail ... 2e cocktail ...")
+  const splitMultiRegex = /(?:(?:\bet\s+(?:un\s+)?autre\s+(?:avec|jus|cocktail|boisson)?)|(?:\bet\s+le\s+(?:deuxi[eè]me|second))|(?:;\s*(?:deuxi[eè]me|2e|second))|(?:,\s*(?:un\s+)?autre\s+(?:avec|jus|cocktail)?))/i;
+  if (splitMultiRegex.test(text)) {
+    const parts = text.split(splitMultiRegex).map((p) => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      const partCocktails: Array<{ cocktailName: string; fruits: string[] }> = [];
+      parts.forEach((p, pIdx) => {
+        const pFruits = matchFruitInString(p);
+        if (pFruits.length > 0) {
+          partCocktails.push({
+            cocktailName: `Cocktail ${pIdx + 1}`,
+            fruits: pFruits.map((f) => f.name),
+          });
+        }
+      });
+      if (partCocktails.length >= 2) {
+        return partCocktails;
+      }
+    }
+  }
+
+  // 3. Détection mono-cocktail si au moins 1 fruit mentionné
+  const allFruits = matchFruitInString(text);
+  if (allFruits.length >= 1) {
+    return [
+      {
+        cocktailName: 'Cocktail Santé Sur-Mesure',
+        fruits: allFruits.map((f) => f.name),
+      },
+    ];
+  }
+
+  return null;
+}
+
 export function generateCartDevisText(cart: WhatsAppCart, district?: string): string {
   const targetDistrict = district || cart.district || 'Yaoundé';
   const lines: string[] = ['Voici le récapitulatif de votre commande :'];
@@ -3015,11 +3119,29 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
       let activeRecipeIngredients: { fruitId: string; fruitName: string; priceSnapshot: number; isSupplement?: boolean; incompatibleIds?: string[] }[] = [];
       let activeRecipeName = '';
 
-      if (activeCart && activeCart.items.length > 0) {
-        // Priorité 1 : Panier multi-boissons en cours déjà calculé par le serveur
+      // Priorité 1 : Détection déterministe de cocktails et fruits dans le message actuel
+      const extractedCurrent = extractCocktailsFromText(senderText, availableFruits);
+      if (extractedCurrent && extractedCurrent.length > 0) {
+        activeCart = computeCartFromRawItems(
+          extractedCurrent,
+          availableFruits,
+          bottle500Base,
+          bottle1LBase,
+          activeCart?.district,
+          undefined
+        );
+        activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+        activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+        if (userDocRef) {
+          await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+          console.log(`[whatsapp-webhook] 🍹 Persisted activeWhatsAppCart from user text with ${activeCart.items.length} item(s):`, activeRecipeName);
+        }
+      } else if (activeCart && activeCart.items.length > 0) {
+        // Priorité 2 : Panier multi-boissons en cours déjà calculé par le serveur
         activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
         activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
       } else if (webDraft && Array.isArray(webDraft.cocktail?.ingredients) && webDraft.cocktail.ingredients.length > 0) {
+        // Priorité 3 : Recette personnalisée venant du Lab Web
         activeRecipeName = webDraft.cocktail?.name || 'Mon Jus Personnalisé FYS';
         activeRecipeIngredients = webDraft.cocktail.ingredients.map((i: any) => {
           const snapPrice = Number(i.priceSnapshot);
@@ -3036,7 +3158,7 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
           };
         });
       } else if (existingUserDoc?.data()?.activeWhatsAppDraft && Array.isArray(existingUserDoc.data().activeWhatsAppDraft.ingredients) && existingUserDoc.data().activeWhatsAppDraft.ingredients.length > 0) {
-        // Priorité 2 : Recette personnalisée déjà composée et mémorisée sur WhatsApp
+        // Priorité 4 : Recette personnalisée déjà composée et mémorisée sur WhatsApp
         const waDraft = existingUserDoc.data().activeWhatsAppDraft;
         activeRecipeName = waDraft.cocktailName || 'Cocktail Santé FYS';
         activeRecipeIngredients = waDraft.ingredients.map((i: any) => {
@@ -3054,31 +3176,29 @@ CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé
           };
         });
       } else {
-        // Priorité 3 : Détection précise des fruits mentionnés par le client dans son message actuel
-        const mentionedFruits: any[] = [];
-        const cleanSenderText = senderText.toLowerCase();
-        for (const fruit of availableFruits) {
-          const fNameLower = fruit.name.toLowerCase();
-          const simpleName = fNameLower.split('(')[0].trim();
-          const regex = new RegExp(`(?:^|[\\s,;.!?'"()-])${simpleName}(?:$|[\\s,;.!?'"()-])`, 'i');
-          const isFoledMatch = fNameLower.includes('foléré') && /(?:^|[\s,;.!?'"()-])(?:bissap|foléré|folere)(?:$|[\\s,;.!?'"()-])/i.test(cleanSenderText);
-          const isCocoMatch = fNameLower.includes('coco') && /(?:^|[\s,;.!?'"()-])(?:coco|noix de coco)(?:$|[\\s,;.!?'"()-])/i.test(cleanSenderText);
-
-          if (regex.test(cleanSenderText) || isFoledMatch || isCocoMatch) {
-            if (!mentionedFruits.some((m) => m.id === fruit.id)) {
-              mentionedFruits.push(fruit);
+        // Priorité 5 : Détection par scan de l'historique récent (si le message actuel est un bouton ou ne contient pas de fruits)
+        for (let h = chatHistoryForGemini.length - 1; h >= 0; h--) {
+          const pastMsg = chatHistoryForGemini[h];
+          if (pastMsg.role === 'user' && pastMsg.parts?.[0]?.text) {
+            const pastExtracted = extractCocktailsFromText(pastMsg.parts[0].text, availableFruits);
+            if (pastExtracted && pastExtracted.length > 0) {
+              activeCart = computeCartFromRawItems(
+                pastExtracted,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart?.district,
+                activeCart
+              );
+              activeRecipeName = activeCart.items.map((i) => i.cocktailName).join(' + ');
+              activeRecipeIngredients = activeCart.items.flatMap((i) => i.ingredients);
+              if (userDocRef) {
+                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+                console.log(`[whatsapp-webhook] 🔄 Restored activeWhatsAppCart from past chat history (${activeCart.items.length} items):`, activeRecipeName);
+              }
+              break;
             }
           }
-        }
-        if (mentionedFruits.length > 0) {
-          activeRecipeName = 'Cocktail Sur-Mesure FYS';
-          activeRecipeIngredients = mentionedFruits.map((fruit) => ({
-            fruitId: fruit.id,
-            fruitName: fruit.name,
-            priceSnapshot: fruit.price,
-            isSupplement: fruit.isSupplement,
-            incompatibleIds: fruit.incompatibleIds,
-          }));
         }
       }
 
@@ -3265,10 +3385,16 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
       } else if (isInteractiveMessage && interactiveButtonId) {
         let explicitAction = `[Action interactive cliquée : "${senderText}"]`;
         if (interactiveButtonId.startsWith('btn_order')) {
-          if (activeRecipeIngredients.length === 0) {
+          if (activeCart && activeCart.items.length > 0) {
+            if (activeCart.items.length > 1) {
+              explicitAction = `[Le client a cliqué sur 'Commander' pour ses cocktails (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Demande-lui quel format il préfère pour ses boissons avec les boutons :::BUTTONS [{"id": "btn_format_all_500ml", "title": "Tous en 500ml"}, {"id": "btn_format_all_1l", "title": "Tous en 1 Litre"}, {"id": "btn_format_diff", "title": "Formats différents"}]. Ne pose AUCUNE autre question !]`;
+            } else {
+              explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
+            }
+          } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur 'Commander', mais AUCUN fruit ni recette n'a encore été composé. RÈGLE STRICTE : Ne demande PAS encore le format ! Propose-lui avec chaleur de choisir 2 à 4 fruits parmi nos fruits disponibles en stock pour composer sa recette sur-mesure].`;
           } else {
-            explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS. Ne pose AUCUNE autre question !]`;
+            explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
           }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail].`;
@@ -3486,6 +3612,64 @@ Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
                 .join(' + ');
               currentUserParts.push({
                 text: `${senderText}\n\n[SYSTÈME FYS : Le client a défini les formats de ses boissons : ${summaryFormats}. Le serveur FYS a recalculé les prix officiels exacts (sous-total: ${activeCart.subtotal.toLocaleString('fr-FR')} XAF, total avec livraison: ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement, confirme clairement ces formats attribués et demande dans quel quartier de Yaoundé il souhaite être livré avec la liste :::LIST !]`,
+              });
+              textHandled = true;
+            }
+          }
+        } else if (activeCart && activeCart.items.length === 1) {
+          const cleanSenderLower = senderText.toLowerCase().trim();
+          const is500 = /500\s*(?:ml)?/i.test(cleanSenderLower);
+          const is1L = /(?:1\s*(?:l|litre)|1000\s*ml)/i.test(cleanSenderLower);
+          const qtyMatch = cleanSenderLower.match(/^(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?$/i) || cleanSenderLower.match(/(\d+)\s*(?:bouteilles?|cols?|btls?)/i);
+
+          if (is500 || is1L) {
+            const chosenSize: '500ml' | '1L' = is500 ? '500ml' : '1L';
+            const label = chosenSize === '1L' ? '1 Litre' : '500ml';
+            const updatedRaw = [{
+              cocktailName: activeCart.items[0].cocktailName,
+              fruits: activeCart.items[0].fruits,
+              bottleSize: chosenSize,
+              quantity: activeCart.items[0].quantity,
+              hasAddedSugar: activeCart.items[0].hasAddedSugar,
+            }];
+            activeCart = computeCartFromRawItems(
+              updatedRaw,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart.district,
+              activeCart
+            );
+            if (userDocRef) {
+              await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+            }
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi le format ${label} pour son cocktail "${activeCart.items[0].cocktailName}". Le tarif exact a été recalculé (${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement et demande la quantité avec :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}] !]`,
+            });
+            textHandled = true;
+          } else if (qtyMatch) {
+            const chosenQty = parseInt(qtyMatch[1], 10);
+            if (chosenQty > 0 && chosenQty <= 20) {
+              const updatedRaw = [{
+                cocktailName: activeCart.items[0].cocktailName,
+                fruits: activeCart.items[0].fruits,
+                bottleSize: activeCart.items[0].bottleSize,
+                quantity: chosenQty,
+                hasAddedSugar: activeCart.items[0].hasAddedSugar,
+              }];
+              activeCart = computeCartFromRawItems(
+                updatedRaw,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart.district,
+                activeCart
+              );
+              if (userDocRef) {
+                await userDocRef.set({ activeWhatsAppCart: activeCart }, { merge: true }).catch(() => null);
+              }
+              currentUserParts.push({
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${chosenQty} bouteille(s) de "${activeCart.items[0].cocktailName}" en ${activeCart.items[0].bottleSizeLabel}. Le montant exact est de ${activeCart.subtotal.toLocaleString('fr-FR')} XAF. Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
               });
               textHandled = true;
             }
