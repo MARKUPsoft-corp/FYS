@@ -2700,13 +2700,14 @@ Si le client te demande d'où viennent tes sources, tes connaissances, tes infor
   2. Les bases de données scientifiques officielles et tables de référence internationales en biochimie alimentaire (telles que Ciqual de l'ANSES, Aprifel, USDA FoodData Central et la recherche scientifique tropicale).
 - Mentionne TOUJOURS expressément : « les nutritionnistes partenaires de FYS ».
 
-FORMATS & TARIFS FYS (LA VRAIE FORMULE OFFICIELLE) :
-- Formule stricte du prix d'une bouteille = Prix de base du contenant (enregistré en base : 1 000 XAF pour 500ml, 1 500 XAF pour 1L) + Somme exacte des prix des fruits et compléments de la recette.
-- Format 500ml : Format individuel standard (base contenant : 1 000 XAF)
-- Format 1L : Format familial ou cure 2 jours (base contenant : 1 500 XAF)
+FORMATS & TARIFS FYS :
+- Les prix unitaires des bouteilles sont fixés officiellement par le serveur FYS.
+- Format 500ml : Format individuel standard
+- Format 1L : Format familial ou cure 2 jours
 - Livraison à Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Biyem-Assi, Odza, etc.). INTERDICTION FORMELLE d'annoncer 1 500 XAF ou tout autre montant !
 - TOTAL COMMANDE = (Prix unitaire x Quantité) + 1 000 XAF (livraison fixe).
 - Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant à la livraison.
+- RÈGLE COMMERCIALE CRITIQUE : N'explique JAMAIS la politique des prix ni la décomposition des coûts (base contenant, coût par fruit, coefficient, etc.). Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
 
 GESTION DU PROFIL DE SANTÉ (EXPÉRIENCE IDENTIQUE AU WEB FYS) :
 Si le client a déjà un profil de santé enregistré :
@@ -3534,19 +3535,20 @@ Consigne d'accueil : Informe-le avec enthousiasme et bienveillance que nous pass
 - Recette composée au Lab FYS : "${cocktailName}"
 - Ingrédients stricts de la recette : ${ingredientsNames}
 - Sucre : ${sugarMention}
-- Tarifs fermes et définitifs FYS (Calculés selon la vraie formule) :
-  * Bouteille 500ml : ${exactDraftPrice500} XAF (Base contenant ${bottle500Base} XAF + ${webDraftIngredientsSum} XAF de fruits)
-  * Bouteille 1L : ${exactDraftPrice1L} XAF (Base contenant ${bottle1LBase} XAF + ${webDraftIngredientsSum} XAF de fruits)
-  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)${supersedeContextNotice}
+- Tarifs fermes et définitifs fixés par l'équipe FYS (à annoncer directement sans aucune décomposition) :
+  * Bouteille 500ml : ${exactDraftPrice500.toLocaleString('fr-FR')} XAF
+  * Bouteille 1L : ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF
+  * Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)${supersedeContextNotice}
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
 2. INTERDICTION FORMELLE ET ABSOLUE de lui proposer une autre recette, d'inventer des fruits ou de changer le nom du cocktail (ne propose JAMAIS "Cocktail Douceur Tension" ou une autre recette inventée !).
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
 4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
-5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500} XAF (pour 500ml) ou ${exactDraftPrice1L} XAF (pour 1L).
+5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500.toLocaleString('fr-FR')} XAF (pour 500ml) ou ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF (pour 1L).
 6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
-7. Lors de la confirmation finale (:::ORDER_JSON) :
+7. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût. Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
+8. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
    - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
@@ -3700,19 +3702,20 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
 - Recette composée au Lab FYS : "${cocktailName}"
 - Ingrédients stricts de la recette : ${ingredientsNames}
 - Sucre : ${sugarMention}
-- Tarifs fermes et définitifs FYS (Calculés selon la vraie formule) :
-  * Bouteille 500ml : ${exactDraftPrice500} XAF (Base contenant ${bottle500Base} XAF + ${webDraftIngredientsSum} XAF de fruits)
-  * Bouteille 1L : ${exactDraftPrice1L} XAF (Base contenant ${bottle1LBase} XAF + ${webDraftIngredientsSum} XAF de fruits)
-  * Livraison Yaoundé : 1 000 XAF fixe dans tout Yaoundé (Bastos, Nsimeyong, Odza, etc.)
+- Tarifs fermes et définitifs fixés par l'équipe FYS (à annoncer directement sans aucune décomposition) :
+  * Bouteille 500ml : ${exactDraftPrice500.toLocaleString('fr-FR')} XAF
+  * Bouteille 1L : ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF
+  * Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
 2. INTERDICTION FORMELLE ET ABSOLUE de lui proposer une autre recette, d'inventer des fruits ou de changer le nom du cocktail (ne propose JAMAIS "Cocktail Douceur Tension" ou une autre recette inventée !).
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
 4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
-5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500} XAF (pour 500ml) ou ${exactDraftPrice1L} XAF (pour 1L).
+5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500.toLocaleString('fr-FR')} XAF (pour 500ml) ou ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF (pour 1L).
 6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
-7. Lors de la confirmation finale (:::ORDER_JSON) :
+7. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût. Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
+8. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
    - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
@@ -4206,8 +4209,8 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
       const mainFruitsList = availableFruits.filter((f) => !f.isSupplement);
       const supplementFruitsList = availableFruits.filter((f) => f.isSupplement);
 
-      const mainFruitsCatalogStr = mainFruitsList.map((f) => `  • ${f.name} (+${f.price} XAF)`).join('\n');
-      const supplementCatalogStr = supplementFruitsList.map((s) => `  • ${s.name} (+${s.price} XAF)`).join('\n');
+      const mainFruitsCatalogStr = mainFruitsList.map((f) => `  • ${f.name}`).join('\n');
+      const supplementCatalogStr = supplementFruitsList.map((s) => `  • ${s.name}`).join('\n');
 
       const incompatibilityCatalogStr = availableFruits
         .filter((f) => f.incompatibleIds.length > 0)
@@ -4230,11 +4233,12 @@ CONSIGNES (AVERTIR SANS JAMAIS BLOQUER LA COMMANDE) :
 2. Suggère-lui gentiment une alternative ou un ajustement s'il le souhaite.
 3. RÈGLE CRITIQUE : NE BLOQUE JAMAIS LA COMMANDE ! Si le client souhaite quand même maintenir sa composition, respecte son choix avec courtoisie, donne-lui les tarifs ci-dessous et permets-lui de commander son cocktail sans aucune restriction.
 
-CALCUL OFFICIEL DES TARIFS POUR CE COCKTAIL :
-- Format 500ml : ${bottle500Base} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice500} XAF la bouteille
-- Format 1L : ${bottle1LBase} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice1L} XAF la bouteille
+TARIFS OFFICIELS FIXÉS PAR LE SERVEUR FYS POUR CE COCKTAIL (À ANNONCER DIRECTEMENT SANS DÉCOMPOSITION) :
+- Format 500ml : ${activePrice500.toLocaleString('fr-FR')} XAF la bouteille
+- Format 1L : ${activePrice1L.toLocaleString('fr-FR')} XAF la bouteille
 - Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
-TOTAL COMMANDE POUR Q BOUTEILLES = (Prix unitaire x Quantité) + 1 000 XAF de livraison`;
+TOTAL COMMANDE POUR Q BOUTEILLES = (Prix unitaire x Quantité) + 1 000 XAF de livraison
+CONSIGNE FERME : Affiche directement ces prix. N'explique JAMAIS la politique des prix. Si le client demande des justificatifs, dis simplement que c'est le prix fixé par l'équipe FYS.`;
       } else if (currentMainFruitsCount > maxMainFruits || currentSupplementsCount > maxSupplements) {
         recipePricingDetails = `
 🚨 ALERTE DÉPASSEMENT DES LIMITES OFFICIELLES DU FYS LAB :
@@ -4246,7 +4250,7 @@ Informe-le avec bienveillance de la règle d'équilibre du FYS Lab : chaque bout
           `• Boisson ${idx + 1} : « ${it.cocktailName} » (${it.fruits.join(', ')})
   - Format : ${it.bottleSizeLabel}
   - Quantité : ${it.quantity}
-  - Prix unitaire calculé par le serveur FYS : ${it.unitPrice.toLocaleString('fr-FR')} XAF la bouteille
+  - Prix unitaire fixé par le serveur FYS : ${it.unitPrice.toLocaleString('fr-FR')} XAF la bouteille
   - Sous-total : ${it.lineTotal.toLocaleString('fr-FR')} XAF`
         ).join('\n');
 
@@ -4260,27 +4264,24 @@ ${cartItemsSummary}
 CONSIGNES STRICTES ET CATÉGORIQUES ANTI-HALLUCINATION :
 1. LE CLIENT COMMANDE CE PANIER EXACT CONTENANT ${activeCart.items.length} BOISSON(S).
 2. NE FAIS AUCUN CALCUL ARITHMÉTIQUE TOI-MÊME : recopie STRICTEMENT et fidèlement les chiffres ci-dessus !
-3. N'OUBLIE AUCUNE BOISSON DU PANIER DANS TON RÉCAPITULATIF OU TA CONFIRMATION : mentionne-les TOUTES !`;
+3. N'OUBLIE AUCUNE BOISSON DU PANIER DANS TON RÉCAPITULATIF OU TA CONFIRMATION : mentionne-les TOUTES !
+4. N'explique jamais la politique des prix ni la décomposition. Si le client demande des justificatifs, dis simplement que c'est le prix fixé par l'équipe FYS.`;
       } else if (activeRecipeIngredients.length > 0) {
-        const isSingleFruit = currentMainFruitsCount === 1;
-        const ingredientsListStr = activeRecipeIngredients.map((i) => {
-          const isMain = !i.isSupplement;
-          const price = (isSingleFruit && isMain) ? i.priceSnapshot * 2 : i.priceSnapshot;
-          return `${i.fruitName} (+${price} XAF${(isSingleFruit && isMain) ? ' [pur fruit x2]' : ''})`;
-        }).join(', ');
+        const ingredientsListStr = activeRecipeIngredients.map((i) => i.fruitName).join(', ');
         recipePricingDetails = `
 RECETTE DÉTECTÉE EN COURS : "${activeRecipeName}"
 Ingrédients (${activeRecipeIngredients.length} fruits) : ${ingredientsListStr}
-Somme exacte des fruits & compléments : ${activeIngredientsSum} XAF${isSingleFruit ? ' (inclut le coefficient x2 pour recette 100% pur fruit unique)' : ''}
-CALCUL FERME ET OBLIGATOIRE SELON LA VRAIE FORMULE FYS :
-- Format 500ml : ${bottle500Base} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice500} XAF la bouteille
-- Format 1L : ${bottle1LBase} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice1L} XAF la bouteille
+TARIFS OFFICIELS FIXÉS PAR LE SERVEUR FYS POUR CE COCKTAIL (À ANNONCER DIRECTEMENT SANS AUCUNE DÉCOMPOSITION) :
+- Format 500ml : ${activePrice500.toLocaleString('fr-FR')} XAF la bouteille
+- Format 1L : ${activePrice1L.toLocaleString('fr-FR')} XAF la bouteille
 - Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
 TOTAL COMMANDE POUR Q BOUTEILLES :
 - Sous-total = (Prix unitaire x Quantité)
 - TOTAL À PAYER = Sous-total + 1 000 XAF (livraison fixe)
-CONSIGNE IMPÉRATIVE ANTI-HALLUCINATION :
-Tu DOIS STRICTEMENT utiliser ces tarifs exacts (${activePrice500} XAF pour 500ml, ${activePrice1L} XAF pour 1L, et 1 000 XAF de livraison). INTERDICTION FORMELLE d'annoncer 1 500 XAF de livraison ou un autre prix unitaire !`;
+CONSIGNES STRICTES ANTI-JUSTIFICATION ET ANTI-HALLUCINATION :
+1. Affiche DIRECTEMENT ces prix (${activePrice500.toLocaleString('fr-FR')} XAF pour 500ml, ${activePrice1L.toLocaleString('fr-FR')} XAF pour 1L, et 1 000 XAF de livraison).
+2. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût (interdiction formelle de détailler le contenant, le coût par fruit ou toute formule de calcul).
+3. Si le client demande des justificatifs, une explication ou pourquoi ce prix : réponds simplement et avec courtoisie que « c'est le prix fixé par l'équipe FYS », sans entrer dans aucun détail.`;
       } else {
         recipePricingDetails = `
 ATTENTION : AUCUN FRUIT NI RECETTE N'A ENCORE ÉTÉ CHOISI PAR LE CLIENT !
@@ -4299,9 +4300,8 @@ ${supplementCatalogStr}
 RÈGLES D'INCOMPATIBILITÉ SCIENTIFIQUE DU FYS LAB (STRICTES ET INFRANGIBLES) :
 ${incompatibilityCatalogStr}
 
-FORMULE OFFICIELLE STRICTE DU CALCUL DES PRIX FYS :
-1. Prix par bouteille = Prix de base du contenant (${bottle500Base} XAF en 500ml, ${bottle1LBase} XAF en 1L) + Somme exacte des prix des fruits & compléments choisis.
-   - RÈGLE DU PUR FRUIT UNIQUE (x2) : Si le client choisit un seul fruit principal pour sa recette sur-mesure (ex: jus 100% Ananas, ou 1 seul fruit + compléments), le prix de ce fruit est automatiquement multiplié par 2 (car le volume de fruits requis pour remplir la bouteille est doublé par rapport à un mélange de fruits).
+TARIFS OFFICIELS DU FYS LAB :
+1. Prix par bouteille = Tarifs unitaires fixés par le serveur FYS (${activePrice500.toLocaleString('fr-FR')} XAF en 500ml, ${activePrice1L.toLocaleString('fr-FR')} XAF en 1L).
 2. Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé. Ne facture JAMAIS 1 500 XAF !
 3. TOTAL À PAYER = (Prix par bouteille x Quantité) + 1 000 XAF de livraison.
 ${recipePricingDetails}
@@ -4317,8 +4317,10 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
      * RÈGLE FONDAMENTALE : NE BLOQUE JAMAIS LA COMMANDE ! S'il souhaite maintenir sa composition, respecte son choix avec courtoisie, donne-lui les tarifs officiels et permets-lui de commander son cocktail sans blocage.
 3. EXCLUSIVITÉ DU STOCK :
    - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
-4. CONFIDENTIALITÉ :
-   - Tu n'affiches JAMAIS au client le coût individuel du contenant vide ou des fruits en détail, mais tu présentes le prix unitaire total tout compris de la bouteille.
+4. CONFIDENTIALITÉ STRICTE ET POLITIQUE DES PRIX :
+   - Tu n'expliques JAMAIS au client la politique de nos prix, ni aucune décomposition (coût du contenant vide, coût par fruit, coefficient x2, marge, etc.). Tu ne justifies AUCUN calcul.
+   - Tu te contentes d'afficher directement le prix unitaire total tout compris de la bouteille et les frais de livraison fixes (1 000 XAF).
+   - Si le client demande des justificatifs, une explication ou pourquoi ce prix : réponds simplement et avec courtoisie que « c'est le prix fixé par l'équipe FYS », sans entrer dans aucun détail.
 
 RÈGLE CRITIQUE DU ROUTEUR SÉMANTIQUE D'INTENTIONS (:::INTENT) :
 Tu es le Cerveau IA du système FYS. Peu importe comment le client s'exprime en français naturel, argot camerounais, métaphores ou abréviations (ex: "oui oui on y va", "mets-moi le jus là", "lance seulement", "c'est bon pour moi", "en 1 litre stp", "je suis calé à Bastos", "compose moi un bon jus"), tu DOIS TOUJOURS traduire son intention et inclure à la TOUTE FIN de ton message le bloc technique :::INTENT :
@@ -5012,7 +5014,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
               explicitAction = `[Le client a sélectionné le format ${formatLabel} pour "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Remercie-le et pose UNIQUEMENT la question du nombre de bouteilles avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_3", "title": "3 Bouteilles"}]. Ne demande PAS encore le quartier !]`;
             }
           } else {
-            explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour calculer son prix exact selon la vraie formule FYS (base contenant + somme des fruits), nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 2 à 4 fruits parmi nos fruits disponibles en stock].`;
+            explicitAction = `[Le client a cliqué sur 'Format ${formatLabel}', mais aucun cocktail n'a encore été composé. RÈGLE STRICTE : C'est bien noté pour le format ${formatLabel}, mais précise-lui que pour déterminer son tarif officiel, nous devons d'abord choisir les fruits de sa recette. Propose-lui de choisir 1 à 4 fruits parmi nos fruits disponibles en stock].`;
           }
         } else if (interactiveButtonId === 'btn_format_diff') {
           if (activeCart && activeCart.items.length > 0) {
