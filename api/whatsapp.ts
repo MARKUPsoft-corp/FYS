@@ -390,9 +390,13 @@ export function matchCatalogCocktailFromText(
   const clean = normalizeTextForMatching(text);
   for (const c of catalogCocktails) {
     const cNameNorm = normalizeTextForMatching(c.name);
-    if (cNameNorm.length >= 4 && clean.includes(cNameNorm)) {
+    if (cNameNorm.length >= 3 && clean.includes(cNameNorm)) {
       return c;
     }
+  }
+  const extracted = extractCatalogOrdersFromText(text, catalogCocktails);
+  if (extracted.length > 0) {
+    return extracted[0].cocktail;
   }
   return null;
 }
@@ -409,7 +413,17 @@ export function extractCatalogOrdersFromText(
   catalogCocktails: CatalogCocktail[]
 ): ExtractedCatalogOrder[] {
   if (!text || typeof text !== 'string' || !catalogCocktails || catalogCocktails.length === 0) return [];
-  const clean = normalizeTextForMatching(text);
+  let clean = normalizeTextForMatching(text);
+
+  // Si phrase de substitution (ex: "à la place de 4 ananas papaye je veux 3 papaye orange et 2 anas papaye")
+  // On extrait uniquement depuis la clause désirée ("je veux / donne-moi / mets-moi / par / plutôt")
+  const replaceMatch = clean.match(
+    /(?:[àa]\s+la\s+place\s+d[e']?s?|au\s+lieu\s+d[e']?s?|remplac(?:er?|e|ez?)|chang(?:er?|e|ez?)(?:\s+(?:pour|en))?|je\s+ne\s+veux\s+plus\s+d[e']?s?|ne\s+mets\s+plus\s+d[e']?s?|retir(?:er?|e|ez?)|enl[èe]v(?:er?|e|ez?))\s+.*?\s+(?:je\s+veux|mets[- ]moi|donne[- ]moi|prends|ajoute|mets|par|en|plut[ôo]t|finalement|en\s+fait|,|;)\s+(.*)/i
+  );
+  if (replaceMatch && replaceMatch[1]) {
+    clean = replaceMatch[1].trim();
+  }
+
   const results: Array<ExtractedCatalogOrder & { matchIndex: number }> = [];
 
   const parseWordNumber = (word: string): number | null => {
@@ -427,8 +441,17 @@ export function extractCatalogOrdersFromText(
   for (const c of sortedCatalog) {
     const cNorm = normalizeTextForMatching(c.name);
     if (cNorm.length < 3) continue;
-    const words = cNorm.split(/\s+/).filter(Boolean);
-    const namePattern = words.map((w) => `${escapeRegexString(w)}s?`).join('\\s+');
+    const words = cNorm.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean);
+    const namePattern = words.map((w) => {
+      for (const [canonical, aliases] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+        const normCanonical = normalizeTextForMatching(canonical);
+        const normAliases = Array.from(new Set([canonical, ...aliases].map((a) => normalizeTextForMatching(a)).filter(Boolean)));
+        if (w === normCanonical || normAliases.includes(w)) {
+          return `(?:${normAliases.map((a) => escapeRegexString(a)).join('|')})`;
+        }
+      }
+      return `${escapeRegexString(w)}s?`;
+    }).join('\\s+(?:et\\s+|&\\s+)?');
 
     // Détection de quantité avant ou après le nom : ex "2 papaye oranges", "1 ananas gingembre", "papaye orange x 3"
     const regex = new RegExp(
@@ -1141,7 +1164,7 @@ async function uploadWhatsAppDocument(pdfBuffer: Buffer, filename: string): Prom
     const formData = new FormData();
     formData.append('messaging_product', 'whatsapp');
     formData.append('type', 'application/pdf');
-    const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' });
     formData.append('file', blob, filename);
 
     const response = await fetch(url, {
@@ -2009,13 +2032,13 @@ export const FRUIT_TYPO_SYNONYMS: Record<string, string[]> = {
   betterave: ['betterave', 'betteraves'],
   carotte: ['carotte', 'carottes'],
   concombre: ['concombre', 'concombres'],
-  ananas: ['ananas', 'anana'],
+  ananas: ['ananas', 'anana', 'anas'],
   orange: ['orange', 'oranges'],
   banane: ['banane', 'bananes'],
   pomme: ['pomme', 'pommes'],
   mangue: ['mangue', 'mangues'],
   avocat: ['avocat', 'avocats'],
-  papaye: ['papaye', 'papayes'],
+  papaye: ['papaye', 'papayes', 'papay'],
   menthe: ['menthe', 'menthes', 'mint', 'menthe fraiche', 'menthe fraîche'],
   epinard: ['epinard', 'épinard', 'epinards', 'épinards', 'spinach'],
   celeri: ['celeri', 'céleri', 'celeris', 'céleris', 'celery'],
@@ -2030,6 +2053,7 @@ export function computeCartFromRawItems(
     cocktailName?: string;
     fruits?: string[];
     bottleSize?: string;
+    bottleSizeLabel?: string;
     quantity?: number;
     hasAddedSugar?: boolean;
     isCatalog?: boolean;
@@ -3882,7 +3906,45 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
         });
 
         let combinedRawItems: any[] = [];
-        if (activeCart && activeCart.items.length > 0) {
+        const isReplaceOrCorrection = /(?:[àa]\s+la\s+place\s+d|au\s+lieu\s+d|remplac|chang(?:er?|e|ez?)|plut[ôo]t|finalement|en\s+fait|ne\s+veux\s+plus|annule\s+les?)/i.test(senderText);
+
+        if (isReplaceOrCorrection) {
+          const normClean = normalizeTextForMatching(senderText);
+          const replaceClauseMatch = normClean.match(
+            /(?:[àa]\s+la\s+place\s+d[e']?s?|au\s+lieu\s+d[e']?s?|remplac(?:er?|e|ez?)|chang(?:er?|e|ez?)(?:\s+(?:pour|en))?|je\s+ne\s+veux\s+plus\s+d[e']?s?|ne\s+mets\s+plus\s+d[e']?s?|retir(?:er?|e|ez?)|enl[èe]v(?:er?|e|ez?))\s+(.*?)\s+(?:je\s+veux|mets[- ]moi|donne[- ]moi|prends|ajoute|mets|par|en|plut[ôo]t|finalement|en\s+fait|,|;)\s+(.*)/i
+          );
+          if (replaceClauseMatch && replaceClauseMatch[1] && activeCart && activeCart.items.length > 0) {
+            const discardedOrders = extractCatalogOrdersFromText(replaceClauseMatch[1], catalogCocktails);
+            const discardedIds = new Set(discardedOrders.map((d) => d.cocktail.id));
+            combinedRawItems = activeCart.items
+              .filter((it) => it.isCatalog && !discardedIds.has(it.catalogCocktailId))
+              .map((it) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: it.bottleSize,
+                bottleSizeLabel: it.bottleSizeLabel,
+                quantity: it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+                isCatalog: true,
+                catalogCocktailId: it.catalogCocktailId,
+                imageUrl: it.imageUrl,
+                unitPrice: it.unitPrice,
+              }));
+
+            for (const newItem of newCatalogItems) {
+              const existingMatch = combinedRawItems.find(
+                (it) => it.catalogCocktailId === newItem.catalogCocktailId && it.bottleSizeLabel === newItem.bottleSizeLabel
+              );
+              if (existingMatch) {
+                existingMatch.quantity = newItem.quantity;
+              } else {
+                combinedRawItems.push(newItem);
+              }
+            }
+          } else {
+            combinedRawItems = newCatalogItems;
+          }
+        } else if (activeCart && activeCart.items.length > 0) {
           // Filtrer rigoureusement les articles pour ne garder que les vrais jus catalogue
           const existingCatalogItems = activeCart.items.filter((it) => it.isCatalog);
           combinedRawItems = existingCatalogItems.map((it) => ({
@@ -3959,10 +4021,10 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
         } else {
           const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
 
-          await sendWhatsAppDistrictList(
+          await sendWhatsAppInteractiveList(
             senderPhone,
             readyText,
-            YAOUNDE_DISTRICTS_POPULAR.slice(0, 10),
+            YAOUNDE_DISTRICTS_LIST,
             'FYS · Livraison Yaoundé'
           );
 
