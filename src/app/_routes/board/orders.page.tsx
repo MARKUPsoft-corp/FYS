@@ -1,18 +1,18 @@
 import { PageComponent, useNavigate, useSearchParams } from 'rasengan';
 import {
-  ShoppingBag, Package, Clock, Loader2, Phone, Mail,
-  CheckCircle2, ChefHat, Truck, XCircle, Circle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
+  ShoppingBag, Package, Clock, Loader2, Phone,
+  CheckCircle2, ChefHat, Truck, XCircle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
   CalendarDays, Calendar, Search, Navigation, Trash2, Printer, Plus, Minus,
 } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
-import { UserRole, OrderStatus, partitionCocktailIngredients, formatIngredientsSummary, isTastingOrder } from '@/entities';
-import type { Order, Cocktail, CocktailIngredient, Fruit } from '@/entities';
-import { getCocktailById } from '@/services/cocktail';
+import { UserRole, OrderStatus, partitionCocktailIngredients, formatIngredientsSummary, isTastingOrder, splitOrderCocktails } from '@/entities';
+import type { Order, Cocktail, CocktailIngredient } from '@/entities';
+import { getCocktailById, getPublicCocktails } from '@/services/cocktail';
 import { getFruits } from '@/services/fruit';
 import { updateOrderStatus, cancelOrder, deleteOrderCompletely } from '@/services/order';
 import { useQuery } from '@tanstack/react-query';
@@ -155,6 +155,12 @@ function OrderCard({
   const { t } = useTranslation();
   const isProgram = order.type === 'program';
   const isTasting = isTastingOrder(order);
+  const { data: fruits = [] } = useQuery({
+    queryKey: ['fruits'],
+    queryFn: getFruits,
+    staleTime: 5 * 60_000,
+  });
+  const splittedCocktails = useMemo(() => splitOrderCocktails(order, fruits), [order, fruits]);
 
   return (
     <div
@@ -253,22 +259,45 @@ function OrderCard({
                   </span>
                 )}
               </div>
-              {order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0 && (() => {
-                const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot);
-                return (
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
-                    {mainFruits.length > 0 && (
-                      <span className="text-muted-foreground font-medium flex items-center gap-1">
-                        🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
-                      </span>
-                    )}
-                    {supplements.length > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
-                        🌿 + {supplements.map((s) => s.fruitName).join(', ')}
-                      </span>
-                    )}
-                  </div>
-                );
+              {(() => {
+                if (splittedCocktails.length > 1) {
+                  return (
+                    <div className="space-y-1 mt-2.5 pt-2 border-t border-border/40">
+                      {splittedCocktails.map((item) => (
+                        <div key={item.id} className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-foreground">Cocktail {item.index} ({item.name}) :</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-muted text-foreground text-[10px] font-bold border border-border/50">
+                            {item.quantity}× {item.bottleSizeLabel}
+                          </span>
+                          {item.mainFruits.length > 0 && (
+                            <span className="text-foreground/85 font-medium">🍓 {item.mainFruits.map((m) => m.fruitName).join(', ')}</span>
+                          )}
+                          {item.supplements.length > 0 && (
+                            <span className="text-amber-700 dark:text-amber-400 font-semibold">🌿 +{item.supplements.map((s) => s.fruitName).join(', ')}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                if (order.cocktailIngredientsSnapshot && order.cocktailIngredientsSnapshot.length > 0) {
+                  const { mainFruits, supplements } = partitionCocktailIngredients(order.cocktailIngredientsSnapshot, fruits);
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
+                      {mainFruits.length > 0 && (
+                        <span className="text-muted-foreground font-medium flex items-center gap-1">
+                          🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                        </span>
+                      )}
+                      {supplements.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
+                          🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
               })()}
             </>
           )}
@@ -276,7 +305,7 @@ function OrderCard({
         <StatusBadge status={order.status} />
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <div className="text-sm text-muted-foreground">
         {isProgram ? (
           <span>
             {order.programJuiceItems && order.programJuiceItems.length > 0 ? (
@@ -290,37 +319,44 @@ function OrderCard({
               <>{t('orders.program.cureComplete', { count: order.programBottlesTotal || order.quantity })}</>
             )}
           </span>
+        ) : splittedCocktails.length > 1 ? (
+          <div className="text-xs space-y-1">
+            {splittedCocktails.map((item, i) => (
+              <span key={item.id}>
+                <span className="font-semibold text-foreground">Cocktail {item.index} :</span> {item.quantity}× {item.bottleSizeLabel} ({item.lineTotal.toLocaleString()} XAF)
+                {i < splittedCocktails.length - 1 ? ' · ' : ''}
+              </span>
+            ))}
+          </div>
         ) : order.orderLines?.length ? (
-          order.orderLines.map((line, i) => (
-            <span key={i}>
-              {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
-              {i < order.orderLines.length - 1 ? ' + ' : ''}
-            </span>
-          ))
+          <>
+            {order.orderLines.map((line, i) => (
+              <span key={i}>
+                {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
+                {i < order.orderLines.length - 1 ? ' + ' : ''}
+              </span>
+            ))}
+            {' · '}
+            {order.orderLines.map((line, i) => (
+              <span key={i}>
+                {line.pricePerBottle.toLocaleString()} XAF
+                {i < order.orderLines.length - 1 ? ' + ' : ''}
+              </span>
+            ))}
+          </>
         ) : (
           <>
             {t('orders.bottleCount', { count: order.quantity })}
             {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-          </>
-        )}
-        {!isProgram && ' · '}
-        {isTasting ? (
-          <span className="font-semibold text-[#E0982E]">Tarif VIP Dégustation (1 000 XAF)</span>
-        ) : (
-          !isProgram && (
-            order.orderLines?.length ? (
-              order.orderLines.map((line, i) => (
-                <span key={i}>
-                  {line.pricePerBottle.toLocaleString()} XAF
-                  {i < order.orderLines.length - 1 ? ' + ' : ''}
-                </span>
-              ))
+            {' · '}
+            {isTasting ? (
+              <span className="font-semibold text-[#E0982E]">Tarif VIP Dégustation (1 000 XAF)</span>
             ) : (
               `${order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF / u`
-            )
-          )
+            )}
+          </>
         )}
-      </p>
+      </div>
 
       <div className="flex items-center justify-between pt-1 border-t border-border/40">
         <p className="font-bold text-foreground tabular-nums">{order.totalPrice.toLocaleString()} XAF</p>
@@ -533,7 +569,7 @@ function CocktailInfoBlock({
   if (!cocktail && !effectiveIngredients.length && !orderImageUrl && !fruitVisuals.length && !cocktailNameFallback) return null;
 
   const analysis = cocktail?.aiAnalysis ?? orderAnalysisSnapshot;
-  const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict] : null;
+  const vcfg = analysis ? VERDICT_CONFIG[analysis.verdict as keyof typeof VERDICT_CONFIG] : null;
   const name = cocktail?.name ?? cocktailNameFallback ?? 'Cocktail';
   const fruitNames = effectiveIngredients.map((i) => i.fruitName);
   const sugarVal = hasAddedSugar !== undefined ? hasAddedSugar : (cocktail?.hasAddedSugar ?? false);
@@ -706,6 +742,17 @@ function ClientOrderSheet({
     queryFn: getFruits,
     staleTime: 5 * 60_000,
   });
+
+  const { data: publicCocktails = [] } = useQuery({
+    queryKey: ['public-cocktails'],
+    queryFn: getPublicCocktails,
+    staleTime: 5 * 60_000,
+  });
+
+  const splittedCocktails = useMemo(
+    () => splitOrderCocktails(order, fruits, publicCocktails),
+    [order, fruits, publicCocktails]
+  );
 
   const { data: pricing } = useQuery({
     queryKey: ['pricing-settings'],
@@ -1010,6 +1057,44 @@ function ClientOrderSheet({
                     </div>
                   )}
                 </>
+              ) : splittedCocktails.length > 1 ? (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Détail des cocktails commandés ({splittedCocktails.length})
+                  </div>
+                  {splittedCocktails.map((c) => (
+                    <div key={c.id} className="p-4 space-y-2 bg-card/60">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-primary">
+                          Cocktail {c.index} : {c.name}
+                        </span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-muted border border-border">
+                          {c.quantity}× {c.bottleSizeLabel}
+                        </span>
+                      </div>
+                      {c.mainFruits.length > 0 && (
+                        <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
+                          <span className="text-muted-foreground shrink-0">🍓 Fruits :</span>
+                          <span>{c.mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
+                        </p>
+                      )}
+                      {c.supplements.length > 0 && (
+                        <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
+                          <span className="font-semibold shrink-0">🌿 Suppléments :</span>
+                          <span>{c.supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-border/30">
+                        <span className="text-muted-foreground">
+                          {c.quantity} × {c.pricePerBottle.toLocaleString()} XAF
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {c.lineTotal.toLocaleString()} XAF
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </>
               ) : (
                 <>
                   {(() => {
@@ -1191,7 +1276,7 @@ function AdminOrderSheet({
     }
   }, [order?.id, order?.orderLines, order?.quantity]);
 
-  const { data: cocktail, isLoading: cocktailLoading } = useQuery({
+  const { data: cocktail } = useQuery({
     queryKey: ['cocktail', order?.cocktailId],
     queryFn: () => getCocktailById(order!.cocktailId),
     enabled: !!order,
@@ -1204,6 +1289,17 @@ function AdminOrderSheet({
     staleTime: 5 * 60_000,
   });
 
+  const { data: publicCocktails = [] } = useQuery({
+    queryKey: ['public-cocktails'],
+    queryFn: getPublicCocktails,
+    staleTime: 5 * 60_000,
+  });
+
+  const splittedCocktails = useMemo(
+    () => splitOrderCocktails(order, fruits, publicCocktails),
+    [order, fruits, publicCocktails]
+  );
+
   if (!order) return null;
 
   const totalBottles = order.orderLines?.length
@@ -1215,7 +1311,6 @@ function AdminOrderSheet({
     : `${order.quantity || 1}× ${order.bottleSizeLabel || 'bouteille'}`;
 
   const isCancelled = order.status === OrderStatus.CANCELLED;
-
   const isDelivered = order.status === OrderStatus.DELIVERED;
   const currentIndex = ADMIN_STATUS_FLOW.indexOf(order.status);
 
@@ -1247,93 +1342,119 @@ function AdminOrderSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full max-w-[500px] p-0 flex flex-col">
-
-        <SheetHeader className="px-6 pt-6 pb-0 shrink-0">
-            <div className="flex items-start justify-between gap-2">
-            <div>
-              <SheetTitle className="font-display text-xl font-bold">{order.programTitleSnapshot || order.cocktailNameSnapshot}</SheetTitle>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <p className="text-[13px] text-muted-foreground">
-                  {formatDate(order.createdAt as unknown as { seconds: number })}
-                </p>
-                {order.type === 'program' ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
-                    <Sparkles className="size-3" /> FYS Programme · {order.programDurationDays || 7} jours
-                  </span>
-                ) : order.hasAddedSugar ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
-                    🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="w-[96vw] max-w-6xl max-h-[92vh] h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl md:rounded-3xl bg-background border border-border/80 shadow-2xl"
+        showAfricanPattern={false}
+      >
+        {/* En-tête fixe de la modale */}
+        <div className="px-6 py-5 border-b border-border/50 shrink-0 bg-card/70 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-4 pr-8">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="font-display text-xl md:text-2xl font-bold text-foreground truncate">
+                  {order.programTitleSnapshot || order.cocktailNameSnapshot}
+                </h2>
+                {order.orderCode && (
+                  <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                    #{order.orderCode}
                   </span>
                 )}
-                {order.aiAnalysisSnapshot && (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].chip}`}>
-                {VERDICT_CONFIG[order.aiAnalysisSnapshot.verdict].emoji} {getVerdictLabel(order.aiAnalysisSnapshot.verdict, t)}
+                <StatusBadge status={order.status} size="lg" />
+              </div>
+
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Clock className="size-3.5" />
+                  {formatDate(order.createdAt as unknown as { seconds: number })}
+                </span>
+                <span>·</span>
+                <span className="font-bold text-foreground">
+                  👤 {order.userNameSnapshot}
+                </span>
+                {order.userPhoneSnapshot && (
+                  <>
+                    <span>·</span>
+                    <a href={`tel:${order.userPhoneSnapshot}`} className="text-primary hover:underline font-mono font-semibold">
+                      📞 {order.userPhoneSnapshot}
+                    </a>
+                  </>
+                )}
+                {order.source === 'whatsapp' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    WhatsApp
+                  </span>
+                )}
+                {order.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    🍯 Avec sucre
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    🌿 100% Naturel · Sans sucre
                   </span>
                 )}
                 {isTastingOrder(order) && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 uppercase tracking-wide">
                     <Sparkles className="size-3 text-[#E0982E]" />
-                    🍷 Précommande Dégustation
+                    Précommande Dégustation
                   </span>
                 )}
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-foreground border border-border">
+                  🍾 {bottleSummary} ({totalBottles} bouteille{totalBottles > 1 ? 's' : ''})
+                </span>
               </div>
             </div>
-            <StatusBadge status={order.status} size="lg" />
           </div>
 
           {order.aiAnalysisSnapshot && (
-            <div className="flex gap-1 bg-muted rounded-xl p-1 mt-4">
+            <div className="flex gap-2 bg-muted/80 rounded-xl p-1 mt-4 max-w-xs">
               <button
                 type="button"
                 onClick={() => setActiveTab('order')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'order'
-                    ? 'bg-background shadow-sm text-foreground'
+                    ? 'bg-background shadow-xs text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Package className="size-3.5" />
-                {t('orders.details')}
+                {t('orders.details', 'Détails')}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('nutrition')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'nutrition'
-                    ? 'bg-background shadow-sm text-foreground'
+                    ? 'bg-background shadow-xs text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Sparkles className="size-3.5" />
-                {t('orders.nutrifysSheet')}
+                {t('orders.nutrifysSheet', 'Fiche NutriFYS')}
               </button>
             </div>
           )}
-        </SheetHeader>
+        </div>
 
-        <div className="border-b border-border/40 mt-4 shrink-0" />
+        {/* Corps défilable de la modale */}
         {activeTab === 'nutrition' && order.aiAnalysisSnapshot ? (
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            <div id={`pdf-nutrition-${order.id}`} className="px-6 py-5 pb-8 bg-background shrink-0">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div id={`pdf-nutrition-${order.id}`} className="p-6 bg-card rounded-2xl border border-border/60">
               <NutritionalView analysis={order.aiAnalysisSnapshot} />
             </div>
-            <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
+            <div className="flex justify-end">
               <Button
                 variant="outline"
-                className="w-full h-12 rounded-2xl font-bold gap-2 disabled:opacity-50"
+                className="h-11 px-6 rounded-xl font-bold gap-2 disabled:opacity-50"
                 disabled={downloadingNutrition}
                 onClick={async () => {
-                   setDownloadingNutrition(true);
-                   const ingList = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
-                   const ingStr = formatIngredientsSummary(ingList, fruits, { format: 'inline' });
-                   await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
-                   setDownloadingNutrition(false);
+                  setDownloadingNutrition(true);
+                  const ingList = order.cocktailIngredientsSnapshot || cocktail?.ingredients || [];
+                  const ingStr = formatIngredientsSummary(ingList, fruits, { format: 'inline' });
+                  await downloadVectorNutrition(order.aiAnalysisSnapshot!, order.cocktailNameSnapshot, order.userNameSnapshot, ingStr);
+                  setDownloadingNutrition(false);
                 }}
               >
                 {downloadingNutrition ? (
@@ -1345,529 +1466,472 @@ function AdminOrderSheet({
             </div>
           </div>
         ) : (
-        <div className="flex-1 overflow-y-auto flex flex-col">
-          <div id={`pdf-facture-${order.id}`} className="px-6 py-6 pb-8 space-y-7 bg-background shrink-0">
-
-          {/* Tasting Event Warning Callout for Admin */}
-          {isTastingOrder(order) && (
-            <div className="p-4 rounded-2xl bg-[#E0982E]/15 border-2 border-[#E0982E]/40 text-[#b27218] dark:text-[#f8be68] space-y-2 shadow-xs">
-              <div className="flex items-center gap-2 font-black text-sm uppercase tracking-wide">
-                <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
-                <span>Précommande Dégustation Privée (18 Octobre)</span>
-              </div>
-              <p className="text-xs text-foreground/85 leading-relaxed font-medium">
-                ⚠️ <b>Retrait sur place uniquement :</b> Cette commande est réservée pour l'événement dégustation privée du <b>Dimanche 18 Octobre 2026</b> à Yaoundé. Ne pas expédier par coursier classique à domicile.
-              </p>
-            </div>
-          )}
-
-          {/* Cocktail or Program info */}
-          {order.type === 'program' ? (
-            <ProgramInfoBlock order={order} isAdmin={true} />
-          ) : (
-            <CocktailInfoBlock
-              cocktail={cocktail}
-              loading={cocktailLoading}
-              orderImageUrl={order.cocktailImageSnapshot}
-              orderFruitImages={order.ingredientImageSnapshots}
-              clientName={order.userNameSnapshot}
-              cocktailNameFallback={order.cocktailNameSnapshot}
-              hasAddedSugar={order.hasAddedSugar}
-              ingredientsSnapshot={order.cocktailIngredientsSnapshot}
-              orderAnalysisSnapshot={order.aiAnalysisSnapshot}
-            />
-          )}
-
-          {/* Contact client */}
-          <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.client')}</p>
-            <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
-              <div className="flex items-center gap-3 px-4 py-3.5">
-                <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-[13px] font-bold text-primary">
-                    {order.userNameSnapshot.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+          <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* ── COLONNE GAUCHE (7/12) : COCKTAILS SCINDÉS DE LA COMMANDE ── */}
+              <div className="lg:col-span-7 space-y-6">
+                
+                {/* En-tête de section */}
+                <div className="flex items-center justify-between pb-3 border-b border-border/50">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      <ChefHat className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-base md:text-lg text-foreground">
+                        Composition de la commande
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Détail précis de chaque boisson, fruits et suppléments
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/25">
+                    {splittedCocktails.length} boisson{splittedCocktails.length > 1 ? 's' : ''} scindée{splittedCocktails.length > 1 ? 's' : ''}
                   </span>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[13px] font-bold text-foreground">{order.userNameSnapshot}</p>
-                    {order.source === 'whatsapp' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
-                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        💬 WhatsApp
-                      </span>
-                    )}
+
+                {/* Callout si précommande dégustation */}
+                {isTastingOrder(order) && (
+                  <div className="p-4 rounded-2xl bg-[#E0982E]/15 border-2 border-[#E0982E]/40 text-[#b27218] dark:text-[#f8be68] space-y-2 shadow-xs">
+                    <div className="flex items-center gap-2 font-black text-sm uppercase tracking-wide">
+                      <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
+                      <span>Précommande Dégustation Privée (18 Octobre)</span>
+                    </div>
+                    <p className="text-xs text-foreground/85 leading-relaxed font-medium">
+                      ⚠️ <b>Retrait sur place uniquement :</b> Cette commande est réservée pour l'événement dégustation privée du <b>Dimanche 18 Octobre 2026</b> à Yaoundé. Ne pas expédier par coursier classique à domicile.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {order.orderLines?.length ? (
-                      order.orderLines.map((line, i) => (
-                        <span key={i}>
-                          {line.quantity} {line.bottleSizeLabel}
-                          {i < order.orderLines.length - 1 ? ' + ' : ''}
-                        </span>
-                      ))
-                    ) : t('orders.bottleCount', { count: order.quantity })
-                    } {t('orders.ordered', { count: order.orderLines?.reduce((sum, l) => sum + l.quantity, 0) || order.quantity || 0 })}
-                  </p>
-                </div>
+                )}
+
+                {/* Si commande Cure FYS Programme */}
+                {order.type === 'program' ? (
+                  <ProgramInfoBlock order={order} isAdmin={true} />
+                ) : (
+                  /* Affichage scindé de CHAQUE cocktail individuel */
+                  <div className="space-y-5">
+                    {splittedCocktails.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-2xl border-2 border-border/70 bg-card p-5 space-y-4 shadow-xs hover:border-primary/50 transition-all relative overflow-hidden"
+                      >
+                        {/* Barre supérieure du cocktail */}
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-primary/15 text-primary font-bold text-xs uppercase tracking-wide border border-primary/25">
+                                Cocktail #{item.index}
+                              </span>
+                              {item.isCatalog && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border">
+                                  Jus du catalogue
+                                </span>
+                              )}
+                              {item.hasAddedSugar ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                  🍯 Avec sucre
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                  🌿 Sans sucre
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-display text-lg font-bold text-foreground">
+                              {item.name}
+                            </h4>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted font-bold text-xs text-foreground border border-border/60">
+                              <Package className="size-3.5 text-primary" />
+                              {item.quantity} bouteille{item.quantity > 1 ? 's' : ''} · {item.bottleSizeLabel}
+                            </div>
+                            <p className="text-xs font-bold text-primary mt-1 tabular-nums">
+                              {item.quantity} × {item.pricePerBottle.toLocaleString()} = {item.lineTotal.toLocaleString()} XAF
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Fruits de base scindés */}
+                        <div className="space-y-1.5 pt-2 border-t border-border/40">
+                          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🍓</span> Fruits de base ({item.mainFruits.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {item.mainFruits.length > 0 ? (
+                              item.mainFruits.map((ing) => (
+                                <span
+                                  key={ing.fruitId}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-900 dark:text-emerald-300 border border-emerald-500/30 text-xs font-semibold shadow-2xs"
+                                >
+                                  <span className="size-2 rounded-full bg-emerald-500" />
+                                  {ing.fruitName}
+                                  {ing.quantityGrams ? (
+                                    <span className="text-[10px] font-mono opacity-80">({ing.quantityGrams}g)</span>
+                                  ) : null}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">
+                                Fruits de la recette signature FYS
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Suppléments & Boosters scindés */}
+                        <div className="space-y-1.5 pt-2 border-t border-border/40">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <span>🌿</span> Suppléments & Boosters ({item.supplements.length})
+                            </p>
+                            {item.supplements.length > 0 && (
+                              <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                                Supplément
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {item.supplements.length > 0 ? (
+                              item.supplements.map((ing) => (
+                                <span
+                                  key={ing.fruitId}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/40 text-xs font-semibold shadow-2xs"
+                                >
+                                  <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                                  {ing.fruitName}
+                                  {ing.quantityGrams ? (
+                                    <span className="text-[10px] font-mono opacity-80">({ing.quantityGrams}g)</span>
+                                  ) : null}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">
+                                Aucun supplément (100% pur fruits)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <a
-                href={`mailto:${order.userEmailSnapshot}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors"
-              >
-                <Mail className="size-4 text-muted-foreground shrink-0" />
-                <span className="text-[13px] text-foreground truncate">{order.userEmailSnapshot}</span>
-              </a>
-              {order.userPhoneSnapshot && (
-                <a
-                  href={`tel:${order.userPhoneSnapshot}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors"
-                >
-                  <Phone className="size-4 text-primary shrink-0" />
-                  <span className="text-[13px] font-semibold text-primary">{order.userPhoneSnapshot}</span>
-                  <span className="ml-auto text-[11px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded-full">{t('orders.call')}</span>
-                </a>
-              )}
-              {order.deliveryDetails && (
-                <div className="p-4 bg-muted/10">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-                    {t('orders.deliveryAddress')}
-                  </p>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
-                      <span className="text-[13px] font-semibold text-foreground leading-snug">
-                        {order.deliveryDetails.district}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Phone className="size-4 text-primary shrink-0 mt-0.5" />
-                      <span className="text-[13px] font-semibold text-foreground leading-snug">
-                        {order.deliveryDetails.phone}
-                      </span>
-                    </div>
-                    {order.deliveryDetails.instructions && (
-                      <div className="flex items-start gap-3">
-                        <MessageSquare className="size-4 text-primary shrink-0 mt-0.5" />
-                        <span className="text-[12px] text-muted-foreground leading-relaxed">
-                          {order.deliveryDetails.instructions}
+
+              {/* ── COLONNE DROITE (5/12) : RÉCAPITULATIF FINANCIER & LOGISTIQUE ── */}
+              <div className="lg:col-span-5 space-y-6">
+                
+                {/* 1. Récapitulatif financier scindé par cocktail */}
+                <div className="rounded-2xl border-2 border-border/70 bg-card p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <span className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      💰 Récapitulatif des montants
+                    </span>
+                    <span className="text-xs text-muted-foreground font-semibold">
+                      {totalBottles} bouteille{totalBottles > 1 ? 's' : ''} au total
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {splittedCocktails.map((item) => (
+                      <div key={item.id} className="flex items-start justify-between gap-2 text-xs sm:text-sm">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate" title={item.name}>
+                            • Cocktail {item.index} : {item.name}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {item.quantity} × {item.pricePerBottle.toLocaleString()} XAF ({item.bottleSizeLabel})
+                          </p>
+                        </div>
+                        <span className="font-bold text-foreground shrink-0 tabular-nums">
+                          {item.lineTotal.toLocaleString()} XAF
                         </span>
                       </div>
+                    ))}
+
+                    <div className="flex items-center justify-between text-xs sm:text-sm pt-2.5 border-t border-border/40">
+                      <span className="text-muted-foreground font-medium">Frais de livraison (Yaoundé)</span>
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {order.deliveryFee.toLocaleString()} XAF
+                      </span>
+                    </div>
+
+                    {!!order.discountAmount && order.discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-bold">
+                        <span>Remise appliquée {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}</span>
+                        <span className="tabular-nums">-{order.discountAmount.toLocaleString()} XAF</span>
+                      </div>
                     )}
-                    {order.deliveryDetails.coordinates && (
-                      <div className="mt-4 space-y-2">
-                        <div className="overflow-hidden rounded-xl border border-border/40 h-[180px]">
-                          <APIProvider apiKey={import.meta.env.RASENGAN_GOOGLE_MAPS_API_KEY || ""}>
-                            <Map
-                              mapId="ADMIN_MAP_ID"
-                              defaultZoom={16}
-                              defaultCenter={order.deliveryDetails.coordinates}
-                              disableDefaultUI={true}
-                              gestureHandling="greedy"
-                            >
-                              <AdvancedMarker position={order.deliveryDetails.coordinates} />
-                            </Map>
-                          </APIProvider>
+
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-primary/10 border border-primary/25 mt-2">
+                      <span className="font-bold text-foreground text-sm uppercase tracking-wide">
+                        TOTAL À PAYER
+                      </span>
+                      <span className="font-extrabold text-primary text-xl tabular-nums">
+                        {order.totalPrice.toLocaleString()} XAF
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Client & Livraison */}
+                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-3.5 shadow-xs">
+                  <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    📍 Client & Livraison
+                  </p>
+                  <div className="space-y-2.5 text-xs sm:text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Client :</span>
+                      <span className="font-bold text-foreground">{order.userNameSnapshot}</span>
+                    </div>
+                    {order.userPhoneSnapshot && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Téléphone :</span>
+                        <div className="flex items-center gap-2">
+                          <a href={`tel:${order.userPhoneSnapshot}`} className="font-semibold text-primary hover:underline font-mono">
+                            {order.userPhoneSnapshot}
+                          </a>
+                          <a
+                            href={`tel:${order.userPhoneSnapshot}`}
+                            className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-[10px]"
+                          >
+                            Appeler
+                          </a>
                         </div>
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${order.deliveryDetails.coordinates.lat},${order.deliveryDetails.coordinates.lng}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center justify-center gap-2 w-full h-10 bg-primary text-primary-foreground font-semibold rounded-xl text-[13px] hover:bg-primary/90 transition-colors"
-                        >
-                          <Navigation className="size-4" />
-                          {t('orders.mapLink')}
+                      </div>
+                    )}
+                    {order.userEmailSnapshot && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Email :</span>
+                        <a href={`mailto:${order.userEmailSnapshot}`} className="text-muted-foreground hover:text-foreground truncate max-w-[200px]">
+                          {order.userEmailSnapshot}
                         </a>
                       </div>
                     )}
+                    {order.deliveryDetails && (
+                      <div className="pt-2 border-t border-border/40 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-muted-foreground shrink-0">Quartier :</span>
+                          <span className="font-bold text-foreground text-right">{order.deliveryDetails.district}</span>
+                        </div>
+                        {order.deliveryDetails.instructions && (
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-muted-foreground shrink-0">Instructions :</span>
+                            <span className="text-muted-foreground text-right italic text-xs">{order.deliveryDetails.instructions}</span>
+                          </div>
+                        )}
+                        {order.deliveryDetails.coordinates && (
+                          <div className="pt-2">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${order.deliveryDetails.coordinates.lat},${order.deliveryDetails.coordinates.lng}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-center gap-2 w-full h-9 bg-primary text-primary-foreground font-semibold rounded-xl text-xs hover:bg-primary/90 transition-colors"
+                            >
+                              <Navigation className="size-3.5" />
+                              Ouvrir l'itinéraire Google Maps
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* QR Code pour l'étiquette - Option B (Sticker seul calibré 38x38mm pour l'encadré de la bouteille) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Sticker QR Bouteille (Option B)
-              </p>
-              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                Format 38×38 mm
-              </span>
-            </div>
+                {/* 3. Faire avancer la commande */}
+                {!isCancelled && !isDelivered && (
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                        ⚙️ Faire avancer la commande
+                      </p>
+                      {(order.userPhoneSnapshot || order.deliveryDetails?.phone) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
+                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          WhatsApp
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
+                        const cfg = STATUS_CONFIG[status];
+                        const Icon = cfg.icon;
+                        const isLoading = updating === status;
+                        return (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => handleStatus(status)}
+                            disabled={!!updating || cancelling}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all active:scale-98 disabled:opacity-50 ${cfg.bg} ${cfg.border} hover:opacity-90 cursor-pointer`}
+                          >
+                            {isLoading ? <Loader2 className="size-4 animate-spin shrink-0" /> : <Icon className={`size-4 shrink-0 ${cfg.text}`} />}
+                            <span className={`text-xs sm:text-sm font-bold ${cfg.text}`}>
+                              {t('orders.goToStatus', { label: cfg.label })}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-            <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4">
-              {/* Simulation visuelle de l'encadré de la bouteille (SCANNEZ-MOI avec repères d'angles) */}
-              <div className="relative mx-auto bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm w-full max-w-[240px]">
-                {/* Repères d'angles de l'étiquette SCANNEZ-MOI */}
-                <span className="absolute top-1 left-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┌</span>
-                <span className="absolute top-1 right-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┐</span>
-                <span className="absolute bottom-1 left-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">└</span>
-                <span className="absolute bottom-1 right-1.5 text-[14px] font-mono font-bold text-zinc-400 select-none">┘</span>
-
-                <div className="text-[10px] font-black uppercase tracking-wider text-zinc-700 dark:text-zinc-200 mb-1.5 flex items-center gap-1">
-                  <span>SCANNEZ-MOI</span>
-                </div>
-
-                <div className="bg-white p-2 rounded-lg border border-border/40 shadow-xs flex items-center justify-center">
-                  {origin ? (
-                    <QRCodeSVG
-                      id={`qr-reorder-${order.id}`}
-                      value={`${origin}/lab?load=${order.cocktailId}&promo=REORDER`}
-                      size={140}
-                      level="M"
-                      includeMargin={false}
-                    />
-                  ) : (
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-
-                <span className="text-[9px] text-muted-foreground text-center mt-2 font-medium">
-                  Calibré pour l'encadré 1L & 0.5L
-                </span>
-              </div>
-
-              {/* Résumé des bouteilles et sélecteur de quantité */}
-              <div className="bg-muted/60 rounded-xl p-3 border border-border/40 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">Commande ({totalBottles} btl) :</span>
-                  <span className="font-bold text-foreground truncate max-w-[190px]">{bottleSummary}</span>
-                </div>
-
-                <div className="flex items-center justify-between pt-1 border-t border-border/30">
-                  <span className="text-[12px] font-semibold text-foreground">Nombre de stickers :</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setQrStickerCount((prev) => Math.max(1, prev - 1))}
-                      disabled={qrStickerCount <= 1}
-                      className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-                      title="Diminuer"
-                    >
-                      <Minus className="size-3.5" />
-                    </button>
-                    <span className="w-8 text-center font-bold text-[13px] font-mono">
-                      {qrStickerCount}
+                {/* 4. Impression & Facture */}
+                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                      🏷️ Impression & Facturation
+                    </p>
+                    <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                      Sticker 38×38 mm
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setQrStickerCount((prev) => Math.min(50, prev + 1))}
-                      disabled={qrStickerCount >= 50}
-                      className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-                      title="Augmenter"
-                    >
-                      <Plus className="size-3.5" />
-                    </button>
-                    {qrStickerCount !== totalBottles && (
+                  </div>
+
+                  {/* QRCode SVG caché pour génération canvas/PDF */}
+                  <div className="hidden">
+                    {origin ? (
+                      <QRCodeSVG
+                        id={`qr-reorder-${order.id}`}
+                        value={`${origin}/lab?load=${order.cocktailId}&promo=REORDER`}
+                        size={140}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    ) : null}
+                  </div>
+
+                  {/* Sélecteur nombre de stickers */}
+                  <div className="flex items-center justify-between bg-muted/60 rounded-xl p-3 border border-border/40">
+                    <span className="text-xs font-semibold text-foreground">Nombre de stickers :</span>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setQrStickerCount(totalBottles)}
-                        className="text-[10px] text-primary hover:underline ml-1 font-semibold"
-                        title="Rétablir à la quantité de la commande"
+                        onClick={() => setQrStickerCount((prev) => Math.max(1, prev - 1))}
+                        disabled={qrStickerCount <= 1}
+                        className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors cursor-pointer"
+                        title="Diminuer"
                       >
-                        Reset ({totalBottles})
+                        <Minus className="size-3.5" />
                       </button>
-                    )}
+                      <span className="w-8 text-center font-bold text-xs font-mono">
+                        {qrStickerCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQrStickerCount((prev) => Math.min(50, prev + 1))}
+                        disabled={qrStickerCount >= 50}
+                        className="size-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-40 transition-colors cursor-pointer"
+                        title="Augmenter"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Actions d'impression et de téléchargement */}
-              <div className="space-y-2">
-                {/* Bouton principal : Imprimer directement sur mini-imprimante thermique */}
-                <Button
-                  type="button"
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-sm transition-all"
-                  onClick={() => printThermalQrStickers(`qr-reorder-${order.id}`, qrStickerCount)}
-                >
-                  <Printer className="size-4" />
-                  Imprimer stickers ({qrStickerCount}x · 58mm)
-                </Button>
-                <p className="text-[10px] text-center text-muted-foreground">
-                  Rouleau 58mm · Sticker 38×38mm centré avec traits de découpe
-                </p>
-
-                {/* Boutons secondaires : PDF thermique 58mm & PNG HD */}
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-xl text-[11px] font-semibold gap-1.5"
-                    disabled={downloadingQrPdf}
-                    onClick={async () => {
-                      setDownloadingQrPdf(true);
-                      try {
-                        await downloadThermalQrPdf(`qr-reorder-${order.id}`, order, qrStickerCount);
-                      } finally {
-                        setDownloadingQrPdf(false);
-                      }
-                    }}
-                  >
-                    {downloadingQrPdf ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Download className="size-3.5" />
-                    )}
-                    PDF 58mm ({qrStickerCount}x)
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-xl text-[11px] font-semibold gap-1.5"
-                    onClick={() =>
-                      downloadSvgAsPng(
-                        `qr-reorder-${order.id}`,
-                        `qr-bouteille-${order.cocktailNameSnapshot.replace(/\s+/g, '-')}-x${qrStickerCount}.png`,
-                      )
-                    }
-                  >
-                    <Download className="size-3.5" />
-                    PNG HD (38mm)
-                  </Button>
-                </div>
-              </div>
-
-              {/* Explication fidélité client */}
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 text-left">
-                <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-                  <span>✨</span> Réduction fidélité 6% incluse
-                </p>
-                <p className="text-[10.5px] text-muted-foreground mt-0.5 leading-relaxed">
-                  Le scan ouvre la composition exacte dans le Lab et applique automatiquement 6% de remise sur le prochain achat.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Changer le statut */}
-          {!isCancelled && !isDelivered && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  {t('orders.advanceOrder')}
-                </p>
-                {(order.userPhoneSnapshot || order.deliveryDetails?.phone) && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
-                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    💬 Message WhatsApp NutriFYS
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
-                  const cfg = STATUS_CONFIG[status];
-                  const Icon = cfg.icon;
-                  const isLoading = updating === status;
-                  return (
-                    <button
-                      key={status}
+                  <div className="space-y-2">
+                    <Button
                       type="button"
-                      onClick={() => handleStatus(status)}
-                      disabled={!!updating || cancelling}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border text-left transition-all active:scale-95 disabled:opacity-50 ${cfg.bg} ${cfg.border} hover:opacity-90`}
+                      className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-xs cursor-pointer"
+                      onClick={() => printThermalQrStickers(`qr-reorder-${order.id}`, qrStickerCount)}
                     >
-                      {isLoading
-                        ? <Loader2 className="size-4 animate-spin shrink-0 text-muted-foreground" />
-                        : <Icon className={`size-4 shrink-0 ${cfg.text}`} />
-                      }
-                      <span className={`text-[13px] font-bold ${cfg.text}`}>
-                        {t('orders.goToStatus', { label: cfg.label })}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                      <Printer className="size-4" />
+                      Imprimer stickers ({qrStickerCount}x · 58mm)
+                    </Button>
 
-          {(isCancelled || isDelivered) && (
-            <div className={`rounded-2xl border px-5 py-4 flex items-center gap-3 ${STATUS_CONFIG[order.status].bg} ${STATUS_CONFIG[order.status].border}`}>
-              <Circle className={`size-4 shrink-0 ${STATUS_CONFIG[order.status].text}`} />
-              <p className={`text-[13px] font-semibold ${STATUS_CONFIG[order.status].text}`}>
-                {isCancelled ? t('orders.canceled') : t('orders.finalStatus')}
-              </p>
-            </div>
-          )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
+                        disabled={downloadingQrPdf}
+                        onClick={async () => {
+                          setDownloadingQrPdf(true);
+                          try {
+                            await downloadThermalQrPdf(`qr-reorder-${order.id}`, order, qrStickerCount);
+                          } finally {
+                            setDownloadingQrPdf(false);
+                          }
+                        }}
+                      >
+                        {downloadingQrPdf ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+                        PDF 58mm
+                      </Button>
 
-          {/* Détail commande */}
-          <div className="space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('orders.details')}</p>
-            <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 overflow-hidden">
-              {order.type === 'program' ? (
-                <>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">Type de commande</span>
-                    <span className="text-[13px] font-semibold text-primary">
-                      {order.programJuiceItems?.length
-                        ? `Cure FYS · Commandes progressives (${order.programJuiceItems.length} jus)`
-                        : `Cure FYS Programme (${order.programDurationDays || 7} jours)`}
-                    </span>
-                  </div>
-                  {order.programJuiceItems && order.programJuiceItems.length > 0 ? (
-                    <>
-                      <div className="px-4 py-2 bg-muted/30 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        Flacons commandés pour cette cure
-                      </div>
-                      {order.programJuiceItems.map((j, idx) => (
-                        <div key={j.id || idx} className="flex items-center justify-between px-4 py-3">
-                          <div className="text-left space-y-0.5">
-                            <p className="text-[13px] font-semibold text-foreground">
-                              Jour {j.dayNumber} : {j.juiceName}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {j.quantity} × {j.pricePerBottle.toLocaleString()} XAF ({j.bottleSize || '500ml'}) {j.timingLabel ? `· ${j.timingLabel}` : ''}
-                            </p>
-                          </div>
-                          <span className="text-[13px] font-semibold text-foreground">
-                            {j.totalPrice.toLocaleString()} XAF
-                          </span>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">Flacons inclus</span>
-                      <span className="text-[13px] font-semibold text-foreground">{order.programBottlesTotal || order.quantity} flacons</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
+                        onClick={() =>
+                          downloadSvgAsPng(
+                            `qr-reorder-${order.id}`,
+                            `qr-bouteille-${order.cocktailNameSnapshot.replace(/\s+/g, '-')}-x${qrStickerCount}.png`
+                          )
+                        }
+                      >
+                        <Download className="size-3.5" />
+                        PNG HD
+                      </Button>
                     </div>
-                  )}
-                  {order.startingDate && (
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">Date de début</span>
-                      <span className="text-[13px] font-semibold text-foreground">{order.startingDate}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">
-                      {order.programJuiceItems?.length ? 'Total jus commandés' : 'Prix pack cure'}
-                    </span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {(order.totalPrice - (order.deliveryFee || 0) + (order.discountAmount || 0)).toLocaleString()} XAF
-                    </span>
+
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 rounded-xl font-bold gap-2 text-foreground hover:border-primary/50 cursor-pointer mt-1"
+                      onClick={() => setShowInvoiceFormatModal(true)}
+                    >
+                      <Download className="size-4 text-primary" />
+                      {t('orders.downloadInvoice', 'Télécharger la Facture (PDF)')}
+                    </Button>
                   </div>
-                </>
-              ) : order.orderLines?.length ? (
-                <>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
-                    <div className="text-right space-y-1">
-                      {order.orderLines.map((line, i) => (
-                        <p key={i} className="text-[13px] font-semibold text-foreground">
-                          {t('orders.bottleCount', { count: line.quantity })} · {line.bottleSizeLabel}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                  {order.orderLines.map((line, i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[13px] text-muted-foreground">
-                        {line.quantity} × {line.pricePerBottle.toLocaleString()} XAF ({line.bottleSizeLabel})
-                      </span>
-                      <span className="text-[13px] font-semibold text-foreground">
-                        {line.lineTotal.toLocaleString()} XAF
-                      </span>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">{t('orders.quantity')}</span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {t('orders.bottleCount', { count: order.quantity })}
-                      {order.bottleSizeLabel ? ` · ${order.bottleSizeLabel}` : ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[13px] text-muted-foreground">
-                      {order.quantity} × {order.cocktailPriceSnapshot?.toLocaleString() || 0} XAF
-                    </span>
-                    <span className="text-[13px] font-semibold text-foreground">
-                      {((order.cocktailPriceSnapshot || 0) * (order.quantity || 0)).toLocaleString()} XAF
-                    </span>
-                  </div>
-                </>
-              )}
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground">{t('orders.delivery')}</span>
-                <span className="text-[13px] font-semibold text-foreground">
-                  {order.deliveryFee.toLocaleString()} XAF
-                </span>
-              </div>
-              {!!order.discountAmount && order.discountAmount > 0 && (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                    <Sparkles className="size-3.5" /> Réduction appliquée {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}
-                  </span>
-                  <span className="text-[13px] font-bold text-amber-600 dark:text-amber-400">
-                    -{order.discountAmount.toLocaleString()} XAF
-                  </span>
                 </div>
-              )}
-              <div className="flex items-center justify-between px-4 py-4 bg-primary/5">
-                <span className="text-[14px] font-bold text-foreground">{t('orders.total')}</span>
-                <span className="text-[16px] font-bold text-primary tabular-nums">
-                  {order.totalPrice.toLocaleString()} XAF
-                </span>
+
+                {/* 5. Actions d'annulation et suppression */}
+                <div className="flex items-center gap-2 pt-2">
+                  {!isCancelled && !isDelivered && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-10 rounded-xl border-border text-foreground hover:bg-accent font-semibold text-xs cursor-pointer"
+                      disabled={cancelling || !!updating || deleting}
+                      onClick={handleCancel}
+                    >
+                      {cancelling ? <Loader2 className="size-3.5 animate-spin" /> : <XCircle className="size-3.5" />}
+                      {t('orders.cancel', 'Annuler')}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-10 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 font-semibold text-xs cursor-pointer"
+                    disabled={cancelling || !!updating || deleting}
+                    onClick={handleDelete}
+                  >
+                    {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                    Supprimer définitivement
+                  </Button>
+                </div>
+
               </div>
             </div>
           </div>
-          </div>
-          <div className="px-6 pb-6 pt-2 shrink-0 border-t border-border/40 mt-auto">
-            <Button
-              variant="outline"
-              className="w-full h-12 rounded-2xl font-bold gap-2 hover:border-primary/50 text-foreground"
-              onClick={() => setShowInvoiceFormatModal(true)}
-            >
-              <Printer className="size-4 text-primary" /> {t('orders.downloadInvoice')}
-            </Button>
-          </div>
-        </div>
         )}
-
-        {/* Footer — cancel (admin) */}
-        <div className="shrink-0 border-t border-border/40 px-6 py-5 flex flex-col gap-3">
-          {!isCancelled && !isDelivered && (
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full h-12 rounded-2xl border-border text-foreground hover:bg-accent font-bold gap-2"
-              disabled={cancelling || !!updating || deleting}
-              onClick={handleCancel}
-            >
-              {cancelling
-                ? <><Loader2 className="size-4 animate-spin" /> {t('orders.cancelling')}</>
-                : <><XCircle className="size-4" /> {t('orders.cancel')}</>
-              }
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full h-12 rounded-2xl border-destructive/40 text-destructive hover:bg-destructive/5 font-bold gap-2"
-            disabled={cancelling || !!updating || deleting}
-            onClick={handleDelete}
-          >
-            {deleting
-              ? <><Loader2 className="size-4 animate-spin" /> Suppression...</>
-              : <><Trash2 className="size-4" /> Supprimer définitivement</>
-            }
-          </Button>
-        </div>
 
         {/* Modal de sélection de format de facture (Standard A4 ou Ticket Thermique 58mm) */}
         <InvoiceFormatDialog
           open={showInvoiceFormatModal}
           onOpenChange={setShowInvoiceFormatModal}
           order={order}
-          ingredientsStr={formatIngredientsSummary(order.cocktailIngredientsSnapshot || cocktail?.ingredients || [], fruits, { format: 'separated' })}
+          ingredientsStr={
+            splittedCocktails.length > 1
+              ? splittedCocktails.map((c) => `${c.name} : ${formatIngredientsSummary(c.allIngredients, fruits, { format: 'inline' })}`).join(' | ')
+              : formatIngredientsSummary(order.cocktailIngredientsSnapshot || cocktail?.ingredients || [], fruits, { format: 'separated' })
+          }
         />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
