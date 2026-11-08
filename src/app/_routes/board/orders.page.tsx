@@ -3,6 +3,7 @@ import {
   ShoppingBag, Package, Clock, Loader2, Phone,
   CheckCircle2, ChefHat, Truck, XCircle, ChevronRight, Sparkles, MapPin, MessageSquare, Download,
   CalendarDays, Calendar, Search, Navigation, Trash2, Printer, Plus, Minus,
+  Apple, Leaf, User, Receipt, TrendingUp, AlertTriangle, Check, ExternalLink, MessageCircle, FileText,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState, useEffect, useMemo } from 'react';
@@ -189,14 +190,14 @@ function OrderCard({
             {isTasting && (
               <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 shadow-xs uppercase tracking-wide">
                 <Sparkles className="size-3 text-[#E0982E] animate-pulse" />
-                🍷 Précommande Dégustation
+                Précommande Dégustation
               </span>
             )}
 
             {order.source === 'whatsapp' && (
               <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                💬 WhatsApp
+                WhatsApp
               </span>
             )}
             {isProgram && (
@@ -251,18 +252,20 @@ function OrderCard({
               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                 {order.hasAddedSugar ? (
                   <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                    <Sparkles className="size-3 text-amber-500" />
+                    {t('orders.sugarAddedBadge', 'Avec sucre')}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
-                    🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                    <Leaf className="size-3 text-emerald-500" />
+                    {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
                   </span>
                 )}
               </div>
               {(() => {
                 if (splittedCocktails.length > 1) {
                   return (
-                    <div className="space-y-1 mt-2.5 pt-2 border-t border-border/40">
+                    <div className="space-y-1.5 mt-2.5 pt-2 border-t border-border/40">
                       {splittedCocktails.map((item) => (
                         <div key={item.id} className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-foreground">Cocktail {item.index} ({item.name}) :</span>
@@ -270,10 +273,16 @@ function OrderCard({
                             {item.quantity}× {item.bottleSizeLabel}
                           </span>
                           {item.mainFruits.length > 0 && (
-                            <span className="text-foreground/85 font-medium">🍓 {item.mainFruits.map((m) => m.fruitName).join(', ')}</span>
+                            <span className="text-foreground/85 font-medium inline-flex items-center gap-1">
+                              <Apple className="size-3 text-emerald-600 dark:text-emerald-400" />
+                              {item.mainFruits.map((m) => m.fruitName).join(', ')}
+                            </span>
                           )}
                           {item.supplements.length > 0 && (
-                            <span className="text-amber-700 dark:text-amber-400 font-semibold">🌿 +{item.supplements.map((s) => s.fruitName).join(', ')}</span>
+                            <span className="text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                              <Sparkles className="size-3 text-amber-500" />
+                              +{item.supplements.map((s) => s.fruitName).join(', ')}
+                            </span>
                           )}
                         </div>
                       ))}
@@ -286,12 +295,14 @@ function OrderCard({
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] mt-2">
                       {mainFruits.length > 0 && (
                         <span className="text-muted-foreground font-medium flex items-center gap-1">
-                          🍓 {mainFruits.map((m) => m.fruitName).join(', ')}
+                          <Apple className="size-3 text-emerald-600 dark:text-emerald-400" />
+                          {mainFruits.map((m) => m.fruitName).join(', ')}
                         </span>
                       )}
                       {supplements.length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[10px] border border-amber-500/20">
-                          🌿 + {supplements.map((s) => s.fruitName).join(', ')}
+                          <Sparkles className="size-3 text-amber-500" />
+                          + {supplements.map((s) => s.fruitName).join(', ')}
                         </span>
                       )}
                     </div>
@@ -588,11 +599,11 @@ function CocktailInfoBlock({
               <div className="flex flex-col items-end gap-1.5">
                 {sugarVal ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md bg-amber-500 text-white border border-amber-400">
-                    🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                    <Sparkles className="size-3" /> {t('orders.sugarAddedBadge', 'Avec sucre')}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md bg-emerald-600 text-white border border-emerald-500">
-                    🌿 {t('orders.sugarFreeBadge', 'Sans sucre')}
+                    <Leaf className="size-3" /> {t('orders.sugarFreeBadge', 'Sans sucre')}
                   </span>
                 )}
                 {vcfg && (
@@ -617,11 +628,11 @@ function CocktailInfoBlock({
               </span>
               {sugarVal ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                  🍯 {t('orders.sugarAddedBadge', 'Avec sucre ajouté')}
+                  <Sparkles className="size-3 text-amber-500" /> {t('orders.sugarAddedBadge', 'Avec sucre ajouté')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                  🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                  <Leaf className="size-3 text-emerald-500" /> {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
                 </span>
               )}
             </div>
@@ -629,11 +640,11 @@ function CocktailInfoBlock({
             {/* Ingrédients : distinction nette Fruits de base vs Suppléments */}
             {effectiveIngredients.length > 0 && (
               <div className="space-y-3 pt-1">
-                {/* 🍓 Fruits de base */}
+                {/* Fruits de base */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <span>🍓</span> {t('orders.mainFruits', 'Fruits de base')}
+                      <Apple className="size-3.5 text-emerald-600 dark:text-emerald-400" /> {t('orders.mainFruits', 'Fruits de base')}
                       <span className="text-[10px] font-semibold opacity-75">({mainFruits.length})</span>
                     </p>
                   </div>
@@ -656,12 +667,12 @@ function CocktailInfoBlock({
                   </div>
                 </div>
 
-                {/* 🌿 Suppléments & Boosters */}
+                {/* Suppléments & Boosters */}
                 {supplements.length > 0 && (
                   <div className="pt-2.5 border-t border-border/40">
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>🌿</span> {t('orders.supplements', 'Suppléments & Boosters')}
+                        <Sparkles className="size-3.5 text-amber-500" /> {t('orders.supplements', 'Suppléments & Boosters')}
                         <span className="text-[10px] font-semibold opacity-75">({supplements.length})</span>
                       </p>
                       <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
@@ -795,11 +806,11 @@ function ClientOrderSheet({
               </span>
             ) : order.hasAddedSugar ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-                🍯 {t('orders.sugarAddedBadge', 'Avec sucre')}
+                <Sparkles className="size-3 text-amber-500" /> {t('orders.sugarAddedBadge', 'Avec sucre')}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
-                🌿 {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
+                <Leaf className="size-3 text-emerald-500" /> {t('orders.sugarFreeBadge', '100% Naturel · Sans sucre')}
               </span>
             )}
             {order.aiAnalysisSnapshot && (
@@ -810,7 +821,7 @@ function ClientOrderSheet({
             {isTastingOrder(order) && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border bg-[#E0982E]/15 text-[#b27218] dark:text-[#f8be68] border-[#E0982E]/40 uppercase tracking-wide">
                 <Sparkles className="size-3 text-[#E0982E]" />
-                🍷 Précommande Dégustation
+                Précommande Dégustation
               </span>
             )}
           </div>
@@ -1074,13 +1085,17 @@ function ClientOrderSheet({
                       </div>
                       {c.mainFruits.length > 0 && (
                         <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
-                          <span className="text-muted-foreground shrink-0">🍓 Fruits :</span>
+                          <span className="text-muted-foreground shrink-0 inline-flex items-center gap-1">
+                            <Apple className="size-3 text-emerald-600 dark:text-emerald-400" /> Fruits :
+                          </span>
                           <span>{c.mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
                         </p>
                       )}
                       {c.supplements.length > 0 && (
                         <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
-                          <span className="font-semibold shrink-0">🌿 Suppléments :</span>
+                          <span className="font-semibold shrink-0 inline-flex items-center gap-1">
+                            <Sparkles className="size-3 text-amber-500" /> Suppléments :
+                          </span>
                           <span>{c.supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
                         </p>
                       )}
@@ -1108,13 +1123,17 @@ function ClientOrderSheet({
                         </span>
                         {mainFruits.length > 0 && (
                           <p className="text-[12px] text-foreground font-medium flex items-start gap-1.5">
-                            <span className="text-muted-foreground shrink-0">🍓 {t('orders.mainFruits', 'Fruits')} :</span>
+                            <span className="text-muted-foreground shrink-0 inline-flex items-center gap-1">
+                              <Apple className="size-3 text-emerald-600 dark:text-emerald-400" /> {t('orders.mainFruits', 'Fruits')} :
+                            </span>
                             <span>{mainFruits.map((m) => `${m.fruitName}${m.quantityGrams ? ` (${m.quantityGrams}g)` : ''}`).join(', ')}</span>
                           </p>
                         )}
                         {supplements.length > 0 && (
                           <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5">
-                            <span className="font-semibold shrink-0">🌿 {t('orders.supplements', 'Suppléments')} :</span>
+                            <span className="font-semibold shrink-0 inline-flex items-center gap-1">
+                              <Sparkles className="size-3 text-amber-500" /> {t('orders.supplements', 'Suppléments')} :
+                            </span>
                             <span>{supplements.map((s) => `${s.fruitName}${s.quantityGrams ? ` (${s.quantityGrams}g)` : ''}`).join(', ')}</span>
                           </p>
                         )}
@@ -1352,47 +1371,19 @@ function AdminOrderSheet({
           <div className="flex items-start justify-between gap-4 pr-8">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="font-display text-xl md:text-2xl font-bold text-foreground truncate">
-                  {order.programTitleSnapshot || order.cocktailNameSnapshot}
-                </h2>
                 {order.orderCode && (
-                  <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20">
                     #{order.orderCode}
                   </span>
                 )}
+                <h2 className="font-display text-xl md:text-2xl font-bold text-foreground truncate">
+                  {order.programTitleSnapshot || order.cocktailNameSnapshot}
+                </h2>
                 <StatusBadge status={order.status} size="lg" />
-              </div>
-
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {formatDate(order.createdAt as unknown as { seconds: number })}
-                </span>
-                <span>·</span>
-                <span className="font-bold text-foreground">
-                  👤 {order.userNameSnapshot}
-                </span>
-                {order.userPhoneSnapshot && (
-                  <>
-                    <span>·</span>
-                    <a href={`tel:${order.userPhoneSnapshot}`} className="text-primary hover:underline font-mono font-semibold">
-                      📞 {order.userPhoneSnapshot}
-                    </a>
-                  </>
-                )}
                 {order.source === 'whatsapp' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
-                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                     WhatsApp
-                  </span>
-                )}
-                {order.hasAddedSugar ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                    🍯 Avec sucre
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                    🌿 100% Naturel · Sans sucre
                   </span>
                 )}
                 {isTastingOrder(order) && (
@@ -1401,15 +1392,59 @@ function AdminOrderSheet({
                     Précommande Dégustation
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-foreground border border-border">
-                  🍾 {bottleSummary} ({totalBottles} bouteille{totalBottles > 1 ? 's' : ''})
+              </div>
+
+              <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="size-3.5 text-muted-foreground" />
+                  {formatDate(order.createdAt as unknown as { seconds: number })}
+                </span>
+                <span>·</span>
+                <span className="font-bold text-foreground flex items-center gap-1.5">
+                  <User className="size-3.5 text-primary" />
+                  {order.userNameSnapshot}
+                </span>
+                {order.userPhoneSnapshot && (
+                  <>
+                    <span>·</span>
+                    <a href={`tel:${order.userPhoneSnapshot}`} className="flex items-center gap-1.5 text-primary hover:underline font-mono font-semibold">
+                      <Phone className="size-3.5" />
+                      {order.userPhoneSnapshot}
+                    </a>
+                  </>
+                )}
+                <span>·</span>
+                {order.hasAddedSugar ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    <Sparkles className="size-3 text-amber-500" />
+                    Avec sucre
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <Leaf className="size-3 text-emerald-500" />
+                    100% Naturel · Sans sucre
+                  </span>
+                )}
+                <span>·</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-foreground border border-border">
+                  <Package className="size-3.5 text-muted-foreground" />
+                  {bottleSummary} ({totalBottles} bouteille{totalBottles > 1 ? 's' : ''})
                 </span>
               </div>
+            </div>
+
+            <div className="text-right shrink-0 hidden sm:block">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                Montant Total
+              </span>
+              <p className="text-xl md:text-2xl font-black text-primary font-mono tabular-nums">
+                {order.totalPrice.toLocaleString()} XAF
+              </p>
             </div>
           </div>
 
           {order.aiAnalysisSnapshot && (
-            <div className="flex gap-2 bg-muted/80 rounded-xl p-1 mt-4 max-w-xs">
+            <div className="flex gap-2 bg-muted/80 rounded-xl p-1 mt-3 max-w-xs">
               <button
                 type="button"
                 onClick={() => setActiveTab('order')}
@@ -1469,18 +1504,18 @@ function AdminOrderSheet({
           <div className="flex-1 overflow-y-auto p-6 md:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* ── COLONNE GAUCHE (7/12) : COCKTAILS SCINDÉS DE LA COMMANDE ── */}
+              {/* ── COLONNE GAUCHE (7/12) : BOISSONS SCINDÉES & DÉCOMPTE FINANCIER ── */}
               <div className="lg:col-span-7 space-y-6">
                 
-                {/* En-tête de section */}
+                {/* 1. En-tête de section boissons */}
                 <div className="flex items-center justify-between pb-3 border-b border-border/50">
                   <div className="flex items-center gap-2.5">
-                    <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      <ChefHat className="size-5" />
+                    <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      <ChefHat className="size-4" />
                     </div>
                     <div>
                       <h3 className="font-display font-bold text-base md:text-lg text-foreground">
-                        Composition de la commande
+                        Boissons commandées
                       </h3>
                       <p className="text-xs text-muted-foreground">
                         Détail précis de chaque boisson, fruits et suppléments
@@ -1499,8 +1534,11 @@ function AdminOrderSheet({
                       <Sparkles className="size-4 text-[#E0982E] animate-pulse" />
                       <span>Précommande Dégustation Privée (18 Octobre)</span>
                     </div>
-                    <p className="text-xs text-foreground/85 leading-relaxed font-medium">
-                      ⚠️ <b>Retrait sur place uniquement :</b> Cette commande est réservée pour l'événement dégustation privée du <b>Dimanche 18 Octobre 2026</b> à Yaoundé. Ne pas expédier par coursier classique à domicile.
+                    <p className="text-xs text-foreground/85 leading-relaxed font-medium flex items-start gap-2">
+                      <AlertTriangle className="size-4 text-[#E0982E] shrink-0 mt-0.5" />
+                      <span>
+                        <b>Retrait sur place uniquement :</b> Cette commande est réservée pour l'événement dégustation privée du <b>Dimanche 18 Octobre 2026</b> à Yaoundé. Ne pas expédier par coursier classique à domicile.
+                      </span>
                     </p>
                   </div>
                 )}
@@ -1510,11 +1548,11 @@ function AdminOrderSheet({
                   <ProgramInfoBlock order={order} isAdmin={true} />
                 ) : (
                   /* Affichage scindé de CHAQUE cocktail individuel */
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {splittedCocktails.map((item) => (
                       <div
                         key={item.id}
-                        className="rounded-2xl border-2 border-border/70 bg-card p-5 space-y-4 shadow-xs hover:border-primary/50 transition-all relative overflow-hidden"
+                        className="rounded-2xl border border-border/80 bg-card p-5 space-y-4 shadow-xs hover:border-primary/50 transition-all relative overflow-hidden"
                       >
                         {/* Barre supérieure du cocktail */}
                         <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -1525,30 +1563,32 @@ function AdminOrderSheet({
                               </span>
                               {item.isCatalog && (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border">
-                                  Jus du catalogue
+                                  Catalogue FYS
                                 </span>
                               )}
                               {item.hasAddedSugar ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                                  🍯 Avec sucre
+                                  <Sparkles className="size-3 text-amber-500" />
+                                  Avec sucre
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                                  🌿 Sans sucre
+                                  <Leaf className="size-3 text-emerald-500" />
+                                  Sans sucre
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-display text-lg font-bold text-foreground">
+                            <h4 className="font-display text-base md:text-lg font-bold text-foreground">
                               {item.name}
                             </h4>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-right shrink-0">
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted font-bold text-xs text-foreground border border-border/60">
-                              <Package className="size-3.5 text-primary" />
+                              <Package className="size-3.5 text-muted-foreground" />
                               {item.quantity} bouteille{item.quantity > 1 ? 's' : ''} · {item.bottleSizeLabel}
                             </div>
-                            <p className="text-xs font-bold text-primary mt-1 tabular-nums">
+                            <p className="text-xs font-bold text-primary mt-1 tabular-nums font-mono">
                               {item.quantity} × {item.pricePerBottle.toLocaleString()} = {item.lineTotal.toLocaleString()} XAF
                             </p>
                           </div>
@@ -1557,7 +1597,8 @@ function AdminOrderSheet({
                         {/* Fruits de base scindés */}
                         <div className="space-y-1.5 pt-2 border-t border-border/40">
                           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                            <span>🍓</span> Fruits de base ({item.mainFruits.length})
+                            <Apple className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            Fruits de base ({item.mainFruits.length})
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {item.mainFruits.length > 0 ? (
@@ -1566,7 +1607,7 @@ function AdminOrderSheet({
                                   key={ing.fruitId}
                                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-900 dark:text-emerald-300 border border-emerald-500/30 text-xs font-semibold shadow-2xs"
                                 >
-                                  <span className="size-2 rounded-full bg-emerald-500" />
+                                  <span className="size-1.5 rounded-full bg-emerald-500" />
                                   {ing.fruitName}
                                   {ing.quantityGrams ? (
                                     <span className="text-[10px] font-mono opacity-80">({ing.quantityGrams}g)</span>
@@ -1585,7 +1626,8 @@ function AdminOrderSheet({
                         <div className="space-y-1.5 pt-2 border-t border-border/40">
                           <div className="flex items-center justify-between">
                             <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                              <span>🌿</span> Suppléments & Boosters ({item.supplements.length})
+                              <Sparkles className="size-3.5 text-amber-500" />
+                              Suppléments & Boosters ({item.supplements.length})
                             </p>
                             {item.supplements.length > 0 && (
                               <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
@@ -1600,7 +1642,7 @@ function AdminOrderSheet({
                                   key={ing.fruitId}
                                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/40 text-xs font-semibold shadow-2xs"
                                 >
-                                  <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
                                   {ing.fruitName}
                                   {ing.quantityGrams ? (
                                     <span className="text-[10px] font-mono opacity-80">({ing.quantityGrams}g)</span>
@@ -1608,7 +1650,8 @@ function AdminOrderSheet({
                                 </span>
                               ))
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1.5 italic">
+                                <Check className="size-3 text-muted-foreground" />
                                 Aucun supplément (100% pur fruits)
                               </span>
                             )}
@@ -1618,16 +1661,13 @@ function AdminOrderSheet({
                     ))}
                   </div>
                 )}
-              </div>
 
-              {/* ── COLONNE DROITE (5/12) : RÉCAPITULATIF FINANCIER & LOGISTIQUE ── */}
-              <div className="lg:col-span-5 space-y-6">
-                
-                {/* 1. Récapitulatif financier scindé par cocktail */}
-                <div className="rounded-2xl border-2 border-border/70 bg-card p-5 space-y-4 shadow-xs">
+                {/* 2. Récapitulatif financier scindé par cocktail (dans la colonne gauche, sous les boissons) */}
+                <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border/40">
                     <span className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      💰 Récapitulatif des montants
+                      <Receipt className="size-4 text-primary" />
+                      Décompte financier
                     </span>
                     <span className="text-xs text-muted-foreground font-semibold">
                       {totalBottles} bouteille{totalBottles > 1 ? 's' : ''} au total
@@ -1639,21 +1679,24 @@ function AdminOrderSheet({
                       <div key={item.id} className="flex items-start justify-between gap-2 text-xs sm:text-sm">
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground truncate" title={item.name}>
-                            • Cocktail {item.index} : {item.name}
+                            Cocktail {item.index} : {item.name}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
                             {item.quantity} × {item.pricePerBottle.toLocaleString()} XAF ({item.bottleSizeLabel})
                           </p>
                         </div>
-                        <span className="font-bold text-foreground shrink-0 tabular-nums">
+                        <span className="font-bold text-foreground shrink-0 tabular-nums font-mono">
                           {item.lineTotal.toLocaleString()} XAF
                         </span>
                       </div>
                     ))}
 
                     <div className="flex items-center justify-between text-xs sm:text-sm pt-2.5 border-t border-border/40">
-                      <span className="text-muted-foreground font-medium">Frais de livraison (Yaoundé)</span>
-                      <span className="font-semibold text-foreground tabular-nums">
+                      <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                        <Truck className="size-3.5 text-muted-foreground" />
+                        Frais de livraison (Yaoundé)
+                      </span>
+                      <span className="font-semibold text-foreground tabular-nums font-mono">
                         {order.deliveryFee.toLocaleString()} XAF
                       </span>
                     </div>
@@ -1661,7 +1704,7 @@ function AdminOrderSheet({
                     {!!order.discountAmount && order.discountAmount > 0 && (
                       <div className="flex items-center justify-between text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-bold">
                         <span>Remise appliquée {order.promoCodeApplied ? `(${order.promoCodeApplied})` : ''}</span>
-                        <span className="tabular-nums">-{order.discountAmount.toLocaleString()} XAF</span>
+                        <span className="tabular-nums font-mono">-{order.discountAmount.toLocaleString()} XAF</span>
                       </div>
                     )}
 
@@ -1669,26 +1712,77 @@ function AdminOrderSheet({
                       <span className="font-bold text-foreground text-sm uppercase tracking-wide">
                         TOTAL À PAYER
                       </span>
-                      <span className="font-extrabold text-primary text-xl tabular-nums">
+                      <span className="font-extrabold text-primary text-xl tabular-nums font-mono">
                         {order.totalPrice.toLocaleString()} XAF
                       </span>
                     </div>
                   </div>
                 </div>
 
+              </div>
+
+              {/* ── COLONNE DROITE (5/12) : GESTION, CLIENT & LOGISTIQUE ── */}
+              <div className="lg:col-span-5 space-y-6">
+                
+                {/* 1. Faire avancer la commande (Opérations prioritaires) */}
+                {!isCancelled && !isDelivered && (
+                  <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-3.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <TrendingUp className="size-4 text-primary" />
+                        Faire avancer la commande
+                      </p>
+                      {(order.userPhoneSnapshot || order.deliveryDetails?.phone) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
+                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          WhatsApp
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
+                        const cfg = STATUS_CONFIG[status];
+                        const Icon = cfg.icon;
+                        const isLoading = updating === status;
+                        return (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => handleStatus(status)}
+                            disabled={!!updating || cancelling}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all active:scale-98 disabled:opacity-50 ${cfg.bg} ${cfg.border} hover:opacity-90 cursor-pointer`}
+                          >
+                            {isLoading ? <Loader2 className="size-4 animate-spin shrink-0" /> : <Icon className={`size-4 shrink-0 ${cfg.text}`} />}
+                            <span className={`text-xs sm:text-sm font-bold ${cfg.text}`}>
+                              {t('orders.goToStatus', { label: cfg.label })}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* 2. Client & Livraison */}
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-3.5 shadow-xs">
-                  <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                    📍 Client & Livraison
+                <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-3.5 shadow-xs">
+                  <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="size-4 text-primary" />
+                    Destinataire & Livraison
                   </p>
                   <div className="space-y-2.5 text-xs sm:text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Client :</span>
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <User className="size-3.5 text-muted-foreground" />
+                        Client :
+                      </span>
                       <span className="font-bold text-foreground">{order.userNameSnapshot}</span>
                     </div>
                     {order.userPhoneSnapshot && (
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Téléphone :</span>
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                          <Phone className="size-3.5 text-muted-foreground" />
+                          Téléphone :
+                        </span>
                         <div className="flex items-center gap-2">
                           <a href={`tel:${order.userPhoneSnapshot}`} className="font-semibold text-primary hover:underline font-mono">
                             {order.userPhoneSnapshot}
@@ -1698,6 +1792,14 @@ function AdminOrderSheet({
                             className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-[10px]"
                           >
                             Appeler
+                          </a>
+                          <a
+                            href={`https://wa.me/${order.userPhoneSnapshot.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold text-[10px]"
+                          >
+                            WhatsApp
                           </a>
                         </div>
                       </div>
@@ -1740,49 +1842,12 @@ function AdminOrderSheet({
                   </div>
                 </div>
 
-                {/* 3. Faire avancer la commande */}
-                {!isCancelled && !isDelivered && (
-                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-3 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                        ⚙️ Faire avancer la commande
-                      </p>
-                      {(order.userPhoneSnapshot || order.deliveryDetails?.phone) && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
-                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          WhatsApp
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {ADMIN_STATUS_FLOW.filter((_, i) => i > currentIndex).map((status) => {
-                        const cfg = STATUS_CONFIG[status];
-                        const Icon = cfg.icon;
-                        const isLoading = updating === status;
-                        return (
-                          <button
-                            key={status}
-                            type="button"
-                            onClick={() => handleStatus(status)}
-                            disabled={!!updating || cancelling}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all active:scale-98 disabled:opacity-50 ${cfg.bg} ${cfg.border} hover:opacity-90 cursor-pointer`}
-                          >
-                            {isLoading ? <Loader2 className="size-4 animate-spin shrink-0" /> : <Icon className={`size-4 shrink-0 ${cfg.text}`} />}
-                            <span className={`text-xs sm:text-sm font-bold ${cfg.text}`}>
-                              {t('orders.goToStatus', { label: cfg.label })}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. Impression & Facture */}
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-4 shadow-xs">
+                {/* 3. Impression & Facture */}
+                <div className="rounded-2xl border border-border/80 bg-card p-5 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                    <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
-                      🏷️ Impression & Facturation
+                    <p className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Printer className="size-4 text-primary" />
+                      Impression & Facturation
                     </p>
                     <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
                       Sticker 38×38 mm
@@ -1882,14 +1947,14 @@ function AdminOrderSheet({
                       className="w-full h-11 rounded-xl font-bold gap-2 text-foreground hover:border-primary/50 cursor-pointer mt-1"
                       onClick={() => setShowInvoiceFormatModal(true)}
                     >
-                      <Download className="size-4 text-primary" />
+                      <FileText className="size-4 text-primary" />
                       {t('orders.downloadInvoice', 'Télécharger la Facture (PDF)')}
                     </Button>
                   </div>
                 </div>
 
-                {/* 5. Actions d'annulation et suppression */}
-                <div className="flex items-center gap-2 pt-2">
+                {/* 4. Actions d'annulation et suppression */}
+                <div className="flex items-center gap-2 pt-1">
                   {!isCancelled && !isDelivered && (
                     <Button
                       variant="outline"
@@ -2195,7 +2260,7 @@ const Orders: PageComponent = () => {
                 }`}
               >
                 <Sparkles className="size-4 shrink-0" />
-                <span className="truncate">🍷 Dégustation</span>
+                <span className="truncate">Dégustation</span>
                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
                   orderTypeTab === 'degustation'
                     ? 'bg-white/25 text-white'
@@ -2323,24 +2388,26 @@ const Orders: PageComponent = () => {
                 <button
                   type="button"
                   onClick={() => setFilterSource('web')}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border inline-flex items-center ${
                     filterSource === 'web'
                       ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                       : 'bg-card text-muted-foreground border-border/60 hover:text-foreground'
                   }`}
                 >
-                  🌐 Web <span className="ml-1 opacity-60">({webOrdersCount})</span>
+                  <ShoppingBag className="size-3.5 mr-1.5" />
+                  Web <span className="ml-1 opacity-60">({webOrdersCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterSource('whatsapp')}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border inline-flex items-center ${
                     filterSource === 'whatsapp'
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                       : 'bg-card text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:border-emerald-500'
                   }`}
                 >
-                  💬 WhatsApp <span className="ml-1 opacity-80">({whatsappOrdersCount})</span>
+                  <MessageCircle className="size-3.5 mr-1.5" />
+                  WhatsApp <span className="ml-1 opacity-80">({whatsappOrdersCount})</span>
                 </button>
               </div>
             </div>
