@@ -3007,6 +3007,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let maxMainFruits = 3;
       let maxSupplements = 2;
       let deliveryFee = 1000;
+      let catalogCocktails: CatalogCocktail[] = [];
       const availableFruits: {
         id: string;
         name: string;
@@ -3035,11 +3036,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           // Charger en parallèle la tarification, le catalogue de fruits du Lab et les jus signatures du catalogue FYS
-          const [pricingDoc, fruitsSnap, catalogCocktails] = await Promise.all([
+          const [pricingDoc, fruitsSnap, loadedCatalogCocktails] = await Promise.all([
             db.collection('settings').doc('pricing').get().catch(() => null),
             db.collection('fruits').get().catch(() => null),
             getActiveCatalogCocktails(db),
           ]);
+          if (Array.isArray(loadedCatalogCocktails)) {
+            catalogCocktails = loadedCatalogCocktails;
+          }
 
           if (pricingDoc && pricingDoc.exists) {
             const p = pricingDoc.data();
