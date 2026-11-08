@@ -494,6 +494,16 @@ async function sendCatalogJuicesList(to: string, cocktails: CatalogCocktail[]): 
     await new Promise((res) => setTimeout(res, 400));
     await sendWhatsAppCatalogCard(to, c);
   }
+
+  // Proposer toujours l'alternative sur-mesure au client
+  await new Promise((res) => setTimeout(res, 400));
+  await sendWhatsAppInteractiveButtons(
+    to,
+    "💡 *Envie d'un cocktail personnalisé ?*\nVous pouvez également composer votre propre recette sur-mesure au Lab selon vos fruits préférés et vos objectifs santé !",
+    [{ id: 'btn_mode_custom', title: 'Composer sur-mesure' }],
+    'FYS · Le Lab Sur-mesure',
+    'Créez votre jus personnalisé'
+  );
 }
 
 // ── Envoi de messages interactifs avec listes déroulantes natives Meta ────────
@@ -2598,6 +2608,27 @@ RÈGLES D'AFFICHAGE DES CONTACTS :
   2. Le message final de confirmation de chaque commande.
 - Tu peux également les donner au cours de la conversation dès que le client a besoin d'assistance humaine ou pose des questions sur l'équipe.
 
+RÈGLE COMMERCIALE FYS MAJEURE : LE DOUBLE CHOIX SYSTÉMATIQUE (SUR-MESURE vs CATALOGUE) :
+L'utilisateur doit IMPÉRATIVEMENT AVOIR LE CHOIX à chaque proposition !
+Dans CHAQUE situation où :
+1. Tu accueilles un client ou réponds à ses salutations ("bonjour", "salut", "bonsoir", "coucou", reprise de discussion...),
+2. Tu fais le point sur son profil de santé, termines son bilan bien-être ou rappelles ses objectifs santé,
+3. Tu réponds à un client qui a envie d'un bon jus, demande ce que tu proposes, demande le menu, la carte ou les tarifs,
+4. Tu proposes de passer commande alors qu'aucune recette n'a encore été composée au Lab :
+TU DOIS SYSTÉMATIQUEMENT présenter les 2 formules FYS et lui demander laquelle il préfère :
+1️⃣ 🧪 **Composer sur-mesure** : Mélange personnalisé au Lab selon ses besoins santé et ses fruits frais préférés (formats 500ml et 1L).
+2️⃣ 🍹 **Jus du catalogue** : Nos recettes signatures 100% pur jus frais prêtes à déguster (format 350ml à 500 XAF l'unité, commande minimale de 5 bouteilles).
+
+Termine TOUJOURS par :
+"Souhaitez-vous composer votre cocktail sur-mesure au Lab ou découvrir nos jus du catalogue ?"
+et inclus OBLIGATOIREMENT le bloc :::BUTTONS :
+:::BUTTONS
+[
+  {"id": "btn_mode_custom", "title": "Composer sur-mesure"},
+  {"id": "btn_mode_catalog", "title": "Jus du catalogue"}
+]
+:::
+
 CHEMINEMENT OBLIGATOIRE EN 4 ÉTAPES APRÈS LE BILAN :
 
 ÉTAPE 1 : CHOIX DES FRUITS DU COCKTAIL
@@ -3583,9 +3614,10 @@ Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [..
 
       const hasHistory = chatHistoryForGemini.length > 0;
       const conversationRules = hasHistory
-        ? `\nRÈGLE CRITIQUE DE CONTINUITÉ : La conversation est DÉJÀ ENGAGÉE. Ne dis SURTOUT PAS 'Bonjour', ne te représente pas, ne dis pas 'Bienvenue chez FYS'. Réponds directement et naturellement en rebondissant sur la réponse du client.
+        ? `\nRÈGLE DE CONVERSATION : La conversation est en cours avec le client. Réponds avec chaleur, respect et bienveillance.
+RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Si le client salue, reprend contact, exprime une envie de jus ou demande un conseil/menu sans avoir encore de recette en cours : propose-lui OBLIGATOIREMENT le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
 CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou à appeler l'équipe, donne-lui directement nos numéros cliquables :\n${FYS_TEAM_CONTACTS_TEXT}`
-        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect. Réalise son bilan de santé bienveillant et inclus IMPÉRATIVEMENT les contacts cliquables de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`;
+        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect. Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus IMPÉRATIVEMENT les contacts cliquables de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`;
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
@@ -4673,6 +4705,25 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             }).catch(() => null);
           }
           return res.status(200).json({ status: 'ok', handled: 'catalog_juice_selected_by_text' });
+        }
+
+        // 1.8. Salutations, reprise de contact ou envie de jus / demande de conseil / proposition
+        const isGreetingOrGeneralInquiry =
+          /(?:^|\b)(?:bonjour|salut|hello|bonsoir|coucou|yo|rebonjour|hey|allo|sant[ée]|bienvenue)(?:\b|$)/i.test(senderText) ||
+          /(?:envie\s+d(?:'|\s+un)\s+jus|boire\s+un\s+jus|propose[rz]?(?:\s+moi)?|qu['’]est-ce\s+que\s+(?:tu|vous)\s+(?:avez|proposez)|qu['’]avez-vous|quelles?\s+sont\s+vos\s+formules?|carte\s+des\s+jus|menu\s+des\s+jus|quel\s+jus\s+choisir|je\s+veux\s+(?:un\s+)?jus)/i.test(senderText);
+
+        if (!textHandled && isGreetingOrGeneralInquiry && !activeCart && activeRecipeIngredients.length === 0) {
+          currentUserParts.push({
+            text: `${senderText}\n\n[SYSTÈME FYS : Le client vous salue, reprend contact ou demande un jus / une recommandation.
+RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE :
+1. Salue-le chaleureusement et avec bienveillance.
+2. Demande-lui s'il souhaite :
+   - 🧪 **Composer sur-mesure** sa recette au Lab (selon ses objectifs de santé et ses fruits frais préférés).
+   - 🍹 **Partir sur une formule du catalogue** (nos jus signatures prêts, pressés à froid en 350ml à 500 XAF - commande minimale de 5 bouteilles).
+3. Demande-lui laquelle de ces deux options il préfère aujourd'hui.
+4. Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`,
+          });
+          textHandled = true;
         }
 
         // 2. Intention de commander par texte ("commander", "je veux commander", "passer la commande")
@@ -6119,15 +6170,41 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         !listToSend &&
         buttonsToSend.length === 0 &&
         !orderMatch &&
-        (aiReply.toLowerCase().includes('composer votre cocktail sur-mesure') ||
-         aiReply.toLowerCase().includes('composer sur-mesure') ||
-         aiReply.toLowerCase().includes('jus signatures du catalogue') ||
-         aiReply.toLowerCase().includes('jus du catalogue'))
+        !ctaUrlToSend &&
+        (!activeCart || activeCart.items.length === 0) &&
+        activeRecipeIngredients.length === 0
       ) {
-        buttonsToSend = [
-          { id: 'btn_mode_custom', title: 'Composer sur-mesure' },
-          { id: 'btn_mode_catalog', title: 'Jus du catalogue' },
-        ];
+        const lowerReply = aiReply.toLowerCase();
+        const lowerText = (senderText || '').toLowerCase();
+        const isChoiceSituation =
+          lowerReply.includes('composer') ||
+          lowerReply.includes('sur-mesure') ||
+          lowerReply.includes('catalogue') ||
+          lowerReply.includes('formule') ||
+          lowerReply.includes('lab') ||
+          lowerReply.includes('que préférez-vous') ||
+          lowerReply.includes('que preferez-vous') ||
+          lowerReply.includes('qu\'est-ce qui vous ferait plaisir') ||
+          lowerReply.includes('ce qui vous ferait plaisir') ||
+          lowerReply.includes('envie d\'un bon') ||
+          lowerReply.includes('envie d\'un jus') ||
+          lowerReply.includes('deux options') ||
+          lowerReply.includes('2 options') ||
+          lowerReply.includes('options s\'offrent') ||
+          /(?:^|\b)(?:bonjour|salut|hello|bonsoir|coucou|yo|rebonjour|hey|allo|sant[ée]|bienvenue)(?:\b|$)/i.test(lowerText) ||
+          /(?:envie\s+d(?:'|\s+un)\s+jus|boire\s+un\s+jus|propose|carte|menu|quel\s+jus)/i.test(lowerText);
+
+        if (isChoiceSituation) {
+          buttonsToSend = [
+            { id: 'btn_mode_custom', title: 'Composer sur-mesure' },
+            { id: 'btn_mode_catalog', title: 'Jus du catalogue' },
+          ];
+
+          // Si le texte de l'IA n'a pas posé explicitement la question, on s'assure qu'elle figure dans le message
+          if (!lowerReply.includes('sur-mesure') && !lowerReply.includes('catalogue')) {
+            aiReply = `${aiReply}\n\nSouhaitez-vous composer votre recette sur-mesure au Lab ou partir sur une formule du catalogue ?`;
+          }
+        }
       }
 
       // 2. Choix de la quantité de bouteilles (Boutons)
