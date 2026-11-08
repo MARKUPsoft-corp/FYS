@@ -4247,6 +4247,13 @@ Tu es le Cerveau IA du système FYS. Peu importe comment le client s'exprime en 
       "quantity": 1
     }
   ],
+  "catalogItems": [
+    {
+      "cocktailName": "Nom Exact du Jus Catalogue (ex: Papaye orange, Ananas gingembre)",
+      "quantity": 2,
+      "bottleSize": "350ml"
+    }
+  ],
   "district": "Quartier si mentionné ou null"
 }
 :::
@@ -4255,15 +4262,16 @@ LES CODES D'ACTION SYSTÈME OBLIGATOIRES ("action") :
 1. "NEW_RECIPE" : Dès que le client demande une composition, un conseil ou un nouveau jus (ex: "compose moi un bon jus", "propose-moi un mélange", "quel jus pour la fatigue ?"). Dans "cocktails", liste la recette que tu lui proposes avec un nom inspirant (ex: « L'Éclat Fraîcheur & Vitalité ») et les fruits exacts du catalogue en stock.
 2. "VALIDATE_RECIPE" : Dès que le client valide, accepte ou aime la composition (ex: "oui oui on y va", "ça me va", "on est ensemble", "je prends ça", "allons-y", "c'est bon", "top"). Dans "cocktails", reporte fidèlement le cocktail validé.
 3. "ORDER" : Dès que le client veut passer commande (ex: "je veux commander", "comment on passe la commande ?", "livrez-moi").
-4. "SHOW_NUTRITION" : Dès que le client demande la fiche nutritionnelle ou les bienfaits santé (ex: "fiche nutrition", "valeurs nutritionnelles", "quels sont les bienfaits ?").
-5. "SET_FORMAT" : Dès que le client choisit ou modifie un format (ex: "en 1 litre", "500ml", "le premier en 500ml et l'autre en 1L"). Reporte "bottleSize": "500ml" ou "1L" pour chaque cocktail.
-6. "SET_QUANTITY" : Dès que le client indique le nombre de bouteilles (ex: "1 bouteille", "2 de chaque", "mets m'en 3"). Reporte "quantity" pour chaque cocktail.
-7. "SET_DISTRICT" : Dès que le client donne son quartier de livraison (ex: "Biyem-Assi", "je suis à Bastos", "vers Omnisports"). Renseigne "district".
-8. "CONFIRM_ORDER" : Dès que le client valide officiellement le devis et confirme la commande (ex: "valider commande", "c'est validé", "je confirme", "envoie la facture").
-9. "ADD_COCKTAIL" : Dès que le client souhaite ajouter un autre cocktail à sa commande en cours (ex: "ajoute aussi un ananas gingembre", "je veux une deuxième bouteille").
-10. "RESET" : Dès que le client veut annuler, recommencer ou tout changer (ex: "annule", "recommencer", "laisse tomber").
-11. "QUESTION" : Simple question d'information ou de conseil sans modification de commande.
-12. "CATALOG" : Dès que le client souhaite voir ou commander les jus signatures du catalogue FYS (ex: "jus du catalogue", "catalogue", "jus standards", "menu", "voir les jus").
+4. "ORDER_CATALOG" : Dès que le client commande des jus du catalogue FYS (ex: "je veux 2 papaye oranges et 1 ananas gingembre", "mets-moi 5 ananas gingembre"). Renseigne "catalogItems" avec les jus et quantités exacts.
+5. "CATALOG" : Dès que le client souhaite voir la carte ou le menu des jus signatures du catalogue FYS (ex: "voir le catalogue", "vos jus standards", "carte des jus", "formules du catalogue").
+6. "SHOW_NUTRITION" : Dès que le client demande la fiche nutritionnelle ou les bienfaits santé (ex: "fiche nutrition", "valeurs nutritionnelles", "quels sont les bienfaits ?").
+7. "SET_FORMAT" : Dès que le client choisit ou modifie un format (ex: "en 1 litre", "500ml", "le premier en 500ml et l'autre en 1L"). Reporte "bottleSize": "500ml" ou "1L" pour chaque cocktail.
+8. "SET_QUANTITY" : Dès que le client indique le nombre de bouteilles (ex: "1 bouteille", "2 de chaque", "mets m'en 3"). Reporte "quantity" pour chaque cocktail.
+9. "SET_DISTRICT" : Dès que le client donne son quartier de livraison (ex: "Biyem-Assi", "je suis à Bastos", "vers Omnisports"). Renseigne "district".
+10. "CONFIRM_ORDER" : Dès que le client valide officiellement le devis et confirme la commande (ex: "valider commande", "c'est validé", "je confirme", "envoie la facture").
+11. "ADD_COCKTAIL" : Dès que le client souhaite ajouter un autre cocktail à sa commande en cours (ex: "ajoute aussi un ananas gingembre", "je veux une deuxième bouteille").
+12. "RESET" : Dès que le client veut annuler, recommencer ou tout changer (ex: "annule", "analuer", "recommencer", "laisse tomber", "effacer").
+13. "QUESTION" : Simple question d'information ou de conseil sans modification de commande.
 
 CONSIGNE STRICTE :
 Le serveur FYS utilise directement ce bloc :::INTENT pour calculer les tarifs officiels sans aucune faille de formulation ni amnésie. Inclus TOUJOURS ce bloc à la fin de ta réponse !
@@ -5911,13 +5919,18 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       if (intentMatch) {
         try {
           const parsedIntent = parseSafeJson<{
-            action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
+            action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'ORDER_CATALOG' | 'CATALOG' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
             cocktails?: Array<{
               cocktailName?: string;
               fruits?: string[];
               bottleSize?: '500ml' | '1L';
               quantity?: number;
               hasAddedSugar?: boolean;
+            }>;
+            catalogItems?: Array<{
+              cocktailName?: string;
+              quantity?: number;
+              bottleSize?: string;
             }>;
             district?: string;
             quantity?: number;
@@ -5937,6 +5950,51 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                     activeWhatsAppCart: FieldValue.delete(),
                     activeWhatsAppDraft: FieldValue.delete(),
                   }, { merge: true }).catch(() => null);
+                }
+                break;
+              }
+
+              case 'ORDER_CATALOG': {
+                if (Array.isArray(parsedIntent.catalogItems) && parsedIntent.catalogItems.length > 0) {
+                  const rawCatalog: any[] = [];
+                  for (const ci of parsedIntent.catalogItems) {
+                    if (!ci.cocktailName) continue;
+                    const matched = matchCatalogCocktailFromText(ci.cocktailName, catalogCocktails);
+                    if (matched) {
+                      const containers = Array.isArray(matched.containers) && matched.containers.length > 0
+                        ? matched.containers
+                        : [{ label: '350ml', price: 500 }];
+                      const container = containers.find((c: any) => c.label === ci.bottleSize) || containers[0];
+                      rawCatalog.push({
+                        cocktailName: matched.name,
+                        fruits: (matched.ingredients && matched.ingredients.length > 0)
+                          ? matched.ingredients.map((i: any) => i.fruitName)
+                          : [matched.name],
+                        bottleSize: container.label || '350ml',
+                        bottleSizeLabel: container.label || '350ml',
+                        quantity: Math.max(1, Number(ci.quantity) || 1),
+                        hasAddedSugar: false,
+                        isCatalog: true,
+                        catalogCocktailId: matched.id,
+                        imageUrl: matched.imageUrl,
+                        unitPrice: Number(container.price) || 500,
+                      });
+                    }
+                  }
+                  if (rawCatalog.length > 0) {
+                    activeCart = computeCartFromRawItems(
+                      rawCatalog,
+                      availableFruits,
+                      bottle500Base,
+                      bottle1LBase,
+                      parsedIntent.district || activeCart?.district,
+                      activeCart
+                    );
+                    if (userDocRef) {
+                      await saveActiveWhatsAppCart(userDocRef, activeCart);
+                    }
+                    console.log(`[whatsapp-webhook] 🛒 Synced activeWhatsAppCart from intent ORDER_CATALOG:`, rawCatalog.map((r) => `${r.quantity}x ${r.cocktailName}`));
+                  }
                 }
                 break;
               }
