@@ -320,7 +320,7 @@ async function sendWhatsAppInteractiveButtons(
   }
 }
 
-// ── Catalogue des jus signatures FYS (Format 350ml à 500 XAF) ──────────────────
+// ── Catalogue des jus signatures FYS (Formats & Tarifs dynamiques de Firestore) ──────────────────
 
 export interface CatalogCocktail {
   id: string;
@@ -400,14 +400,19 @@ async function sendWhatsAppCatalogCard(
     return false;
   }
 
-  const container = cocktail.containers?.[0] || { label: '350ml', price: 500 };
-  const containerLabel = container.label || '350ml';
-  const containerPrice = typeof container.price === 'number' ? container.price : 500;
+  const containers = Array.isArray(cocktail.containers) && cocktail.containers.length > 0
+    ? cocktail.containers
+    : [{ label: '350ml', price: 500 }];
+
+  const formatsText = containers
+    .map((c) => `${c.label} (${(Number(c.price) || 0).toLocaleString('fr-FR')} XAF)`)
+    .join(' · ');
+
   const ingredientsList = cocktail.ingredients && cocktail.ingredients.length > 0
     ? cocktail.ingredients.map((i) => i.fruitName).join(', ')
-    : 'Fruits 100% naturels';
+    : 'Recette signature FYS';
 
-  const bodyText = `🍹 *${cocktail.name}*\n• Ingrédients : ${ingredientsList}\n• Format : ${containerLabel} (${containerPrice.toLocaleString('fr-FR')} XAF)\n• *Minimum 5 bouteilles par commande*`;
+  const bodyText = `🍹 *${cocktail.name}*\n• Ingrédients : ${ingredientsList}\n• Format(s) : ${formatsText}\n• Commande minimale : 5 bouteilles au total (panier combinable)`;
   const buttonId = `btn_cat_${cocktail.id}`;
 
   const interactivePayload: any = {
@@ -416,7 +421,7 @@ async function sendWhatsAppCatalogCard(
       text: bodyText,
     },
     footer: {
-      text: `FYS · Jus signatures (${containerLabel})`,
+      text: 'FYS · Jus signatures du catalogue',
     },
     action: {
       buttons: [
@@ -470,7 +475,7 @@ async function sendWhatsAppCatalogCard(
         bodyText,
         [{ id: buttonId, title: 'Choisir ce jus' }],
         undefined,
-        `FYS · Jus signatures (${containerLabel})`
+        'FYS · Jus signatures'
       );
     }
     return true;
@@ -481,13 +486,13 @@ async function sendWhatsAppCatalogCard(
       bodyText,
       [{ id: buttonId, title: 'Choisir ce jus' }],
       undefined,
-      `FYS · Jus signatures (${containerLabel})`
+      'FYS · Jus signatures'
     );
   }
 }
 
 async function sendCatalogJuicesList(to: string, cocktails: CatalogCocktail[]): Promise<void> {
-  const introText = `🌿 *NOS JUS SIGNATURES DU CATALOGUE FYS* 🍹\n\nNos recettes pré-composées 100% pur jus naturel, pressées artisanalement à froid, sans eau ajoutée ni conservateurs.\n\n📦 *Format 350ml à 500 XAF la bouteille*\n⚠️ *Commande minimale : 5 bouteilles* (soit 2 500 XAF + 1 000 XAF de livraison = 3 500 XAF au total).\n\nDécouvrez nos créations ci-dessous et cliquez sur *« Choisir ce jus »* pour commander :`;
+  const introText = `🌿 *NOS JUS SIGNATURES DU CATALOGUE FYS* 🍹\n\nDécouvrez nos recettes signatures prêtes à être dégustées, avec leurs formats et tarifs officiels enregistrés en boutique.\n\n📦 *Commande minimale : 5 bouteilles au total*\n💡 Vous pouvez combiner différentes recettes dans une même commande pour atteindre ce minimum !\n\nDécouvrez nos jus disponibles ci-dessous et cliquez sur *« Choisir ce jus »* pour composer votre panier :`;
   await sendWhatsAppMessage(to, introText);
 
   for (const c of cocktails) {
@@ -1848,7 +1853,7 @@ export interface WhatsAppCartItem {
     isSupplement?: boolean;
     incompatibleIds?: string[];
   }>;
-  bottleSize: '350ml' | '500ml' | '1L';
+  bottleSize: string;
   bottleSizeLabel: string;
   quantity: number;
   baseBottlePrice: number;
@@ -1866,6 +1871,8 @@ export interface WhatsAppCart {
   subtotal: number;
   deliveryFee: number;
   totalPrice: number;
+  totalCatalogBottles?: number;
+  isCatalogMinimumMet?: boolean;
   district?: string;
   updatedAt: number;
 }
@@ -2017,32 +2024,27 @@ export function computeCartFromRawItems(
       }
     }
 
-    let bottleSize: '350ml' | '500ml' | '1L' = isCatalog ? '350ml' : '1L';
-    if (raw.bottleSize === '350ml' || (isCatalog && !raw.bottleSize)) {
-      bottleSize = '350ml';
-    } else if (raw.bottleSize === '500ml') {
-      bottleSize = '500ml';
-    } else if (raw.bottleSize === '1L') {
-      bottleSize = '1L';
+    let bottleSize: string = isCatalog ? (raw.bottleSize || '350ml') : '1L';
+    if (raw.bottleSize) {
+      bottleSize = raw.bottleSize;
     } else if (existingItem?.bottleSize) {
-      bottleSize = existingItem.bottleSize as any;
+      bottleSize = existingItem.bottleSize;
     }
 
-    const bottleSizeLabel = bottleSize === '1L' ? '1 Litre' : (bottleSize === '350ml' ? '350ml' : '500ml');
+    const bottleSizeLabel = raw.bottleSizeLabel || existingItem?.bottleSizeLabel || (bottleSize === '1L' ? '1 Litre' : bottleSize);
     const baseBottlePrice = isCatalog ? 0 : (bottleSize === '1L' ? bottle1LBase : bottle500Base);
     const ingredientsPriceSum = isCatalog
       ? (typeof raw.unitPrice === 'number' && raw.unitPrice > 0 ? raw.unitPrice : (existingItem?.unitPrice || 500))
       : resolvedIngs.reduce((sum, ing) => sum + (Number(ing.priceSnapshot) || 0), 0);
     const unitPrice = isCatalog ? ingredientsPriceSum : (baseBottlePrice + ingredientsPriceSum);
 
-    // Règle infaillible FYS : minimum 5 bouteilles pour les jus signatures du catalogue
-    const minQty = isCatalog ? 5 : 1;
-    const requestedQty = Number(raw.quantity) || existingItem?.quantity || minQty;
-    const quantity = Math.max(minQty, requestedQty);
+    // Pour chaque article, la quantité individuelle est libre (minimum 1)
+    // La règle des 5 bouteilles s'applique sur le cumul total des bouteilles catalogue du panier
+    const quantity = Math.max(1, Number(raw.quantity) || existingItem?.quantity || 1);
     const lineTotal = unitPrice * quantity;
 
     items.push({
-      id: catalogCocktailId ? `item_cat_${catalogCocktailId}` : `item_${idx + 1}`,
+      id: catalogCocktailId ? `item_cat_${catalogCocktailId}_${bottleSize.replace(/\s+/g, '')}` : `item_${idx + 1}`,
       cocktailName: raw.cocktailName || existingItem?.cocktailName || (isCatalog ? 'Jus Signature FYS' : `Cocktail Santé ${idx + 1}`),
       fruits: resolvedIngs.map((i) => i.fruitName),
       ingredients: resolvedIngs,
@@ -2063,12 +2065,17 @@ export function computeCartFromRawItems(
   const subtotal = items.reduce((sum, it) => sum + it.lineTotal, 0);
   const deliveryFee = 1000;
   const totalPrice = subtotal + deliveryFee;
+  const totalCatalogBottles = items.filter((it) => it.isCatalog).reduce((sum, it) => sum + it.quantity, 0);
+  const hasCatalogItems = items.some((it) => it.isCatalog);
+  const isCatalogMinimumMet = !hasCatalogItems || totalCatalogBottles >= 5;
 
   const cart: WhatsAppCart = {
     items,
     subtotal,
     deliveryFee,
     totalPrice,
+    totalCatalogBottles,
+    isCatalogMinimumMet,
     updatedAt: Date.now(),
   };
 
@@ -2617,7 +2624,7 @@ Dans CHAQUE situation où :
 4. Tu proposes de passer commande alors qu'aucune recette n'a encore été composée au Lab :
 TU DOIS SYSTÉMATIQUEMENT présenter les 2 formules FYS et lui demander laquelle il préfère :
 1️⃣ 🧪 **Composer sur-mesure** : Mélange personnalisé au Lab selon ses besoins santé et ses fruits frais préférés (formats 500ml et 1L).
-2️⃣ 🍹 **Jus du catalogue** : Nos recettes signatures 100% pur jus frais prêtes à déguster (format 350ml à 500 XAF l'unité, commande minimale de 5 bouteilles).
+2️⃣ 🍹 **Jus du catalogue** : Nos recettes signatures prêtes à déguster (formats et tarifs officiels enregistrés au catalogue, commande minimale de 5 bouteilles au total, combinables entre plusieurs jus).
 
 Termine TOUJOURS par :
 "Souhaitez-vous composer votre cocktail sur-mesure au Lab ou découvrir nos jus du catalogue ?"
@@ -2706,7 +2713,7 @@ PRÉREQUIS INDISPENSABLE : LA RECETTE DE FRUITS DOIT ÊTRE CONNUE !
 Si le client veut commander (clic sur "Commander", message "je veux commander", ou choix direct) mais qu'AUCUNE recette n'a été composée (pas de brouillon Lab et aucun fruit convenu) :
 TU NE DOIS PAS demander le format ni donner de prix ! Propose-lui avec enthousiasme les 2 options FYS pour commander :
 1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes, pressées à froid en 350ml à 500 XAF - commande minimale de 5 bouteilles).
+2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
 :::BUTTONS
 [
@@ -2715,10 +2722,10 @@ Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
 ]
 :::
 
-RÈGLE D'OR POUR LES JUS DU CATALOGUE (Format 350ml à 500 XAF) :
-- Les jus du catalogue sont des recettes signatures 100% pur jus frais embouteillées en format 350ml à 500 XAF l'unité.
-- COMMANDE MINIMALE INFAILLIBLE : STRICTEMENT 5 BOUTEILLES (soit 2 500 XAF + 1 000 XAF de livraison = 3 500 XAF au total).
-- Le backend calcule tous les prix et envoie les cartes photos avec boutons. Zéro calcul inventé !
+RÈGLE D'OR POUR LES JUS DU CATALOGUE (Tarifs dynamiques & Multi-jus) :
+- Les jus du catalogue sont des recettes signatures prêtes à déguster, dont les formats (ex: 350ml, 500ml, 1L...) et tarifs sont définis dynamiquement en base.
+- COMMANDE MINIMALE : STRICTEMENT 5 BOUTEILLES AU TOTAL pour le catalogue (le client est libre de combiner plusieurs recettes du catalogue dans une même commande pour atteindre ce minimum).
+- Le backend calcule tous les prix et gère les paniers multi-jus. Zéro calcul inventé !
 
 Sous-étape 4.1 : CHOIX DU FORMAT POUR COCKTAIL SUR-MESURE (Uniquement le format !)
 Quand les fruits de la ou des recettes sont connus et calés, et que le client veut commander :
@@ -4031,17 +4038,39 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
 
         if (interactiveButtonId.startsWith('btn_order')) {
           if (activeCart && activeCart.items.length > 0) {
-            if (activeCart.items.length > 1) {
-              explicitAction = `[Le client a cliqué sur 'Commander' pour ses cocktails (${activeCart.items.map((i) => i.cocktailName).join(', ')}). RÈGLE STRICTE : Demande-lui quel format il préfère pour ses boissons avec les boutons :::BUTTONS [{"id": "btn_format_all_500ml", "title": "Tous en 500ml"}, {"id": "btn_format_all_1l", "title": "Tous en 1 Litre"}, {"id": "btn_format_diff", "title": "Formats différents"}]. Ne pose AUCUNE autre question !]`;
-            } else if (activeCart.items[0]?.isCatalog) {
-              explicitAction = `[Le client a cliqué sur 'Commander' pour son jus du catalogue « ${activeCart.items[0].cocktailName} » (Format 350ml à ${activeCart.items[0].unitPrice} XAF). RÈGLE COMMERCIALE STRICTE : Rappelle la commande minimale de 5 bouteilles et demande la quantité avec les boutons :::BUTTONS [{"id": "btn_qty_5", "title": "5 Bouteilles"}, {"id": "btn_qty_6", "title": "6 Bouteilles"}, {"id": "btn_qty_10", "title": "10 Bouteilles"}]. Ne pose AUCUNE autre question !]`;
-            } else {
-              explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeCart.items[0]?.cocktailName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
+            const hasCatalog = activeCart.items.some((i) => i.isCatalog);
+            const totalCatalog = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+
+            // Vérification stricte du minimum de 5 pour les jus du catalogue
+            if (hasCatalog && totalCatalog < 5) {
+              const missing = 5 - totalCatalog;
+              const warningText = `⚠️ Impossible de valider la commande : votre panier contient actuellement *${totalCatalog} bouteille(s)* de jus du catalogue. La commande minimale est de *5 bouteilles au total* (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos bouteilles :`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                warningText,
+                [
+                  { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                  { id: 'btn_complete_min', title: `Compléter (+${missing} bouteilles)` },
+                ],
+                'FYS · Jus du catalogue',
+                `Minimum 5 bouteilles (actuel: ${totalCatalog})`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: warningText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_order_blocked_under_5' });
             }
+
+            // Si le minimum est respecté ou s'il s'agit d'une commande sur-mesure : demander le quartier de livraison
+            explicitAction = `[Le client a cliqué sur 'Commander'. Son panier est validé et prêt (${activeCart.items.map((i) => `${i.quantity}x ${i.cocktailName} (${i.bottleSizeLabel})`).join(', ')}). RÈGLE COMMERCIALE STRICTE : Remercie-le chaleureusement et demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur 'Commander', mais AUCUN fruit ni recette n'a encore été composé. RÈGLE COMMERCIALE STRICTE FYS : Propose-lui avec enthousiasme les 2 options FYS pour commander :
 1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes, pressées à froid en 350ml à 500 XAF - commande minimale de 5 bouteilles).
+2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`;
           } else {
             explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
@@ -4074,57 +4103,49 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             await db.collection('cocktails').doc(catId).get().then((d: any) => (d.exists ? { id: d.id, ...d.data() } : null));
 
           if (selectedCocktail) {
-            const container = selectedCocktail.containers?.[0] || { label: '350ml', price: 500 };
-            const unitPrice = typeof container.price === 'number' ? container.price : 500;
-            const bottleSizeLabel = container.label || '350ml';
-            const minQty = 5; // INFAILLIBLE : STRICTEMENT 5 BOUTEILLES MINIMUM
+            const containers = Array.isArray(selectedCocktail.containers) && selectedCocktail.containers.length > 0
+              ? selectedCocktail.containers
+              : [{ label: '350ml', price: 500 }];
 
-            activeCart = {
-              items: [
-                {
-                  id: `item_cat_${selectedCocktail.id}`,
-                  cocktailName: selectedCocktail.name,
-                  fruits: (selectedCocktail.ingredients || []).map((i: any) => i.fruitName),
-                  ingredients: (selectedCocktail.ingredients || []).map((i: any) => ({
-                    fruitId: i.fruitId,
-                    fruitName: i.fruitName,
-                    priceSnapshot: i.priceSnapshot || 0,
-                    isSupplement: i.role === 'supplement',
-                  })),
-                  bottleSize: '350ml' as any,
-                  bottleSizeLabel,
-                  quantity: minQty,
-                  baseBottlePrice: 0,
-                  ingredientsPriceSum: unitPrice,
-                  unitPrice,
-                  lineTotal: unitPrice * minQty,
-                  isCatalog: true,
-                  catalogCocktailId: selectedCocktail.id,
-                  imageUrl: selectedCocktail.imageUrl,
-                },
-              ],
-              subtotal: unitPrice * minQty,
-              deliveryFee: 1000,
-              totalPrice: (unitPrice * minQty) + 1000,
-              district: existingUserDoc?.data()?.district || undefined,
-              updatedAt: Date.now(),
-            };
-
-            if (userDocRef) {
-              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            // Si plusieurs formats existent pour ce jus, proposer d'abord le choix du format
+            if (containers.length > 1) {
+              const formatButtons = containers.slice(0, 3).map((c: any, idx: number) => ({
+                id: `btn_catfmt_${selectedCocktail.id}_${idx}`,
+                title: `${c.label} (${(Number(c.price) || 0).toLocaleString('fr-FR')} XAF)`.slice(0, 20),
+              }));
+              const fmtPrompt = `Pour notre jus signature « *${selectedCocktail.name}* », quel format préférez-vous ?`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                fmtPrompt,
+                formatButtons,
+                'FYS · Choix du format',
+                selectedCocktail.name
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: fmtPrompt,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_format_prompt' });
             }
 
-            const qtyPrompt = `Superbe choix ! Vous avez sélectionné notre jus signature « *${selectedCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).\n\n📦 *Rappel : La commande minimale pour les jus du catalogue est de 5 bouteilles.*\nCombien de bouteilles souhaitez-vous commander ?`;
+            const container = containers[0];
+            const unitPrice = typeof container.price === 'number' ? container.price : 500;
+            const bottleSizeLabel = container.label || '350ml';
+
+            const qtyPrompt = `Superbe choix ! Vous avez sélectionné « *${selectedCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).\n\n📦 *Combien de bouteilles de cette recette souhaitez-vous ajouter à votre panier ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 bouteilles au total, ou taper un autre chiffre)_`;
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               qtyPrompt,
               [
-                { id: 'btn_qty_5', title: '5 Bouteilles' },
-                { id: 'btn_qty_6', title: '6 Bouteilles' },
-                { id: 'btn_qty_10', title: '10 Bouteilles' },
+                { id: `btn_catqty_${selectedCocktail.id}_0_1`, title: '1 Bouteille' },
+                { id: `btn_catqty_${selectedCocktail.id}_0_2`, title: '2 Bouteilles' },
+                { id: `btn_catqty_${selectedCocktail.id}_0_3`, title: '3 Bouteilles' },
               ],
               'FYS · Jus du catalogue',
-              'Commande minimale : 5 bouteilles'
+              'Panier combinable (min. 5 au total)'
             );
 
             if (userDocRef) {
@@ -4134,7 +4155,256 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                 timestamp: FieldValue.serverTimestamp(),
               }).catch(() => null);
             }
-            return res.status(200).json({ status: 'ok', handled: 'catalog_juice_selected' });
+            return res.status(200).json({ status: 'ok', handled: 'catalog_juice_qty_prompt' });
+          }
+        } else if (interactiveButtonId.startsWith('btn_catfmt_')) {
+          const parts = interactiveButtonId.replace('btn_catfmt_', '').split('_');
+          const catId = parts[0];
+          const containerIdx = parseInt(parts[1] || '0', 10);
+
+          const allCat = catalogCocktails && catalogCocktails.length > 0
+            ? catalogCocktails
+            : await getActiveCatalogCocktails(db);
+          const selectedCocktail = allCat.find((c) => c.id === catId) ||
+            await db.collection('cocktails').doc(catId).get().then((d: any) => (d.exists ? { id: d.id, ...d.data() } : null));
+
+          if (selectedCocktail) {
+            const containers = Array.isArray(selectedCocktail.containers) && selectedCocktail.containers.length > 0
+              ? selectedCocktail.containers
+              : [{ label: '350ml', price: 500 }];
+            const container = containers[containerIdx] || containers[0];
+            const unitPrice = typeof container.price === 'number' ? container.price : 500;
+            const bottleSizeLabel = container.label || '350ml';
+
+            const qtyPrompt = `C'est noté pour le format ${bottleSizeLabel} (${unitPrice.toLocaleString('fr-FR')} XAF) !\n\n📦 *Combien de bouteilles de « ${selectedCocktail.name} » souhaitez-vous ajouter ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total, ou taper un autre chiffre)_`;
+            await sendWhatsAppInteractiveButtons(
+              senderPhone,
+              qtyPrompt,
+              [
+                { id: `btn_catqty_${selectedCocktail.id}_${containerIdx}_1`, title: '1 Bouteille' },
+                { id: `btn_catqty_${selectedCocktail.id}_${containerIdx}_2`, title: '2 Bouteilles' },
+                { id: `btn_catqty_${selectedCocktail.id}_${containerIdx}_3`, title: '3 Bouteilles' },
+              ],
+              'FYS · Jus du catalogue',
+              'Panier combinable (min. 5 au total)'
+            );
+            if (userDocRef) {
+              await userDocRef.collection('whatsapp_messages').add({
+                sender: 'nutrifys',
+                text: qtyPrompt,
+                timestamp: FieldValue.serverTimestamp(),
+              }).catch(() => null);
+            }
+            return res.status(200).json({ status: 'ok', handled: 'catalog_format_selected' });
+          }
+        } else if (interactiveButtonId.startsWith('btn_catqty_')) {
+          const parts = interactiveButtonId.replace('btn_catqty_', '').split('_');
+          const catId = parts[0];
+          const containerIdx = parseInt(parts[1] || '0', 10);
+          const chosenQty = Math.max(1, parseInt(parts[2] || '1', 10));
+
+          const allCat = catalogCocktails && catalogCocktails.length > 0
+            ? catalogCocktails
+            : await getActiveCatalogCocktails(db);
+          const selectedCocktail = allCat.find((c) => c.id === catId) ||
+            await db.collection('cocktails').doc(catId).get().then((d: any) => (d.exists ? { id: d.id, ...d.data() } : null));
+
+          if (selectedCocktail) {
+            const containers = Array.isArray(selectedCocktail.containers) && selectedCocktail.containers.length > 0
+              ? selectedCocktail.containers
+              : [{ label: '350ml', price: 500 }];
+            const container = containers[containerIdx] || containers[0];
+            const unitPrice = typeof container.price === 'number' ? container.price : 500;
+            const bottleSizeLabel = container.label || '350ml';
+
+            const currentItems: WhatsAppCartItem[] = activeCart ? [...activeCart.items] : [];
+            const existingIdx = currentItems.findIndex(
+              (it) => it.catalogCocktailId === selectedCocktail.id && it.bottleSizeLabel === bottleSizeLabel
+            );
+
+            if (existingIdx >= 0) {
+              currentItems[existingIdx].quantity = chosenQty;
+              currentItems[existingIdx].lineTotal = unitPrice * chosenQty;
+            } else {
+              currentItems.push({
+                id: `item_cat_${selectedCocktail.id}_${bottleSizeLabel.replace(/\s+/g, '')}`,
+                cocktailName: selectedCocktail.name,
+                fruits: (selectedCocktail.ingredients || []).map((i: any) => i.fruitName),
+                ingredients: (selectedCocktail.ingredients || []).map((i: any) => ({
+                  fruitId: i.fruitId,
+                  fruitName: i.fruitName,
+                  priceSnapshot: i.priceSnapshot || 0,
+                  isSupplement: i.role === 'supplement',
+                })),
+                bottleSize: bottleSizeLabel,
+                bottleSizeLabel,
+                quantity: chosenQty,
+                baseBottlePrice: 0,
+                ingredientsPriceSum: unitPrice,
+                unitPrice,
+                lineTotal: unitPrice * chosenQty,
+                isCatalog: true,
+                catalogCocktailId: selectedCocktail.id,
+                imageUrl: selectedCocktail.imageUrl,
+              });
+            }
+
+            activeCart = computeCartFromRawItems(
+              currentItems,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart?.district,
+              activeCart
+            );
+
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            }
+
+            const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+            const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+
+            if (totalCatalogBottles < 5) {
+              const missing = 5 - totalCatalogBottles;
+              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) à votre panier !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                feedbackText,
+                [
+                  { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                  { id: `btn_catcomp_${selectedCocktail.id}_${containerIdx}`, title: `Compléter ce jus (+${missing})` },
+                  { id: 'btn_view_cart', title: 'Voir le panier' },
+                ],
+                'FYS · Panier catalogue',
+                `Minimum 5 bouteilles (manque ${missing})`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: feedbackText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_item_added_under_min' });
+            } else {
+              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                feedbackText,
+                [
+                  { id: 'btn_order', title: 'Valider commande 🛒' },
+                  { id: 'btn_mode_catalog', title: '+ Ajouter un autre jus' },
+                ],
+                'FYS · Commande prête',
+                `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: feedbackText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_item_added_min_met' });
+            }
+          }
+        } else if (interactiveButtonId.startsWith('btn_catcomp_') || interactiveButtonId === 'btn_complete_min') {
+          let targetCatId: string | null = null;
+          if (interactiveButtonId.startsWith('btn_catcomp_')) {
+            const p = interactiveButtonId.replace('btn_catcomp_', '').split('_');
+            targetCatId = p[0];
+          }
+
+          if (activeCart && activeCart.items.length > 0) {
+            const currentCatalogQty = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+            const missing = Math.max(0, 5 - currentCatalogQty);
+
+            let targetItemIndex = -1;
+            if (targetCatId) {
+              targetItemIndex = activeCart.items.findIndex((i) => i.catalogCocktailId === targetCatId);
+            }
+            if (targetItemIndex === -1) {
+              targetItemIndex = activeCart.items.findIndex((i) => i.isCatalog);
+            }
+
+            if (targetItemIndex >= 0 && missing > 0) {
+              activeCart.items[targetItemIndex].quantity += missing;
+              activeCart.items[targetItemIndex].lineTotal = activeCart.items[targetItemIndex].unitPrice * activeCart.items[targetItemIndex].quantity;
+            }
+
+            activeCart = computeCartFromRawItems(
+              activeCart.items,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              activeCart.district,
+              activeCart
+            );
+
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+            }
+
+            const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+            const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+
+            const feedbackText = `🎉 *Panier complété avec succès !*\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+
+            await sendWhatsAppInteractiveButtons(
+              senderPhone,
+              feedbackText,
+              [
+                { id: 'btn_order', title: 'Valider commande 🛒' },
+                { id: 'btn_mode_catalog', title: '+ Ajouter un autre jus' },
+              ],
+              'FYS · Commande prête',
+              `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+            );
+            if (userDocRef) {
+              await userDocRef.collection('whatsapp_messages').add({
+                sender: 'nutrifys',
+                text: feedbackText,
+                timestamp: FieldValue.serverTimestamp(),
+              }).catch(() => null);
+            }
+            return res.status(200).json({ status: 'ok', handled: 'catalog_cart_completed_to_min' });
+          }
+        } else if (interactiveButtonId === 'btn_view_cart') {
+          if (activeCart && activeCart.items.length > 0) {
+            const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+            const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+            const hasCatalog = activeCart.items.some((i) => i.isCatalog);
+
+            if (hasCatalog && totalCatalogBottles < 5) {
+              const missing = 5 - totalCatalogBottles;
+              const feedbackText = `🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} / 5 bouteilles minimum*\n⚠️ Il vous manque encore *${missing} bouteille(s)* pour valider votre commande.`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                feedbackText,
+                [
+                  { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                  { id: 'btn_complete_min', title: `Compléter (+${missing} bouteilles)` },
+                ],
+                'FYS · Panier catalogue',
+                `Minimum : 5 bouteilles (actuel: ${totalCatalogBottles})`
+              );
+            } else {
+              const feedbackText = `🛒 *Votre panier officiel :*\n${cartLines}\n\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                feedbackText,
+                [
+                  { id: 'btn_order', title: 'Valider commande 🛒' },
+                  { id: 'btn_mode_catalog', title: '+ Ajouter un autre jus' },
+                ],
+                'FYS · Commande prête',
+                `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+              );
+            }
+            return res.status(200).json({ status: 'ok', handled: 'view_cart_displayed' });
           }
         } else if (interactiveButtonId.startsWith('btn_nutrition')) {
           explicitAction = `[Le client a cliqué sur 'Fiche nutrition' : présente-lui la fiche nutritionnelle complète et détaillée de son cocktail.
@@ -4350,7 +4620,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
                 cocktailName: it.cocktailName,
                 fruits: it.fruits,
                 bottleSize: it.bottleSize,
-                quantity: it.isCatalog ? Math.max(5, chosenQty) : chosenQty,
+                bottleSizeLabel: it.bottleSizeLabel,
+                quantity: chosenQty,
                 hasAddedSugar: it.hasAddedSugar,
                 isCatalog: it.isCatalog,
                 catalogCocktailId: it.catalogCocktailId,
@@ -4365,7 +4636,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
                   cocktailName: it.cocktailName,
                   fruits: it.fruits,
                   bottleSize: it.bottleSize,
-                  quantity: it.isCatalog ? Math.max(5, targetQty) : targetQty,
+                  bottleSizeLabel: it.bottleSizeLabel,
+                  quantity: targetQty,
                   hasAddedSugar: it.hasAddedSugar,
                   isCatalog: it.isCatalog,
                   catalogCocktailId: it.catalogCocktailId,
@@ -4387,6 +4659,32 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             }
 
             const isCat = activeCart.items.some((i) => i.isCatalog);
+            const totalCat = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+
+            if (isCat && totalCat < 5) {
+              const missing = 5 - totalCat;
+              const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+              const warningText = `🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                warningText,
+                [
+                  { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                  { id: 'btn_complete_min', title: `Compléter (+${missing} btles)` },
+                  { id: 'btn_view_cart', title: 'Voir le panier' },
+                ],
+                'FYS · Minimum 5 bouteilles',
+                `Manque ${missing} bouteille(s)`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: warningText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_min_qty_warning_btn' });
+            }
 
             if (activeCart.district) {
               const devisExact = generateCartDevisText(activeCart, activeCart.district);
@@ -4398,7 +4696,8 @@ CONSIGNE STRICTE ET ABSOLUE :
 Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
 Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`;
             } else if (isCat) {
-              explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteilles pour son jus du catalogue « ${activeCart.items[0]?.cocktailName} » (Format 350ml à ${activeCart.items[0]?.unitPrice} XAF).
+              const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+              explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) pour son panier de jus du catalogue (${cartLines}).
 Total boissons : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF + Livraison : 1 000 XAF = Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF.
 RÈGLE STRICTE : Remercie-le chaleureusement et demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
             } else {
@@ -4644,57 +4943,53 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           catalogCocktails && catalogCocktails.length > 0 ? catalogCocktails : await getActiveCatalogCocktails(db)
         );
         if (!textHandled && matchedCatalogCocktail) {
-          const container = matchedCatalogCocktail.containers?.[0] || { label: '350ml', price: 500 };
-          const unitPrice = typeof container.price === 'number' ? container.price : 500;
-          const bottleSizeLabel = container.label || '350ml';
-          const minQty = 5;
+          const containers = Array.isArray(matchedCatalogCocktail.containers) && matchedCatalogCocktail.containers.length > 0
+            ? matchedCatalogCocktail.containers
+            : [{ label: '350ml', price: 500 }];
 
-          activeCart = {
-            items: [
-              {
-                id: `item_cat_${matchedCatalogCocktail.id}`,
-                cocktailName: matchedCatalogCocktail.name,
-                fruits: (matchedCatalogCocktail.ingredients || []).map((i: any) => i.fruitName),
-                ingredients: (matchedCatalogCocktail.ingredients || []).map((i: any) => ({
-                  fruitId: i.fruitId,
-                  fruitName: i.fruitName,
-                  priceSnapshot: i.priceSnapshot || 0,
-                  isSupplement: i.role === 'supplement',
-                })),
-                bottleSize: '350ml' as any,
-                bottleSizeLabel,
-                quantity: minQty,
-                baseBottlePrice: 0,
-                ingredientsPriceSum: unitPrice,
-                unitPrice,
-                lineTotal: unitPrice * minQty,
-                isCatalog: true,
-                catalogCocktailId: matchedCatalogCocktail.id,
-                imageUrl: matchedCatalogCocktail.imageUrl,
-              },
-            ],
-            subtotal: unitPrice * minQty,
-            deliveryFee: 1000,
-            totalPrice: (unitPrice * minQty) + 1000,
-            district: existingUserDoc?.data()?.district || undefined,
-            updatedAt: Date.now(),
-          };
-
-          if (userDocRef) {
-            await saveActiveWhatsAppCart(userDocRef, activeCart);
+          if (containers.length > 1) {
+            const formatButtons = containers.slice(0, 3).map((c: any, idx: number) => ({
+              id: `btn_catfmt_${matchedCatalogCocktail.id}_${idx}`,
+              title: `${c.label} (${(Number(c.price) || 0).toLocaleString('fr-FR')} XAF)`.slice(0, 20),
+            }));
+            const fmtPrompt = `Pour notre jus signature « *${matchedCatalogCocktail.name}* », quel format préférez-vous ?`;
+            await sendWhatsAppInteractiveButtons(
+              senderPhone,
+              fmtPrompt,
+              formatButtons,
+              'FYS · Choix du format',
+              matchedCatalogCocktail.name
+            );
+            if (userDocRef) {
+              await userDocRef.collection('whatsapp_messages').add({
+                sender: 'nutrifys',
+                text: fmtPrompt,
+                timestamp: FieldValue.serverTimestamp(),
+              }).catch(() => null);
+            }
+            return res.status(200).json({ status: 'ok', handled: 'catalog_format_prompt_from_text' });
           }
 
-          const qtyPrompt = `Superbe choix ! Vous avez sélectionné notre jus signature « *${matchedCatalogCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).\n\n📦 *Rappel : La commande minimale pour les jus du catalogue est de 5 bouteilles.*\nCombien de bouteilles souhaitez-vous commander ?`;
+          const container = containers[0];
+          const unitPrice = typeof container.price === 'number' ? container.price : 500;
+          const bottleSizeLabel = container.label || '350ml';
+
+          const currentCatalogTotal = activeCart ? activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0) : 0;
+          const existingCartSummary = activeCart && activeCart.items.length > 0
+            ? `\n\n🛒 *Votre panier contient déjà :*\n${activeCart.items.map((i) => `• ${i.quantity}x ${i.cocktailName} (${i.bottleSizeLabel})`).join('\n')}\n_(Total actuel : ${currentCatalogTotal} / 5 bouteilles)_`
+            : '';
+
+          const qtyPrompt = `Superbe choix ! Vous avez sélectionné « *${matchedCatalogCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).${existingCartSummary}\n\n📦 *Combien de bouteilles de cette recette souhaitez-vous ajouter ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total, ou taper un autre chiffre)_`;
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             qtyPrompt,
             [
-              { id: 'btn_qty_5', title: '5 Bouteilles' },
-              { id: 'btn_qty_6', title: '6 Bouteilles' },
-              { id: 'btn_qty_10', title: '10 Bouteilles' },
+              { id: `btn_catqty_${matchedCatalogCocktail.id}_0_1`, title: '1 Bouteille' },
+              { id: `btn_catqty_${matchedCatalogCocktail.id}_0_2`, title: '2 Bouteilles' },
+              { id: `btn_catqty_${matchedCatalogCocktail.id}_0_3`, title: '3 Bouteilles' },
             ],
             'FYS · Jus du catalogue',
-            'Commande minimale : 5 bouteilles'
+            'Panier combinable (min. 5 au total)'
           );
 
           if (userDocRef) {
@@ -4704,7 +4999,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
               timestamp: FieldValue.serverTimestamp(),
             }).catch(() => null);
           }
-          return res.status(200).json({ status: 'ok', handled: 'catalog_juice_selected_by_text' });
+          return res.status(200).json({ status: 'ok', handled: 'catalog_juice_prompt_from_text' });
         }
 
         // 1.8. Salutations, reprise de contact ou envie de jus / demande de conseil / proposition
@@ -4719,7 +5014,7 @@ RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE :
 1. Salue-le chaleureusement et avec bienveillance.
 2. Demande-lui s'il souhaite :
    - 🧪 **Composer sur-mesure** sa recette au Lab (selon ses objectifs de santé et ses fruits frais préférés).
-   - 🍹 **Partir sur une formule du catalogue** (nos jus signatures prêts, pressés à froid en 350ml à 500 XAF - commande minimale de 5 bouteilles).
+   - 🍹 **Partir sur une formule du catalogue** (nos jus signatures prêts selon les formats et tarifs officiels — commande minimale de 5 bouteilles au total, combinables).
 3. Demande-lui laquelle de ces deux options il préfère aujourd'hui.
 4. Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`,
           });
@@ -4735,7 +5030,7 @@ RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE :
             });
           } else if (activeCart?.items?.[0]?.isCatalog) {
             currentUserParts.push({
-              text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander son jus du catalogue « ${activeCart.items[0].cocktailName} » (Format 350ml à ${activeCart.items[0].unitPrice} XAF). RÈGLE COMMERCIALE STRICTE : Rappelle la commande minimale de 5 bouteilles et demande la quantité avec les boutons :::BUTTONS [{"id": "btn_qty_5", "title": "5 Bouteilles"}, {"id": "btn_qty_6", "title": "6 Bouteilles"}, {"id": "btn_qty_10", "title": "10 Bouteilles"}]. Ne pose AUCUNE autre question !]`,
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander son jus du catalogue « ${activeCart.items[0].cocktailName} » (${activeCart.items[0].bottleSizeLabel} à ${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF). RÈGLE COMMERCIALE STRICTE : Rappelle la commande minimale de 5 bouteilles au total (combinables) et demande la quantité avec les boutons :::BUTTONS [{"id": "btn_qty_1", "title": "1 Bouteille"}, {"id": "btn_qty_2", "title": "2 Bouteilles"}, {"id": "btn_qty_5", "title": "5 Bouteilles"}]. Ne pose AUCUNE autre question !]`,
             });
           } else {
             const cName = activeRecipeName || activeCart?.items?.[0]?.cocktailName || 'Cocktail Santé FYS';
@@ -4748,7 +5043,7 @@ RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE :
           currentUserParts.push({
             text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander mais aucune boisson n'est encore choisie. RÈGLE STRICTE : Présente-lui chaleureusement les deux options FYS pour commander :
 1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes, pressées à froid en 350ml à 500 XAF - commande minimale de 5 bouteilles).
+2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`,
           });
           textHandled = true;
@@ -4882,8 +5177,13 @@ RÈGLES STRICTES DE PRÉSENTATION :
                   cocktailName: it.cocktailName,
                   fruits: it.fruits,
                   bottleSize: it.bottleSize,
+                  bottleSizeLabel: it.bottleSizeLabel,
                   quantity: (idx === lastIdx) ? parsedQty : it.quantity,
                   hasAddedSugar: it.hasAddedSugar,
+                  isCatalog: it.isCatalog,
+                  catalogCocktailId: it.catalogCocktailId,
+                  imageUrl: it.imageUrl,
+                  unitPrice: it.unitPrice,
                 }));
                 activeCart = computeCartFromRawItems(
                   updatedRaw,
@@ -4897,7 +5197,54 @@ RÈGLES STRICTES DE PRÉSENTATION :
                   await saveActiveWhatsAppCart(userDocRef, activeCart);
                 }
                 const lastItem = activeCart.items[lastIdx];
-                if (activeCart.district) {
+                const hasCat = activeCart.items.some((i) => i.isCatalog);
+                const totalCat = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+
+                if (hasCat && totalCat < 5) {
+                  const missing = 5 - totalCat;
+                  const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+                  const warningText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+                  await sendWhatsAppInteractiveButtons(
+                    senderPhone,
+                    warningText,
+                    [
+                      { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                      { id: 'btn_complete_min', title: `Compléter (+${missing} btles)` },
+                      { id: 'btn_view_cart', title: 'Voir le panier' },
+                    ],
+                    'FYS · Minimum 5 bouteilles',
+                    `Manque ${missing} bouteille(s)`
+                  );
+                  if (userDocRef) {
+                    await userDocRef.collection('whatsapp_messages').add({
+                      sender: 'nutrifys',
+                      text: warningText,
+                      timestamp: FieldValue.serverTimestamp(),
+                    }).catch(() => null);
+                  }
+                  return res.status(200).json({ status: 'ok', handled: 'catalog_qty_text_under_min_multi' });
+                } else if (hasCat) {
+                  const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+                  const readyText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+                  await sendWhatsAppInteractiveButtons(
+                    senderPhone,
+                    readyText,
+                    [
+                      { id: 'btn_order', title: 'Valider commande 🛒' },
+                      { id: 'btn_mode_catalog', title: '+ Ajouter un autre jus' },
+                    ],
+                    'FYS · Commande prête',
+                    `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                  );
+                  if (userDocRef) {
+                    await userDocRef.collection('whatsapp_messages').add({
+                      sender: 'nutrifys',
+                      text: readyText,
+                      timestamp: FieldValue.serverTimestamp(),
+                    }).catch(() => null);
+                  }
+                  return res.status(200).json({ status: 'ok', handled: 'catalog_qty_text_min_met_multi' });
+                } else if (activeCart.district) {
                   const devisExact = generateCartDevisText(activeCart, activeCart.district);
                   currentUserParts.push({
                     text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${parsedQty} bouteille(s) pour « ${lastItem.cocktailName} ».
@@ -4961,36 +5308,87 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
             textHandled = true;
           } else if (qtyMatch) {
             const chosenQty = parseInt(qtyMatch[1], 10);
-            if (activeCart.items[0].isCatalog && chosenQty < 5) {
-              const warningText = `⚠️ Pour nos jus signatures du catalogue (${activeCart.items[0].bottleSizeLabel} à ${activeCart.items[0].unitPrice.toLocaleString('fr-FR')} XAF), la commande minimale est de *5 bouteilles* (soit 2 500 XAF + 1 000 XAF de livraison = 3 500 XAF au total).\n\nCombien de bouteilles souhaitez-vous commander (5, 6, 10 ou plus) ?`;
-              await sendWhatsAppInteractiveButtons(
-                senderPhone,
-                warningText,
-                [
-                  { id: 'btn_qty_5', title: '5 Bouteilles' },
-                  { id: 'btn_qty_6', title: '6 Bouteilles' },
-                  { id: 'btn_qty_10', title: '10 Bouteilles' },
-                ],
-                'FYS · Minimum 5 bouteilles',
-                'FYS · Jus du catalogue'
+            if (activeCart.items[0].isCatalog) {
+              const updatedRaw = [{
+                cocktailName: activeCart.items[0].cocktailName,
+                fruits: activeCart.items[0].fruits,
+                bottleSize: activeCart.items[0].bottleSize,
+                bottleSizeLabel: activeCart.items[0].bottleSizeLabel,
+                quantity: chosenQty,
+                hasAddedSugar: activeCart.items[0].hasAddedSugar,
+                isCatalog: true,
+                catalogCocktailId: activeCart.items[0].catalogCocktailId,
+                imageUrl: activeCart.items[0].imageUrl,
+                unitPrice: activeCart.items[0].unitPrice,
+              }];
+              activeCart = computeCartFromRawItems(
+                updatedRaw,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart.district,
+                activeCart
               );
               if (userDocRef) {
-                await userDocRef.collection('whatsapp_messages').add({
-                  sender: 'nutrifys',
-                  text: warningText,
-                  timestamp: FieldValue.serverTimestamp(),
-                }).catch(() => null);
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
               }
-              return res.status(200).json({ status: 'ok', handled: 'catalog_min_qty_warning' });
+
+              if (chosenQty < 5) {
+                const missing = 5 - chosenQty;
+                const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
+                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+
+                await sendWhatsAppInteractiveButtons(
+                  senderPhone,
+                  feedbackText,
+                  [
+                    { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                    { id: 'btn_complete_min', title: `Compléter ce jus (+${missing})` },
+                    { id: 'btn_view_cart', title: 'Voir le panier' },
+                  ],
+                  'FYS · Minimum 5 bouteilles',
+                  `Manque ${missing} bouteille(s)`
+                );
+                if (userDocRef) {
+                  await userDocRef.collection('whatsapp_messages').add({
+                    sender: 'nutrifys',
+                    text: feedbackText,
+                    timestamp: FieldValue.serverTimestamp(),
+                  }).catch(() => null);
+                }
+                return res.status(200).json({ status: 'ok', handled: 'catalog_single_item_qty_under_min' });
+              } else {
+                const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
+                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+
+                await sendWhatsAppInteractiveButtons(
+                  senderPhone,
+                  feedbackText,
+                  [
+                    { id: 'btn_order', title: 'Valider commande 🛒' },
+                    { id: 'btn_mode_catalog', title: '+ Ajouter un autre jus' },
+                  ],
+                  'FYS · Commande prête',
+                  `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                );
+                if (userDocRef) {
+                  await userDocRef.collection('whatsapp_messages').add({
+                    sender: 'nutrifys',
+                    text: feedbackText,
+                    timestamp: FieldValue.serverTimestamp(),
+                  }).catch(() => null);
+                }
+                return res.status(200).json({ status: 'ok', handled: 'catalog_single_item_qty_min_met' });
+              }
             } else if (chosenQty > 0 && chosenQty <= 50) {
               const updatedRaw = [{
                 cocktailName: activeCart.items[0].cocktailName,
                 fruits: activeCart.items[0].fruits,
                 bottleSize: activeCart.items[0].bottleSize,
+                bottleSizeLabel: activeCart.items[0].bottleSizeLabel,
                 quantity: chosenQty,
                 hasAddedSugar: activeCart.items[0].hasAddedSugar,
-                isCatalog: activeCart.items[0].isCatalog,
-                catalogCocktailId: activeCart.items[0].catalogCocktailId,
+                isCatalog: false,
                 imageUrl: activeCart.items[0].imageUrl,
                 unitPrice: activeCart.items[0].unitPrice,
               }];
@@ -5605,21 +6003,22 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             }
 
             // RÈGLE COMMERCIALE STRICTE ET INFAILLIBLE FYS :
-            // Pour tout jus du catalogue, la commande requiert MINIMUM 5 bouteilles !
-            const hasCatalogBelowMin = activeCart.items.some((it) => it.isCatalog && it.quantity < 5);
-            if (hasCatalogBelowMin) {
-              console.warn(`[whatsapp-webhook] ⚠️ Order blocked: catalog item quantity is under 5 for ${senderPhone}.`);
-              const warningText = `⚠️ Impossible de valider la commande : nos jus signatures du catalogue nécessitent un minimum de *5 bouteilles* par commande (format 350ml à 500 XAF la bouteille).\n\nVeuillez choisir une quantité d'au moins 5 bouteilles pour finaliser votre commande :`;
+            // Pour tout jus du catalogue, la commande requiert MINIMUM 5 bouteilles au TOTAL !
+            const totalCatalogQty = activeCart.items.filter((it) => it.isCatalog).reduce((s, it) => s + it.quantity, 0);
+            const isCatalogOrder = activeCart.items.some((it) => it.isCatalog);
+            if (isCatalogOrder && totalCatalogQty < 5) {
+              const missing = 5 - totalCatalogQty;
+              console.warn(`[whatsapp-webhook] ⚠️ Order blocked: total catalog quantity (${totalCatalogQty}) is under 5 for ${senderPhone}.`);
+              const warningText = `⚠️ Impossible de valider la commande : votre panier contient actuellement *${totalCatalogQty} bouteille(s)* de jus du catalogue. La commande minimale est de *5 bouteilles au total* (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos quantités :`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 warningText,
                 [
-                  { id: 'btn_qty_5', title: '5 Bouteilles' },
-                  { id: 'btn_qty_6', title: '6 Bouteilles' },
-                  { id: 'btn_qty_10', title: '10 Bouteilles' },
+                  { id: 'btn_mode_catalog', title: '+ Choisir un autre jus' },
+                  { id: 'btn_complete_min', title: `Compléter (+${missing} bouteilles)` },
                 ],
-                'FYS · Minimum 5 bouteilles',
-                'FYS · Jus du catalogue'
+                'FYS · Jus du catalogue',
+                `Minimum : 5 bouteilles (actuel: ${totalCatalogQty})`
               );
               if (userDocRef) {
                 await userDocRef.collection('whatsapp_messages').add({
@@ -5632,7 +6031,6 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             }
 
             const isWebDraft = Boolean(webDraft);
-            const isCatalogOrder = activeCart.items.some((it) => it.isCatalog);
             const orderLines = activeCart.items.map((it) => ({
               cocktailName: it.cocktailName,
               fruits: it.fruits,
@@ -6219,9 +6617,9 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       ) {
         if (activeCart && activeCart.items.some((i) => i.isCatalog)) {
           buttonsToSend = [
+            { id: 'btn_qty_1', title: '1 Bouteille' },
+            { id: 'btn_qty_2', title: '2 Bouteilles' },
             { id: 'btn_qty_5', title: '5 Bouteilles' },
-            { id: 'btn_qty_6', title: '6 Bouteilles' },
-            { id: 'btn_qty_10', title: '10 Bouteilles' },
           ];
         } else if (activeCart && activeCart.items.length > 1) {
           buttonsToSend = [
