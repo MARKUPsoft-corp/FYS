@@ -2147,9 +2147,15 @@ export function computeCartFromRawItems(
       : (bottleSize === '1L' ? '1 Litre' : '500ml');
 
     const baseBottlePrice = isCatalog ? 0 : (bottleSize === '1L' ? bottle1LBase : bottle500Base);
+    const mainFruits = resolvedIngs.filter((i) => !i.isSupplement && (i as any).role !== 'supplement');
+    const isSingleFruit = !isCatalog && mainFruits.length === 1;
     const ingredientsPriceSum = isCatalog
       ? (typeof raw.unitPrice === 'number' && raw.unitPrice > 0 ? raw.unitPrice : (existingItem?.unitPrice || 500))
-      : resolvedIngs.reduce((sum, ing) => sum + (Number(ing.priceSnapshot) || 0), 0);
+      : resolvedIngs.reduce((sum, ing) => {
+          const isMain = !ing.isSupplement && (ing as any).role !== 'supplement';
+          const multiplier = (isSingleFruit && isMain) ? 2 : 1;
+          return sum + ((Number(ing.priceSnapshot) || 0) * multiplier);
+        }, 0);
     const unitPrice = isCatalog ? ingredientsPriceSum : (baseBottlePrice + ingredientsPriceSum);
 
     // Pour chaque article, la quantité individuelle est libre (minimum 1)
@@ -3490,11 +3496,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // Calcul des tarifs stricts selon la vraie formule FYS
             const webDraftIngredients = Array.isArray(webDraft?.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
+            const webDraftMainFruits = webDraftIngredients.filter((i: any) => !i.isSupplement && i.role !== 'supplement');
+            const isSingleWebDraftFruit = webDraftMainFruits.length === 1;
             const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => {
+              const isMain = !i.isSupplement && i.role !== 'supplement';
+              const multiplier = (isSingleWebDraftFruit && isMain) ? 2 : 1;
               const snapPrice = Number(i.priceSnapshot);
-              if (snapPrice > 0) return s + snapPrice;
+              if (snapPrice > 0) return s + (snapPrice * multiplier);
               const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() || f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase());
-              return s + (foundInStock?.price || 0);
+              return s + ((foundInStock?.price || 0) * multiplier);
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
@@ -3664,11 +3674,15 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
 
             // Calcul des tarifs stricts selon la vraie formule FYS
             const webDraftIngredients = Array.isArray(webDraft?.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
+            const webDraftMainFruits = webDraftIngredients.filter((i: any) => !i.isSupplement && i.role !== 'supplement');
+            const isSingleWebDraftFruit = webDraftMainFruits.length === 1;
             const webDraftIngredientsSum = webDraftIngredients.reduce((s: number, i: any) => {
+              const isMain = !i.isSupplement && i.role !== 'supplement';
+              const multiplier = (isSingleWebDraftFruit && isMain) ? 2 : 1;
               const snapPrice = Number(i.priceSnapshot);
-              if (snapPrice > 0) return s + snapPrice;
+              if (snapPrice > 0) return s + (snapPrice * multiplier);
               const foundInStock = availableFruits.find(f => f.id.toLowerCase() === (i.fruitId || i.id || '').toLowerCase() || f.name.toLowerCase() === (i.fruitName || i.name || '').toLowerCase());
-              return s + (foundInStock?.price || 0);
+              return s + ((foundInStock?.price || 0) * multiplier);
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
@@ -4178,8 +4192,13 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
 
       const currentMainFruitsCount = activeRecipeIngredients.filter((i) => !i.isSupplement).length;
       const currentSupplementsCount = activeRecipeIngredients.filter((i) => i.isSupplement).length;
+      const isSingleFruit = currentMainFruitsCount === 1;
 
-      const activeIngredientsSum = activeRecipeIngredients.reduce((s, i) => s + i.priceSnapshot, 0);
+      const activeIngredientsSum = activeRecipeIngredients.reduce((s, i) => {
+        const isMain = !i.isSupplement;
+        const multiplier = (isSingleFruit && isMain) ? 2 : 1;
+        return s + (i.priceSnapshot * multiplier);
+      }, 0);
       const activePrice500 = bottle500Base + activeIngredientsSum;
       const activePrice1L = bottle1LBase + activeIngredientsSum;
 
@@ -4243,11 +4262,16 @@ CONSIGNES STRICTES ET CATÉGORIQUES ANTI-HALLUCINATION :
 2. NE FAIS AUCUN CALCUL ARITHMÉTIQUE TOI-MÊME : recopie STRICTEMENT et fidèlement les chiffres ci-dessus !
 3. N'OUBLIE AUCUNE BOISSON DU PANIER DANS TON RÉCAPITULATIF OU TA CONFIRMATION : mentionne-les TOUTES !`;
       } else if (activeRecipeIngredients.length > 0) {
-        const ingredientsListStr = activeRecipeIngredients.map((i) => `${i.fruitName} (+${i.priceSnapshot} XAF)`).join(', ');
+        const isSingleFruit = currentMainFruitsCount === 1;
+        const ingredientsListStr = activeRecipeIngredients.map((i) => {
+          const isMain = !i.isSupplement;
+          const price = (isSingleFruit && isMain) ? i.priceSnapshot * 2 : i.priceSnapshot;
+          return `${i.fruitName} (+${price} XAF${(isSingleFruit && isMain) ? ' [pur fruit x2]' : ''})`;
+        }).join(', ');
         recipePricingDetails = `
 RECETTE DÉTECTÉE EN COURS : "${activeRecipeName}"
 Ingrédients (${activeRecipeIngredients.length} fruits) : ${ingredientsListStr}
-Somme exacte des fruits & compléments : ${activeIngredientsSum} XAF
+Somme exacte des fruits & compléments : ${activeIngredientsSum} XAF${isSingleFruit ? ' (inclut le coefficient x2 pour recette 100% pur fruit unique)' : ''}
 CALCUL FERME ET OBLIGATOIRE SELON LA VRAIE FORMULE FYS :
 - Format 500ml : ${bottle500Base} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice500} XAF la bouteille
 - Format 1L : ${bottle1LBase} XAF (base contenant) + ${activeIngredientsSum} XAF (fruits) = ${activePrice1L} XAF la bouteille
@@ -4277,6 +4301,7 @@ ${incompatibilityCatalogStr}
 
 FORMULE OFFICIELLE STRICTE DU CALCUL DES PRIX FYS :
 1. Prix par bouteille = Prix de base du contenant (${bottle500Base} XAF en 500ml, ${bottle1LBase} XAF en 1L) + Somme exacte des prix des fruits & compléments choisis.
+   - RÈGLE DU PUR FRUIT UNIQUE (x2) : Si le client choisit un seul fruit principal pour sa recette sur-mesure (ex: jus 100% Ananas, ou 1 seul fruit + compléments), le prix de ce fruit est automatiquement multiplié par 2 (car le volume de fruits requis pour remplir la bouteille est doublé par rapport à un mélange de fruits).
 2. Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé. Ne facture JAMAIS 1 500 XAF !
 3. TOTAL À PAYER = (Prix par bouteille x Quantité) + 1 000 XAF de livraison.
 ${recipePricingDetails}
@@ -6761,7 +6786,14 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               }
                 // 2. VRAIE FORMULE OFFICIELLE STRICTE EXIGÉE PAR FYS :
                 // Prix unitaire = Prix de base contenant (Firestore) + Somme des fruits et compléments (Firestore)
-                const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.priceSnapshot) || 0), 0);
+                // Règle pur fruit unique : si un seul fruit principal, son prix est multiplié par 2
+                const mainFruits = finalIngredients.filter((i: any) => !i.isSupplement && i.role !== 'supplement');
+                const isSingleFruit = mainFruits.length === 1;
+                const ingredientsPriceSum = finalIngredients.reduce((sum: number, ing: any) => {
+                  const isMain = !ing.isSupplement && ing.role !== 'supplement';
+                  const multiplier = (isSingleFruit && isMain) ? 2 : 1;
+                  return sum + ((Number(ing.priceSnapshot) || 0) * multiplier);
+                }, 0);
                 const pricePerBottle = baseBottlePrice + ingredientsPriceSum;
 
                 const lineTotal = pricePerBottle * quantity;

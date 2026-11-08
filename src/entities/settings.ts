@@ -202,18 +202,31 @@ export function getBottleBasePrice(
   return size === '500ml' ? settings.bottle500mlBase : settings.bottle1LBase;
 }
 
-/** Somme opaque des prix fruits/suppléments (jamais affichée au client) */
+/** Somme opaque des prix fruits/suppléments (jamais affichée au client).
+ * RÈGLE PUR FRUIT UNIQUE (x2) : Si un client compose un cocktail sur mesure avec un seul fruit principal,
+ * le prix de ce fruit est multiplié par 2 (car le volume de fruits requis pour remplir la bouteille
+ * est doublé par rapport à un mélange de plusieurs fruits).
+ */
 export function sumIngredientPrices(
-  ingredients: { priceSnapshot: number }[],
+  ingredients: { priceSnapshot: number; role?: string; isSupplement?: boolean }[],
 ): number {
-  return ingredients.reduce((sum, ing) => sum + (ing.priceSnapshot ?? 0), 0);
+  if (!ingredients || ingredients.length === 0) return 0;
+  const mainFruits = ingredients.filter((i) => i.role !== 'supplement' && !i.isSupplement);
+  const isSingleFruit = mainFruits.length === 1;
+
+  return ingredients.reduce((sum, ing) => {
+    const isMain = ing.role !== 'supplement' && !ing.isSupplement;
+    const price = Number(ing.priceSnapshot) || 0;
+    const multiplier = (isSingleFruit && isMain) ? 2 : 1;
+    return sum + (price * multiplier);
+  }, 0);
 }
 
 /** Prix / bouteille = base contenant + mix fruits */
 export function pricePerBottle(
   settings: PricingSettings,
   size: BottleSize,
-  ingredients: { priceSnapshot: number }[],
+  ingredients: { priceSnapshot: number; role?: string; isSupplement?: boolean }[],
 ): number {
   return getBottleBasePrice(settings, size) + sumIngredientPrices(ingredients);
 }
