@@ -2936,14 +2936,17 @@ Si le client n'a pas encore de profil de santé (nouveau client) :
 (Notre système enregistrera alors son profil dans la base de données FYS).
 
 CONTACTS OFFICIELS DE L'ÉQUIPE FYS (APPEL & WHATSAPP DIRECT) :
-L'équipe FYS est disponible pour répondre aux questions, assister pour une commande ou échanger directement :
 📞 / 💬 +237 691 91 32 07 (https://wa.me/237691913207)
 📞 / 💬 +237 675 10 88 76 (https://wa.me/237675108876)
-RÈGLES D'AFFICHAGE DES CONTACTS :
-- Ces numéros et liens cliquables WhatsApp DOIVENT IMPÉRATIVEMENT figurer dans :
-  1. Le message d'accueil pour un nouveau client.
-  2. Le message final de confirmation de chaque commande.
-- Tu peux également les donner au cours de la conversation dès que le client a besoin d'assistance humaine ou pose des questions sur l'équipe.
+
+RÈGLES STRICTES D'AFFICHAGE DES CONTACTS (OBLIGATOIRE) :
+- INTERDICTION FORMELLE d'ajouter ces numéros à chaque message ! Les échanges courants (choix des fruits, conseils santé, formats, quantités, panier, catalogue...) doivent rester épurés, fluides et STRICTEMENT SANS numéros de téléphone.
+- Tu as l'autorisation d'afficher ces numéros et liens WhatsApp UNIQUEMENT dans 4 situations spécifiques :
+  1. Le message de bienvenue (tout premier accueil d'un nouveau client).
+  2. Le message final de confirmation d'une commande (après validation officielle).
+  3. Si le client te demande expressément un numéro ou comment contacter l'équipe.
+  4. Si tu perçois une intention ou un besoin évident d'assistance humaine (difficulté, hésitation forte, plainte ou blocage).
+- Dans TOUS les autres messages intermédiaires : NE METS PAS les numéros de contact !
 
 RÈGLE COMMERCIALE FYS MAJEURE : LE DOUBLE CHOIX SYSTÉMATIQUE (SUR-MESURE vs CATALOGUE) :
 L'utilisateur doit IMPÉRATIVEMENT AVOIR LE CHOIX à chaque proposition !
@@ -3936,8 +3939,6 @@ CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
             } else {
               userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies).
-Inclus obligatoirement les contacts cliquables de l'équipe FYS pour toute question ou commande directe :
-${FYS_TEAM_CONTACTS_TEXT}
 Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [...], "allergies": [...], "goals": [...] } ::: pour enregistrer son profil dans la base FYS.`;
             }
           }
@@ -3968,8 +3969,8 @@ Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [..
       const conversationRules = hasHistory
         ? `\nRÈGLE DE CONVERSATION : La conversation est en cours avec le client. Réponds avec chaleur, respect et bienveillance.
 RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Si le client salue, reprend contact, exprime une envie de jus ou demande un conseil/menu sans avoir encore de recette en cours : propose-lui OBLIGATOIREMENT le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
-CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou à appeler l'équipe, donne-lui directement nos numéros cliquables :\n${FYS_TEAM_CONTACTS_TEXT}`
-        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message, salue chaleureusement avec respect. Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus IMPÉRATIVEMENT les contacts cliquables de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`;
+RÈGLE STRICTE SUR LES CONTACTS : NE METS PAS les numéros de téléphone ni de contacts dans ce message, sauf si le client le demande expressément ou si tu sens qu'il a besoin d'assistance humaine directe.`
+        : `\nRÈGLE D'ACCUEIL : C'est le tout premier message de bienvenue. Salue chaleureusement avec respect, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus les contacts cliquables de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`;
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
@@ -7433,6 +7434,29 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         ];
       }
 
+      // ── Filtrage strict des numéros de contact selon la règle FYS ──
+      // Les numéros de contact ne doivent PAS être affichés à chaque message.
+      // Ils sont autorisés UNIQUEMENT :
+      // 1. Dans le message de bienvenue (tout premier message d'un nouveau client)
+      // 2. Dans le message final de confirmation de commande
+      // 3. Si le client le demande expressément (ou s'il exprime une intention / besoin d'assistance humaine)
+      const isWelcomeMessage = !hasHistory;
+      const isOrderFinalConfirmation = Boolean(createdOrderInfo);
+      const isContactRequested = Boolean(
+        senderText &&
+        /\b(contact|num[ée]ro|t[ée]l[ée]phone|appeler|appel|joindre|joignable|whatsapp\s+direct|coordonn[ée]es|parler\s+[àa]\s+(?:quelqu'un|un\s+humain|une\s+personne)|humain|service\s+client|assistance|aide|probl[èe]me|souci|bloqu[ée]|r[ée]clamation|plainte|responsable|g[ée]rant)\b/i.test(senderText)
+      );
+
+      if (!isWelcomeMessage && !isOrderFinalConfirmation && !isContactRequested) {
+        // Retirer les numéros de téléphone et le bloc d'assistance de l'équipe des messages intermédiaires
+        aiReply = aiReply.replace(
+          /(?:\r?\n)*\s*(?:(?:Besoin\s+d['’][^\n]+|Une\s+question[^\n]+|Notre\s+[ée]quipe[^\n]+|L['’][ée]quipe\s+FYS[^\n]+|Pour\s+toute\s+question[^\n]+|Contactez[- ]nous[^\n]*|Contacts?[^\n]*):?\s*)?(?:(?:📞|\+237|wa\.me)[^\n]*(?:691\s*91\s*32\s*07|675\s*10\s*88\s*76)[^\n]*\s*)+/gi,
+          ''
+        ).trim();
+      } else if (isWelcomeMessage && !aiReply.includes('691913207') && !aiReply.includes('675108876')) {
+        aiReply = `${aiReply}\n\nBesoin d'informations ou d'une commande par téléphone ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
+      }
+
       // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
       let sentAudio = false;
       if (isAudioMessage && GEMINI_API_KEY) {
@@ -7449,11 +7473,6 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         } catch (audioErr) {
           console.warn('[whatsapp-webhook] Voice reply generation skipped or failed:', audioErr);
         }
-      }
-
-      // Incursion impérative des numéros de l'équipe dans le message de bienvenue pour tout nouveau client
-      if (!hasHistory && !aiReply.includes('691913207') && !aiReply.includes('675108876')) {
-        aiReply = `${aiReply}\n\nBesoin d'informations ou d'une commande par téléphone ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
       }
 
       // Envoyer le message : avec bouton CTA URL natif si présent (zéro lien brut dans le texte), sinon liste déroulante, sinon boutons de réponse, sinon texte standard
