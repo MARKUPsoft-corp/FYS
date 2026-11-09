@@ -1506,7 +1506,7 @@ const RootIndex: PageComponent = () => {
         </div>
         
         <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-muted-foreground font-medium">
-          <p>© {new Date().getFullYear()} FYS · {t('landing.footer.rights')}</p>
+          <p>© {new Date().getFullYear()} FYS · NutriFYS · {t('landing.footer.rights')}</p>
           <div className="flex items-center gap-6">
             <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.terms')}</span>
             <span className="cursor-pointer hover:text-foreground transition-colors">{t('landing.footer.privacy')}</span>
