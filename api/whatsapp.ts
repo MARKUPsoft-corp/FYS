@@ -518,17 +518,18 @@ async function sendWhatsAppInteractiveButtons(
     },
   };
 
-  if (headerText && headerText.length <= 60) {
-    interactivePayload.header = {
-      type: 'text',
-      text: headerText,
-    };
-  }
+  // NOTE CRITIQUE COMPATIBILITÉ META CLOUD API & WHATSAPP WEB :
+  // Les en-têtes textuels ({ type: 'text' }) sur les boutons interactifs (type: 'button')
+  // ne sont pas recommandés par Meta et provoquent des échecs d'affichage silencieux sur WhatsApp Web.
+  // On omet donc le text header pour garantir l'affichage à 100% sur mobile et sur WhatsApp Web.
 
   if (footerText && footerText.length <= 60) {
-    interactivePayload.footer = {
-      text: footerText,
-    };
+    const cleanFooter = footerText.replace(/[*_~`#|•·]/g, '-').replace(/-{2,}/g, '-').trim();
+    if (cleanFooter) {
+      interactivePayload.footer = {
+        text: cleanFooter,
+      };
+    }
   }
 
   const payload = {
@@ -3509,6 +3510,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Diagnostique direct d'envoi de message pour tester la délivrabilité Meta Cloud API
+    if (req.query.test_msg_to) {
+      try {
+        const to = String(req.query.test_msg_to);
+        const text = String(req.query.text || 'Test de connexion NutriFYS Meta Cloud API');
+        const isInteractive = req.query.interactive === 'true';
+        let result = false;
+        if (isInteractive) {
+          result = await sendWhatsAppInteractiveButtons(
+            to,
+            text,
+            [
+              { id: 'btn_test_custom', title: 'Composer sur-mesure' },
+              { id: 'btn_test_catalog', title: 'Jus du catalogue' },
+            ],
+            undefined,
+            'NutriFYS - Test API'
+          );
+        } else {
+          result = await sendWhatsAppMessage(to, text);
+        }
+        return res.status(200).json({ status: 'test_dispatched', to, isInteractive, result });
+      } catch (err: any) {
+        return res.status(500).json({ status: 'error', error: err?.message || String(err) });
+      }
+    }
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
@@ -3528,6 +3556,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const entry = req.body?.entry?.[0];
       const changes = entry?.changes?.[0]?.value;
+
+      // 2.0 Traitement et journalisation des statuts de livraison Meta (sent, delivered, read, failed)
+      const statuses = changes?.statuses;
+      if (statuses && Array.isArray(statuses) && statuses.length > 0) {
+        const db = getAdminDb();
+        for (const st of statuses) {
+          const statusDesc = `ID=${st.id} status=${st.status} recipient=${st.recipient_id}${st.errors ? ' errors=' + JSON.stringify(st.errors) : ''}`;
+          if (st.status === 'failed') {
+            console.error(`[whatsapp-webhook] ❌ Meta delivery FAILED: ${statusDesc}`);
+          } else {
+            console.log(`[whatsapp-webhook] 📡 Meta delivery status: ${statusDesc}`);
+          }
+
+          if (db) {
+            await db.collection('meta_delivery_statuses').add({
+              messageId: st.id || '',
+              status: st.status || '',
+              recipientId: st.recipient_id || '',
+              errors: st.errors || null,
+              raw: st,
+              createdAt: FieldValue.serverTimestamp(),
+            }).catch(() => null);
+
+            // Secours automatique : si un message interactif a échoué chez le client, renvoi direct en texte brut
+            if (st.status === 'failed' && st.id) {
+              try {
+                const debugDocs = await db.collection('meta_debug_logs')
+                  .where('responseText', '>=', st.id)
+                  .where('responseText', '<=', st.id + '\uf8ff')
+                  .limit(1)
+                  .get();
+                if (!debugDocs.empty) {
+                  const logData = debugDocs.docs[0].data();
+                  const fallbackRecipient = logData.to || st.recipient_id;
+                  const fallbackBody = logData.payload?.interactive?.body?.text || logData.payload?.text?.body;
+                  if (fallbackRecipient && fallbackBody) {
+                    console.warn(`[whatsapp-webhook] 🔄 Auto-recovering failed message ${st.id} with plain text to ${fallbackRecipient}...`);
+                    await sendWhatsAppMessage(fallbackRecipient, fallbackBody);
+                  }
+                }
+              } catch (recovErr) {
+                console.warn('[whatsapp-webhook] Auto-recovery lookup skipped:', recovErr);
+              }
+            }
+          }
+        }
+        return res.status(200).json({ status: 'statuses_processed' });
+      }
 
       // Vérifier si un message texte, audio, image ou interactif (bouton cliqué) est présent
       const message = changes?.messages?.[0];
@@ -8292,8 +8368,8 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           senderPhone,
           aiReply,
           buttonsToSend,
-          'NutriFYS · FYS',
-          'NutriFYS · Votre nutritionniste de poche'
+          undefined,
+          'NutriFYS - Votre nutritionniste de poche'
         );
       } else {
         sent = await sendWhatsAppMessage(senderPhone, aiReply);
