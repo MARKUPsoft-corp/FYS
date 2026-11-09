@@ -227,6 +227,45 @@ export function removeTeamContactsFromText(text: string): string {
 }
 
 /**
+ * Extrait le prénom d'un client pour les salutations personnalisées et chaleureuses.
+ */
+export function extractFirstName(fullName: string): string {
+  if (!fullName) return '';
+  const cleaned = fullName
+    .replace(/^(?:M\.|Mme|Mlle|Dr|Pr|Monsieur|Madame)\s+/i, '')
+    .trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  return parts[0] || fullName;
+}
+
+/**
+ * Garantit que le client est appelé chaleureusement par son prénom lors des salutations,
+ * et bannit formellement toute formule générique froide ("cher(e) client(e)").
+ */
+export function sanitizeCustomerGreeting(text: string, customerFirstName: string): string {
+  if (!text) return text;
+  let res = text;
+  const greetingGenericPattern = /(?:bonjour|salut|bonsoir|coucou)\s+ch[eè]r(?:e|\(e\)|\(ère\))?\s+client(?:e|\(e\)|\(s\))?/gi;
+  const genericClientPattern = /ch[eè]r(?:e|\(e\)|\(ère\))?\s+client(?:e|\(e\)|\(s\))?/gi;
+
+  if (customerFirstName) {
+    res = res.replace(greetingGenericPattern, (match) => {
+      const verb = match.split(/\s+/)[0];
+      return `${verb} ${customerFirstName}`;
+    });
+    res = res.replace(genericClientPattern, customerFirstName);
+    res = res.replace(/^(Bonjour|Salut|Bonsoir|Coucou)(?:\s*!|\s*,|\s*\.)/i, `$1 ${customerFirstName} !`);
+  } else {
+    res = res.replace(greetingGenericPattern, (match) => {
+      const verb = match.split(/\s+/)[0];
+      return `${verb} et bienvenue chez FYS`;
+    });
+    res = res.replace(genericClientPattern, 'chez FYS');
+  }
+  return res;
+}
+
+/**
  * Parse du JSON renvoyé par un LLM de manière tolérante :
  * retire les blocs markdown ```json ... ``` et extrait l'objet { ... }.
  */
@@ -2872,6 +2911,12 @@ Ton rôle est de :
 3. Leur recommander des compositions de jus sur-mesure adaptées à leur santé.
 4. Les guider simplement pour commander leur bouteille (500ml ou 1L) et leur livraison à Yaoundé.
 
+RÈGLE D'OR DE SALUTATION ET DE PROXIMITÉ (NOM DU CLIENT) :
+- Quand le client salue ("bonjour", "salut", "bonsoir", "coucou", reprise de discussion...) ou au début de ton message :
+  * TU DOIS IMPÉRATIVEMENT L'APPELER PAR SON NOM OU PRÉNOM (ex: "Bonjour Claudia !", "Bonjour Stéphane !", etc.) pour créer une proximité humaine, chaleureuse, respectueuse et familiale comme chez FYS.
+  * INTERDICTION FORMELLE ET STRICTE d'utiliser des formules génériques, froides et impersonnelles sans proximité telles que "Bonjour cher(e) client(e)", "Cher client", "Chère cliente", "Bonjour client".
+  * Si son prénom n'est pas encore connu, salue avec chaleur ("Bonjour et bienvenue chez FYS !") et demande-lui son prénom avec tact.
+
 RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - EXCLUSION TOTALE DU PAMPLEMOUSSE : FYS n'utilise JAMAIS de pamplemousse (risque d'interaction médicamenteuse grave).
 - Diabète : Éviter les excès de fruits trop sucrés le soir. Privilégier Corossol, Foléré (Bissap), Citron, Concombre, Gingembre.
@@ -3261,8 +3306,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .replace(/[^\p{L}\p{N}\s'-]/gu, '')
         .replace(/\s+/g, ' ')
         .trim();
-      const senderName = cleanSenderName || 'Cher client';
+      let senderName = cleanSenderName || '';
       let senderText = message.text?.body?.trim() || message.image?.caption?.trim() || '';
+
+      // Détection naturelle du nom si le client se présente directement dans son message
+      if (senderText) {
+        const selfIntroMatch = senderText.match(/(?:je\s+m['’]appelle|moi\s+c['’]est|mon\s+nom\s+(?:c['’]est|est)|je\s+suis)\s+([A-ZÀ-ÖØ-öø-ÿ][a-zà-öø-ÿ'-]+(?:\s+[A-ZÀ-ÖØ-öø-ÿ][a-zà-öø-ÿ'-]+)?)/i);
+        if (selfIntroMatch && selfIntroMatch[1]) {
+          const possibleName = selfIntroMatch[1].trim();
+          const lower = possibleName.toLowerCase();
+          const forbiddenWords = ['bonjour', 'salut', 'merci', 'oui', 'non', 'ok', 'commander', 'client', 'un', 'une', 'du', 'des', 'le', 'la', 'les', 'pour', 'ici', 'bonsoir', 'coucou'];
+          if (possibleName.length >= 2 && !forbiddenWords.includes(lower)) {
+            senderName = possibleName;
+          }
+        }
+      }
       let interactiveButtonId = '';
 
       if (isInteractiveMessage) {
@@ -3621,9 +3679,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               userUpdates.activeDraftCode = webDraftCode;
             }
 
-            // Si le brouillon web fournit un prénom et que le nom actuel est générique, le mettre à jour
-            if (webDraft?.customerName && (!userData.name || userData.name === senderPhone || userData.name === 'Client WhatsApp')) {
-              userUpdates.name = webDraft.customerName.trim();
+            // Mettre à jour et consolider le nom du client avec la meilleure source disponible
+            const isGenericDbName = !userData?.name || userData.name === senderPhone || userData.name === 'Client WhatsApp' || userData.name === 'Cher client';
+            if (!isGenericDbName) {
+              if (!senderName || senderName === 'Cher client') {
+                senderName = userData.name.trim();
+              }
+            } else if (webDraft?.customerName?.trim()) {
+              senderName = webDraft.customerName.trim();
+              userUpdates.name = senderName;
+            } else if (cleanSenderName) {
+              senderName = cleanSenderName;
+              userUpdates.name = cleanSenderName;
+            } else if (senderName && senderName !== 'Cher client' && senderName !== senderPhone) {
+              userUpdates.name = senderName;
             }
 
             if (Object.keys(userUpdates).length > 0) {
@@ -3831,12 +3900,15 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
             }
 
             const newDocRef = usersRef.doc();
-            const rawInitName = webDraft?.customerName?.trim() || senderName;
+            const rawInitName = webDraft?.customerName?.trim() || senderName || cleanSenderName || '';
             const initialName = rawInitName
               .replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu, '')
               .replace(/[^\p{L}\p{N}\s'-]/gu, '')
               .replace(/\s+/g, ' ')
-              .trim() || 'Cher client';
+              .trim();
+            if (initialName && (!senderName || senderName === 'Cher client')) {
+              senderName = initialName;
+            }
             const initialConditions = webDraft?.healthProfile?.healthConditions || [];
             const initialAllergies = webDraft?.healthProfile?.allergies || [];
             const initialGoals = webDraft?.healthProfile?.goals || [];
@@ -3949,24 +4021,33 @@ Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [..
         }
       }
 
+      const isGenericName = !senderName || senderName === 'Cher client' || senderName === 'Client WhatsApp' || senderName === senderPhone;
+      const customerFirstName = !isGenericName ? extractFirstName(senderName) : '';
+
       // Appeler le modèle Gemini avec le prompt NutriFYS et tout l'historique
       if (!GEMINI_API_KEY) {
         console.error('[whatsapp-webhook] GEMINI_API_KEY missing');
+        const fallbackGreeting = customerFirstName ? `Bonjour ${customerFirstName} !` : 'Bonjour et bienvenue chez FYS !';
         await sendWhatsAppMessage(
           senderPhone,
-          `Bonjour ${senderName} ! Bienvenue chez FYS. Notre assistant NutriFYS est à votre service.\n\nBesoin d'aide ou d'informations directes ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`,
+          `${fallbackGreeting} Notre assistant NutriFYS est à votre service.\n\nBesoin d'aide ou d'informations directes ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`,
         );
         return res.status(200).json({ status: 'no_gemini_key' });
       }
+
+      const greetingGuideline = customerFirstName
+        ? `RÈGLE DE PROXIMITÉ (NOM DU CLIENT) : Le client s'appelle ${senderName} (Prénom : ${customerFirstName}). Quand il salue ou au début de ton message, appelle-le OBLIGATOIREMENT par son prénom (« Bonjour ${customerFirstName} ! ») pour une proximité chaleureuse. BANNIS ABSOLUMENT « cher(e) client(e) », « cher client », « chère cliente » ou toute formule impersonnelle.`
+        : `RÈGLE DE PROXIMITÉ : Le prénom du client n'est pas encore connu. Salue-le naturellement sans formule générique (« Bonjour et bienvenue chez FYS ! ») et demande-lui gentiment son prénom. BANNIS ABSOLUMENT « cher(e) client(e) ».`;
 
       const hasHistory = chatHistoryForGemini.length > 0;
       const conversationRules = hasHistory
         ? `\nRÈGLE DE CONVERSATION : La conversation est en cours avec le client. Réponds avec chaleur, respect et bienveillance.
 RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Si le client salue, reprend contact, exprime une envie de jus ou demande un conseil/menu sans avoir encore de recette en cours : propose-lui OBLIGATOIREMENT le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
+${greetingGuideline}
 RÈGLE STRICTE SUR LES CONTACTS : N'AFFICHE PAS les numéros de téléphone FYS dans les messages intermédiaires. Affiche-les UNIQUEMENT si le client demande expressément un contact, de l'aide ou à appeler l'équipe :\n${FYS_TEAM_CONTACTS_TEXT}`
         : (isNewClientUser
-            ? `\nRÈGLE D'ACCUEIL (NOUVEAU CLIENT) : C'est le tout premier échange avec ce nouveau client, salue chaleureusement avec respect. Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus les contacts officiels de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`
-            : `\nRÈGLE D'ACCUEIL (CLIENT CONNU) : Salue chaleureusement avec respect. Présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. N'affiche pas les numéros de contact sauf s'il le demande explicitement.`);
+            ? `\nRÈGLE D'ACCUEIL (NOUVEAU CLIENT) : C'est le tout premier échange avec ce nouveau client. ${greetingGuideline} Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus les contacts officiels de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`
+            : `\nRÈGLE D'ACCUEIL (CLIENT CONNU) : Salue chaleureusement avec respect. ${greetingGuideline} Présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. N'affiche pas les numéros de contact sauf s'il le demande explicitement.`);
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
@@ -5673,10 +5754,13 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           /(?:envie\s+d(?:'|\s+un)\s+jus|boire\s+un\s+jus|propose[rz]?(?:\s+moi)?|qu['’]est-ce\s+que\s+(?:tu|vous)\s+(?:avez|proposez)|qu['’]avez-vous|quelles?\s+sont\s+vos\s+formules?|carte\s+des\s+jus|menu\s+des\s+jus|quel\s+jus\s+choisir|je\s+veux\s+(?:un\s+)?jus)/i.test(senderText);
 
         if (!textHandled && isGreetingOrGeneralInquiry && !activeCart && activeRecipeIngredients.length === 0) {
+          const salutationPrompt = customerFirstName
+            ? `1. Salue-le chaleureusement et avec bienveillance EN L'APPELANT OBLIGATOIREMENT PAR SON PRÉNOM (« Bonjour ${customerFirstName} ! »). BANNIS ABSOLUMENT « cher(e) client(e) ».`
+            : `1. Salue-le chaleureusement et avec bienveillance (« Bonjour et bienvenue chez FYS ! »). BANNIS ABSOLUMENT « cher(e) client(e) ».`;
           currentUserParts.push({
             text: `${senderText}\n\n[SYSTÈME FYS : Le client vous salue, reprend contact ou demande un jus / une recommandation.
-RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE :
-1. Salue-le chaleureusement et avec bienveillance.
+RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE & PROXIMITÉ :
+${salutationPrompt}
 2. Demande-lui s'il souhaite :
    - 🧪 **Composer sur-mesure** sa recette au Lab (selon ses objectifs de santé et ses fruits frais préférés).
    - 🍹 **Partir sur une formule du catalogue** (nos jus signatures prêts selon les formats et tarifs officiels — commande minimale de 5 bouteilles au total, combinables).
@@ -6140,7 +6224,10 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         { role: 'user' as const, parts: currentUserParts },
       ];
 
-      const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\nClient : ${senderName} (${senderPhone})${userProfileContext}${dynamicPricingContext}${conversationRules}`;
+      const clientIdentification = customerFirstName
+        ? `Client : ${senderName} (Prénom officiel pour les salutations : ${customerFirstName}) · Téléphone : ${senderPhone}`
+        : `Client : Téléphone ${senderPhone} (Prénom encore inconnu)`;
+      const fullSystemPrompt = `${NUTRIFYS_WHATSAPP_SYSTEM_PROMPT}\n\n${clientIdentification}${userProfileContext}${dynamicPricingContext}${conversationRules}`;
 
       // Modèles à très haute réactivité (< 1.5s) sans saturation de quota journalier
       const envModel = process.env.GEMINI_WHATSAPP_MODEL;
@@ -7448,6 +7535,10 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           }
         }
       }
+
+      // ── CONTRÔLE DE PROXIMITÉ & SALUTATION NOM DU CLIENT ──
+      // Bannit formellement "cher(e) client(e)" et appelle toujours le client par son prénom
+      aiReply = sanitizeCustomerGreeting(aiReply, customerFirstName);
 
       // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
       let sentAudio = false;
