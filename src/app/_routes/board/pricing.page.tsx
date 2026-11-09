@@ -194,13 +194,13 @@ const Pricing: PageComponent = () => {
       imageUrl="https://images.pexels.com/photos/1283219/pexels-photo-1283219.jpeg?auto=compress&cs=tinysrgb&w=1200"
     >
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 bg-card rounded-[2rem] border border-border/40">
+        <div className="flex items-center justify-center py-16 bg-card rounded-[2rem] border border-border/40 max-w-6xl xl:max-w-7xl mx-auto w-full">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <form
           onSubmit={handleSave}
-          className="bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 space-y-8 max-w-2xl mx-auto w-full"
+          className="bg-card rounded-[2rem] border border-border/40 shadow-sm p-6 md:p-8 lg:p-10 space-y-8 max-w-6xl xl:max-w-7xl mx-auto w-full"
         >
           <div className="flex items-start gap-4 pb-6 border-b border-border/40">
             <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -289,7 +289,7 @@ const Pricing: PageComponent = () => {
             </div>
 
             {/* Grille des 3 Zones */}
-            <div className="grid lg:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-3 gap-5">
               {deliveryZones.map((zone, idx) => {
                 const zoneColors = [
                   { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', badge: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
@@ -300,9 +300,9 @@ const Pricing: PageComponent = () => {
                 return (
                   <div
                     key={zone.id}
-                    className={`rounded-2xl border ${zoneColors.border} ${zoneColors.bg} p-4 flex flex-col justify-between space-y-3.5 shadow-sm`}
+                    className={`rounded-2xl border ${zoneColors.border} ${zoneColors.bg} p-5 flex flex-col justify-between space-y-4 shadow-sm`}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${zoneColors.badge}`}>
                           {zone.name.split(':')[0] || `Zone ${idx + 1}`}
@@ -347,13 +347,13 @@ const Pricing: PageComponent = () => {
                         <Label className="text-[11px] font-medium text-muted-foreground">
                           Quartiers rattachés :
                         </Label>
-                        <div className="max-h-36 overflow-y-auto p-2 bg-background/80 rounded-xl border border-border/40 flex flex-wrap gap-1.5">
+                        <div className="max-h-52 overflow-y-auto p-2.5 bg-background/80 rounded-xl border border-border/40 flex flex-wrap gap-1.5">
                           {zone.districts.map((d) => (
                             <span
                               key={d}
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-muted text-foreground border border-border/40 group hover:border-red-300 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-muted text-foreground border border-border/40 group hover:border-red-300 transition-colors"
                             >
-                              <span className="truncate max-w-[130px]">{d}</span>
+                              <span className="truncate max-w-[180px] sm:max-w-[220px]">{d}</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveDistrict(zone.id, d)}
@@ -408,16 +408,16 @@ const Pricing: PageComponent = () => {
             </div>
 
             {/* Tarif de secours pour quartier non répertorié */}
-            <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="p-4 rounded-2xl bg-muted/40 border border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="space-y-0.5">
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-foreground text-sm">
                   Tarif de livraison par défaut / quartier non répertorié :
                 </span>
                 <p className="text-muted-foreground text-[11px]">
                   Utilisé si le client saisit manuellement un quartier ou repère personnalisé absent des 3 zones ci-dessus.
                 </p>
               </div>
-              <div className="relative w-36 shrink-0">
+              <div className="relative w-40 shrink-0">
                 <Input
                   id="delivery-fee"
                   type="number"
@@ -425,10 +425,10 @@ const Pricing: PageComponent = () => {
                   step={50}
                   value={delivery}
                   onChange={(e) => setDelivery(e.target.value)}
-                  className="h-9 rounded-xl pr-12 font-bold text-xs bg-background"
+                  className="h-10 rounded-xl pr-12 font-bold text-sm bg-background"
                   required
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-muted-foreground">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                   XAF
                 </span>
               </div>
@@ -604,7 +604,7 @@ const Pricing: PageComponent = () => {
             </div>
 
             {/* Formulaire des paramètres du lien */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="promo-flyer" className="text-xs font-bold uppercase tracking-wider text-foreground">
                   Montant de la réduction
