@@ -424,7 +424,7 @@ async function sendWhatsAppInteractiveButtons(
   bodyText: string,
   buttons: WhatsAppInteractiveButton[],
   headerText?: string,
-  footerText = 'NutriFYS · Service client'
+  footerText = 'NutriFYS · Votre nutritionniste de poche'
 ): Promise<boolean> {
   if (!WHATSAPP_API_TOKEN) {
     console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
@@ -791,6 +791,49 @@ export function extractCatalogOrdersFromText(
   return results;
 }
 
+export interface ParsedQuantityIntent {
+  quantity: number;
+  isRelative: boolean;
+}
+
+export function parseQuantityIntentFromText(text: string): ParsedQuantityIntent | null {
+  if (!text || typeof text !== 'string') return null;
+  const clean = text.toLowerCase().trim();
+
+  // Exclure les formats de bouteilles explicites (500ml, 1L, etc.)
+  if (/^(?:format\s+)?(?:500\s*(?:ml)?|1000\s*ml|1\s*(?:l|litre))$/i.test(clean)) {
+    return null;
+  }
+
+  // 1. Détection des ajouts relatifs (ex: "ajoutes encore 3", "ajoute 3", "rajoute 2", "+3", "2 de plus", "encore 3 bouteilles")
+  const relRegex1 = /(?:^|\b)(?:ajout(?:er?|e|es|ons|ez)?|rajout(?:er?|e|es|ons|ez)?)(?:\s+(?:en|m['’]en|moi|encore))*\s*(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?(?:\s*(?:de\s*plus|en\s*plus|en\s*encore))?/i;
+  const relRegex2 = /(?:^|\b)(?:encore|\+)\s*(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?/i;
+  const relRegex3 = /(?:^|\b)(\d+)\s*(?:bouteilles?|cols?|btls?)?\s*(?:de\s*plus|en\s*plus)(?:\b|$)/i;
+
+  const mRel = clean.match(relRegex1) || clean.match(relRegex2) || clean.match(relRegex3);
+  if (mRel) {
+    const val = parseInt(mRel[1], 10);
+    if (!isNaN(val) && val > 0 && val <= 50) {
+      return { quantity: val, isRelative: true };
+    }
+  }
+
+  // 2. Détection des quantités absolues (ex: "je veux 5 bouteilles", "je prends 5", "mets 5", "5 bouteilles", "5")
+  const absRegex1 = /^(?:je\s+(?:veux|prends|souhaite|commande|voudrais)|mets|mets-moi|passe\s+[àa]|fais|compte|soit)?\s*(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?$/i;
+  const absRegex2 = /(?:je\s+(?:veux|prends|souhaite|commande|voudrais)|mets|mets-moi|passe\s+[àa]|fais|compte)\s*(\d+)(?:\s*(?:bouteilles?|cols?|btls?))?/i;
+  const absRegex3 = /^(\d+)\s*(?:bouteilles?|cols?|btls?)$/i;
+
+  const mAbs = clean.match(absRegex1) || clean.match(absRegex2) || clean.match(absRegex3);
+  if (mAbs) {
+    const val = parseInt(mAbs[1], 10);
+    if (!isNaN(val) && val > 0 && val <= 100 && val !== 500 && val !== 1000) {
+      return { quantity: val, isRelative: false };
+    }
+  }
+
+  return null;
+}
+
 async function sendWhatsAppCatalogCard(
   to: string,
   cocktail: CatalogCocktail
@@ -975,7 +1018,7 @@ async function sendWhatsAppInteractiveList(
   bodyText: string,
   listData: WhatsAppListData,
   headerText?: string,
-  footerText = 'NutriFYS · Service client'
+  footerText = 'NutriFYS · Votre nutritionniste de poche'
 ): Promise<boolean> {
   if (!WHATSAPP_API_TOKEN) {
     console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
@@ -1923,7 +1966,7 @@ async function generateOrderNutritionPdfBuffer(
             View,
             null,
             React.createElement(Text, { style: styles.brand }, 'FYS', React.createElement(Text, { style: styles.dot }, '.')),
-            React.createElement(Text, { style: styles.tagline }, 'NutriFYS — Votre Nutritionniste Sur-Mesure')
+            React.createElement(Text, { style: styles.tagline }, 'NutriFYS — Votre nutritionniste de poche')
           ),
           React.createElement(
             View,
@@ -2037,7 +2080,7 @@ async function generateOrderNutritionPdfBuffer(
         React.createElement(
           View,
           { style: styles.footer },
-          React.createElement(Text, { style: styles.footerText }, 'NutriFYS — Fiche générée par votre assistant nutritionniste 🌿'),
+          React.createElement(Text, { style: styles.footerText }, 'NutriFYS — Votre nutritionniste de poche'),
           React.createElement(Text, { style: styles.footerText }, 'Consultez un professionnel de santé pour toute question médicale.')
         )
       )
@@ -2990,7 +3033,7 @@ async function sendOrderPdfsToCustomer(
 
 // ── Prompt Système NutriFYS WhatsApp (Chaleureux & Adapté aux seniors) ────────
 
-const NUTRIFYS_WHATSAPP_SYSTEM_PROMPT = `Tu es NutriFYS, l'assistant nutritionniste officiel de FYS (For Your Self), une marque artisanale de cocktails et jus de fruits 100% naturels santé basée à Yaoundé, Cameroun.
+const NUTRIFYS_WHATSAPP_SYSTEM_PROMPT = `Tu es NutriFYS, votre nutritionniste de poche officiel de FYS (For Your Self), une marque artisanale de cocktails et jus de fruits 100% naturels santé basée à Yaoundé, Cameroun.
 
 MISSION PRINCIPALE :
 Tu échanges sur WhatsApp principalement avec des clients qui peuvent être des personnes âgées, des parents ou des clients préférant la simplicité d'une conversation.
@@ -3014,8 +3057,8 @@ RÈGLE D'OR DE SALUTATION ET DE CONVERSATION NATURELLE :
    - BANNIS DÉFINITIVEMENT « cher(e) client(e) », « cher client », « chère cliente », « cher(e) ami(e) ».
 
 RÈGLE D'OR DE STYLE & DE COMMUNICATION PROFESSIONNELLE :
-1. TON DE SERVICE CLIENT PROFESSIONNEL, SOBRE ET CHALEUREUX :
-   - Tu t'exprimes avec l'élégance, la clarté et le professionnalisme d'un véritable service client soigné.
+1. TON DE VOTRE NUTRITIONNISTE DE POCHE : PROFESSIONNEL, SOBRE ET CHALEUREUX :
+   - Tu t'exprimes avec l'élégance, la clarté et le professionnalisme de votre nutritionniste de poche personnel.
 2. ⛔ STRICTEMENT AUCUN ÉMOJI DÉCORATIF / ARTIFICIEL :
    - Ne mets AUCUN émoji décoratif dans tes messages (interdiction absolue des 🍹, 🌿, 💡, 🩺, 👉, 🛒, 📊, 💵, 🚚, 🛺, ✅, 🎉, etc.).
    - Tes messages doivent être impeccables, sérieux, épurés et agréables à lire, sans mise en scène inutile.
@@ -3073,8 +3116,8 @@ Si le client n'a pas encore de profil de santé (nouveau client) :
 (Notre système enregistrera alors son profil dans la base de données FYS).
 
 CONTACTS OFFICIELS DE L'ÉQUIPE FYS (APPEL & WHATSAPP DIRECT) :
-📞 / 💬 +237 691 91 32 07 (https://wa.me/237691913207)
-📞 / 💬 +237 675 10 88 76 (https://wa.me/237675108876)
+Appel / WhatsApp : +237 691 91 32 07 (https://wa.me/237691913207)
+Appel / WhatsApp : +237 675 10 88 76 (https://wa.me/237675108876)
 
 ⚠️ RÈGLE D'OR STRICTE SUR L'AFFICHAGE DES CONTACTS FYS (3 CAS UNIQUEMENT ET STRICTEMENT) :
 Tu as l'autorisation d'afficher ces numéros de contact UNIQUEMENT ET STRICTEMENT dans ces 3 cas précis :
@@ -3200,6 +3243,8 @@ Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
 RÈGLE D'OR POUR LES JUS DU CATALOGUE (Tarifs dynamiques & Multi-jus) :
 - Les jus du catalogue sont des recettes signatures prêtes à déguster, dont les formats (ex: 350ml, 500ml, 1L...) et tarifs sont définis dynamiquement en base.
 - COMMANDE MINIMALE : STRICTEMENT 5 BOUTEILLES AU TOTAL pour le catalogue (le client est libre de combiner plusieurs recettes du catalogue dans une même commande pour atteindre ce minimum).
+- INTERDICTION FORMELLE DE PROPOSER LA VALIDATION DE COMMANDE si le total de bouteilles de jus du catalogue est inférieur à 5 ! Si le client a moins de 5 bouteilles, propose-lui uniquement de compléter sa quantité ou de choisir d'autres jus du catalogue.
+- EN CAS D'AJOUT RELATIF (ex: "ajoute encore 3", "rajoute 2") : Ajoute toujours le nouveau nombre à la quantité déjà présente dans le panier (ex: 3 déjà dans le panier + "ajoute encore 3" = 6 bouteilles au total). Ne remplace jamais la quantité par le nouveau chiffre !
 - Le backend calcule tous les prix et gère les paniers multi-jus. Zéro calcul inventé !
 
 Sous-étape 4.1 : CHOIX DU FORMAT POUR COCKTAIL SUR-MESURE (Uniquement le format !)
@@ -4176,6 +4221,17 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
       const rawUserCart = existingUserDoc?.data()?.activeWhatsAppCart;
+      let pendingCatalogSelection = existingUserDoc?.data()?.pendingCatalogSelection || null;
+      if (pendingCatalogSelection) {
+        const pendingAgeMs = Date.now() - (pendingCatalogSelection.updatedAt || pendingCatalogSelection.timestamp || 0);
+        if (pendingAgeMs > 2 * 3600 * 1000) {
+          pendingCatalogSelection = null;
+          if (userDocRef) {
+            await userDocRef.set({ pendingCatalogSelection: FieldValue.delete() }, { merge: true }).catch(() => null);
+          }
+        }
+      }
+
       if (rawUserCart && Array.isArray(rawUserCart.items) && rawUserCart.items.length > 0) {
         // Expiration stricte après 2 heures d'inactivité
         const cartAgeMs = Date.now() - (rawUserCart.updatedAt || 0);
@@ -4211,10 +4267,12 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
       if (senderText && (isExplicitReset || (!isAddIntent && (resetIntentRegex.test(senderText) || isNewRecipeIntent)))) {
         console.log(`[whatsapp-webhook] 🔄 Intention de réinitialisation détectée ("${senderText}"). Nettoyage immédiat du panier.`);
         activeCart = null;
+        pendingCatalogSelection = null;
         if (userDocRef) {
           await userDocRef.set({
             activeWhatsAppCart: FieldValue.delete(),
             activeWhatsAppDraft: FieldValue.delete(),
+            pendingCatalogSelection: FieldValue.delete(),
           }, { merge: true }).catch(() => null);
         }
 
@@ -4307,6 +4365,26 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
           );
 
           if (userDocRef) {
+            await userDocRef.set({
+              pendingCatalogSelection: {
+                catalogCocktailId: c.id,
+                cocktailName: c.name,
+                containerIdx: 0,
+                bottleSizeLabel,
+                unitPrice,
+                imageUrl: c.imageUrl || null,
+                ingredients: (c.ingredients || []).map((i: any) => ({
+                  fruitId: i.fruitId || i.id,
+                  fruitName: i.fruitName || i.name,
+                  priceSnapshot: i.priceSnapshot || 0,
+                  isSupplement: i.role === 'supplement' || i.isSupplement || false,
+                })),
+                fruits: (c.ingredients && c.ingredients.length > 0)
+                  ? c.ingredients.map((i: any) => i.fruitName)
+                  : [c.name],
+                updatedAt: Date.now(),
+              },
+            }, { merge: true }).catch(() => null);
             await userDocRef.collection('whatsapp_messages').add({
               sender: 'nutrifys',
               text: qtyPrompt,
@@ -4928,8 +5006,8 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
             }
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a cliqué sur 'Commander', mais AUCUN fruit ni recette n'a encore été composé. RÈGLE COMMERCIALE STRICTE FYS : Propose-lui avec enthousiasme les 2 options FYS pour commander :
-1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
+1. Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
+2. Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`;
           } else {
             explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
@@ -5008,6 +5086,24 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             );
 
             if (userDocRef) {
+              await userDocRef.set({
+                pendingCatalogSelection: {
+                  catalogCocktailId: selectedCocktail.id,
+                  cocktailName: selectedCocktail.name,
+                  containerIdx: 0,
+                  bottleSizeLabel,
+                  unitPrice,
+                  imageUrl: selectedCocktail.imageUrl || null,
+                  ingredients: (selectedCocktail.ingredients || []).map((i: any) => ({
+                    fruitId: i.fruitId,
+                    fruitName: i.fruitName,
+                    priceSnapshot: i.priceSnapshot || 0,
+                    isSupplement: i.role === 'supplement',
+                  })),
+                  fruits: (selectedCocktail.ingredients || []).map((i: any) => i.fruitName),
+                  updatedAt: Date.now(),
+                },
+              }, { merge: true }).catch(() => null);
               await userDocRef.collection('whatsapp_messages').add({
                 sender: 'nutrifys',
                 text: qtyPrompt,
@@ -5048,6 +5144,24 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
               'Panier combinable (min. 5 au total)'
             );
             if (userDocRef) {
+              await userDocRef.set({
+                pendingCatalogSelection: {
+                  catalogCocktailId: selectedCocktail.id,
+                  cocktailName: selectedCocktail.name,
+                  containerIdx,
+                  bottleSizeLabel,
+                  unitPrice,
+                  imageUrl: selectedCocktail.imageUrl || null,
+                  ingredients: (selectedCocktail.ingredients || []).map((i: any) => ({
+                    fruitId: i.fruitId,
+                    fruitName: i.fruitName,
+                    priceSnapshot: i.priceSnapshot || 0,
+                    isSupplement: i.role === 'supplement',
+                  })),
+                  fruits: (selectedCocktail.ingredients || []).map((i: any) => i.fruitName),
+                  updatedAt: Date.now(),
+                },
+              }, { merge: true }).catch(() => null);
               await userDocRef.collection('whatsapp_messages').add({
                 sender: 'nutrifys',
                 text: qtyPrompt,
@@ -5122,7 +5236,9 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
 
             if (userDocRef) {
               await saveActiveWhatsAppCart(userDocRef, activeCart);
+              await userDocRef.set({ pendingCatalogSelection: FieldValue.delete() }, { merge: true }).catch(() => null);
             }
+            pendingCatalogSelection = null;
 
             const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
             const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
@@ -5456,12 +5572,39 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             chosenQty = match ? parseInt(match[0], 10) : 1;
           }
 
-          // Règle infaillible FYS : minimum 5 bouteilles pour les jus du catalogue
-          if (activeCart && activeCart.items.some((i) => i.isCatalog) && chosenQty < 5) {
-            chosenQty = 5;
-          }
-
-          if (!activeCart && activeRecipeIngredients.length > 0) {
+          if ((!activeCart || activeCart.items.length === 0) && pendingCatalogSelection) {
+            const unitPrice = pendingCatalogSelection.unitPrice || 500;
+            const bottleSizeLabel = pendingCatalogSelection.bottleSizeLabel || '350ml';
+            const currentItems: WhatsAppCartItem[] = [{
+              id: `item_cat_${pendingCatalogSelection.catalogCocktailId}_${bottleSizeLabel.replace(/\s+/g, '')}`,
+              cocktailName: pendingCatalogSelection.cocktailName,
+              fruits: pendingCatalogSelection.fruits || [],
+              ingredients: pendingCatalogSelection.ingredients || [],
+              bottleSize: bottleSizeLabel,
+              bottleSizeLabel,
+              quantity: chosenQty,
+              baseBottlePrice: 0,
+              ingredientsPriceSum: unitPrice,
+              unitPrice,
+              lineTotal: unitPrice * chosenQty,
+              isCatalog: true,
+              catalogCocktailId: pendingCatalogSelection.catalogCocktailId,
+              imageUrl: pendingCatalogSelection.imageUrl || null,
+            }];
+            activeCart = computeCartFromRawItems(
+              currentItems,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              undefined,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+              await userDocRef.set({ pendingCatalogSelection: FieldValue.delete() }, { merge: true }).catch(() => null);
+            }
+            pendingCatalogSelection = null;
+          } else if (!activeCart && activeRecipeIngredients.length > 0) {
             activeCart = computeCartFromRawItems(
               [{
                 cocktailName: activeRecipeName || 'Cocktail Santé FYS',
@@ -5822,7 +5965,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
               id: `btn_catfmt_${matchedCatalogCocktail.id}_${idx}`,
               title: `${c.label} (${(Number(c.price) || 0).toLocaleString('fr-FR')} XAF)`.slice(0, 20),
             }));
-            const fmtPrompt = `Pour notre jus signature « *${matchedCatalogCocktail.name}* », quel format préférez-vous ?`;
+            const fmtPrompt = `Pour notre jus signature « ${matchedCatalogCocktail.name} », quel format préférez-vous ?`;
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               fmtPrompt,
@@ -5831,6 +5974,24 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
               matchedCatalogCocktail.name
             );
             if (userDocRef) {
+              await userDocRef.set({
+                pendingCatalogSelection: {
+                  catalogCocktailId: matchedCatalogCocktail.id,
+                  cocktailName: matchedCatalogCocktail.name,
+                  containerIdx: 0,
+                  bottleSizeLabel: containers[0]?.label || '350ml',
+                  unitPrice: containers[0]?.price || 500,
+                  imageUrl: matchedCatalogCocktail.imageUrl || null,
+                  ingredients: (matchedCatalogCocktail.ingredients || []).map((i: any) => ({
+                    fruitId: i.fruitId,
+                    fruitName: i.fruitName,
+                    priceSnapshot: i.priceSnapshot || 0,
+                    isSupplement: i.role === 'supplement',
+                  })),
+                  fruits: (matchedCatalogCocktail.ingredients || []).map((i: any) => i.fruitName),
+                  updatedAt: Date.now(),
+                },
+              }, { merge: true }).catch(() => null);
               await userDocRef.collection('whatsapp_messages').add({
                 sender: 'nutrifys',
                 text: fmtPrompt,
@@ -5863,6 +6024,24 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           );
 
           if (userDocRef) {
+            await userDocRef.set({
+              pendingCatalogSelection: {
+                catalogCocktailId: matchedCatalogCocktail.id,
+                cocktailName: matchedCatalogCocktail.name,
+                containerIdx: 0,
+                bottleSizeLabel,
+                unitPrice,
+                imageUrl: matchedCatalogCocktail.imageUrl || null,
+                ingredients: (matchedCatalogCocktail.ingredients || []).map((i: any) => ({
+                  fruitId: i.fruitId,
+                  fruitName: i.fruitName,
+                  priceSnapshot: i.priceSnapshot || 0,
+                  isSupplement: i.role === 'supplement',
+                })),
+                fruits: (matchedCatalogCocktail.ingredients || []).map((i: any) => i.fruitName),
+                updatedAt: Date.now(),
+              },
+            }, { merge: true }).catch(() => null);
             await userDocRef.collection('whatsapp_messages').add({
               sender: 'nutrifys',
               text: qtyPrompt,
@@ -5870,6 +6049,188 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             }).catch(() => null);
           }
           return res.status(200).json({ status: 'ok', handled: 'catalog_juice_prompt_from_text' });
+        }
+
+        // 1.75. Détection déterministe d'une quantité ou d'un incrément (ex: "ajoutes encore 3", "je veux 5 bouteilles", "5")
+        const qtyIntent = (!textHandled && senderText) ? parseQuantityIntentFromText(senderText) : null;
+        if (qtyIntent) {
+          if (activeCart && activeCart.items.length > 0) {
+            const lastIdx = activeCart.items.length - 1;
+            const target = activeCart.items[lastIdx];
+            const newQty = qtyIntent.isRelative ? (target.quantity + qtyIntent.quantity) : qtyIntent.quantity;
+            if (newQty > 0 && newQty <= 50) {
+              const updatedRaw = activeCart.items.map((it, idx) => ({
+                cocktailName: it.cocktailName,
+                fruits: it.fruits,
+                bottleSize: it.bottleSize,
+                bottleSizeLabel: it.bottleSizeLabel,
+                quantity: (idx === lastIdx) ? newQty : it.quantity,
+                hasAddedSugar: it.hasAddedSugar,
+                isCatalog: it.isCatalog,
+                catalogCocktailId: it.catalogCocktailId,
+                imageUrl: it.imageUrl,
+                unitPrice: it.unitPrice,
+              }));
+              activeCart = computeCartFromRawItems(
+                updatedRaw,
+                availableFruits,
+                bottle500Base,
+                bottle1LBase,
+                activeCart.district,
+                activeCart
+              );
+              if (userDocRef) {
+                await saveActiveWhatsAppCart(userDocRef, activeCart);
+                await userDocRef.set({ pendingCatalogSelection: FieldValue.delete() }, { merge: true }).catch(() => null);
+              }
+              pendingCatalogSelection = null;
+
+              const hasCat = activeCart.items.some((i) => i.isCatalog);
+              const totalCat = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
+
+              if (hasCat && totalCat < 5) {
+                const missing = 5 - totalCat;
+                const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+                const warningText = `${newQty} × ${target.cocktailName} (${target.bottleSizeLabel}) mis à jour.\n\nVotre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${totalCat} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
+                await sendWhatsAppInteractiveButtons(
+                  senderPhone,
+                  warningText,
+                  [
+                    { id: 'btn_mode_catalog', title: 'Choisir un jus' },
+                    { id: `btn_catcomp_${target.catalogCocktailId || ''}_0`, title: `Compléter (+${missing})` },
+                    { id: 'btn_view_cart', title: 'Voir le panier' },
+                  ],
+                  'FYS · Minimum 5 bouteilles',
+                  `Manque ${missing} bouteille(s)`
+                );
+                if (userDocRef) {
+                  await userDocRef.collection('whatsapp_messages').add({
+                    sender: 'nutrifys',
+                    text: warningText,
+                    timestamp: FieldValue.serverTimestamp(),
+                  }).catch(() => null);
+                }
+                return res.status(200).json({ status: 'ok', handled: 'qty_text_under_min_updated' });
+              } else if (hasCat) {
+                const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
+                const readyText = `${newQty} × ${target.cocktailName} (${target.bottleSizeLabel}) mis à jour.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${totalCat} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
+                await sendWhatsAppInteractiveButtons(
+                  senderPhone,
+                  readyText,
+                  [
+                    { id: 'btn_order', title: 'Valider la commande' },
+                    { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
+                  ],
+                  'FYS · Commande prête',
+                  `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                );
+                if (userDocRef) {
+                  await userDocRef.collection('whatsapp_messages').add({
+                    sender: 'nutrifys',
+                    text: readyText,
+                    timestamp: FieldValue.serverTimestamp(),
+                  }).catch(() => null);
+                }
+                return res.status(200).json({ status: 'ok', handled: 'qty_text_min_met_updated' });
+              } else if (activeCart.district) {
+                const devisExact = generateCartDevisText(activeCart, activeCart.district);
+                currentUserParts.push({
+                  text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${newQty} bouteille(s) pour « ${target.cocktailName} ».
+LE SERVEUR FYS A DÉJÀ CALCULÉ LE DEVIS OFFICIEL EXACT AVEC LIVRAISON À ${activeCart.district} :
+${devisExact}
+
+CONSIGNE STRICTE ET ABSOLUE :
+Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
+Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`,
+                });
+                textHandled = true;
+              } else {
+                currentUserParts.push({
+                  text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${newQty} bouteille(s) pour « ${target.cocktailName} ». RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
+                });
+                textHandled = true;
+              }
+            }
+          } else if ((!activeCart || activeCart.items.length === 0) && pendingCatalogSelection) {
+            const chosenQty = qtyIntent.quantity;
+            const unitPrice = pendingCatalogSelection.unitPrice || 500;
+            const bottleSizeLabel = pendingCatalogSelection.bottleSizeLabel || '350ml';
+            const currentItems: WhatsAppCartItem[] = [{
+              id: `item_cat_${pendingCatalogSelection.catalogCocktailId}_${bottleSizeLabel.replace(/\s+/g, '')}`,
+              cocktailName: pendingCatalogSelection.cocktailName,
+              fruits: pendingCatalogSelection.fruits || [],
+              ingredients: pendingCatalogSelection.ingredients || [],
+              bottleSize: bottleSizeLabel,
+              bottleSizeLabel,
+              quantity: chosenQty,
+              baseBottlePrice: 0,
+              ingredientsPriceSum: unitPrice,
+              unitPrice,
+              lineTotal: unitPrice * chosenQty,
+              isCatalog: true,
+              catalogCocktailId: pendingCatalogSelection.catalogCocktailId,
+              imageUrl: pendingCatalogSelection.imageUrl || null,
+            }];
+            activeCart = computeCartFromRawItems(
+              currentItems,
+              availableFruits,
+              bottle500Base,
+              bottle1LBase,
+              undefined,
+              undefined
+            );
+            if (userDocRef) {
+              await saveActiveWhatsAppCart(userDocRef, activeCart);
+              await userDocRef.set({ pendingCatalogSelection: FieldValue.delete() }, { merge: true }).catch(() => null);
+            }
+            pendingCatalogSelection = null;
+
+            if (chosenQty < 5) {
+              const missing = 5 - chosenQty;
+              const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
+              const warningText = `${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) enregistré.\n\nVotre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${chosenQty} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                warningText,
+                [
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
+                  { id: `btn_catcomp_${activeCart.items[0].catalogCocktailId || ''}_0`, title: `Compléter (+${missing})` },
+                  { id: 'btn_view_cart', title: 'Voir le panier' },
+                ],
+                'FYS · Minimum 5 bouteilles',
+                `Manque ${missing} bouteille(s)`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: warningText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_pending_qty_under_min' });
+            } else {
+              const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
+              const readyText = `${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) enregistré.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${chosenQty} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
+              await sendWhatsAppInteractiveButtons(
+                senderPhone,
+                readyText,
+                [
+                  { id: 'btn_order', title: 'Valider la commande' },
+                  { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
+                ],
+                'FYS · Commande prête',
+                `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+              );
+              if (userDocRef) {
+                await userDocRef.collection('whatsapp_messages').add({
+                  sender: 'nutrifys',
+                  text: readyText,
+                  timestamp: FieldValue.serverTimestamp(),
+                }).catch(() => null);
+              }
+              return res.status(200).json({ status: 'ok', handled: 'catalog_pending_qty_min_met' });
+            }
+          }
         }
 
         // 1.8. Salutations, reprise de contact ou envie de jus / demande de conseil / proposition
@@ -5915,8 +6276,8 @@ ${salutationPrompt}
         } else if (!textHandled && isOrderText && !activeCart && activeRecipeIngredients.length === 0) {
           currentUserParts.push({
             text: `${senderText}\n\n[SYSTÈME FYS : Le client souhaite commander mais aucune boisson n'est encore choisie. RÈGLE STRICTE : Présente-lui chaleureusement les deux options FYS pour commander :
-1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
+1. Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
+2. Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`,
           });
           textHandled = true;
@@ -7443,7 +7804,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               displayText: (parsed.displayText || parsed.title || 'Tableau de bord').slice(0, 20),
               url: parsed.url,
               headerText: parsed.headerText || 'NutriFYS · FYS',
-              footerText: parsed.footerText || 'NutriFYS · Votre nutritionniste sur-mesure',
+              footerText: parsed.footerText || 'NutriFYS · Votre nutritionniste de poche',
             };
           }
         } catch (cErr) {
@@ -7460,7 +7821,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           displayText: 'Mon Tableau de bord',
           url: trackingUrl,
           headerText: 'NutriFYS · Commande confirmée',
-          footerText: 'NutriFYS · Votre nutritionniste sur-mesure',
+          footerText: 'NutriFYS · Votre nutritionniste de poche',
         };
       }
 
@@ -7708,7 +8069,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           aiReply,
           listToSend,
           'NutriFYS · FYS',
-          'NutriFYS · Votre nutritionniste sur-mesure'
+          'NutriFYS · Votre nutritionniste de poche'
         );
       } else if (buttonsToSend.length > 0) {
         console.log(`[whatsapp-webhook] 🔘 Sending message with ${buttonsToSend.length} interactive buttons to ${senderPhone}...`);
@@ -7717,7 +8078,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           aiReply,
           buttonsToSend,
           'NutriFYS · FYS',
-          'NutriFYS · Votre nutritionniste sur-mesure'
+          'NutriFYS · Votre nutritionniste de poche'
         );
       } else {
         sent = await sendWhatsAppMessage(senderPhone, aiReply);
