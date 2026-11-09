@@ -3,6 +3,12 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  type DeliveryZone,
+  DEFAULT_DELIVERY_ZONES,
+  getDeliveryZoneForDistrict,
+  normalizeDistrictName,
+} from '../src/entities/delivery';
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -638,27 +644,46 @@ interface WhatsAppListData {
   sections: WhatsAppListSection[];
 }
 
-// 10 quartiers fréquents prédéfinis de Yaoundé pour la livraison
-const YAOUNDE_DISTRICTS_LIST: WhatsAppListData = {
-  buttonText: 'Choisir le quartier',
-  sections: [
-    {
-      title: 'Quartiers fréquents',
-      rows: [
-        { id: 'loc_bastos', title: 'Bastos', description: 'Zone Ambassades, Golf' },
-        { id: 'loc_biyem_assi', title: 'Biyem-Assi', description: 'Rond-point, Accacia' },
-        { id: 'loc_odza', title: 'Odza', description: 'Messamendongo, Borne 10' },
-        { id: 'loc_omnisports', title: 'Omnisports / Essos', description: 'Stade, Mfandena' },
-        { id: 'loc_mendong', title: 'Mendong / Simbock', description: 'Lycée, Carrefour Jouvence' },
-        { id: 'loc_nlongkak', title: 'Nlongkak / Elig-Essono', description: 'Rond-point, Warda' },
-        { id: 'loc_mokolo', title: 'Mokolo / Madagascar', description: 'Marché, Tsinga' },
-        { id: 'loc_ngousso', title: 'Ngousso', description: 'Hôpital Général, Eleveur' },
-        { id: 'loc_emombo', title: 'Emombo / Nkolmesseng', description: 'Chapelle, Tradex' },
-        { id: 'loc_centre_ville', title: 'Centre-ville', description: 'Poste Centrale, Boulevard' },
-      ],
-    },
-  ],
-};
+export function getWhatsAppDistrictsList(zones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES): WhatsAppListData {
+  const getFeeBadge = (d: string) => {
+    const fee = getDeliveryZoneForDistrict(d, zones).fee;
+    return `${fee.toLocaleString('fr-FR')} XAF`;
+  };
+
+  return {
+    buttonText: 'Choisir le quartier',
+    sections: [
+      {
+        title: 'Quartiers de Yaoundé',
+        rows: [
+          { id: 'loc_biyem_assi', title: 'Biyem-Assi', description: `${getFeeBadge('Biyem-Assi')} · Proche Nsimeyong (Zone 1)` },
+          { id: 'loc_mendong', title: 'Mendong / Simbock', description: `${getFeeBadge('Mendong')} · Jouvence, Simbock (Zone 1)` },
+          { id: 'loc_centre_ville', title: 'Centre-ville', description: `${getFeeBadge('Centre-ville')} · Poste Centrale (Zone 2)` },
+          { id: 'loc_bastos', title: 'Bastos', description: `${getFeeBadge('Bastos')} · Ambassades, Golf (Zone 2)` },
+          { id: 'loc_omnisports', title: 'Omnisports / Essos', description: `${getFeeBadge('Omnisports')} · Stade, Mfandena (Zone 2)` },
+          { id: 'loc_nlongkak', title: 'Nlongkak', description: `${getFeeBadge('Nlongkak')} · Elig-Essono, Warda (Zone 2)` },
+          { id: 'loc_mokolo', title: 'Mokolo / Tsinga', description: `${getFeeBadge('Mokolo')} · Marché, Tsinga (Zone 2)` },
+          { id: 'loc_emombo', title: 'Emombo / Nkolmesseng', description: `${getFeeBadge('Emombo')} · Chapelle, Tradex (Zone 2)` },
+          { id: 'loc_odza', title: 'Odza', description: `${getFeeBadge('Odza')} · Messamendongo, Borne 10 (Zone 3)` },
+          { id: 'loc_ngousso', title: 'Ngousso', description: `${getFeeBadge('Ngousso')} · Hôpital Général, Eleveur (Zone 3)` },
+        ],
+      },
+    ],
+  };
+}
+
+// 10 quartiers fréquents prédéfinis de Yaoundé pour la livraison (fallback constant)
+const YAOUNDE_DISTRICTS_LIST: WhatsAppListData = getWhatsAppDistrictsList(DEFAULT_DELIVERY_ZONES);
+
+async function sendWhatsAppDistrictList(
+  to: string,
+  bodyText: string,
+  zones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES,
+  headerText = 'FYS · Livraison Yaoundé'
+): Promise<boolean> {
+  const list = getWhatsAppDistrictsList(zones);
+  return sendWhatsAppInteractiveList(to, bodyText, list, headerText);
+}
 
 async function sendWhatsAppInteractiveList(
   to: string,
@@ -2048,6 +2073,8 @@ export const FRUIT_TYPO_SYNONYMS: Record<string, string[]> = {
   chia: ['chia', 'graines de chia'],
 };
 
+let currentActiveDeliveryZones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES;
+
 export function computeCartFromRawItems(
   rawItems: Array<{
     cocktailName?: string;
@@ -2065,7 +2092,8 @@ export function computeCartFromRawItems(
   bottle500Base: number,
   bottle1LBase: number,
   existingDistrict?: string,
-  existingCart?: WhatsAppCart | null
+  existingCart?: WhatsAppCart | null,
+  deliveryZones: DeliveryZone[] = currentActiveDeliveryZones
 ): WhatsAppCart {
   const items: WhatsAppCartItem[] = [];
 
@@ -2183,7 +2211,9 @@ export function computeCartFromRawItems(
   });
 
   const subtotal = items.reduce((sum, it) => sum + it.lineTotal, 0);
-  const deliveryFee = 1000;
+  const finalDistrict = (existingDistrict || existingCart?.district || '').trim();
+  const deliveryZoneInfo = getDeliveryZoneForDistrict(finalDistrict, deliveryZones || currentActiveDeliveryZones);
+  const deliveryFee = deliveryZoneInfo.fee;
   const totalPrice = subtotal + deliveryFee;
   const totalCatalogBottles = items.filter((it) => it.isCatalog).reduce((sum, it) => sum + it.quantity, 0);
   const hasCatalogItems = items.some((it) => it.isCatalog);
@@ -2200,7 +2230,6 @@ export function computeCartFromRawItems(
     updatedAt: Date.now(),
   };
 
-  const finalDistrict = (existingDistrict || existingCart?.district || '').trim();
   if (finalDistrict) {
     cart.district = finalDistrict;
   }
@@ -2500,7 +2529,7 @@ export function generateCartDevisText(cart: WhatsAppCart, district?: string): st
     const label = item.isCatalog ? 'notre jus signature' : 'notre mélange';
     lines.push(`• ${item.quantity} bouteille(s) (${item.bottleSizeLabel}) de ${label} « ${item.cocktailName} » (${fruitsList}) : ${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille (soit ${item.lineTotal.toLocaleString('fr-FR')} XAF)`);
   });
-  lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
+  lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
   lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
   lines.push('');
   lines.push('Est-ce que tout est bon pour vous pour valider cette commande ?');
@@ -2516,7 +2545,7 @@ export function generateCartConfirmationText(cart: WhatsAppCart, district?: stri
     lines.push(`• ${typeLabel} : ${item.cocktailName} (${fruitsList})`);
     lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel} (${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille)`);
   });
-  lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
+  lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
   lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
   lines.push('');
   lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
@@ -2703,9 +2732,13 @@ Si le client te demande d'où viennent tes sources, tes connaissances, tes infor
 FORMATS & TARIFS FYS :
 - Les prix unitaires des bouteilles sont fixés officiellement par le serveur FYS.
 - Format 500ml : Format individuel standard
-- Format 1L : Format familial ou cure 2 jours
-- Livraison à Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Biyem-Assi, Odza, etc.). INTERDICTION FORMELLE d'annoncer 1 500 XAF ou tout autre montant !
-- TOTAL COMMANDE = (Prix unitaire x Quantité) + 1 000 XAF (livraison fixe).
+- Livraison à Yaoundé (départ atelier Nsimeyong) :
+  * Zone 1 (Proximité Nsimeyong, Biyem-Assi, Mendong, Damase, Etoug-Ebe, Jouvence, Melen, Ngoa-Ekellé, Obili, Simbock) : 1 000 XAF
+  * Zone 2 (Centre-ville, Bastos, Tsinga, Nlongkak, Mokolo, Nsam, Mvog-Mbi, Omnisports, Essos, Mbankolo...) : 1 500 XAF
+  * Zone 3 (Périphérie / Longue distance : Odza, Messamendongo, Ngousso, Emana, Messassi, Olembe, Nkomo, Biteng, Nkoabang, Awae...) : 2 000 XAF
+  * Autre quartier non répertorié : 1 500 XAF
+- Si le quartier du client est connu, annonce DIRECTEMENT les frais de livraison correspondants. S'il n'est pas encore connu, demande-lui dans quel quartier de Yaoundé il souhaite être livré.
+- TOTAL COMMANDE = Sous-total des bouteilles + Frais de livraison selon le quartier.
 - Paiement : Mobile Money (MTN MoMo, Orange Money) ou au comptant à la livraison.
 - RÈGLE COMMERCIALE CRITIQUE : N'explique JAMAIS la politique des prix ni la décomposition des coûts (base contenant, coût par fruit, coefficient, etc.). Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
 
@@ -3167,6 +3200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let maxMainFruits = 3;
       let maxSupplements = 2;
       let deliveryFee = 1000;
+      let activeDeliveryZones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES;
       let catalogCocktails: CatalogCocktail[] = [];
       const availableFruits: {
         id: string;
@@ -3211,8 +3245,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (typeof p?.bottle1LBase === 'number') bottle1LBase = p.bottle1LBase;
             if (typeof p?.maxMainFruits === 'number') maxMainFruits = p.maxMainFruits;
             if (typeof p?.maxSupplements === 'number') maxSupplements = p.maxSupplements;
-            // Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
-            deliveryFee = 1000;
+            if (Array.isArray(p?.deliveryZones) && p.deliveryZones.length > 0) {
+              activeDeliveryZones = p.deliveryZones;
+              currentActiveDeliveryZones = p.deliveryZones;
+            }
           }
 
           if (fruitsSnap) {
@@ -3509,7 +3545,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const exactDraftDeliveryFee = 1000;
+            const webDraftDistrict = (webDraft?.deliveryDetails?.district || activeCart?.district || '').trim();
+            const exactDraftDeliveryFee = getDeliveryZoneForDistrict(webDraftDistrict, activeDeliveryZones).fee;
 
             if (webDraft) {
               const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
@@ -3538,7 +3575,7 @@ Consigne d'accueil : Informe-le avec enthousiasme et bienveillance que nous pass
 - Tarifs fermes et définitifs fixés par l'équipe FYS (à annoncer directement sans aucune décomposition) :
   * Bouteille 500ml : ${exactDraftPrice500.toLocaleString('fr-FR')} XAF
   * Bouteille 1L : ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF
-  * Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)${supersedeContextNotice}
+  * Livraison Yaoundé (départ atelier Nsimeyong) : ${webDraftDistrict ? `${exactDraftDeliveryFee.toLocaleString('fr-FR')} XAF pour ${webDraftDistrict}` : 'selon le quartier (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF)'}${supersedeContextNotice}
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
@@ -3546,13 +3583,13 @@ CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
 4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
 5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500.toLocaleString('fr-FR')} XAF (pour 500ml) ou ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF (pour 1L).
-6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
+6. FRAIS DE LIVRAISON : Applique le tarif de livraison selon le quartier depuis Nsimeyong (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF). ${webDraftDistrict ? `Pour ${webDraftDistrict}, c'est exactement ${exactDraftDeliveryFee.toLocaleString('fr-FR')} XAF.` : 'Si le quartier n\'est pas encore précisé, demande son quartier de livraison.'}
 7. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût. Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
 8. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
    - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
-   - "deliveryFee" DOIT être strictement 1000`;
+   - "deliveryFee" DOIT être ${exactDraftDeliveryFee}`;
             } else {
               const hasProfile = conditions.length > 0 || allergies.length > 0 || goals.length > 0;
               if (hasProfile) {
@@ -3688,7 +3725,8 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const exactDraftDeliveryFee = 1000;
+            const webDraftDistrict = (webDraft?.deliveryDetails?.district || activeCart?.district || '').trim();
+            const exactDraftDeliveryFee = getDeliveryZoneForDistrict(webDraftDistrict, activeDeliveryZones).fee;
 
             if (webDraft) {
               const cocktailName = webDraft.cocktail?.name || 'Mon Jus Personnalisé';
@@ -3705,7 +3743,7 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
 - Tarifs fermes et définitifs fixés par l'équipe FYS (à annoncer directement sans aucune décomposition) :
   * Bouteille 500ml : ${exactDraftPrice500.toLocaleString('fr-FR')} XAF
   * Bouteille 1L : ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF
-  * Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
+  * Livraison Yaoundé (départ atelier Nsimeyong) : ${webDraftDistrict ? `${exactDraftDeliveryFee.toLocaleString('fr-FR')} XAF pour ${webDraftDistrict}` : 'selon le quartier (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF)'}
 
 CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 1. LE CLIENT COMMANDE CE JUS PRÉCIS DU LAB : "${cocktailName}" (${ingredientsNames}).
@@ -3713,13 +3751,13 @@ CONSIGNES STRICTES ANTI-HALLUCINATION POUR CETTE COMMANDE :
 3. NE REPOSE PAS le questionnaire de santé : son profil et sa recette sont déjà validés.
 4. Si la commande n'est pas encore finalisée, guide-le simplement à travers les questions détachées : format (500ml ou 1L), quantité de bouteilles, et quartier de livraison.
 5. PRIX FERMES : N'annonce JAMAIS d'autre prix unitaire que ${exactDraftPrice500.toLocaleString('fr-FR')} XAF (pour 500ml) ou ${exactDraftPrice1L.toLocaleString('fr-FR')} XAF (pour 1L).
-6. FRAIS DE LIVRAISON : N'annonce JAMAIS d'autre montant que 1 000 XAF fixe (ne facture JAMAIS 1 500 XAF !).
+6. FRAIS DE LIVRAISON : Applique le tarif de livraison selon le quartier depuis Nsimeyong (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF). ${webDraftDistrict ? `Pour ${webDraftDistrict}, c'est exactement ${exactDraftDeliveryFee.toLocaleString('fr-FR')} XAF.` : 'Si le quartier n\'est pas encore précisé, demande son quartier de livraison.'}
 7. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût. Si le client demande des justificatifs, réponds simplement que c'est le prix fixé par l'équipe FYS.
 8. Lors de la confirmation finale (:::ORDER_JSON) :
    - "cocktailName" DOIT être strictement "${cocktailName}"
    - "fruits" DOIT être strictement ${JSON.stringify(webDraftIngredients.map((i: any) => i.fruitName || i.name))}
    - "unitPrice" DOIT être ${exactDraftPrice500} (pour 500ml) ou ${exactDraftPrice1L} (pour 1L)
-   - "deliveryFee" DOIT être strictement 1000`;
+   - "deliveryFee" DOIT être ${exactDraftDeliveryFee}`;
             } else {
               userProfileContext = `\n\nSTATUT PROFIL DE SANTÉ : NOUVEAU CLIENT SANS PROFIL ENREGISTRÉ.
 CONSIGNE CRITIQUE : Accueille-le chaleureusement et réalise son bilan de santé bienveillant (objectifs, conditions de santé, allergies).
@@ -4013,7 +4051,7 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
 
         if (totalCatalogBottles < 5) {
           const missing = 5 - totalCatalogBottles;
-          const warningText = `🛒 *Votre panier actuel FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : 1 000 XAF\n*Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n⚠️ *Règle FYS :* La commande minimale pour les jus du catalogue est de *5 bouteilles au total*. Il vous manque encore *${missing} bouteille(s)* pour valider votre commande !\n\nVous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
+          const warningText = `🛒 *Votre panier actuel FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n*Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n⚠️ *Règle FYS :* La commande minimale pour les jus du catalogue est de *5 bouteilles au total*. Il vous manque encore *${missing} bouteille(s)* pour valider votre commande !\n\nVous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
 
           await sendWhatsAppInteractiveButtons(
             senderPhone,
@@ -4036,12 +4074,12 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
           }
           return res.status(200).json({ status: 'ok', handled: 'catalog_multi_order_under_min' });
         } else {
-          const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
+          const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
 
           await sendWhatsAppInteractiveList(
             senderPhone,
             readyText,
-            YAOUNDE_DISTRICTS_LIST,
+            getWhatsAppDistrictsList(activeDeliveryZones),
             'FYS · Livraison Yaoundé'
           );
 
@@ -4236,8 +4274,8 @@ CONSIGNES (AVERTIR SANS JAMAIS BLOQUER LA COMMANDE) :
 TARIFS OFFICIELS FIXÉS PAR LE SERVEUR FYS POUR CE COCKTAIL (À ANNONCER DIRECTEMENT SANS DÉCOMPOSITION) :
 - Format 500ml : ${activePrice500.toLocaleString('fr-FR')} XAF la bouteille
 - Format 1L : ${activePrice1L.toLocaleString('fr-FR')} XAF la bouteille
-- Livraison Yaoundé : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé
-TOTAL COMMANDE POUR Q BOUTEILLES = (Prix unitaire x Quantité) + 1 000 XAF de livraison
+- Livraison Yaoundé (départ atelier Nsimeyong) : ${activeCart?.district ? `${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF pour ${activeCart.district}` : 'selon le quartier (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF)'}
+TOTAL COMMANDE POUR Q BOUTEILLES = (Prix unitaire x Quantité) + Frais de livraison selon le quartier
 CONSIGNE FERME : Affiche directement ces prix. N'explique JAMAIS la politique des prix. Si le client demande des justificatifs, dis simplement que c'est le prix fixé par l'équipe FYS.`;
       } else if (currentMainFruitsCount > maxMainFruits || currentSupplementsCount > maxSupplements) {
         recipePricingDetails = `
@@ -4257,7 +4295,7 @@ Informe-le avec bienveillance de la règle d'équilibre du FYS Lab : chaque bout
         recipePricingDetails = `
 🛒 PANIER MULTI-BOISSONS EN COURS (CALCULÉ DIRECTEMENT PAR LE BACKEND FYS) :
 ${cartItemsSummary}
-• Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
+• Frais de livraison : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF${activeCart.district ? ` (${activeCart.district})` : ' (départ atelier Nsimeyong)'}
 • Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF
 👉 TOTAL À PAYER EXACT DE LA COMMANDE : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF
 
@@ -4274,12 +4312,12 @@ Ingrédients (${activeRecipeIngredients.length} fruits) : ${ingredientsListStr}
 TARIFS OFFICIELS FIXÉS PAR LE SERVEUR FYS POUR CE COCKTAIL (À ANNONCER DIRECTEMENT SANS AUCUNE DÉCOMPOSITION) :
 - Format 500ml : ${activePrice500.toLocaleString('fr-FR')} XAF la bouteille
 - Format 1L : ${activePrice1L.toLocaleString('fr-FR')} XAF la bouteille
-- Frais de livraison : STRICTEMENT 1 000 XAF fixe dans tout Yaoundé (quel que soit le quartier : Bastos, Nsimeyong, Odza, etc.)
+- Frais de livraison (départ atelier Nsimeyong) : ${activeCart?.district ? `${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF pour ${activeCart.district}` : 'selon le quartier (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF)'}
 TOTAL COMMANDE POUR Q BOUTEILLES :
 - Sous-total = (Prix unitaire x Quantité)
-- TOTAL À PAYER = Sous-total + 1 000 XAF (livraison fixe)
+- TOTAL À PAYER = Sous-total + Frais de livraison
 CONSIGNES STRICTES ANTI-JUSTIFICATION ET ANTI-HALLUCINATION :
-1. Affiche DIRECTEMENT ces prix (${activePrice500.toLocaleString('fr-FR')} XAF pour 500ml, ${activePrice1L.toLocaleString('fr-FR')} XAF pour 1L, et 1 000 XAF de livraison).
+1. Affiche DIRECTEMENT ces prix (${activePrice500.toLocaleString('fr-FR')} XAF pour 500ml, ${activePrice1L.toLocaleString('fr-FR')} XAF pour 1L, et les frais de livraison correspondants).
 2. N'EXPLIQUE JAMAIS la politique des prix ni aucune décomposition de coût (interdiction formelle de détailler le contenant, le coût par fruit ou toute formule de calcul).
 3. Si le client demande des justificatifs, une explication ou pourquoi ce prix : réponds simplement et avec courtoisie que « c'est le prix fixé par l'équipe FYS », sans entrer dans aucun détail.`;
       } else {
@@ -4302,8 +4340,12 @@ ${incompatibilityCatalogStr}
 
 TARIFS OFFICIELS DU FYS LAB :
 1. Prix par bouteille = Tarifs unitaires fixés par le serveur FYS (${activePrice500.toLocaleString('fr-FR')} XAF en 500ml, ${activePrice1L.toLocaleString('fr-FR')} XAF en 1L).
-2. Frais de livraison = STRICTEMENT 1 000 XAF fixe dans tout Yaoundé. Ne facture JAMAIS 1 500 XAF !
-3. TOTAL À PAYER = (Prix par bouteille x Quantité) + 1 000 XAF de livraison.
+2. Frais de livraison (départ atelier Nsimeyong) = Selon le quartier de livraison :
+   - Zone 1 (Proximité Nsimeyong, Biyem-Assi, Mendong, Damase, Jouvence, Melen...) : 1 000 XAF
+   - Zone 2 (Centre-ville, Bastos, Tsinga, Nlongkak, Mokolo, Omnisports, Essos...) : 1 500 XAF
+   - Zone 3 (Périphérie / Longue distance : Odza, Messamendongo, Ngousso, Emana, Olembe...) : 2 000 XAF
+   - Autre quartier non répertorié : 1 500 XAF
+3. TOTAL À PAYER = (Prix par bouteille x Quantité) + Frais de livraison.
 ${recipePricingDetails}
 
 RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
@@ -4319,7 +4361,7 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
    - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
 4. CONFIDENTIALITÉ STRICTE ET POLITIQUE DES PRIX :
    - Tu n'expliques JAMAIS au client la politique de nos prix, ni aucune décomposition (coût du contenant vide, coût par fruit, coefficient x2, marge, etc.). Tu ne justifies AUCUN calcul.
-   - Tu te contentes d'afficher directement le prix unitaire total tout compris de la bouteille et les frais de livraison fixes (1 000 XAF).
+   - Tu te contentes d'afficher directement le prix unitaire total tout compris de la bouteille et les frais de livraison pour le quartier du client.
    - Si le client demande des justificatifs, une explication ou pourquoi ce prix : réponds simplement et avec courtoisie que « c'est le prix fixé par l'équipe FYS », sans entrer dans aucun détail.
 
 RÈGLE CRITIQUE DU ROUTEUR SÉMANTIQUE D'INTENTIONS (:::INTENT) :
@@ -5207,7 +5249,8 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
           } else if (activeRecipeIngredients.length === 0) {
             explicitAction = `[Le client a choisi son quartier : "${chosenDistrict}", mais aucun cocktail n'a été composé. RÈGLE STRICTE : Demande-lui d'abord quels fruits composer].`;
           } else {
-            explicitAction = `[Le client a choisi son quartier de livraison : "${chosenDistrict}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul exact du prix : (Prix unitaire x Quantité) + 1 000 XAF de livraison fixe à Yaoundé. Demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
+            const districtFee = getDeliveryZoneForDistrict(chosenDistrict, activeDeliveryZones).fee;
+            explicitAction = `[Le client a choisi son quartier de livraison : "${chosenDistrict}". RÈGLE STRICTE : Établis maintenant le récapitulatif devis complet avec calcul exact du prix : (Prix unitaire x Quantité) + ${districtFee.toLocaleString('fr-FR')} XAF de livraison pour ${chosenDistrict}. Demande-lui s'il valide avec les boutons :::BUTTONS [Valider commande] et [Modifier]].`;
           }
         } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
           if (activeCart && activeCart.items.length > 0) {
@@ -5219,7 +5262,9 @@ Affiche le récapitulatif officiel suivant :
 ${recapText}
 Insère le bloc :::ORDER_JSON pour finaliser l'enregistrement.]`;
           } else {
-            explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus (livraison = 1000 XAF)].`;
+            const fallbackDistrict = (activeCart && activeCart.district) || 'Yaoundé';
+            const fallbackFee = getDeliveryZoneForDistrict(fallbackDistrict, activeDeliveryZones).fee;
+            explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis ! Remercie-le chaleureusement, confirme que sa commande est enregistrée et insère le bloc :::ORDER_JSON avec les tarifs exacts convenus (livraison = ${fallbackFee} XAF)].`;
             if (webDraft) {
               const draftIngredients = Array.isArray(webDraft.cocktail?.ingredients) ? webDraft.cocktail.ingredients : [];
               const fruitNames = draftIngredients.map((i: any) => i.fruitName || i.name);
@@ -6285,10 +6330,16 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       }
 
       // ── NORMALISATION & SÉCURISATION DU TEXTE AFFICHÉ AU CLIENT ──
-      // 1. Frais de livraison : STRICTEMENT 1 000 XAF fixe (élimination des hallucinations à 1 500 XAF ou 2 000 XAF)
-      aiReply = aiReply.replace(/(Livraison\s*(?:à|a)?\s*[^:\n]+:\s*)(?:1\s*500|2\s*000|[0-9]{4,5})\s*XAF/gi, '$11 000 XAF');
-      aiReply = aiReply.replace(/à partir de 1\s*000\s*XAF/gi, '1 000 XAF');
-      aiReply = aiReply.replace(/frais de livraison à partir de 1\s*000\s*XAF/gi, 'frais de livraison : 1 000 XAF');
+      // 1. Frais de livraison : Dynamique selon quartier (départ atelier Nsimeyong)
+      const currentCartDistrict = activeCart?.district || '';
+      const currentEffectiveFee = getDeliveryZoneForDistrict(currentCartDistrict, activeDeliveryZones).fee;
+      if (currentCartDistrict) {
+        aiReply = aiReply.replace(
+          new RegExp(`(Livraison\\s*(?:à|a)?\\s*${escapeRegexString(currentCartDistrict)}\\s*:\\s*)(?:[0-9\\s]+)\\s*XAF`, 'gi'),
+          `$1${currentEffectiveFee.toLocaleString('fr-FR')} XAF`
+        );
+      }
+      aiReply = aiReply.replace(/à partir de 1\s*000\s*XAF/gi, `${currentEffectiveFee.toLocaleString('fr-FR')} XAF`);
 
       // 2. Vérification et recalcul exact du TOTAL et du DEVIS si un récapitulatif devis est affiché
       if (activeCart && activeCart.items.length > 0) {
@@ -6313,9 +6364,12 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         const qtyMatch = aiReply.match(/•\s*(\d+)\s*bouteille/i);
         const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
         const correctSubtotal = unitP * qty;
-        const correctTotal = correctSubtotal + 1000;
+        const districtMatch = aiReply.match(/(?:Livraison\s*(?:à|a)?\s*([a-zA-ZÀ-ÿ0-9\s-]+):)/i);
+        const detectedDistrictInReply = districtMatch ? districtMatch[1].trim() : '';
+        const singleDeliveryFee = getDeliveryZoneForDistrict(detectedDistrictInReply, activeDeliveryZones).fee;
+        const correctTotal = correctSubtotal + singleDeliveryFee;
 
-        aiReply = aiReply.replace(/(👉\s*TOTAL\s*(?:À|A)\s*PAYER\s*:\s*)[0-9\s]+XAF/gi, `$1${correctTotal.toLocaleString()} XAF`);
+        aiReply = aiReply.replace(/(👉\s*TOTAL\s*(?:À|A)\s*PAYER\s*:\s*)[0-9\s.,]+XAF/gi, `$1${correctTotal.toLocaleString('fr-FR')} XAF`);
       }
 
       // 1. Traitement automatique du profil de santé si complété par NutriFYS
@@ -6570,7 +6624,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               cocktailPriceSnapshot: activeCart.items[0]?.unitPrice || activeCart.subtotal,
               orderLines,
               subtotal: activeCart.subtotal,
-              deliveryFee: 1000,
+              deliveryFee: activeCart.deliveryFee,
               totalPrice: activeCart.totalPrice,
                 deliveryDetails: {
                   district: activeCart.district || (orderData && orderData.district) || 'Yaoundé',
@@ -6800,8 +6854,9 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
 
                 const lineTotal = pricePerBottle * quantity;
 
-                // Frais de livraison : STRICTEMENT 1 000 XAF FIXE DANS TOUT YAOUNDÉ
-                const finalDeliveryFee = 1000;
+                // Frais de livraison : Dynamique selon quartier (départ atelier Nsimeyong)
+                const chosenDistrict = (orderData && orderData.district) || 'Yaoundé';
+                const finalDeliveryFee = getDeliveryZoneForDistrict(chosenDistrict, activeDeliveryZones).fee;
 
                 // Total à payer : Sous-total + Livraison
                 const totalPrice = lineTotal + finalDeliveryFee;
@@ -6841,7 +6896,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                   deliveryFee: finalDeliveryFee,
                   totalPrice,
                   deliveryDetails: {
-                    district: orderData.district || 'Yaoundé',
+                    district: chosenDistrict,
                     phone: senderPhone,
                     instructions: orderData.instructions || 'Commande directe WhatsApp',
                   },
@@ -7065,7 +7120,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
          aiReply.toLowerCase().includes('quartier souhaitez-vous') ||
          aiReply.toLowerCase().includes('dans quel quartier'))
       ) {
-        listToSend = YAOUNDE_DISTRICTS_LIST;
+        listToSend = getWhatsAppDistrictsList(activeDeliveryZones);
       }
 
       // 1.5. Choix du mode de commande (Composer sur-mesure VS Jus du catalogue)

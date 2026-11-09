@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import i18n from '@/i18n';
+import { DeliveryZone, DEFAULT_DELIVERY_ZONES } from './delivery';
 
 /** Contenant proposé à la commande */
 export type BottleSize = '500ml' | '1L';
@@ -21,6 +22,8 @@ export interface PricingSettings {
   /** Prix de base contenant 1 L (hors fruits) */
   bottle1LBase: number;
   deliveryFee: number;
+  /** Zones de livraison dynamiques (depuis Nsimeyong) */
+  deliveryZones?: DeliveryZone[];
   promoFlyerDiscount?: number;
   /** Promo Flyer / Lien public activée ou non par l'admin */
   promoFlyerActive?: boolean;
@@ -57,6 +60,7 @@ export const DEFAULT_PRICING: PricingSettings = {
   bottle500mlBase: 1500,
   bottle1LBase: 2500,
   deliveryFee: 1000,
+  deliveryZones: DEFAULT_DELIVERY_ZONES,
   promoFlyerDiscount: 500,
   promoFlyerActive: false,
   promoPublicCode: 'FLYER',

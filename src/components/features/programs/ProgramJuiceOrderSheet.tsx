@@ -32,7 +32,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { useQuery } from '@tanstack/react-query';
 import type { UserProgram, ProgramDayItem, Order } from '@/entities';
-import { PROGRAM_TIMING_LABELS } from '@/entities';
+import { PROGRAM_TIMING_LABELS, getDeliveryZoneForDistrict } from '@/entities';
 
 interface Props {
   userProgram: UserProgram;
@@ -75,7 +75,7 @@ export function ProgramJuiceOrderSheet({
     queryFn: getPricingSettings,
   });
 
-  const deliveryFee = pricing?.deliveryFee ?? 1000;
+  const deliveryFee = getDeliveryZoneForDistrict(district, pricing?.deliveryZones).fee;
 
   // Pre-fill user profile info
   useEffect(() => {
@@ -342,7 +342,7 @@ export function ProgramJuiceOrderSheet({
                       <YaoundeDistrictPicker
                         value={district}
                         onChange={setDistrict}
-                        placeholder="Sélectionnez votre quartier..."
+                        zones={pricing?.deliveryZones}
                       />
                     </div>
 

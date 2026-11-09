@@ -22,6 +22,7 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     bottle500mlBase: data.bottle500mlBase ?? DEFAULT_PRICING.bottle500mlBase,
     bottle1LBase: data.bottle1LBase ?? DEFAULT_PRICING.bottle1LBase,
     deliveryFee: data.deliveryFee ?? DEFAULT_PRICING.deliveryFee,
+    deliveryZones: data.deliveryZones ?? DEFAULT_PRICING.deliveryZones,
     promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
     promoFlyerActive: data.promoFlyerActive ?? false,
     promoFlyerExpiresAt: data.promoFlyerExpiresAt ?? null,
@@ -35,6 +36,8 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     launchNoticeActive: data.launchNoticeActive ?? DEFAULT_PRICING.launchNoticeActive ?? true,
     launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
     launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
+    defaultBottleCost500ml: data.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml,
+    defaultBottleCost1L: data.defaultBottleCost1L ?? DEFAULT_PRICING.defaultBottleCost1L,
     ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
   };
 }
@@ -48,6 +51,7 @@ export async function updatePricingSettings(
       bottle500mlBase: data.bottle500mlBase,
       bottle1LBase: data.bottle1LBase,
       deliveryFee: data.deliveryFee,
+      ...(data.deliveryZones ? { deliveryZones: data.deliveryZones } : {}),
       promoFlyerDiscount: data.promoFlyerDiscount ?? 0,
       promoFlyerActive: data.promoFlyerActive ?? false,
       promoFlyerExpiresAt: data.promoFlyerExpiresAt ?? null,
@@ -61,6 +65,8 @@ export async function updatePricingSettings(
       launchNoticeActive: data.launchNoticeActive ?? true,
       launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
       launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
+      ...(data.defaultBottleCost500ml != null ? { defaultBottleCost500ml: data.defaultBottleCost500ml } : {}),
+      ...(data.defaultBottleCost1L != null ? { defaultBottleCost1L: data.defaultBottleCost1L } : {}),
       updatedAt: serverTimestamp(),
     },
     { merge: true },

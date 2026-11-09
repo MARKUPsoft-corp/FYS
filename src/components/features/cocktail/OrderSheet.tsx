@@ -27,6 +27,7 @@ import {
   CocktailType,
   type AIAnalysis,
   type Fruit,
+  getDeliveryZoneForDistrict,
 } from '@/entities';
 import { createOrder } from '@/services/order';
 import { getPricingSettings } from '@/services/settings';
@@ -219,7 +220,9 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
   }, [isEventMode, ordered, user, phone]);
 
 
-  const deliveryFee = isEventMode ? 0 : (pricing?.deliveryFee ?? 1000);
+  const deliveryFee = isEventMode
+    ? 0
+    : getDeliveryZoneForDistrict(district, pricing?.deliveryZones).fee;
   const subtotal500 = price500 * quantity500ml;
   const subtotal1L = price1L * quantity1L;
   const subtotal = hasContainers ? containerSubtotal : (subtotal500 + subtotal1L);
@@ -1253,6 +1256,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                     <YaoundeDistrictPicker
                       value={district}
                       onChange={setDistrict}
+                      zones={pricing?.deliveryZones}
                     />
                     <GeolocationButton
                       onLocation={({ address, ...coords }) => {
@@ -1402,7 +1406,7 @@ export function OrderSheet({ cocktail, open, onOpenChange, user: externalUser, o
                 {!isEventMode && totalBottles > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                      <Truck className="size-3.5" /> {t('orders.delivery')}
+                      <Truck className="size-3.5" /> {t('orders.delivery')} {district ? `(${district})` : ''}
                     </span>
                     <span className="text-[13px] font-semibold text-foreground">
                       {deliveryFee.toLocaleString()} XAF

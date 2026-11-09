@@ -29,6 +29,7 @@ import { GeolocationButton } from '@/components/features/orders/GeolocationButto
 import { createProgramOrder } from '@/services/order';
 import { enrollUserInProgram } from '@/services/program';
 import { getPricingSettings } from '@/services/settings';
+import { getDeliveryZoneForDistrict } from '@/entities';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { useQuery } from '@tanstack/react-query';
@@ -83,7 +84,7 @@ export function ProgramOrderSheet({
     queryFn: getPricingSettings,
   });
 
-  const deliveryFee = pricing?.deliveryFee ?? 1000;
+  const deliveryFee = getDeliveryZoneForDistrict(district, pricing?.deliveryZones).fee;
 
   useEffect(() => {
     if (user?.phone && !phone) {
@@ -310,6 +311,7 @@ export function ProgramOrderSheet({
                 <YaoundeDistrictPicker
                   value={district}
                   onChange={setDistrict}
+                  zones={pricing?.deliveryZones}
                 />
                 <GeolocationButton
                   onLocation={({ address, ...coords }) => {

@@ -1,68 +1,86 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { MapPin, ChevronDown, Search, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { DeliveryZone, DEFAULT_DELIVERY_ZONES, getDeliveryZoneForDistrict } from '@/entities/delivery';
 
-// ── Liste des quartiers de Yaoundé ─────────────────────────────────────────
+// ── Liste de base des quartiers de Yaoundé ─────────────────────────────────
 export const YAOUNDE_DISTRICTS = [
-  // Centre-ville
-  'Centre-ville (Plateau)',
-  'Mvog-Ada',
-  'Mvog-Mbi',
-  'Messa',
-  'Ekoudou',
-
-  // Nord
-  'Nsam',
-  'Nkolbisson',
+  // Zone 1 (Proximité Nsimeyong)
+  'Nsimeyong',
+  'Nsimeyong I',
+  'Nsimeyong II',
+  'Nsimeyong III',
   'Biyem-Assi',
-  'Mbankolo',
-  'Nkoldongo',
-
-  // Sud
-  'Ngousso',
-  'Nkomo',
+  'Accacia',
+  'Damase',
   'Mendong',
-  'Djoungolo',
+  'Jouvence',
   'Etoug-Ebe',
-  'Odza',
-
-  // Est
-  'Tsinga',
-  'Omnisports',
-  'Bastos',
-  'Eleveurs',
-  'Nkol-Afeme',
-
-  // Ouest
-  'Bonamoussadi',
-  'Nkoldongo',
-  'Elig-Edzoa',
-  'Nkolmesseng',
-
-  // Autres quartiers populaires
-  'Essos',
-  'Santa Barbara',
   'Melen',
-  'Ekié',
   'Ngoa-Ekele',
-  'Kondengui',
-  'Emana',
-  'Mfandena',
-  'Awae',
+  'Obili',
   'Simbock',
   'Elig-Effa',
-  'Mimboman',
-  'Nkoabang',
-  'Nkoldongo',
-  'Mvogbeti-Messala',
-  'Nkol-Eton',
+
+  // Zone 2 (Centre & Rayon Moyen)
+  'Centre-ville (Plateau)',
+  'Poste Centrale',
+  'Boulevard du 20 mai',
+  'Bastos',
+  'Golf',
+  'Dragages',
+  'Tsinga',
+  'Messa',
+  'Mokolo',
+  'Madagascar',
+  'Ekoudou',
+  'Nlongkak',
+  'Elig-Essono',
+  'Elig-Edzoa',
+  'Warda',
+  'Mbankolo',
+  'Nsam',
   'Ahala',
+  'Obobogo',
+  'Mvog-Mbi',
+  'Mvog-Ada',
+  'Coron',
+  'Omnisports',
+  'Essos',
+  'Mfandena',
+  'Kondengui',
+  'Emombo',
+  'Nkol-Eton',
+  'Bonamoussadi',
+  'Santa Barbara',
+  'Ekié',
+  'Djoungolo',
+
+  // Zone 3 (Longue distance & Périphérie)
+  'Odza',
+  'Messamendongo',
+  'Borne 10',
+  'Auberge bleue',
+  'Koweït',
+  'Ngousso',
+  'Hôpital Général',
+  'Eleveurs',
+  'Emana',
+  'Messassi',
+  'Olembe',
+  'Nkomo',
+  'Biteng',
+  'Awae',
+  'Nkolmesseng',
+  'Mimboman',
+  'Nkol-Afeme',
+  'Nkoabang',
   'Nkolnda',
+  'Mvogbeti-Messala',
+  'Nkolbisson',
   'Carrière',
   'Mvolyé',
-  'Obili',
   'Etoa-Meki',
-  'Nlongkak',
   'Brasseries',
   'Anguissa',
   'Ekengté',
@@ -72,20 +90,38 @@ export const YAOUNDE_DISTRICTS = [
 
 interface YaoundeDistrictPickerProps {
   value: string;
-  onChange: (v: string) => void;
+  onChange: (district: string, fee?: number) => void;
   error?: boolean;
+  zones?: DeliveryZone[];
 }
 
-export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistrictPickerProps) {
+export function YaoundeDistrictPicker({ value, onChange, error, zones = DEFAULT_DELIVERY_ZONES }: YaoundeDistrictPickerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = YAOUNDE_DISTRICTS.filter((d) =>
-    d.toLowerCase().includes(search.toLowerCase()),
-  );
+  // Combine tous les quartiers connus des zones et de la liste globale
+  const allDistricts = useMemo(() => {
+    const set = new Set<string>(YAOUNDE_DISTRICTS);
+    if (Array.isArray(zones)) {
+      zones.forEach((z) => {
+        (z.districts || []).forEach((d) => set.add(d));
+      });
+    }
+    return Array.from(set).sort();
+  }, [zones]);
+
+  const filtered = useMemo(() => {
+    return allDistricts.filter((d) =>
+      d.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [allDistricts, search]);
+
+  const currentZoneInfo = useMemo(() => {
+    return getDeliveryZoneForDistrict(value, zones);
+  }, [value, zones]);
 
   // Close on outside click
   useEffect(() => {
@@ -107,7 +143,8 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
   }, [open]);
 
   function handleSelect(district: string) {
-    onChange(district);
+    const feeInfo = getDeliveryZoneForDistrict(district, zones);
+    onChange(district, feeInfo.fee);
     setOpen(false);
     setSearch('');
   }
@@ -120,18 +157,26 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`w-full h-10 px-3 flex items-center justify-between rounded-xl text-sm transition-colors border ${
+        className={`w-full h-11 px-3 flex items-center justify-between rounded-xl text-sm transition-all border ${
           error && !value
-            ? 'border-red-400 bg-red-50/50 dark:bg-red-950/20'
+            ? 'border-red-400 bg-red-50/50 dark:bg-red-950/20 shadow-sm'
             : isValid
-            ? 'border-primary/40 bg-primary/5'
-            : 'border-border/40 bg-muted/60'
-        } focus:outline-none`}
+            ? 'border-primary/40 bg-primary/5 hover:border-primary/60'
+            : 'border-border/60 bg-muted/40 hover:bg-muted/70'
+        } focus:outline-none focus:ring-2 focus:ring-primary/20`}
       >
-        <span className={value ? 'text-foreground font-medium' : 'text-muted-foreground'}>
-          {value || t('districts.placeholder')}
-        </span>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 overflow-hidden mr-2">
+          <MapPin className={`size-4 shrink-0 ${isValid ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`truncate ${value ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
+            {value || t('districts.placeholder')}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {isValid && currentZoneInfo.fee > 0 && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {currentZoneInfo.fee.toLocaleString()} XAF
+            </span>
+          )}
           {isValid && <CheckCircle2 className="size-3.5 text-primary" />}
           <ChevronDown
             className={`size-3.5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
@@ -141,10 +186,10 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 bg-background border border-border/60 rounded-2xl shadow-xl overflow-hidden">
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-background border border-border/80 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md animate-in fade-in-0 zoom-in-95 duration-100">
           {/* Search */}
-          <div className="p-2 border-b border-border/40">
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/60 rounded-xl">
+          <div className="p-2.5 border-b border-border/40 bg-muted/30">
+            <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border/60 rounded-xl shadow-inner">
               <Search className="size-3.5 text-muted-foreground shrink-0" />
               <input
                 ref={inputRef}
@@ -157,46 +202,63 @@ export function YaoundeDistrictPicker({ value, onChange, error }: YaoundeDistric
             </div>
           </div>
 
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.map((district) => (
-              <button
-                key={district}
-                type="button"
-                onClick={() => handleSelect(district)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted/80 ${
-                  value === district ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'
-                }`}
-              >
-                {district}
-                {value === district && <CheckCircle2 className="size-3.5 shrink-0" />}
-              </button>
-            ))}
+          <div className="max-h-56 overflow-y-auto divide-y divide-border/20">
+            {filtered.map((district) => {
+              const zoneInfo = getDeliveryZoneForDistrict(district, zones);
+              const isSelected = value === district;
+              return (
+                <button
+                  key={district}
+                  type="button"
+                  onClick={() => handleSelect(district)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors hover:bg-primary/5 ${
+                    isSelected ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
+                  }`}
+                >
+                  <span className="truncate mr-2">{district}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground border border-border/40">
+                      {zoneInfo.fee.toLocaleString()} XAF
+                    </span>
+                    {isSelected && <CheckCircle2 className="size-3.5 text-primary" />}
+                  </div>
+                </button>
+              );
+            })}
             
             {/* Si aucune correspondance exacte ou recherche personnalisée */}
-            {search.trim().length > 0 && !YAOUNDE_DISTRICTS.some(d => d.toLowerCase() === search.toLowerCase()) && (
+            {search.trim().length > 0 && !allDistricts.some(d => d.toLowerCase() === search.toLowerCase()) && (
               <button
                 type="button"
                 onClick={() => handleSelect(search.trim())}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left text-primary transition-colors hover:bg-primary/10"
+                className="w-full flex items-center justify-between px-4 py-3 text-sm text-left text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
               >
-                <MapPin className="size-3.5" />
-                {t('districts.useCustom', { name: search.trim() })}
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 shrink-0" />
+                  <span className="font-semibold">{t('districts.useCustom', { name: search.trim() })}</span>
+                </div>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                  1 500 XAF
+                </span>
               </button>
             )}
 
             {filtered.length === 0 && search.trim().length === 0 && (
-               <p className="px-4 py-3 text-sm text-muted-foreground text-center">
+               <p className="px-4 py-4 text-sm text-muted-foreground text-center">
                   {t('districts.searchPlaceholder')}
                </p>
             )}
           </div>
 
-          {/* Footer badge */}
-          <div className="px-4 py-2.5 border-t border-border/40 bg-muted/30">
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <MapPin className="size-3 shrink-0" />
-              {t('districts.yourDelivery')}
-            </p>
+          {/* Footer info départ Nsimeyong */}
+          <div className="px-4 py-2.5 border-t border-border/40 bg-muted/40 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 font-medium">
+              <MapPin className="size-3 text-primary shrink-0" />
+              Départ atelier : Nsimeyong
+            </span>
+            <span className="text-[10px] text-muted-foreground/80">
+              Tarif calculé selon la distance
+            </span>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageComponent } from 'rasengan';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker, Clock, Copy, Check, Share2, ExternalLink, Sparkles, Globe } from 'lucide-react';
+import { Loader2, Save, Wine, Download, ToggleLeft, ToggleRight, CalendarClock, Tag, CheckCircle2, XCircle, Beaker, Clock, Copy, Check, Share2, ExternalLink, Sparkles, Globe, Truck, MapPin, Plus, Trash2, RotateCcw, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadSvgAsPng } from '@/lib/download';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BoardPageShell } from '@/components/layout/BoardPageShell';
 import { getPricingSettings, updatePricingSettings } from '@/services/settings';
-import { BOTTLE_VOLUME_LABELS, DEFAULT_PRICING } from '@/entities';
+import { BOTTLE_VOLUME_LABELS, DEFAULT_PRICING, DeliveryZone, DEFAULT_DELIVERY_ZONES } from '@/entities';
 import { generatePublicPromoUrl } from '@/utils/promo';
 
 const Pricing: PageComponent = () => {
@@ -47,6 +47,8 @@ const Pricing: PageComponent = () => {
   const [launchNoticeActive, setLaunchNoticeActive] = useState(true);
   const [launchNoticeText, setLaunchNoticeText] = useState('');
   const [launchNoticeTextEn, setLaunchNoticeTextEn] = useState('');
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>(DEFAULT_DELIVERY_ZONES);
+  const [newDistrictInputs, setNewDistrictInputs] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -57,6 +59,7 @@ const Pricing: PageComponent = () => {
     setBottleCost500(String(pricing.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml ?? 250));
     setBottleCost1L(String(pricing.defaultBottleCost1L ?? DEFAULT_PRICING.defaultBottleCost1L ?? 450));
     setDelivery(String(pricing.deliveryFee));
+    setDeliveryZones(pricing.deliveryZones && pricing.deliveryZones.length > 0 ? pricing.deliveryZones : DEFAULT_DELIVERY_ZONES);
     setPromoFlyer(String(pricing.promoFlyerDiscount ?? 0));
     setPromoFlyerActive(pricing.promoFlyerActive ?? false);
     setPromoFlyerExpires(
@@ -82,6 +85,41 @@ const Pricing: PageComponent = () => {
 
   function setTextOrDefault(val: string | undefined, defaultVal: string, setter: (v: string) => void) {
     setter(val !== undefined ? val : defaultVal);
+  }
+
+  function handleZoneFeeChange(zoneId: string, feeStr: string) {
+    const fee = Number(feeStr) || 0;
+    setDeliveryZones((prev) =>
+      prev.map((z) => (z.id === zoneId ? { ...z, fee } : z))
+    );
+  }
+
+  function handleAddDistrict(zoneId: string) {
+    const name = (newDistrictInputs[zoneId] || '').trim();
+    if (!name) return;
+    setDeliveryZones((prev) =>
+      prev.map((z) => {
+        if (z.id !== zoneId) return z;
+        if (z.districts.some((d) => d.toLowerCase() === name.toLowerCase())) return z;
+        return { ...z, districts: [...z.districts, name] };
+      })
+    );
+    setNewDistrictInputs((prev) => ({ ...prev, [zoneId]: '' }));
+  }
+
+  function handleRemoveDistrict(zoneId: string, districtName: string) {
+    setDeliveryZones((prev) =>
+      prev.map((z) => {
+        if (z.id !== zoneId) return z;
+        return { ...z, districts: z.districts.filter((d) => d !== districtName) };
+      })
+    );
+  }
+
+  function handleResetDefaultZones() {
+    if (window.confirm("Rétablir les zones et tarifs de livraison par défaut (Nsimeyong, Bastos, Odza...) ?")) {
+      setDeliveryZones(DEFAULT_DELIVERY_ZONES);
+    }
   }
 
   const cleanPromoCode = (promoPublicCode || 'FLYER').trim().toUpperCase();
@@ -122,6 +160,7 @@ const Pricing: PageComponent = () => {
         defaultBottleCost500ml: Number(bottleCost500) || 0,
         defaultBottleCost1L: Number(bottleCost1L) || 0,
         deliveryFee: Number(delivery) || 0,
+        deliveryZones,
         promoFlyerDiscount: Number(promoFlyer) || 0,
         promoFlyerActive,
         promoFlyerExpiresAt: flyerExpAt,
@@ -221,24 +260,178 @@ const Pricing: PageComponent = () => {
             </div>
           </div>
 
-          <div className="space-y-2 pt-2">
-            <Label htmlFor="delivery-fee" className="text-sm font-semibold">
-              {t('pricing.deliveryFee')}
-            </Label>
-            <div className="relative max-w-xs">
-              <Input
-                id="delivery-fee"
-                type="number"
-                min={0}
-                step={50}
-                value={delivery}
-                onChange={(e) => setDelivery(e.target.value)}
-                className="h-11 rounded-xl pr-14"
-                required
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                XAF
-              </span>
+          {/* ── Frais de Livraison Dynamiques par Zone (Nsimeyong) ── */}
+          <div className="pt-6 pb-4 border-t border-border/40 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Truck className="size-5" />
+                </div>
+                <div>
+                  <h4 className="font-display font-bold text-base text-foreground">
+                    Frais de Livraison Dynamiques par Zone (Atelier : Nsimeyong)
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Tarifs appliqués automatiquement sur le Web et WhatsApp selon l'éloignement du quartier par rapport à Nsimeyong.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResetDefaultZones}
+                className="shrink-0 h-9 rounded-xl text-xs gap-1.5 self-start sm:self-auto border-border/60 hover:bg-muted/60"
+              >
+                <RotateCcw className="size-3.5 text-muted-foreground" />
+                Rétablir les zones par défaut
+              </Button>
+            </div>
+
+            {/* Grille des 3 Zones */}
+            <div className="grid lg:grid-cols-3 gap-4">
+              {deliveryZones.map((zone, idx) => {
+                const zoneColors = [
+                  { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', badge: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+                  { border: 'border-amber-500/30', bg: 'bg-amber-500/5', badge: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+                  { border: 'border-blue-500/30', bg: 'bg-blue-500/5', badge: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+                ][idx % 3];
+
+                return (
+                  <div
+                    key={zone.id}
+                    className={`rounded-2xl border ${zoneColors.border} ${zoneColors.bg} p-4 flex flex-col justify-between space-y-3.5 shadow-sm`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${zoneColors.badge}`}>
+                          {zone.name.split(':')[0] || `Zone ${idx + 1}`}
+                        </span>
+                        <span className="text-[11px] font-semibold text-muted-foreground">
+                          {zone.districts.length} quartier{zone.districts.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h5 className="font-semibold text-sm text-foreground">{zone.name}</h5>
+                        {zone.description && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                            {zone.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Tarif de la zone */}
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold text-foreground">
+                          Frais de livraison pour cette zone :
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={50}
+                            value={zone.fee}
+                            onChange={(e) => handleZoneFeeChange(zone.id, e.target.value)}
+                            className="h-10 rounded-xl pr-14 bg-background font-bold text-sm"
+                            required
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                            XAF
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Liste des quartiers (badges scrollables) */}
+                      <div className="space-y-1.5 pt-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">
+                          Quartiers rattachés :
+                        </Label>
+                        <div className="max-h-36 overflow-y-auto p-2 bg-background/80 rounded-xl border border-border/40 flex flex-wrap gap-1.5">
+                          {zone.districts.map((d) => (
+                            <span
+                              key={d}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-muted text-foreground border border-border/40 group hover:border-red-300 transition-colors"
+                            >
+                              <span className="truncate max-w-[130px]">{d}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveDistrict(zone.id, d)}
+                                className="text-muted-foreground/60 hover:text-red-500 rounded-sm p-0.5 transition-colors"
+                                title={`Retirer ${d}`}
+                              >
+                                <X className="size-3" />
+                              </button>
+                            </span>
+                          ))}
+                          {zone.districts.length === 0 && (
+                            <span className="text-xs text-muted-foreground italic p-1">
+                              Aucun quartier rattaché
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ajouter un quartier dans la zone */}
+                    <div className="pt-2 border-t border-border/30">
+                      <div className="flex gap-1.5">
+                        <Input
+                          placeholder="Ajouter quartier..."
+                          value={newDistrictInputs[zone.id] || ''}
+                          onChange={(e) =>
+                            setNewDistrictInputs((prev) => ({ ...prev, [zone.id]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddDistrict(zone.id);
+                            }
+                          }}
+                          className="h-8 text-xs rounded-xl bg-background"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleAddDistrict(zone.id)}
+                          className="h-8 px-2.5 rounded-xl text-xs shrink-0"
+                          title="Ajouter"
+                        >
+                          <Plus className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tarif de secours pour quartier non répertorié */}
+            <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <span className="font-semibold text-foreground">
+                  Tarif de livraison par défaut / quartier non répertorié :
+                </span>
+                <p className="text-muted-foreground text-[11px]">
+                  Utilisé si le client saisit manuellement un quartier ou repère personnalisé absent des 3 zones ci-dessus.
+                </p>
+              </div>
+              <div className="relative w-36 shrink-0">
+                <Input
+                  id="delivery-fee"
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={delivery}
+                  onChange={(e) => setDelivery(e.target.value)}
+                  className="h-9 rounded-xl pr-12 font-bold text-xs bg-background"
+                  required
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-muted-foreground">
+                  XAF
+                </span>
+              </div>
             </div>
           </div>
 
