@@ -245,8 +245,8 @@ export function extractFirstName(fullName: string): string {
 export function sanitizeCustomerGreeting(text: string, customerFirstName: string): string {
   if (!text) return text;
   let res = text;
-  const greetingGenericPattern = /(?:bonjour|salut|bonsoir|coucou)\s+ch[eè]r(?:e|\(e\)|\(ère\))?\s+client(?:e|\(e\)|\(s\))?/gi;
-  const genericClientPattern = /ch[eè]r(?:e|\(e\)|\(ère\))?\s+client(?:e|\(e\)|\(s\))?/gi;
+  const greetingGenericPattern = /(?:bonjour|salut|bonsoir|coucou)\s+ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)/gi;
+  const genericClientPattern = /ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)/gi;
 
   if (customerFirstName) {
     res = res.replace(greetingGenericPattern, (match) => {
@@ -263,6 +263,44 @@ export function sanitizeCustomerGreeting(text: string, customerFirstName: string
     res = res.replace(genericClientPattern, 'chez FYS');
   }
   return res;
+}
+
+/**
+ * Supprime les salutations intempestives en plein milieu de conversation
+ * (ex: quand le client choisit ses fruits ou clique sur un bouton alors que la discussion est déjà engagée).
+ */
+export function stripUnwantedMidConversationGreetings(text: string): string {
+  if (!text) return text;
+  let cleaned = text;
+
+  // 1. Supprime les salutations d'accueil du type "Bonjour cher(e) ami(e)," ou "Bonjour cher client !" ou "Bonjour Claudia !"
+  cleaned = cleaned.replace(
+    /^(?:(?:re-?)?bonjour|salut|bonsoir|coucou)(?:\s+(?:et\s+bienvenue(?:\s+chez\s+FYS)?|ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)|[A-ZÀ-ÖØ-öø-ÿ0-9._-]+(?:\s+[A-ZÀ-ÖØ-öø-ÿ0-9._-]+)?))?(?:\s*[!.,:;])\s*/i,
+    ''
+  );
+
+  // 2. Supprime les formules de remplissage du type "C'est un plaisir de vous accompagner pour cette commande..."
+  cleaned = cleaned.replace(
+    /^(?:c[\x27’]est|c\x27est)\s+(?:un\s+plaisir|un\s+réel\s+plaisir|un\s+bonheur)\s+de\s+vous\s+(?:retrouver|accompagner|servir|revoir)(?:\s+(?:aujourd[\x27’]hui|pour\s+cette\s+commande[^\n.!?]*))?[^\n.!?]*(?:!|\.|\?)\s*/i,
+    ''
+  );
+
+  // 3. Supprime d'autres formules d'ouverture type "Ravi de vous retrouver..."
+  cleaned = cleaned.replace(
+    /^(?:ravi(?:e)?|heureux|heureuse)\s+de\s+vous\s+(?:retrouver|accompagner|servir|revoir)[^\n.!?]*(?:!|\.|\?)\s*/i,
+    ''
+  );
+
+  cleaned = cleaned.trim();
+  // Protection: si tout le message a été supprimé (cas rare), conserver le texte original nettoyé des formules impersonnelles
+  if (!cleaned && text.trim()) {
+    cleaned = text.replace(/ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)/gi, '').trim();
+  }
+
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return cleaned;
 }
 
 /**
@@ -2911,11 +2949,18 @@ Ton rôle est de :
 3. Leur recommander des compositions de jus sur-mesure adaptées à leur santé.
 4. Les guider simplement pour commander leur bouteille (500ml ou 1L) et leur livraison à Yaoundé.
 
-RÈGLE D'OR DE SALUTATION ET DE PROXIMITÉ (NOM DU CLIENT) :
-- Quand le client salue ("bonjour", "salut", "bonsoir", "coucou", reprise de discussion...) ou au début de ton message :
-  * TU DOIS IMPÉRATIVEMENT L'APPELER PAR SON NOM OU PRÉNOM (ex: "Bonjour Claudia !", "Bonjour Stéphane !", etc.) pour créer une proximité humaine, chaleureuse, respectueuse et familiale comme chez FYS.
-  * INTERDICTION FORMELLE ET STRICTE d'utiliser des formules génériques, froides et impersonnelles sans proximité telles que "Bonjour cher(e) client(e)", "Cher client", "Chère cliente", "Bonjour client".
-  * Si son prénom n'est pas encore connu, salue avec chaleur ("Bonjour et bienvenue chez FYS !") et demande-lui son prénom avec tact.
+RÈGLE D'OR DE SALUTATION ET DE CONVERSATION NATURELLE :
+1. LE « BONJOUR » C'EST UNIQUEMENT À L'ACCUEIL :
+   - Tu dis « Bonjour [Prénom] ! » UNIQUEMENT dans 2 situations précises :
+     a) C'est le tout premier message du client qui ouvre la discussion.
+     b) Le client te salue expressément (« bonjour », « salut », « bonsoir », reprise de contact).
+   - Dans ces 2 cas, utilise OBLIGATOIREMENT son prénom/nom pour une vraie proximité humaine (ex: « Bonjour Claudia ! »).
+2. ⛔ INTERDICTION FORMELLE DE REDIRE « BONJOUR » EN COURS DE CONVERSATION :
+   - Dès que la conversation est engagée et que le client répond à une question, choisit ses fruits (ex: "orange carotte"), clique sur "Commander", choisit son format ou donne sa quantité :
+     INTERDICTION ABSOLUE de redire « Bonjour », « Salut », « Cher client », « Cher(e) ami(e) » !
+   - Parle comme un être humain sur WhatsApp : réponds DIRECTEMENT, naturellement et avec fluidité (ex: « C'est un excellent choix ! », « C'est bien noté ! », « Parfait ! »).
+3. ⛔ BANNISSEMENT ABSOLU DES FORMULES CLASSIQUES SANS PROXIMITÉ :
+   - BANNIS DÉFINITIVEMENT « cher(e) client(e) », « cher client », « chère cliente », « cher(e) ami(e) ».
 
 RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - EXCLUSION TOTALE DU PAMPLEMOUSSE : FYS n'utilise JAMAIS de pamplemousse (risque d'interaction médicamenteuse grave).
@@ -4035,19 +4080,36 @@ Dès qu'il a répondu, insère le bloc :::PROFILE_JSON { "healthConditions": [..
         return res.status(200).json({ status: 'no_gemini_key' });
       }
 
-      const greetingGuideline = customerFirstName
-        ? `RÈGLE DE PROXIMITÉ (NOM DU CLIENT) : Le client s'appelle ${senderName} (Prénom : ${customerFirstName}). Quand il salue ou au début de ton message, appelle-le OBLIGATOIREMENT par son prénom (« Bonjour ${customerFirstName} ! ») pour une proximité chaleureuse. BANNIS ABSOLUMENT « cher(e) client(e) », « cher client », « chère cliente » ou toute formule impersonnelle.`
-        : `RÈGLE DE PROXIMITÉ : Le prénom du client n'est pas encore connu. Salue-le naturellement sans formule générique (« Bonjour et bienvenue chez FYS ! ») et demande-lui gentiment son prénom. BANNIS ABSOLUMENT « cher(e) client(e) ».`;
+      const isUserExplicitGreeting = Boolean(
+        senderText && /(?:^|\b)(?:bonjour|salut|hello|bonsoir|coucou|yo|rebonjour|hey|allo)(?:\b|$)/i.test(senderText)
+      );
 
       const hasHistory = chatHistoryForGemini.length > 0;
-      const conversationRules = hasHistory
-        ? `\nRÈGLE DE CONVERSATION : La conversation est en cours avec le client. Réponds avec chaleur, respect et bienveillance.
-RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Si le client salue, reprend contact, exprime une envie de jus ou demande un conseil/menu sans avoir encore de recette en cours : propose-lui OBLIGATOIREMENT le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
-${greetingGuideline}
-RÈGLE STRICTE SUR LES CONTACTS : N'AFFICHE PAS les numéros de téléphone FYS dans les messages intermédiaires. Affiche-les UNIQUEMENT si le client demande expressément un contact, de l'aide ou à appeler l'équipe :\n${FYS_TEAM_CONTACTS_TEXT}`
-        : (isNewClientUser
-            ? `\nRÈGLE D'ACCUEIL (NOUVEAU CLIENT) : C'est le tout premier échange avec ce nouveau client. ${greetingGuideline} Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus les contacts officiels de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`
-            : `\nRÈGLE D'ACCUEIL (CLIENT CONNU) : Salue chaleureusement avec respect. ${greetingGuideline} Présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. N'affiche pas les numéros de contact sauf s'il le demande explicitement.`);
+      let conversationRules = '';
+
+      if (hasHistory) {
+        if (isUserExplicitGreeting) {
+          const greetingGuideline = customerFirstName
+            ? `Le client vous salue (« ${senderText} »). Salue-le chaleureusement en l'appelant par son prénom (« Bonjour ${customerFirstName} ! »). BANNIS ABSOLUMENT « cher(e) client(e) », « cher client », « cher ami ».`
+            : `Le client vous salue (« ${senderText} »). Salue-le chaleureusement (« Bonjour et bienvenue chez FYS ! »). BANNIS ABSOLUMENT « cher(e) client(e) ».`;
+          conversationRules = `\nRÈGLE DE SALUTATION : ${greetingGuideline}
+RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Propose-lui le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
+RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le demande explicitement.`;
+        } else {
+          conversationRules = `\nRÈGLE DE CONVERSATION EN COURS (NATURELLE & SANS SALUTATIONS RÉPÉTÉES) :
+- La discussion est DÉJÀ ENGAGÉE et en cours. Le client est en train de répondre (« ${senderText} »).
+- ⛔ INTERDICTION FORMELLE DE REDIRE « BONJOUR », « SALUT », « CHER CLIENT », « CHER AMI » OU DE RE-SALUER : Ne commence JAMAIS ton message par « Bonjour », « Salut », etc. Réponds DIRECTEMENT, naturellement et avec fluidité (ex: « C'est un excellent choix ! », « C'est bien noté ! », « Parfait ! »).
+- RÈGLE CENTRALE DU DOUBLE CHOIX FYS : Si le client exprime une envie de jus ou demande un conseil/menu sans avoir encore de recette en cours : propose-lui le choix entre « Composer sur-mesure » au Lab et « Jus du catalogue », avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}].
+- RÈGLE STRICTE SUR LES CONTACTS : N'AFFICHE PAS les numéros de téléphone FYS dans les messages intermédiaires. Affiche-les UNIQUEMENT si le client demande expressément un contact, de l'aide ou à appeler l'équipe :\n${FYS_TEAM_CONTACTS_TEXT}`;
+        }
+      } else {
+        const welcomeGreeting = customerFirstName
+          ? `Salue-le chaleureusement en l'appelant par son prénom (« Bonjour ${customerFirstName} ! »). BANNIS ABSOLUMENT « cher(e) client(e) », « cher client ».`
+          : `Salue-le chaleureusement (« Bonjour et bienvenue chez FYS ! »). BANNIS ABSOLUMENT « cher(e) client(e) ».`;
+        conversationRules = isNewClientUser
+          ? `\nRÈGLE D'ACCUEIL (NOUVEAU CLIENT) : C'est le tout premier échange avec ce nouveau client. ${welcomeGreeting} Réalise son bilan de santé bienveillant, présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}], et inclus les contacts officiels de l'équipe FYS :\n${FYS_TEAM_CONTACTS_TEXT}`
+          : `\nRÈGLE D'ACCUEIL (CLIENT CONNU) : Salue chaleureusement avec respect. ${welcomeGreeting} Présente les deux options FYS (Composer sur-mesure au Lab ou Jus du catalogue) avec les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. N'affiche pas les numéros de contact sauf s'il le demande explicitement.`;
+      }
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
       let activeCart: WhatsAppCart | null = null;
@@ -7536,9 +7598,19 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         }
       }
 
-      // ── CONTRÔLE DE PROXIMITÉ & SALUTATION NOM DU CLIENT ──
-      // Bannit formellement "cher(e) client(e)" et appelle toujours le client par son prénom
-      aiReply = sanitizeCustomerGreeting(aiReply, customerFirstName);
+      // ── CONTRÔLE DE PROXIMITÉ & SALUTATION NATURELLE ──
+      if (hasHistory && !isUserExplicitGreeting) {
+        // En cours de conversation (choix de fruits, commande, etc.), suppression des salutations répétitives
+        aiReply = stripUnwantedMidConversationGreetings(aiReply);
+        // Supprime tout "cher client" ou "cher(e) ami(e)" résiduel dans le corps du message
+        aiReply = aiReply
+          .replace(/ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)/gi, customerFirstName || '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+      } else {
+        // Accueil initial ou salutation expresse de l'utilisateur : accueil chaleureux personnalisé avec prénom
+        aiReply = sanitizeCustomerGreeting(aiReply, customerFirstName);
+      }
 
       // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
       let sentAudio = false;
