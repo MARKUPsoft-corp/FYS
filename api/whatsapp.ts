@@ -7890,16 +7890,18 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       }
 
       // Détection de sélection de mode (sur-mesure VS catalogue) pour éviter d'afficher les boutons en boucle
-      const userSelectedCustom =
+      const userSelectedCustom = !isUserExplicitGreeting && (
         interactiveButtonId === 'btn_mode_custom' ||
         /(?:composer\s+sur[- ]?mesure|cr[ée]+er\s+(?:un|mon)\s+jus|au\s+lab|sur[- ]?mesure)/i.test(senderText || '') ||
-        existingUserDoc?.data()?.selectedMode === 'custom';
+        existingUserDoc?.data()?.selectedMode === 'custom'
+      );
 
-      const userSelectedCatalog =
+      const userSelectedCatalog = !isUserExplicitGreeting && (
         interactiveButtonId === 'btn_mode_catalog' ||
         interactiveButtonId.startsWith('btn_cat_') ||
         /(?:jus\s+du\s+catalogue|catalogue|jus\s+signature)/i.test(senderText || '') ||
-        existingUserDoc?.data()?.selectedMode === 'catalog';
+        existingUserDoc?.data()?.selectedMode === 'catalog'
+      );
 
       const isFruitPrompt =
         /(?:choisir|choisissez|sélectionnez|selectionnez)\s+(?:2|deux|entre\s+2|\d)\s*(?:[àa]\s*4)?\s*fruits/i.test(aiReply) ||
