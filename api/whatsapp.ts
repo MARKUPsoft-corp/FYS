@@ -3644,6 +3644,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let buttonsToSend: WhatsAppInteractiveButton[] = [];
       let listToSend: WhatsAppListData | null = null;
       let activeCart: WhatsAppCart | null = null;
+      let parsedIntent: any = null;
 
       // DÉDUPLICATION 1 (META RETRIES) : Ignorer les retries réseau automatiques de Meta sur le même message ID
       if (db && messageId) {
@@ -6952,24 +6953,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
 
       // 0. ROUTEUR SÉMANTIQUE D'INTENTIONS IA (:::INTENT)
       // NutriFYS traduit les expressions naturelles du client en actions système codées en dur
-      let parsedIntent: {
-        action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'ORDER_CATALOG' | 'CATALOG' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
-        cocktails?: Array<{
-          cocktailName?: string;
-          fruits?: string[];
-          bottleSize?: '500ml' | '1L';
-          quantity?: number;
-          hasAddedSugar?: boolean;
-        }>;
-        catalogItems?: Array<{
-          cocktailName?: string;
-          quantity?: number;
-          bottleSize?: string;
-        }>;
-        district?: string;
-        quantity?: number;
-        format?: '500ml' | '1L';
-      } | null = null;
+      parsedIntent = null;
 
       const intentMatch = aiReply.match(/:::INTENT\s*([\s\S]*?)\s*:::?/);
       if (intentMatch) {
@@ -7225,8 +7209,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       const isUnavailableOrCatalogExplanation =
         unavailableFruitsCurrent.length > 0 ||
         (isCatalogRequestInText && (!extractedCatalogOrders || extractedCatalogOrders.length === 0) && !matchCatalogCocktailFromText(senderText, catalogCocktails)) ||
-        parsedIntent?.action === 'QUESTION' ||
-        parsedIntent?.action === 'CATALOG';
+        Boolean(parsedIntent && (parsedIntent.action === 'QUESTION' || parsedIntent.action === 'CATALOG'));
 
       const autoProposed = (!isUnavailableOrCatalogExplanation)
         ? extractCocktailsFromText(aiReply, availableFruits)
