@@ -1176,17 +1176,29 @@ async function sendWhatsAppCtaUrl(
 
   // Meta limite body.text à 1024 caractères pour les messages interactifs
   let prefixTextToSendFirst: string | null = null;
+  const isOrderConfirmation =
+    Boolean(cta.headerText && cta.headerText.toLowerCase().includes('commande confirmée')) ||
+    safeDisplayText.toLowerCase().includes('tableau de bord') ||
+    textForBody.toLowerCase().includes('récapitulatif officiel') ||
+    textForBody.toLowerCase().includes('récapitulatif de votre commande');
+
   if (textForBody.length > 1020) {
-    const splitIndex = textForBody.lastIndexOf('\n\n', 950);
-    const cutAt = splitIndex > 250 ? splitIndex : 900;
-    prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
-    textForBody = textForBody.slice(cutAt).trim();
-    if (textForBody.length > 1020) {
-      textForBody = textForBody.slice(-1020);
+    if (isOrderConfirmation) {
+      // Pour une confirmation de commande : RÈGLE COMMERCIALE STRICTE -> UN SEUL MESSAGE UNIQUE !
+      // Ne jamais envoyer de prefixText séparé qui doublerait le message.
+      textForBody = textForBody.slice(0, 1020).trim();
+    } else {
+      const splitIndex = textForBody.lastIndexOf('\n\n', 950);
+      const cutAt = splitIndex > 250 ? splitIndex : 900;
+      prefixTextToSendFirst = textForBody.slice(0, cutAt).trim();
+      textForBody = textForBody.slice(cutAt).trim();
+      if (textForBody.length > 1020) {
+        textForBody = textForBody.slice(-1020);
+      }
     }
   }
 
-  if (prefixTextToSendFirst) {
+  if (prefixTextToSendFirst && !isOrderConfirmation) {
     await sendWhatsAppMessage(to, prefixTextToSendFirst);
   }
 
@@ -4273,6 +4285,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
             activeWhatsAppCart: FieldValue.delete(),
             activeWhatsAppDraft: FieldValue.delete(),
             pendingCatalogSelection: FieldValue.delete(),
+            selectedMode: FieldValue.delete(),
           }, { merge: true }).catch(() => null);
         }
 
@@ -4940,6 +4953,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
             await userDocRef.set({
               activeWhatsAppCart: FieldValue.delete(),
               activeWhatsAppDraft: FieldValue.delete(),
+              selectedMode: FieldValue.delete(),
             }, { merge: true }).catch(() => null);
           }
           const resetMsg = `Votre panier a été vidé.\n\nQue souhaitez-vous faire maintenant ?\n• Composer votre cocktail sur-mesure au Lab\n• Découvrir nos jus signatures du catalogue (min. 5 bouteilles combinables)`;
@@ -5013,6 +5027,9 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             explicitAction = `[Le client a cliqué sur 'Commander' pour son cocktail "${activeRecipeName}". RÈGLE STRICTE : Pose UNIQUEMENT la question du format (500ml ou 1L) avec les boutons :::BUTTONS [{"id": "btn_format_500ml", "title": "Format 500ml"}, {"id": "btn_format_1l", "title": "Format 1 Litre"}]. Ne pose AUCUNE autre question !]`;
           }
         } else if (interactiveButtonId === 'btn_mode_catalog') {
+          if (userDocRef) {
+            await userDocRef.set({ selectedMode: 'catalog' }, { merge: true }).catch(() => null);
+          }
           const listToSendCatalog = catalogCocktails && catalogCocktails.length > 0
             ? catalogCocktails
             : await getActiveCatalogCocktails(db);
@@ -5030,7 +5047,10 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             explicitAction = `[Le client souhaite voir les jus du catalogue, mais aucun jus n'est actuellement disponible. Propose-lui de composer sa recette sur-mesure au Lab].`;
           }
         } else if (interactiveButtonId === 'btn_mode_custom') {
-          explicitAction = `[Le client a choisi de composer sa recette sur-mesure au Lab. RÈGLE STRICTE : Accueille-le chaleureusement et invite-le avec bienveillance à choisir 2 à 4 fruits parmi nos fruits frais du jour pour composer sa boisson santé sur-mesure].`;
+          if (userDocRef) {
+            await userDocRef.set({ selectedMode: 'custom' }, { merge: true }).catch(() => null);
+          }
+          explicitAction = `[Le client a cliqué sur 'Composer sur-mesure'. RÈGLE COMMERCIALE STRICTE FYS : Accueille-le chaleureusement et invite-le avec bienveillance à choisir 2 à 4 fruits parmi nos fruits frais du jour pour composer sa boisson santé sur-mesure au Lab. N'AJOUTE AUCUN BOUTON DE MODE DE COMMANDE car le client a déjà choisi le sur-mesure !]`;
         } else if (interactiveButtonId.startsWith('btn_cat_')) {
           const catId = interactiveButtonId.replace('btn_cat_', '');
           const allCat = catalogCocktails && catalogCocktails.length > 0
@@ -6827,6 +6847,8 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                   await userDocRef.set({
                     activeWhatsAppCart: FieldValue.delete(),
                     activeWhatsAppDraft: FieldValue.delete(),
+                    pendingCatalogSelection: FieldValue.delete(),
+                    selectedMode: FieldValue.delete(),
                   }, { merge: true }).catch(() => null);
                 }
                 break;
@@ -7402,11 +7424,13 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                 }
               }
 
-              // Nettoyer activeWhatsAppCart et activeWhatsAppDraft dans Firestore
+              // Nettoyer activeWhatsAppCart, activeWhatsAppDraft, selectedMode et pendingCatalogSelection dans Firestore
               if (userDocRef) {
                 await userDocRef.set({
                   activeWhatsAppCart: FieldValue.delete(),
                   activeWhatsAppDraft: FieldValue.delete(),
+                  pendingCatalogSelection: FieldValue.delete(),
+                  selectedMode: FieldValue.delete(),
                 }, { merge: true }).catch(() => null);
               }
 
@@ -7676,11 +7700,13 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                   }
                 }
 
-                // Nettoyer la recette personnalisée activeWhatsAppDraft et le panier activeWhatsAppCart une fois la commande validée
+                // Nettoyer la recette personnalisée activeWhatsAppDraft, activeWhatsAppCart, selectedMode et pendingCatalogSelection une fois la commande validée
                 if (userDocRef) {
                   await userDocRef.set({
                     activeWhatsAppDraft: FieldValue.delete(),
                     activeWhatsAppCart: FieldValue.delete(),
+                    pendingCatalogSelection: FieldValue.delete(),
+                    selectedMode: FieldValue.delete(),
                   }, { merge: true }).catch(() => null);
                 }
                 if (allPhoneUserDocs && allPhoneUserDocs.length > 0) {
@@ -7688,6 +7714,8 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                     await pDoc.ref.set({
                       activeWhatsAppDraft: FieldValue.delete(),
                       activeWhatsAppCart: FieldValue.delete(),
+                      pendingCatalogSelection: FieldValue.delete(),
+                      selectedMode: FieldValue.delete(),
                     }, { merge: true }).catch(() => null);
                   }
                 }
@@ -7752,41 +7780,49 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           // Nettoyer tout lien URL brut dans la réponse pour ne jamais afficher de lien long
           aiReply = aiReply.replace(/https?:\/\/fys-app\.com[^\s]*/g, '').replace(/👉\s*$/gm, '').trim();
 
-          // 3. Garantir qu'un récapitulatif complet et propre est TOUJOURS visible pour le client (sans doublon)
+          // 3. Garantir qu'un message unique, propre et sans doublon est envoyé pour la confirmation de commande
           if (createdOrderInfo) {
             const o = createdOrderInfo.orderDoc;
-            let recapBlock = '';
-            if (activeCart && activeCart.items.length > 0) {
-              recapBlock = generateCartConfirmationText(activeCart, o.deliveryDetails?.district);
+            const targetDistrict = o.deliveryDetails?.district || activeCart?.district || 'Yaoundé';
+            const greetingName = customerFirstName ? ` ${customerFirstName}` : '';
+            const intro = `C'est parfaitement noté${greetingName} ! Votre commande est validée et part immédiatement en préparation dans notre Lab à Yaoundé.`;
+
+            const lines: string[] = ['Récapitulatif officiel de votre commande :'];
+
+            if (o.isMultiItem && Array.isArray(o.items) && o.items.length > 0) {
+              o.items.forEach((item: any) => {
+                const fruitsList = Array.isArray(item.fruits) && item.fruits.length > 0 ? item.fruits.join(', ') : item.cocktailName;
+                const typeLabel = item.isCatalog ? 'Jus signature du catalogue' : 'Cocktail sur-mesure Lab';
+                lines.push(`• ${typeLabel} : ${item.cocktailName} (${fruitsList})`);
+                lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel || item.bottleSize || '500ml'} (${(item.unitPrice || 0).toLocaleString('fr-FR')} XAF la bouteille)`);
+              });
+              lines.push(`• Livraison à ${targetDistrict} : ${(o.deliveryFee || 1000).toLocaleString('fr-FR')} XAF`);
+              lines.push(`Total à payer : ${(o.totalPrice || 0).toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+            } else if (activeCart && activeCart.items && activeCart.items.length > 0) {
+              activeCart.items.forEach((item) => {
+                const fruitsList = (item.fruits && item.fruits.length > 0) ? item.fruits.join(', ') : item.cocktailName;
+                const typeLabel = item.isCatalog ? 'Jus signature du catalogue' : 'Cocktail sur-mesure Lab';
+                lines.push(`• ${typeLabel} : ${item.cocktailName} (${fruitsList})`);
+                lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel} (${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille)`);
+              });
+              lines.push(`• Livraison à ${targetDistrict} : ${(activeCart.deliveryFee || 1000).toLocaleString('fr-FR')} XAF`);
+              lines.push(`Total à payer : ${(activeCart.totalPrice || 0).toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
             } else {
-              const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
-              recapBlock = `Récapitulatif de votre commande :\n` +
-                `• Cocktail : ${o.cocktailNameSnapshot} (${ingNames})\n` +
-                `• Format : ${o.quantity}x ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString('fr-FR')} XAF la bouteille)\n` +
-                `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
-                `Total à payer : ${o.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)\n\n` +
-                `Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
+              const ingNames = createdOrderInfo.ingredients && createdOrderInfo.ingredients.length > 0
+                ? createdOrderInfo.ingredients.map((i: any) => i.fruitName || i.name).filter(Boolean).join(', ')
+                : (o.cocktailNameSnapshot || 'Cocktail Santé FYS');
+              lines.push(`• Cocktail sur-mesure Lab : ${o.cocktailNameSnapshot || 'Cocktail Santé FYS'} (${ingNames})`);
+              lines.push(`• Format : ${o.quantity || 1}x ${o.bottleSizeLabel || 'Format 500ml'} (${(o.cocktailPriceSnapshot || 0).toLocaleString('fr-FR')} XAF la bouteille)`);
+              lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
+              lines.push(`Total à payer : ${(o.totalPrice || 0).toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
             }
 
-            // Vérifier si le message généré par l'IA contient DÉJÀ le récapitulatif complet
-            const formattedTotalFr = o.totalPrice.toLocaleString('fr-FR');
-            const hasRecapAlready =
-              ((aiReply.includes('TOTAL À PAYER') || aiReply.includes('Total à payer')) && (aiReply.includes(formattedTotalFr) || aiReply.includes(String(o.totalPrice)))) ||
-              aiReply.includes('RÉCAPITULATIF OFFICIEL') ||
-              aiReply.includes('Récapitulatif de votre commande');
+            lines.push('');
+            lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
+            lines.push(FYS_TEAM_CONTACTS_TEXT);
 
-            if (!hasRecapAlready) {
-              if (aiReply.includes('récapitulatif')) {
-                aiReply = aiReply.replace(/(Voici(?:\s+d'ailleurs)?\s+le\s+récapitulatif[^\n]*:?\s*)/i, `$1\n\n${recapBlock}\n\n`);
-              } else {
-                aiReply = `${aiReply}\n\n${recapBlock}`;
-              }
-            }
-
-            // S'assurer que les contacts de l'équipe apparaissent impérativement à la fin de la commande
-            if (!aiReply.includes('691913207') && !aiReply.includes('675108876')) {
-              aiReply = `${aiReply}\n\nUne question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
-            }
+            // Message unique, clair, sans doublon de récapitulatif ni de contacts
+            aiReply = `${intro}\n\n${lines.join('\n')}`;
           }
         }
       } else if (orderMatch) {
@@ -7853,6 +7889,30 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         aiReply = aiReply.replace(/:::BUTTONS[\s\S]*?:::?/g, '').trim();
       }
 
+      // Détection de sélection de mode (sur-mesure VS catalogue) pour éviter d'afficher les boutons en boucle
+      const userSelectedCustom =
+        interactiveButtonId === 'btn_mode_custom' ||
+        /(?:composer\s+sur[- ]?mesure|cr[ée]+er\s+(?:un|mon)\s+jus|au\s+lab|sur[- ]?mesure)/i.test(senderText || '') ||
+        existingUserDoc?.data()?.selectedMode === 'custom';
+
+      const userSelectedCatalog =
+        interactiveButtonId === 'btn_mode_catalog' ||
+        interactiveButtonId.startsWith('btn_cat_') ||
+        /(?:jus\s+du\s+catalogue|catalogue|jus\s+signature)/i.test(senderText || '') ||
+        existingUserDoc?.data()?.selectedMode === 'catalog';
+
+      const isFruitPrompt =
+        /(?:choisir|choisissez|sélectionnez|selectionnez)\s+(?:2|deux|entre\s+2|\d)\s*(?:[àa]\s*4)?\s*fruits/i.test(aiReply) ||
+        /(?:parmi\s+nos\s+fruits|fruits\s+frais\s+du\s+jour|quels\s+fruits|vos\s+fruits\s+préférés|choix\s+de\s+fruits|ingrédients\s+frais)/i.test(aiReply);
+
+      // Si le client a déjà choisi sur-mesure ou catalogue, ou si on est en train de lui demander ses fruits :
+      // INTERDICTION FORMELLE d'ajouter ou de conserver les boutons de choix de mode !
+      if (userSelectedCustom || userSelectedCatalog || isFruitPrompt) {
+        buttonsToSend = buttonsToSend.filter(
+          (b) => b.id !== 'btn_mode_custom' && b.id !== 'btn_mode_catalog'
+        );
+      }
+
       // ── Détection automatique intelligente en renfort si l'IA n'a pas inclus les balises ────
       // 1. Choix du quartier de livraison à Yaoundé (Liste déroulante)
       if (
@@ -7874,30 +7934,33 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         buttonsToSend.length === 0 &&
         !orderMatch &&
         !ctaUrlToSend &&
+        !userSelectedCustom &&
+        !userSelectedCatalog &&
+        !isFruitPrompt &&
         (!activeCart || activeCart.items.length === 0) &&
         activeRecipeIngredients.length === 0
       ) {
         const lowerReply = aiReply.toLowerCase();
         const lowerText = (senderText || '').toLowerCase();
-        const isChoiceSituation =
-          lowerReply.includes('composer') ||
-          lowerReply.includes('sur-mesure') ||
-          lowerReply.includes('catalogue') ||
-          lowerReply.includes('formule') ||
-          lowerReply.includes('lab') ||
-          lowerReply.includes('que préférez-vous') ||
-          lowerReply.includes('que preferez-vous') ||
-          lowerReply.includes('qu\'est-ce qui vous ferait plaisir') ||
-          lowerReply.includes('ce qui vous ferait plaisir') ||
-          lowerReply.includes('envie d\'un bon') ||
-          lowerReply.includes('envie d\'un jus') ||
-          lowerReply.includes('deux options') ||
-          lowerReply.includes('2 options') ||
-          lowerReply.includes('options s\'offrent') ||
-          /(?:^|\b)(?:bonjour|salut|hello|bonsoir|coucou|yo|rebonjour|hey|allo|sant[ée]|bienvenue)(?:\b|$)/i.test(lowerText) ||
-          /(?:envie\s+d(?:'|\s+un)\s+jus|boire\s+un\s+jus|propose|carte|menu|quel\s+jus)/i.test(lowerText);
+        const isExplicitDualChoice =
+          (lowerReply.includes('sur-mesure') && lowerReply.includes('catalogue') && (
+            lowerReply.includes('ou') ||
+            lowerReply.includes('préférez-vous') ||
+            lowerReply.includes('preferez-vous') ||
+            lowerReply.includes('deux options') ||
+            lowerReply.includes('2 options') ||
+            lowerReply.includes('options s\'offrent') ||
+            lowerReply.includes('laquelle de ces')
+          )) ||
+          lowerReply.includes('composer votre recette sur-mesure au lab ou') ||
+          lowerReply.includes('souhaitez-vous composer votre recette');
 
-        if (isChoiceSituation) {
+        const isGreetingTrigger =
+          !hasHistory &&
+          (/(?:^|\b)(?:bonjour|salut|hello|bonsoir|coucou|yo|rebonjour|hey|allo|sant[ée]|bienvenue)(?:\b|$)/i.test(lowerText) ||
+           /(?:envie\s+d(?:'|\s+un)\s+jus|boire\s+un\s+jus|propose|carte|menu|quel\s+jus)/i.test(lowerText));
+
+        if (isExplicitDualChoice || isGreetingTrigger) {
           buttonsToSend = [
             { id: 'btn_mode_custom', title: 'Composer sur-mesure' },
             { id: 'btn_mode_catalog', title: 'Jus du catalogue' },
@@ -8011,7 +8074,8 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         aiReply = removeTeamContactsFromText(aiReply);
       } else {
         // Dans les 3 cas autorisés, garantir la présence des numéros si l'IA ne les a pas déjà inclus
-        if (!aiReply.includes('691913207') && !aiReply.includes('675108876')) {
+        const hasTeamContactsAlready = /(?:691\s*91\s*32\s*07|675\s*10\s*88\s*76|691913207|675108876)/.test(aiReply);
+        if (!hasTeamContactsAlready) {
           if (isWelcomeNewClient) {
             aiReply = `${aiReply}\n\nBesoin d'informations ou d'une commande par téléphone ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
           } else if (isOrderFinalConfirmation) {
@@ -8023,7 +8087,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       }
 
       // ── CONTRÔLE DE PROXIMITÉ & SALUTATION NATURELLE ──
-      if (hasHistory && !isUserExplicitGreeting) {
+      if (hasHistory && !isUserExplicitGreeting && !createdOrderInfo) {
         // En cours de conversation (choix de fruits, commande, etc.), suppression des salutations répétitives
         aiReply = stripUnwantedMidConversationGreetings(aiReply);
         // Supprime tout "cher client" ou "cher(e) ami(e)" résiduel dans le corps du message
@@ -8031,7 +8095,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
           .replace(/ch[eè]r(?:e|\(e\)|\(ère\))?\s+(?:client(?:e|\(e\)|\(s\))?|ami(?:e|\(e\))?)/gi, customerFirstName || '')
           .replace(/\s{2,}/g, ' ')
           .trim();
-      } else {
+      } else if (!createdOrderInfo) {
         // Accueil initial ou salutation expresse de l'utilisateur : accueil chaleureux personnalisé avec prénom
         aiReply = sanitizeCustomerGreeting(aiReply, customerFirstName);
       }
