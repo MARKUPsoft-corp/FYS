@@ -2358,8 +2358,8 @@ export function computeCartFromRawItems(
   const subtotal = items.reduce((sum, it) => sum + it.lineTotal, 0);
   const finalDistrict = (existingDistrict || existingCart?.district || '').trim();
   const deliveryZoneInfo = getDeliveryZoneForDistrict(finalDistrict, deliveryZones || currentActiveDeliveryZones);
-  const deliveryFee = deliveryZoneInfo.fee;
-  const totalPrice = subtotal + deliveryFee;
+  const deliveryFee = finalDistrict ? deliveryZoneInfo.fee : 0;
+  const totalPrice = finalDistrict ? (subtotal + deliveryFee) : subtotal;
   const totalCatalogBottles = items.filter((it) => it.isCatalog).reduce((sum, it) => sum + it.quantity, 0);
   const hasCatalogItems = items.some((it) => it.isCatalog);
   const isCatalogMinimumMet = !hasCatalogItems || totalCatalogBottles >= 5;
@@ -2666,16 +2666,42 @@ export function extractCocktailsFromText(
   return null;
 }
 
+export function formatCartDeliveryAndTotal(cart: WhatsAppCart): {
+  deliveryLine: string;
+  totalLine: string;
+  footerText: string;
+} {
+  if (cart.district && cart.district.trim()) {
+    const fee = cart.deliveryFee > 0 ? cart.deliveryFee : getDeliveryZoneForDistrict(cart.district, currentActiveDeliveryZones).fee;
+    const total = cart.subtotal + fee;
+    return {
+      deliveryLine: `🛵 Livraison (${cart.district}) : ${fee.toLocaleString('fr-FR')} XAF`,
+      totalLine: `👉 *TOTAL À PAYER : ${total.toLocaleString('fr-FR')} XAF*`,
+      footerText: `Total : ${total.toLocaleString('fr-FR')} XAF`,
+    };
+  } else {
+    return {
+      deliveryLine: `🛵 Livraison en fonction du quartier`,
+      totalLine: `👉 *TOTAL : ${cart.subtotal.toLocaleString('fr-FR')} XAF (+ livraison selon quartier)*`,
+      footerText: `Sous-total : ${cart.subtotal.toLocaleString('fr-FR')} XAF`,
+    };
+  }
+}
+
 export function generateCartDevisText(cart: WhatsAppCart, district?: string): string {
   const targetDistrict = district || cart.district || 'Yaoundé';
+  const deliveryFee = (cart.district && cart.deliveryFee > 0)
+    ? cart.deliveryFee
+    : getDeliveryZoneForDistrict(targetDistrict, currentActiveDeliveryZones).fee;
+  const totalPrice = cart.subtotal + deliveryFee;
   const lines: string[] = ['Voici le récapitulatif de votre commande :'];
   cart.items.forEach((item) => {
     const fruitsList = item.fruits.join(', ');
     const label = item.isCatalog ? 'notre jus signature' : 'notre mélange';
     lines.push(`• ${item.quantity} bouteille(s) (${item.bottleSizeLabel}) de ${label} « ${item.cocktailName} » (${fruitsList}) : ${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille (soit ${item.lineTotal.toLocaleString('fr-FR')} XAF)`);
   });
-  lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
-  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
+  lines.push(`• Livraison à ${targetDistrict} : ${deliveryFee.toLocaleString('fr-FR')} XAF`);
+  lines.push(`👉 TOTAL À PAYER : ${totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
   lines.push('');
   lines.push('Est-ce que tout est bon pour vous pour valider cette commande ?');
   return lines.join('\n');
@@ -2683,6 +2709,10 @@ export function generateCartDevisText(cart: WhatsAppCart, district?: string): st
 
 export function generateCartConfirmationText(cart: WhatsAppCart, district?: string): string {
   const targetDistrict = district || cart.district || 'Yaoundé';
+  const deliveryFee = (cart.district && cart.deliveryFee > 0)
+    ? cart.deliveryFee
+    : getDeliveryZoneForDistrict(targetDistrict, currentActiveDeliveryZones).fee;
+  const totalPrice = cart.subtotal + deliveryFee;
   const lines: string[] = ['📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE'];
   cart.items.forEach((item) => {
     const fruitsList = item.fruits.join(', ');
@@ -2690,8 +2720,8 @@ export function generateCartConfirmationText(cart: WhatsAppCart, district?: stri
     lines.push(`• ${typeLabel} : ${item.cocktailName} (${fruitsList})`);
     lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel} (${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille)`);
   });
-  lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
-  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+  lines.push(`• Livraison à ${targetDistrict} : ${deliveryFee.toLocaleString('fr-FR')} XAF`);
+  lines.push(`👉 TOTAL À PAYER : ${totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
   lines.push('');
   lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
   lines.push(FYS_TEAM_CONTACTS_TEXT);
@@ -3128,7 +3158,7 @@ Dès que le quartier est renseigné (sélectionné dans la liste ou écrit par l
 "Voici le récapitulatif de votre commande :
 • [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 1] » ([Fruits 1]) : [Prix unitaire 1] XAF la bouteille (soit [Sous-total 1] XAF)
 • [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 2] » ([Fruits 2]) : [Prix unitaire 2] XAF la bouteille (si une 2ème boisson est commandée)
-• Livraison à [Quartier] : 1 000 XAF
+• Livraison à [Quartier] : [Frais de livraison selon quartier : 1 000 XAF, 1 500 XAF ou 2 000 XAF]
 👉 TOTAL À PAYER : [Total] XAF (Paiement Mobile Money ou à la livraison).
 
 Est-ce que tout est bon pour vous pour valider cette commande ?"
@@ -4196,7 +4226,8 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
 
         if (totalCatalogBottles < 5) {
           const missing = 5 - totalCatalogBottles;
-          const warningText = `🛒 *Votre panier actuel FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n*Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n⚠️ *Règle FYS :* La commande minimale pour les jus du catalogue est de *5 bouteilles au total*. Il vous manque encore *${missing} bouteille(s)* pour valider votre commande !\n\nVous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
+          const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+          const warningText = `🛒 *Votre panier actuel FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}\n\n⚠️ *Règle FYS :* La commande minimale pour les jus du catalogue est de *5 bouteilles au total*. Il vous manque encore *${missing} bouteille(s)* pour valider votre commande !\n\nVous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
 
           await sendWhatsAppInteractiveButtons(
             senderPhone,
@@ -4219,7 +4250,8 @@ CONTACTS FYS EN COURS D'ÉCHANGE : Si le client demande un contact, de l'aide ou
           }
           return res.status(200).json({ status: 'ok', handled: 'catalog_multi_order_under_min' });
         } else {
-          const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
+          const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+          const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
 
           await sendWhatsAppInteractiveList(
             senderPhone,
@@ -4440,9 +4472,9 @@ Informe-le avec bienveillance de la règle d'équilibre du FYS Lab : chaque bout
         recipePricingDetails = `
 🛒 PANIER MULTI-BOISSONS EN COURS (CALCULÉ DIRECTEMENT PAR LE BACKEND FYS) :
 ${cartItemsSummary}
-• Frais de livraison : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF${activeCart.district ? ` (${activeCart.district})` : ' (départ atelier Nsimeyong)'}
+• Frais de livraison : ${activeCart.district ? `${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF pour ${activeCart.district}` : 'En fonction du quartier (départ atelier Nsimeyong : Zone 1 = 1 000 XAF, Zone 2 = 1 500 XAF, Zone 3 = 2 000 XAF)'}
 • Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF
-👉 TOTAL À PAYER EXACT DE LA COMMANDE : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF
+${activeCart.district ? `👉 TOTAL À PAYER EXACT DE LA COMMANDE : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF` : `👉 TOTAL BOISSONS (hors livraison) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF (Le total final sera calculé avec le quartier de livraison)`}
 
 CONSIGNES STRICTES ET CATÉGORIQUES ANTI-HALLUCINATION :
 1. LE CLIENT COMMANDE CE PANIER EXACT CONTENANT ${activeCart.items.length} BOISSON(S).
@@ -4919,7 +4951,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
               }
               return res.status(200).json({ status: 'ok', handled: 'catalog_item_added_under_min' });
             } else {
-              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+              const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}`;
 
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
@@ -4929,7 +4962,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                   { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
                 ],
                 'FYS · Commande prête',
-                `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                deliveryInfo.footerText
               );
               if (userDocRef) {
                 await userDocRef.collection('whatsapp_messages').add({
@@ -4986,7 +5019,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
             const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
 
-            const feedbackText = `🎉 *Panier complété avec succès !*\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+            const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+            const feedbackText = `🎉 *Panier complété avec succès !*\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}`;
 
             await sendWhatsAppInteractiveButtons(
               senderPhone,
@@ -4996,7 +5030,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                 { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
               ],
               'FYS · Commande prête',
-              `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+              deliveryInfo.footerText
             );
             if (userDocRef) {
               await userDocRef.collection('whatsapp_messages').add({
@@ -5027,7 +5061,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                 `Minimum : 5 bouteilles (actuel: ${totalCatalogBottles})`
               );
             } else {
-              const feedbackText = `🛒 *Votre panier officiel :*\n${cartLines}\n\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+              const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+              const feedbackText = `🛒 *Votre panier officiel :*\n${cartLines}\n\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 feedbackText,
@@ -5036,7 +5071,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                   { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
                 ],
                 'FYS · Commande prête',
-                `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                deliveryInfo.footerText
               );
             }
             return res.status(200).json({ status: 'ok', handled: 'view_cart_displayed' });
@@ -5330,10 +5365,8 @@ ${devisExact}
 CONSIGNE STRICTE ET ABSOLUE :
 Affiche exactement ce devis sans modifier aucun montant ni aucun cocktail !
 Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Valider commande"}, {"id": "btn_edit_order", "title": "Modifier"}].]`;
-            } else if (isCat) {
-              const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
               explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) pour son panier de jus du catalogue (${cartLines}).
-Total boissons : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF + Livraison : 1 000 XAF = Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF.
+Sous-total boissons : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF. Les frais de livraison seront calculés en fonction du quartier (départ atelier Nsimeyong : Zone 1 = 1 000 XAF, Zone 2 = 1 500 XAF, Zone 3 = 2 000 XAF).
 RÈGLE STRICTE : Remercie-le chaleureusement et demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
             } else {
               explicitAction = `[Le client a choisi la quantité : ${chosenQty} bouteille(s) ${isEach ? 'de chaque boisson' : `pour « ${activeCart.items[activeCart.items.length - 1]?.cocktailName} »`} (${activeCart.items.map((i) => `${i.cocktailName} en ${i.bottleSizeLabel}`).join(', ')}). RÈGLE STRICTE : Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers, en précisant bien qu'il peut aussi l'écrire s'il ne figure pas dans la liste].`;
@@ -5774,7 +5807,7 @@ RÈGLES STRICTES DE PRÉSENTATION :
                 .map((i) => `« ${i.cocktailName} » en ${i.quantity}x ${i.bottleSizeLabel} (${i.unitPrice.toLocaleString('fr-FR')} XAF)`)
                 .join(' + ');
               currentUserParts.push({
-                text: `${senderText}\n\n[SYSTÈME FYS : Le client a défini les formats de ses boissons : ${summaryFormats}. Le serveur FYS a recalculé les prix officiels exacts (sous-total: ${activeCart.subtotal.toLocaleString('fr-FR')} XAF, total avec livraison: ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF). Remercie-le chaleureusement, confirme clairement ces formats attribués et demande dans quel quartier de Yaoundé il souhaite être livré avec la liste :::LIST !]`,
+                text: `${senderText}\n\n[SYSTÈME FYS : Le client a défini les formats de ses boissons : ${summaryFormats}. Le serveur FYS a recalculé les prix officiels exacts (sous-total boissons: ${activeCart.subtotal.toLocaleString('fr-FR')} XAF). La livraison sera calculée selon le quartier (départ atelier Nsimeyong : Zone 1 = 1 000 XAF, Zone 2 = 1 500 XAF, Zone 3 = 2 000 XAF). Remercie-le chaleureusement, confirme clairement ces formats attribués et demande dans quel quartier de Yaoundé il souhaite être livré avec la liste :::LIST !]`,
               });
               textHandled = true;
             } else if (/^(?:format\s+)?(?:500\s*(?:ml)?|1\s*(?:l|litre)|1000\s*ml)$/i.test(cleanSenderLower)) {
@@ -5863,7 +5896,8 @@ RÈGLES STRICTES DE PRÉSENTATION :
                   return res.status(200).json({ status: 'ok', handled: 'catalog_qty_text_under_min_multi' });
                 } else if (hasCat) {
                   const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
-                  const readyText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+                  const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+                  const readyText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}`;
                   await sendWhatsAppInteractiveButtons(
                     senderPhone,
                     readyText,
@@ -5872,7 +5906,7 @@ RÈGLES STRICTES DE PRÉSENTATION :
                       { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
                     ],
                     'FYS · Commande prête',
-                    `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                    deliveryInfo.footerText
                   );
                   if (userDocRef) {
                     await userDocRef.collection('whatsapp_messages').add({
@@ -5997,7 +6031,8 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
                 return res.status(200).json({ status: 'ok', handled: 'catalog_single_item_qty_under_min' });
               } else {
                 const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
-                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+                const deliveryInfo = formatCartDeliveryAndTotal(activeCart);
+                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n${deliveryInfo.deliveryLine}\n${deliveryInfo.totalLine}`;
 
                 await sendWhatsAppInteractiveButtons(
                   senderPhone,
@@ -6007,7 +6042,7 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
                     { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
                   ],
                   'FYS · Commande prête',
-                  `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
+                  deliveryInfo.footerText
                 );
                 if (userDocRef) {
                   await userDocRef.collection('whatsapp_messages').add({
@@ -6055,7 +6090,7 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
                 });
               } else {
                 currentUserParts.push({
-                  text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${chosenQty} bouteille(s) de "${activeCart.items[0].cocktailName}" en ${activeCart.items[0].bottleSizeLabel}. Le montant exact est de ${activeCart.subtotal.toLocaleString('fr-FR')} XAF + Livraison : 1 000 XAF = Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF. Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
+                  text: `${senderText}\n\n[SYSTÈME FYS : Le client a choisi la quantité : ${chosenQty} bouteille(s) de "${activeCart.items[0].cocktailName}" en ${activeCart.items[0].bottleSizeLabel}. Le montant des boissons est de ${activeCart.subtotal.toLocaleString('fr-FR')} XAF. Les frais de livraison seront calculés en fonction du quartier (départ atelier Nsimeyong : Zone 1 = 1 000 XAF, Zone 2 = 1 500 XAF, Zone 3 = 2 000 XAF). Demande-lui UNIQUEMENT dans quel quartier de Yaoundé il souhaite être livré avec la liste déroulante :::LIST des quartiers !]`,
                 });
               }
               textHandled = true;
@@ -6746,33 +6781,38 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             const allIngredients = activeCart.items.flatMap((it) => it.ingredients);
             const combinedCocktailName = activeCart.items.map((it) => it.cocktailName).join(' + ');
 
-            const orderRef = db.collection('orders').doc();
-            const newOrderDoc = {
-              id: orderRef.id,
-              orderCode: webDraftCode || null,
-              type: isCatalogOrder ? 'catalog' : 'classic',
-              source: 'whatsapp',
-              whatsappMessageId: messageId || null,
-              status: 'pending',
-              userId: userDocRef?.id || 'whatsapp_customer',
-              userNameSnapshot: (isWebDraft && webDraft.customerName?.trim()) || senderName,
-              userPhoneSnapshot: senderPhone,
-              userEmailSnapshot: matchedUserEmail || (isWebDraft && webDraft.customerEmail) || '',
-              cocktailId: (isWebDraft && webDraft.cocktail?.id) || (isCatalogOrder ? (activeCart.items[0]?.catalogCocktailId || 'catalog') : 'whatsapp-custom'),
-              cocktailNameSnapshot: combinedCocktailName,
-              cocktailIngredientsSnapshot: allIngredients,
-              hasAddedSugar: activeCart.items.some((i) => i.hasAddedSugar),
-              quantity: totalQuantity,
-              bottleSize: activeCart.items[0]?.bottleSize || (isCatalogOrder ? '350ml' : '1L'),
-              bottleSizeLabel: activeCart.items.map((i) => `${i.quantity}x ${i.bottleSizeLabel}`).join(', '),
-              bottleBasePriceSnapshot: activeCart.items[0]?.baseBottlePrice || (isCatalogOrder ? 0 : bottle1LBase),
-              cocktailPriceSnapshot: activeCart.items[0]?.unitPrice || activeCart.subtotal,
-              orderLines,
-              subtotal: activeCart.subtotal,
-              deliveryFee: activeCart.deliveryFee,
-              totalPrice: activeCart.totalPrice,
+              const targetDistrict = activeCart.district || (orderData && orderData.district) || 'Yaoundé';
+              const finalFee = activeCart.district && activeCart.deliveryFee > 0
+                ? activeCart.deliveryFee
+                : getDeliveryZoneForDistrict(targetDistrict, activeDeliveryZones).fee;
+              const finalTotal = activeCart.subtotal + finalFee;
+
+              const newOrderDoc = {
+                id: orderRef.id,
+                orderCode: webDraftCode || null,
+                type: isCatalogOrder ? 'catalog' : 'classic',
+                source: 'whatsapp',
+                whatsappMessageId: messageId || null,
+                status: 'pending',
+                userId: userDocRef?.id || 'whatsapp_customer',
+                userNameSnapshot: (isWebDraft && webDraft.customerName?.trim()) || senderName,
+                userPhoneSnapshot: senderPhone,
+                userEmailSnapshot: matchedUserEmail || (isWebDraft && webDraft.customerEmail) || '',
+                cocktailId: (isWebDraft && webDraft.cocktail?.id) || (isCatalogOrder ? (activeCart.items[0]?.catalogCocktailId || 'catalog') : 'whatsapp-custom'),
+                cocktailNameSnapshot: combinedCocktailName,
+                cocktailIngredientsSnapshot: allIngredients,
+                hasAddedSugar: activeCart.items.some((i) => i.hasAddedSugar),
+                quantity: totalQuantity,
+                bottleSize: activeCart.items[0]?.bottleSize || (isCatalogOrder ? '350ml' : '1L'),
+                bottleSizeLabel: activeCart.items.map((i) => `${i.quantity}x ${i.bottleSizeLabel}`).join(', '),
+                bottleBasePriceSnapshot: activeCart.items[0]?.baseBottlePrice || (isCatalogOrder ? 0 : bottle1LBase),
+                cocktailPriceSnapshot: activeCart.items[0]?.unitPrice || activeCart.subtotal,
+                orderLines,
+                subtotal: activeCart.subtotal,
+                deliveryFee: finalFee,
+                totalPrice: finalTotal,
                 deliveryDetails: {
-                  district: activeCart.district || (orderData && orderData.district) || 'Yaoundé',
+                  district: targetDistrict,
                   phone: senderPhone,
                   instructions: (orderData && orderData.instructions) || 'Commande directe WhatsApp',
                 },
@@ -7164,7 +7204,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               recapBlock = `📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE\n` +
                 `• Cocktail : ${o.cocktailNameSnapshot} (${ingNames})\n` +
                 `• Format : ${o.quantity}x ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString('fr-FR')} XAF la bouteille)\n` +
-                `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
+                `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : ${(Number(o.deliveryFee) || 1000).toLocaleString('fr-FR')} XAF\n` +
                 `👉 TOTAL À PAYER : ${o.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)\n\n` +
                 `Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
             }
