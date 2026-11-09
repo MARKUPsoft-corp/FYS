@@ -209,7 +209,7 @@ function getAdminMessaging() {
 
 export const FYS_TEAM_PHONE_ORANGE = '691913207';
 export const FYS_TEAM_PHONE_MTN = '675108876';
-export const FYS_TEAM_CONTACTS_TEXT = `📞 / 💬 +237 691 91 32 07 (https://wa.me/237691913207)\n📞 / 💬 +237 675 10 88 76 (https://wa.me/237675108876)`;
+export const FYS_TEAM_CONTACTS_TEXT = `Appel / WhatsApp : +237 691 91 32 07 (https://wa.me/237691913207)\nAppel / WhatsApp : +237 675 10 88 76 (https://wa.me/237675108876)`;
 
 /**
  * Nettoie et supprime de manière déterministe les numéros et blocs de contact FYS
@@ -218,7 +218,7 @@ export const FYS_TEAM_CONTACTS_TEXT = `📞 / 💬 +237 691 91 32 07 (https://wa
 export function removeTeamContactsFromText(text: string): string {
   if (!text) return text;
   let cleaned = text.replace(
-    /(?:\r?\n)*\s*(?:(?:Besoin\s+d['’][^\n]+|Si\s+vous\s+avez[^\n]+|Une\s+question[^\n]+|Notre\s+[ée]quipe[^\n]+|L['’][ée]quipe\s+FYS[^\n]+|Pour\s+toute\s+question[^\n]+|Contactez[- ]nous[^\n]*|Contacts?(?:\s+officiels|\s+de\s+l['’][ée]quipe|\s+FYS)?:?)[^\n]*\r?\n)?(?:\s*(?:📞|\+237|wa\.me|💬)[^\n]*(?:691\s*91\s*32\s*07|675\s*10\s*88\s*76|691913207|675108876)[^\n]*(?:\r?\n)?)+/gi,
+    /(?:\r?\n)*\s*(?:(?:Besoin\s+d['’][^\n]+|Si\s+vous\s+avez[^\n]+|Une\s+question[^\n]+|Notre\s+[ée]quipe[^\n]+|L['’][ée]quipe\s+FYS[^\n]+|Pour\s+toute\s+question[^\n]+|Contactez[- ]nous[^\n]*|Contacts?(?:\s+officiels|\s+de\s+l['’][ée]quipe|\s+FYS)?:?)[^\n]*\r?\n)?(?:\s*(?:📞|\+237|wa\.me|💬|Appel)[^\n]*(?:691\s*91\s*32\s*07|675\s*10\s*88\s*76|691913207|675108876)[^\n]*(?:\r?\n)?)+/gi,
     ''
   );
   cleaned = cleaned.replace(/^[^\n]*(?:691\s*91\s*32\s*07|675\s*10\s*88\s*76|691913207|675108876|wa\.me\/237691913207|wa\.me\/237675108876)[^\n]*$/gmi, '');
@@ -304,6 +304,53 @@ export function stripUnwantedMidConversationGreetings(text: string): string {
 }
 
 /**
+ * Assure un rendu textuel 100% professionnel, sobre et épuré pour WhatsApp :
+ * - Supprime les émojis décoratifs (carnaval d'émojis) qui alourdissent la lecture.
+ * - Supprime les doubles astérisques (**texte**) et les astérisques excessifs (*texte*)
+ *   qui s'affichent mal sur WhatsApp et créent un effet brouillon/chargé.
+ * - Normalise les expressions agressives (ex: "👉 TOTAL À PAYER :" -> "Total à payer :").
+ * - Nettoie les listes et garantit une présentation aérée et soignée, digne d'un vrai service client pro.
+ */
+export function sanitizeProfessionalCustomerServiceText(text: string): string {
+  if (!text) return text;
+  let cleaned = text;
+
+  // 1. Remplacer les doubles astérisques **mot** par du texte propre
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
+
+  // 2. Nettoyer les puces d'astérisques du type "* Ingrédients :"
+  cleaned = cleaned.replace(/^\s*\*\s+/gm, '• ');
+
+  // 3. Supprimer les émojis décoratifs fréquents
+  const decorativeEmojisRegex = /[\u{1F300}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1FA70}-\u{1FAFF}\u{2B50}\u{2705}\u{274C}\u{270A}-\u{270D}\u{2714}\u{2716}\u{2728}\u{2733}\u{2734}\u{2744}\u{2747}\u{274E}\u{2753}-\u{2755}\u{2757}\u{2795}-\u{2797}\u{27A1}\u{27B0}\u{27BF}\u{2934}\u{2935}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]/gu;
+  cleaned = cleaned.replace(decorativeEmojisRegex, '');
+
+  // 4. Supprimer les astérisques entourant des morceaux de texte (*titre*) et astérisques orphelines
+  cleaned = cleaned.replace(/\*([^*\n]+)\*/g, '$1');
+  cleaned = cleaned.replace(/\*/g, '');
+
+  // 5. Nettoyer les expressions criardes
+  cleaned = cleaned.replace(/TOTAL\s*(?:À|A)\s*PAYER\s*:/gi, 'Total à payer :');
+  cleaned = cleaned.replace(/R[ÉE]CAPITULATIF\s+OFFICIEL(?:\s+DE\s+LA\s+COMMANDE)?\s*:/gi, 'Récapitulatif de votre commande :');
+
+  // 6. Nettoyer les parenthèses résiduelles type "(Minimum de 5 atteint ! )" ou "(actuel : 2 / 5 )"
+  cleaned = cleaned.replace(/!\s*\)/g, '!)');
+  cleaned = cleaned.replace(/\(\s+/g, '(');
+  cleaned = cleaned.replace(/\s+\)/g, ')');
+
+  // 7. Nettoyer chaque ligne (retirer les espaces orphelins créés par les émojis retirés)
+  cleaned = cleaned
+    .split('\n')
+    .map((l) => l.trim())
+    .join('\n');
+
+  // 8. Normaliser les espaces et sauts de ligne multiples
+  cleaned = cleaned.replace(/[ \t]{2,}/g, ' ');
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  return cleaned.trim();
+}
+
+/**
  * Parse du JSON renvoyé par un LLM de manière tolérante :
  * retire les blocs markdown ```json ... ``` et extrait l'objet { ... }.
  */
@@ -333,8 +380,9 @@ async function sendWhatsAppMessage(to: string, text: string) {
 
   const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
-  const safeText = text && text.trim().length > 0
-    ? text.trim()
+  const cleanBody = sanitizeProfessionalCustomerServiceText(text);
+  const safeText = cleanBody && cleanBody.trim().length > 0
+    ? cleanBody.trim()
     : 'Bonjour ! Merci pour votre message. Que pouvons-nous faire pour vous aujourd\'hui chez FYS ?';
 
   const payload = {
@@ -376,7 +424,7 @@ async function sendWhatsAppInteractiveButtons(
   bodyText: string,
   buttons: WhatsAppInteractiveButton[],
   headerText?: string,
-  footerText = 'NutriFYS · Votre nutritionniste sur-mesure'
+  footerText = 'NutriFYS · Service client'
 ): Promise<boolean> {
   if (!WHATSAPP_API_TOKEN) {
     console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
@@ -405,9 +453,9 @@ async function sendWhatsAppInteractiveButtons(
     } else if (lower.includes('formats différents') || lower.includes('format différent')) {
       stripped = 'Formats différents';
     } else if (lower.includes('choisir un autre jus') || lower.includes('choisir un jus') || lower.includes('autre jus')) {
-      stripped = '+ Choisir un jus';
+      stripped = 'Choisir un jus';
     } else if (lower.includes('ajouter un autre jus') || lower.includes('ajouter un jus')) {
-      stripped = '+ Ajouter un jus';
+      stripped = 'Ajouter un jus';
     } else if (lower.includes('compléter') || lower.includes('completer')) {
       stripped = stripped.replace(/bouteilles?|btles?|ce jus/gi, '').replace(/\s+/g, ' ').trim();
     }
@@ -444,7 +492,7 @@ async function sendWhatsAppInteractiveButtons(
   const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
   // Meta limite body.text à 1024 caractères pour les messages interactifs
-  let textForBody = bodyText;
+  let textForBody = sanitizeProfessionalCustomerServiceText(bodyText);
   let prefixTextToSendFirst: string | null = null;
   if (textForBody.length > 950) {
     const splitIndex = textForBody.lastIndexOf('\n\n', 900);
@@ -764,7 +812,7 @@ async function sendWhatsAppCatalogCard(
     ? cocktail.ingredients.map((i) => i.fruitName).join(', ')
     : 'Recette signature FYS';
 
-  const bodyText = `🍹 *${cocktail.name}*\n• Ingrédients : ${ingredientsList}\n• Format(s) : ${formatsText}\n• Commande minimale : 5 bouteilles au total (panier combinable)`;
+  const bodyText = `${cocktail.name}\n• Ingrédients : ${ingredientsList}\n• Format(s) : ${formatsText}\n• Commande minimale : 5 bouteilles au total (panier combinable)`;
   const buttonId = `btn_cat_${cocktail.id}`;
 
   const interactivePayload: any = {
@@ -844,7 +892,7 @@ async function sendWhatsAppCatalogCard(
 }
 
 async function sendCatalogJuicesList(to: string, cocktails: CatalogCocktail[]): Promise<void> {
-  const introText = `🌿 *NOS JUS SIGNATURES DU CATALOGUE FYS* 🍹\n\nDécouvrez nos recettes signatures prêtes à être dégustées, avec leurs formats et tarifs officiels enregistrés en boutique.\n\n📦 *Commande minimale : 5 bouteilles au total*\n💡 Vous pouvez combiner différentes recettes dans une même commande pour atteindre ce minimum !\n\nDécouvrez nos jus disponibles ci-dessous et cliquez sur *« Choisir ce jus »* pour composer votre panier :`;
+  const introText = `Jus signatures du catalogue FYS\n\nDécouvrez nos recettes signatures prêtes à être dégustées, avec leurs formats et tarifs officiels enregistrés en boutique.\n\nCommande minimale : 5 bouteilles au total (vous pouvez combiner différentes recettes dans une même commande pour atteindre ce minimum).\n\nDécouvrez nos jus disponibles ci-dessous et cliquez sur « Choisir ce jus » pour composer votre panier :`;
   await sendWhatsAppMessage(to, introText);
 
   for (const c of cocktails) {
@@ -856,7 +904,7 @@ async function sendCatalogJuicesList(to: string, cocktails: CatalogCocktail[]): 
   await new Promise((res) => setTimeout(res, 400));
   await sendWhatsAppInteractiveButtons(
     to,
-    "💡 *Envie d'un cocktail personnalisé ?*\nVous pouvez également composer votre propre recette sur-mesure au Lab selon vos fruits préférés et vos objectifs santé !",
+    "Envie d'un cocktail personnalisé ?\nVous pouvez également composer votre propre recette sur-mesure au Lab selon vos fruits préférés et vos objectifs santé.",
     [{ id: 'btn_mode_custom', title: 'Composer sur-mesure' }],
     'FYS · Le Lab Sur-mesure',
     'Créez votre jus personnalisé'
@@ -927,7 +975,7 @@ async function sendWhatsAppInteractiveList(
   bodyText: string,
   listData: WhatsAppListData,
   headerText?: string,
-  footerText = 'NutriFYS · Votre nutritionniste sur-mesure'
+  footerText = 'NutriFYS · Service client'
 ): Promise<boolean> {
   if (!WHATSAPP_API_TOKEN) {
     console.error('[whatsapp] WHATSAPP_API_TOKEN is missing');
@@ -966,10 +1014,12 @@ async function sendWhatsAppInteractiveList(
 
   const cleanButton = (listData.buttonText || 'Choisir').replace(/[*_~`#|]/g, '').trim().slice(0, 20);
 
+  const cleanBody = sanitizeProfessionalCustomerServiceText(bodyText || 'Veuillez faire un choix :');
+
   const interactivePayload: any = {
     type: 'list',
     body: {
-      text: (bodyText || 'Veuillez faire un choix :').slice(0, 4000),
+      text: cleanBody.slice(0, 4000),
     },
     action: {
       button: cleanButton || 'Choisir',
@@ -1071,13 +1121,14 @@ async function sendWhatsAppCtaUrl(
   const url = `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
   // Nettoyer bodyText pour retirer tout lien brut restant et garder un texte impeccable
-  let textForBody = (bodyText || '')
-    .replace(/https?:\/\/fys-app\.com[^\s]*/g, '')
-    .replace(/👉\s*$/gm, '')
-    .trim();
+  let textForBody = sanitizeProfessionalCustomerServiceText(
+    (bodyText || '')
+      .replace(/https?:\/\/fys-app\.com[^\s]*/g, '')
+      .trim()
+  );
 
   if (!textForBody) {
-    textForBody = 'Votre commande est confirmée ! Cliquez sur le bouton ci-dessous pour accéder à votre espace personnel FYS :';
+    textForBody = 'Votre commande est confirmée. Cliquez sur le bouton ci-dessous pour accéder à votre espace personnel FYS :';
   }
 
   // Meta limite body.text à 1024 caractères pour les messages interactifs
@@ -1190,13 +1241,13 @@ async function sendWhatsAppCtaUrl(
       if (retryRes.ok) return true;
 
       // Repli texte standard si rejeté par le client WhatsApp de l'utilisateur
-      return sendWhatsAppMessage(to, `${textForBody}\n\n👉 Accéder à votre Tableau de bord : ${cta.url}`);
+      return sendWhatsAppMessage(to, `${textForBody}\n\nAccéder à votre Tableau de bord : ${cta.url}`);
     }
 
     return true;
   } catch (err) {
     console.error('[whatsapp] Network error sending CTA URL button, falling back to text:', err);
-    return sendWhatsAppMessage(to, `${textForBody}\n\n👉 Accéder à votre Tableau de bord : ${cta.url}`);
+    return sendWhatsAppMessage(to, `${textForBody}\n\nAccéder à votre Tableau de bord : ${cta.url}`);
   }
 }
 
@@ -1488,7 +1539,7 @@ async function sendWhatsAppDocument(to: string, mediaId: string, filename: strin
     },
   };
   if (caption && caption.trim().length > 0) {
-    payload.document.caption = caption.trim();
+    payload.document.caption = sanitizeProfessionalCustomerServiceText(caption.trim());
   }
 
   try {
@@ -2767,7 +2818,7 @@ export function generateCartDevisText(cart: WhatsAppCart, district?: string): st
     lines.push(`• ${item.quantity} bouteille(s) (${item.bottleSizeLabel}) de ${label} « ${item.cocktailName} » (${fruitsList}) : ${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille (soit ${item.lineTotal.toLocaleString('fr-FR')} XAF)`);
   });
   lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
-  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
+  lines.push(`Total à payer : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison).`);
   lines.push('');
   lines.push('Est-ce que tout est bon pour vous pour valider cette commande ?');
   return lines.join('\n');
@@ -2775,7 +2826,7 @@ export function generateCartDevisText(cart: WhatsAppCart, district?: string): st
 
 export function generateCartConfirmationText(cart: WhatsAppCart, district?: string): string {
   const targetDistrict = district || cart.district || 'Yaoundé';
-  const lines: string[] = ['📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE'];
+  const lines: string[] = ['Récapitulatif officiel de votre commande :'];
   cart.items.forEach((item) => {
     const fruitsList = item.fruits.join(', ');
     const typeLabel = item.isCatalog ? 'Jus signature du catalogue' : 'Cocktail sur-mesure Lab';
@@ -2783,7 +2834,7 @@ export function generateCartConfirmationText(cart: WhatsAppCart, district?: stri
     lines.push(`• Format : ${item.quantity}x ${item.bottleSizeLabel} (${item.unitPrice.toLocaleString('fr-FR')} XAF la bouteille)`);
   });
   lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
-  lines.push(`👉 TOTAL À PAYER : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+  lines.push(`Total à payer : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
   lines.push('');
   lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
   lines.push(FYS_TEAM_CONTACTS_TEXT);
@@ -2840,7 +2891,7 @@ async function sendOrderPdfsToCustomer(
           to,
           factureMediaId,
           factureFilename,
-          `📄 Voici votre facture officielle FYS pour la commande #${shortId}. Merci de votre confiance !`
+          `Voici votre facture officielle FYS pour la commande #${shortId}. Merci de votre confiance !`
         );
       }
     } else {
@@ -2898,7 +2949,7 @@ async function sendOrderPdfsToCustomer(
             to,
             nutritionMediaId,
             nutritionFilename,
-            `🌿 Voici la fiche nutritionnelle officielle de votre cocktail ${cocktail.name} élaborée par NutriFYS.`
+            `Voici la fiche nutritionnelle officielle de votre cocktail ${cocktail.name} élaborée par NutriFYS.`
           );
           if (sent) nutritionSent = true;
         }
@@ -2961,6 +3012,17 @@ RÈGLE D'OR DE SALUTATION ET DE CONVERSATION NATURELLE :
    - Parle comme un être humain sur WhatsApp : réponds DIRECTEMENT, naturellement et avec fluidité (ex: « C'est un excellent choix ! », « C'est bien noté ! », « Parfait ! »).
 3. ⛔ BANNISSEMENT ABSOLU DES FORMULES CLASSIQUES SANS PROXIMITÉ :
    - BANNIS DÉFINITIVEMENT « cher(e) client(e) », « cher client », « chère cliente », « cher(e) ami(e) ».
+
+RÈGLE D'OR DE STYLE & DE COMMUNICATION PROFESSIONNELLE :
+1. TON DE SERVICE CLIENT PROFESSIONNEL, SOBRE ET CHALEUREUX :
+   - Tu t'exprimes avec l'élégance, la clarté et le professionnalisme d'un véritable service client soigné.
+2. ⛔ STRICTEMENT AUCUN ÉMOJI DÉCORATIF / ARTIFICIEL :
+   - Ne mets AUCUN émoji décoratif dans tes messages (interdiction absolue des 🍹, 🌿, 💡, 🩺, 👉, 🛒, 📊, 💵, 🚚, 🛺, ✅, 🎉, etc.).
+   - Tes messages doivent être impeccables, sérieux, épurés et agréables à lire, sans mise en scène inutile.
+3. ⛔ STRICTEMENT AUCUN EXCÈS D'ASTÉRISQUES (**) :
+   - BANNIS DÉFINITIVEMENT les doubles astérisques (**texte**) qui s'affichent mal sur WhatsApp et alourdissent la lecture.
+   - Ne mets pas d'astérisques autour de chaque mot ou chiffre.
+   - Structure tes messages avec des puces propres (•) ou des tirets (-), et des retours à la ligne aérés.
 
 RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - EXCLUSION TOTALE DU PAMPLEMOUSSE : FYS n'utilise JAMAIS de pamplemousse (risque d'interaction médicamenteuse grave).
@@ -3036,8 +3098,8 @@ Dans CHAQUE situation où :
 3. Tu réponds à un client qui a envie d'un bon jus, demande ce que tu proposes, demande le menu, la carte ou les tarifs,
 4. Tu proposes de passer commande alors qu'aucune recette n'a encore été composée au Lab :
 TU DOIS SYSTÉMATIQUEMENT présenter les 2 formules FYS et lui demander laquelle il préfère :
-1️⃣ 🧪 **Composer sur-mesure** : Mélange personnalisé au Lab selon ses besoins santé et ses fruits frais préférés (formats 500ml et 1L).
-2️⃣ 🍹 **Jus du catalogue** : Nos recettes signatures prêtes à déguster (formats et tarifs officiels enregistrés au catalogue, commande minimale de 5 bouteilles au total, combinables entre plusieurs jus).
+1. Composer sur-mesure : Mélange personnalisé au Lab selon ses besoins santé et ses fruits frais préférés (formats 500ml et 1L).
+2. Jus du catalogue : Nos recettes signatures prêtes à déguster (formats et tarifs officiels enregistrés au catalogue, commande minimale de 5 bouteilles au total, combinables entre plusieurs jus).
 
 Termine TOUJOURS par :
 "Souhaitez-vous composer votre cocktail sur-mesure au Lab ou découvrir nos jus du catalogue ?"
@@ -3085,17 +3147,17 @@ Si le client répond oui, clique sur "Fiche nutrition" ou demande à voir les bi
 Présente une FICHE NUTRITIONNELLE COMPLÈTE, propre, élégante et professionnelle, exactement comme sur l'application web FYS :
 
 CONSIGNES DE MISE EN FORME & QUALITÉ RÉDACTIONNELLE :
-- Propre, aérée et professionnelle : STRICTEMENT AUCUN EXCÈS D'ASTÉRISQUES (**) sur chaque mot ou chiffre. N'utilise pas de gras superflu.
+- Propre, aérée et professionnelle : STRICTEMENT AUCUN ÉMOJI DÉCORATIF ET STRICTEMENT AUCUN EXCÈS D'ASTÉRISQUES (**).
 - SCORE SANTÉ DYNAMIQUE ET CALCULÉ : Ne donne JAMAIS 92 par défaut ! Calcule un score réaliste entre 55 et 97 selon la richesse en vitamines, antioxydants, synergies et éventuels sucres/acidités du mélange (ex: 88/100, 94/100, 78/100...).
 - Modèle exact à suivre :
 
-🍹 [Nom créatif du cocktail]
-⭐ Score Santé : [Score estimé 55-97]/100 — Verdict : [✦ Bénéfique / ◈ Neutre / ⚠ Précaution]
+[Nom du cocktail]
+Score Santé : [Score estimé 55-97]/100 — Verdict : [Bénéfique / Neutre / Précaution]
 
-📝 Analyse de votre nutritionniste :
+Analyse de votre nutritionniste :
 [2 à 3 phrases fluides, claires et bienveillantes expliquant pourquoi cette synergie de fruits est bienfaisante]
 
-📊 Profil Nutritionnel estimé (AJR adulte standard) :
+Profil Nutritionnel estimé (AJR adulte standard) :
 • Vitamine C : [X mg] ([Y]% AJR)
 • Vitamine A : [X µg] ([Y]% AJR)
 • Fibres : [X g] ([Y]% AJR)
@@ -3103,15 +3165,15 @@ CONSIGNES DE MISE EN FORME & QUALITÉ RÉDACTIONNELLE :
 • Sucres naturels : [X g] ([Y]% AJR)
 • Antioxydants : [X mg] ([Y]% AJR)
 
-🎯 Bénéfices ciblés :
+Bénéfices ciblés :
 • [Bénéfice 1, ex: Immunité & Vitalité] : Niveau Élevé
 • [Bénéfice 2, ex: Digestion] : Niveau Modéré
 
-🔗 Synergies & Interactions des fruits :
+Synergies & Interactions des fruits :
 • [Explication d'une interaction bienfaisante entre 2 fruits du mélange]
 • [Deuxième synergie si applicable]
 
-💡 Conseil de dégustation :
+Conseil de dégustation :
 [Moment idéal de dégustation (ex: le matin frais ou après l'effort) pour une assimilation maximale]
 
 Puis termine simplement en demandant :
@@ -3125,8 +3187,8 @@ Tu ne poses JAMAIS deux questions à la fois ! Chaque étape correspond à UNE S
 PRÉREQUIS INDISPENSABLE : LA RECETTE DE FRUITS DOIT ÊTRE CONNUE !
 Si le client veut commander (clic sur "Commander", message "je veux commander", ou choix direct) mais qu'AUCUNE recette n'a été composée (pas de brouillon Lab et aucun fruit convenu) :
 TU NE DOIS PAS demander le format ni donner de prix ! Propose-lui avec enthousiasme les 2 options FYS pour commander :
-1️⃣ Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
-2️⃣ Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
+1. Composer votre cocktail sur-mesure au Lab (selon vos objectifs santé et vos fruits frais préférés).
+2. Découvrir nos jus signatures du catalogue (recettes prêtes selon les formats et tarifs officiels - commande minimale de 5 bouteilles au total, combinables).
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
 :::BUTTONS
 [
@@ -3242,7 +3304,7 @@ Dès que le quartier est renseigné (sélectionné dans la liste ou écrit par l
 • [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 1] » ([Fruits 1]) : [Prix unitaire 1] XAF la bouteille (soit [Sous-total 1] XAF)
 • [Quantité] bouteille(s) ([Format]) de notre mélange « [Nom de la recette 2] » ([Fruits 2]) : [Prix unitaire 2] XAF la bouteille (si une 2ème boisson est commandée)
 • Livraison à [Quartier] : 1 000 XAF
-👉 TOTAL À PAYER : [Total] XAF (Paiement Mobile Money ou à la livraison).
+Total à payer : [Total] XAF (Paiement Mobile Money ou à la livraison).
 
 Est-ce que tout est bon pour vous pour valider cette commande ?"
 Inclus OBLIGATOIREMENT le bloc :::BUTTONS :
@@ -4157,7 +4219,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
         }
 
         if (isExplicitReset) {
-          const resetMsg = `🔄 *Votre panier et vos commandes ont bien été réinitialisés !*\n\nQue souhaitez-vous faire maintenant ?\n• 🍓 *Composer votre cocktail sur-mesure au Lab* (selon vos fruits frais préférés)\n• 🍹 *Découvrir nos jus signatures du catalogue* (recettes prêtes - min. 5 bouteilles combinables)`;
+          const resetMsg = `Votre panier et vos commandes ont bien été réinitialisés.\n\nQue souhaitez-vous faire maintenant ?\n• Composer votre cocktail sur-mesure au Lab\n• Découvrir nos jus signatures du catalogue (min. 5 bouteilles combinables)`;
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             resetMsg,
@@ -4189,7 +4251,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
         : extractCatalogOrdersFromText(senderText, catalogCocktails);
 
       if (extractedCatalogOrders && extractedCatalogOrders.length > 0) {
-        console.log(`[whatsapp-webhook] 🍹 Détection directe de ${extractedCatalogOrders.length} jus du catalogue dans le message :`, extractedCatalogOrders.map((o) => `${o.quantity ?? '?'}x ${o.cocktail.name}`));
+        console.log(`[whatsapp-webhook] Détection directe de ${extractedCatalogOrders.length} jus du catalogue dans le message :`, extractedCatalogOrders.map((o) => `${o.quantity ?? '?'}x ${o.cocktail.name}`));
 
         // Cas 1 : Un seul jus mentionné sans quantité explicite (ex: "je veux le jus papaye orange" ou "ananas gingembre")
         if (extractedCatalogOrders.length === 1 && extractedCatalogOrders[0].quantity === null) {
@@ -4204,7 +4266,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
               id: `btn_catfmt_${c.id}_${idx}`,
               title: `${ct.label} (${(Number(ct.price) || 0).toLocaleString('fr-FR')} XAF)`.slice(0, 20),
             }));
-            const fmtPrompt = `Pour notre jus signature « *${c.name}* », quel format préférez-vous ?`;
+            const fmtPrompt = `Pour notre jus signature « ${c.name} », quel format préférez-vous ?`;
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               fmtPrompt,
@@ -4228,10 +4290,10 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
 
           const currentCatalogTotal = activeCart ? activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0) : 0;
           const existingCartSummary = activeCart && activeCart.items.length > 0
-            ? `\n\n🛒 *Votre panier contient déjà :*\n${activeCart.items.map((i) => `• ${i.quantity}x ${i.cocktailName} (${i.bottleSizeLabel})`).join('\n')}\n_(Total actuel : ${currentCatalogTotal} / 5 bouteilles)_`
+            ? `\n\nVotre panier contient déjà :\n${activeCart.items.map((i) => `• ${i.quantity} × ${i.cocktailName} (${i.bottleSizeLabel})`).join('\n')}\n(Total actuel : ${currentCatalogTotal} / 5 bouteilles)`
             : '';
 
-          const qtyPrompt = `Superbe choix ! Vous avez sélectionné notre jus signature « *${c.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).${existingCartSummary}\n\n📦 *Combien de bouteilles de cette recette souhaitez-vous ajouter ?*\n_(Commande minimale de 5 bouteilles au total sur votre commande, vous pouvez combiner plusieurs recettes)_`;
+          const qtyPrompt = `Très bon choix. Vous avez sélectionné notre jus signature « ${c.name} » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).${existingCartSummary}\n\nCombien de bouteilles de cette recette souhaitez-vous ajouter ? (Commande minimale de 5 bouteilles au total, combinables entre plusieurs jus)`;
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             qtyPrompt,
@@ -4366,13 +4428,13 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
 
         if (totalCatalogBottles < 5) {
           const missing = 5 - totalCatalogBottles;
-          const warningText = `🛒 *Votre panier actuel FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n*Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n⚠️ *Règle FYS :* La commande minimale pour les jus du catalogue est de *5 bouteilles au total*. Il vous manque encore *${missing} bouteille(s)* pour valider votre commande !\n\nVous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
+          const warningText = `Votre panier (Jus du catalogue) :\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\nTotal : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF\n\nPour les jus du catalogue, la commande minimale est de 5 bouteilles au total. Il vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour compléter votre panier :`;
 
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             warningText,
             [
-              { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+              { id: 'btn_mode_catalog', title: 'Choisir un jus' },
               { id: 'btn_complete_min', title: `Compléter (+${missing})` },
               { id: 'btn_view_cart', title: 'Voir le panier' },
             ],
@@ -4389,7 +4451,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
           }
           return res.status(200).json({ status: 'ok', handled: 'catalog_multi_order_under_min' });
         } else {
-          const readyText = `🎉 *Superbe choix ! Minimum de 5 bouteilles atteint !*\n\n🛒 *Votre commande FYS (Jus du catalogue) :*\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*\n\n📍 *Dans quel quartier de Yaoundé souhaitez-vous être livré ?*\n_(Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)_`;
+          const readyText = `Votre commande (Jus du catalogue) :\n${cartLines}\n──────────────────\nSous-total (${totalCatalogBottles} bouteilles) : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison à Yaoundé : ${activeCart.deliveryFee.toLocaleString('fr-FR')} XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF\n\nDans quel quartier de Yaoundé souhaitez-vous être livré ? (Vous pouvez sélectionner dans la liste ci-dessous ou simplement écrire votre quartier en réponse)`;
 
           await sendWhatsAppInteractiveList(
             senderPhone,
@@ -4802,7 +4864,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
               activeWhatsAppDraft: FieldValue.delete(),
             }, { merge: true }).catch(() => null);
           }
-          const resetMsg = `🔄 *Votre panier a été vidé avec succès !*\n\nQue souhaitez-vous faire maintenant ?\n• 🍓 *Composer votre cocktail sur-mesure au Lab* (selon vos fruits frais préférés)\n• 🍹 *Découvrir nos jus signatures du catalogue* (recettes prêtes - min. 5 bouteilles combinables)`;
+          const resetMsg = `Votre panier a été vidé.\n\nQue souhaitez-vous faire maintenant ?\n• Composer votre cocktail sur-mesure au Lab\n• Découvrir nos jus signatures du catalogue (min. 5 bouteilles combinables)`;
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             resetMsg,
@@ -4831,12 +4893,12 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
             // Vérification stricte du minimum de 5 pour les jus du catalogue
             if (hasCatalog && totalCatalog < 5) {
               const missing = 5 - totalCatalog;
-              const warningText = `⚠️ Impossible de valider la commande : votre panier contient actuellement *${totalCatalog} bouteille(s)* de jus du catalogue. La commande minimale est de *5 bouteilles au total* (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos bouteilles :`;
+              const warningText = `Impossible de valider la commande : votre panier contient actuellement ${totalCatalog} bouteille(s) de jus du catalogue. La commande minimale est de 5 bouteilles au total (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos bouteilles :`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 warningText,
                 [
-                  { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                   { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                 ],
                 'FYS · Jus du catalogue',
@@ -4910,7 +4972,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
                 id: `btn_catfmt_${selectedCocktail.id}_${idx}`,
                 title: `${c.label} (${(Number(c.price) || 0).toLocaleString('fr-FR')} XAF)`.slice(0, 20),
               }));
-              const fmtPrompt = `Pour notre jus signature « *${selectedCocktail.name}* », quel format préférez-vous ?`;
+              const fmtPrompt = `Pour notre jus signature « ${selectedCocktail.name} », quel format préférez-vous ?`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 fmtPrompt,
@@ -4932,7 +4994,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             const unitPrice = typeof container.price === 'number' ? container.price : 500;
             const bottleSizeLabel = container.label || '350ml';
 
-            const qtyPrompt = `Superbe choix ! Vous avez sélectionné « *${selectedCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).\n\n📦 *Combien de bouteilles de cette recette souhaitez-vous ajouter à votre panier ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 bouteilles au total, ou taper un autre chiffre)_`;
+            const qtyPrompt = `Très bon choix. Vous avez sélectionné « ${selectedCocktail.name} » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).\n\nCombien de bouteilles de cette recette souhaitez-vous ajouter à votre panier ? (Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 bouteilles au total)`;
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               qtyPrompt,
@@ -4973,7 +5035,7 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             const unitPrice = typeof container.price === 'number' ? container.price : 500;
             const bottleSizeLabel = container.label || '350ml';
 
-            const qtyPrompt = `C'est noté pour le format ${bottleSizeLabel} (${unitPrice.toLocaleString('fr-FR')} XAF) !\n\n📦 *Combien de bouteilles de « ${selectedCocktail.name} » souhaitez-vous ajouter ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total, ou taper un autre chiffre)_`;
+            const qtyPrompt = `C'est noté pour le format ${bottleSizeLabel} (${unitPrice.toLocaleString('fr-FR')} XAF).\n\nCombien de bouteilles de « ${selectedCocktail.name} » souhaitez-vous ajouter ? (Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total)`;
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               qtyPrompt,
@@ -5067,13 +5129,13 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
 
             if (totalCatalogBottles < 5) {
               const missing = 5 - totalCatalogBottles;
-              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) à votre panier !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+              const feedbackText = `${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel}) ajouté à votre commande.\n\nVotre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${totalCatalogBottles} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
 
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 feedbackText,
                 [
-                  { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                   { id: `btn_catcomp_${selectedCocktail.id}_${containerIdx}`, title: `Compléter (+${missing})` },
                   { id: 'btn_view_cart', title: 'Voir le panier' },
                 ],
@@ -5089,14 +5151,14 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
               }
               return res.status(200).json({ status: 'ok', handled: 'catalog_item_added_under_min' });
             } else {
-              const feedbackText = `✅ *${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel})* ajouté(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+              const feedbackText = `${chosenQty} × ${selectedCocktail.name} (${bottleSizeLabel}) ajouté à votre commande.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${totalCatalogBottles} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
 
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 feedbackText,
                 [
-                  { id: 'btn_order', title: 'Valider commande 🛒' },
-                  { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
+                  { id: 'btn_order', title: 'Valider la commande' },
+                  { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
                 ],
                 'FYS · Commande prête',
                 `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
@@ -5156,14 +5218,14 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
             const totalCatalogBottles = activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0);
             const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
 
-            const feedbackText = `🎉 *Panier complété avec succès !*\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+            const feedbackText = `Panier complété.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${totalCatalogBottles} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
 
             await sendWhatsAppInteractiveButtons(
               senderPhone,
               feedbackText,
               [
-                { id: 'btn_order', title: 'Valider commande 🛒' },
-                { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
+                { id: 'btn_order', title: 'Valider la commande' },
+                { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
               ],
               'FYS · Commande prête',
               `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
@@ -5185,25 +5247,25 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title
 
             if (hasCatalog && totalCatalogBottles < 5) {
               const missing = 5 - totalCatalogBottles;
-              const feedbackText = `🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCatalogBottles} / 5 bouteilles minimum*\n⚠️ Il vous manque encore *${missing} bouteille(s)* pour valider votre commande.`;
+              const feedbackText = `Votre panier actuel :\n${cartLines}\n\nTotal jus du catalogue : ${totalCatalogBottles} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande.`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 feedbackText,
                 [
-                  { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                   { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                 ],
                 'FYS · Panier catalogue',
                 `Minimum : 5 bouteilles (actuel: ${totalCatalogBottles})`
               );
             } else {
-              const feedbackText = `🛒 *Votre panier officiel :*\n${cartLines}\n\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+              const feedbackText = `Récapitulatif de votre panier :\n${cartLines}\n\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 feedbackText,
                 [
-                  { id: 'btn_order', title: 'Valider commande 🛒' },
-                  { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
+                  { id: 'btn_order', title: 'Valider la commande' },
+                  { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
                 ],
                 'FYS · Commande prête',
                 `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
@@ -5469,12 +5531,12 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
             if (isCat && totalCat < 5) {
               const missing = 5 - totalCat;
               const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
-              const warningText = `🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+              const warningText = `Votre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${totalCat} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 warningText,
                 [
-                  { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                   { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                   { id: 'btn_view_cart', title: 'Voir le panier' },
                 ],
@@ -5784,10 +5846,10 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
 
           const currentCatalogTotal = activeCart ? activeCart.items.filter((i) => i.isCatalog).reduce((s, i) => s + i.quantity, 0) : 0;
           const existingCartSummary = activeCart && activeCart.items.length > 0
-            ? `\n\n🛒 *Votre panier contient déjà :*\n${activeCart.items.map((i) => `• ${i.quantity}x ${i.cocktailName} (${i.bottleSizeLabel})`).join('\n')}\n_(Total actuel : ${currentCatalogTotal} / 5 bouteilles)_`
+            ? `\n\nVotre sélection actuelle :\n${activeCart.items.map((i) => `• ${i.quantity}x ${i.cocktailName} (${i.bottleSizeLabel})`).join('\n')}\n(Total actuel : ${currentCatalogTotal} / 5 bouteilles)`
             : '';
 
-          const qtyPrompt = `Superbe choix ! Vous avez sélectionné « *${matchedCatalogCocktail.name}* » (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).${existingCartSummary}\n\n📦 *Combien de bouteilles de cette recette souhaitez-vous ajouter ?*\n_(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total, ou taper un autre chiffre)_`;
+          const qtyPrompt = `Vous avez sélectionné ${matchedCatalogCocktail.name} (${bottleSizeLabel} à ${unitPrice.toLocaleString('fr-FR')} XAF l'unité).${existingCartSummary}\n\nCombien de bouteilles de cette recette souhaitez-vous ajouter ?\n(Vous pouvez combiner plusieurs jus du catalogue pour atteindre le minimum de 5 au total, ou taper directement un chiffre)`;
           await sendWhatsAppInteractiveButtons(
             senderPhone,
             qtyPrompt,
@@ -5824,8 +5886,8 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
 RÈGLE COMMERCIALE FYS STRICTE - LE DOUBLE CHOIX SYSTÉMATIQUE & PROXIMITÉ :
 ${salutationPrompt}
 2. Demande-lui s'il souhaite :
-   - 🧪 **Composer sur-mesure** sa recette au Lab (selon ses objectifs de santé et ses fruits frais préférés).
-   - 🍹 **Partir sur une formule du catalogue** (nos jus signatures prêts selon les formats et tarifs officiels — commande minimale de 5 bouteilles au total, combinables).
+   - 1. Composer sur-mesure sa recette au Lab (selon ses objectifs de santé et ses fruits frais préférés).
+   - 2. Partir sur une formule du catalogue (nos jus signatures prêts selon les formats et tarifs officiels — commande minimale de 5 bouteilles au total, combinables).
 3. Demande-lui laquelle de ces deux options il préfère aujourd'hui.
 4. Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_mode_custom", "title": "Composer sur-mesure"}, {"id": "btn_mode_catalog", "title": "Jus du catalogue"}]. Ne pose aucune autre question !]`,
           });
@@ -6014,12 +6076,12 @@ RÈGLES STRICTES DE PRÉSENTATION :
                 if (hasCat && totalCat < 5) {
                   const missing = 5 - totalCat;
                   const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
-                  const warningText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+                  const warningText = `${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel}) mis à jour.\n\nVotre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${totalCat} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
                   await sendWhatsAppInteractiveButtons(
                     senderPhone,
                     warningText,
                     [
-                      { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                      { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                       { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                       { id: 'btn_view_cart', title: 'Voir le panier' },
                     ],
@@ -6036,13 +6098,13 @@ RÈGLES STRICTES DE PRÉSENTATION :
                   return res.status(200).json({ status: 'ok', handled: 'catalog_qty_text_under_min_multi' });
                 } else if (hasCat) {
                   const cartLines = activeCart.items.map((it) => `• ${it.quantity} × ${it.cocktailName} (${it.bottleSizeLabel}) : ${(it.unitPrice * it.quantity).toLocaleString('fr-FR')} XAF`).join('\n');
-                  const readyText = `✅ *${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel})* mis à jour !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${totalCat} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+                  const readyText = `${parsedQty} × ${lastItem.cocktailName} (${lastItem.bottleSizeLabel}) mis à jour.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${totalCat} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
                   await sendWhatsAppInteractiveButtons(
                     senderPhone,
                     readyText,
                     [
-                      { id: 'btn_order', title: 'Valider commande 🛒' },
-                      { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
+                      { id: 'btn_order', title: 'Valider la commande' },
+                      { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
                     ],
                     'FYS · Commande prête',
                     `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
@@ -6147,13 +6209,13 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
               if (chosenQty < 5) {
                 const missing = 5 - chosenQty;
                 const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
-                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier actuel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} / 5 bouteilles minimum*\n⚠️ *Il vous manque encore ${missing} bouteille(s)* pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles !`;
+                const feedbackText = `${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) enregistré.\n\nVotre sélection actuelle :\n${cartLines}\n\nTotal jus du catalogue : ${chosenQty} / 5 bouteilles minimum\nIl vous manque encore ${missing} bouteille(s) pour valider votre commande. Vous pouvez combiner d'autres recettes du catalogue pour atteindre les 5 bouteilles.`;
 
                 await sendWhatsAppInteractiveButtons(
                   senderPhone,
                   feedbackText,
                   [
-                    { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                    { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                     { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                     { id: 'btn_view_cart', title: 'Voir le panier' },
                   ],
@@ -6170,14 +6232,14 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
                 return res.status(200).json({ status: 'ok', handled: 'catalog_single_item_qty_under_min' });
               } else {
                 const cartLines = `• ${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) : ${(activeCart.items[0].unitPrice * chosenQty).toLocaleString('fr-FR')} XAF`;
-                const feedbackText = `✅ *${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel})* enregistré(s) !\n\n🛒 *Votre panier officiel :*\n${cartLines}\n\n📊 Total jus du catalogue : *${chosenQty} bouteilles* (Minimum de 5 atteint ! 🎉)\n💵 Sous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\n🚚 Livraison Yaoundé : 1 000 XAF\n👉 *TOTAL À PAYER : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF*`;
+                const feedbackText = `${chosenQty} × ${activeCart.items[0].cocktailName} (${activeCart.items[0].bottleSizeLabel}) enregistré.\n\nRécapitulatif de votre panier :\n${cartLines}\n\nTotal jus du catalogue : ${chosenQty} bouteilles (minimum de 5 atteint)\nSous-total : ${activeCart.subtotal.toLocaleString('fr-FR')} XAF\nLivraison Yaoundé : 1 000 XAF\nTotal à payer : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`;
 
                 await sendWhatsAppInteractiveButtons(
                   senderPhone,
                   feedbackText,
                   [
-                    { id: 'btn_order', title: 'Valider commande 🛒' },
-                    { id: 'btn_mode_catalog', title: '+ Ajouter un jus' },
+                    { id: 'btn_order', title: 'Valider la commande' },
+                    { id: 'btn_mode_catalog', title: 'Ajouter un jus' },
                   ],
                   'FYS · Commande prête',
                   `Total : ${activeCart.totalPrice.toLocaleString('fr-FR')} XAF`
@@ -6338,14 +6400,14 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       if (!aiReply || aiReply.trim().length === 0) {
         console.warn('[whatsapp-webhook] ⚠️ All Gemini models failed or timed out. Triggering resilient NutriFYS fallback...');
         if (isNewDraftCodeInMessage) {
-          aiReply = `Bonjour ${senderName} ! 🍹 Votre mélange personnalisé FYS est bien reçu. Souhaitez-vous le commander dès maintenant ou découvrir sa composition et ses bienfaits nutritionnels ?`;
+          aiReply = `Bonjour ${senderName} ! Votre mélange personnalisé FYS est bien reçu. Souhaitez-vous le commander dès maintenant ou découvrir sa composition et ses bienfaits nutritionnels ?`;
           buttonsToSend = [
             { id: 'btn_order', title: 'Commander' },
             { id: 'btn_nutrition', title: 'Fiche nutrition' },
           ];
         } else if (isInteractiveMessage && interactiveButtonId) {
           if (interactiveButtonId.startsWith('btn_order')) {
-            aiReply = `Avec grand plaisir ${senderName} ! 🥤 Quel format préférez-vous (500ml ou 1 Litre) et dans quel quartier de Yaoundé souhaitez-vous être livré ?`;
+            aiReply = `Avec plaisir ${senderName} ! Quel format préférez-vous (500ml ou 1 Litre) et dans quel quartier de Yaoundé souhaitez-vous être livré ?`;
             buttonsToSend = [
               { id: 'btn_format_500ml', title: 'Format 500ml' },
               { id: 'btn_format_1l', title: 'Format 1 Litre' },
@@ -6359,7 +6421,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             aiReply = `C'est bien noté ${senderName} ! Je prépare votre commande FYS. Dans quel quartier de Yaoundé souhaitez-vous être livré ?`;
           }
         } else {
-          aiReply = `Bonjour ${senderName} ! 🌿 Je suis ravi de vous retrouver chez FYS. Que puis-je faire pour vous aujourd'hui : une nouvelle commande de cocktail frais ou un conseil nutrition ?`;
+          aiReply = `Bonjour ${senderName} ! Je suis ravi de vous retrouver chez FYS. Que puis-je faire pour vous aujourd'hui : une nouvelle commande de cocktail frais ou un conseil nutrition ?`;
           buttonsToSend = [
             { id: 'btn_order', title: 'Commander' },
             { id: 'btn_nutrition', title: 'Fiche nutrition' },
@@ -6882,12 +6944,12 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
             if (isCatalogOrder && totalCatalogQty < 5) {
               const missing = 5 - totalCatalogQty;
               console.warn(`[whatsapp-webhook] ⚠️ Order blocked: total catalog quantity (${totalCatalogQty}) is under 5 for ${senderPhone}.`);
-              const warningText = `⚠️ Impossible de valider la commande : votre panier contient actuellement *${totalCatalogQty} bouteille(s)* de jus du catalogue. La commande minimale est de *5 bouteilles au total* (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos quantités :`;
+              const warningText = `Impossible de valider la commande : votre panier contient actuellement ${totalCatalogQty} bouteille(s) de jus du catalogue. La commande minimale est de 5 bouteilles au total (il vous en manque encore ${missing}).\n\nVous pouvez combiner d'autres recettes du catalogue ou compléter vos quantités :`;
               await sendWhatsAppInteractiveButtons(
                 senderPhone,
                 warningText,
                 [
-                  { id: 'btn_mode_catalog', title: '+ Choisir un jus' },
+                  { id: 'btn_mode_catalog', title: 'Choisir un jus' },
                   { id: 'btn_complete_min', title: `Compléter (+${missing})` },
                 ],
                 'FYS · Jus du catalogue',
@@ -7153,7 +7215,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                   const bIncompatibleWithA = (fruitB?.incompatibleIds || []).some((id: string) => id.toLowerCase() === (fruitA?.id || '').toLowerCase());
 
                   if (aIncompatibleWithB || bIncompatibleWithA) {
-                    labViolations.push(`Incompatibilité nutritionnelle : **${ingA.fruitName}** et **${ingB.fruitName}** ne peuvent pas être associés dans un même jus.`);
+                    labViolations.push(`Incompatibilité nutritionnelle : ${ingA.fruitName} et ${ingB.fruitName} ne peuvent pas être associés dans un même jus.`);
                   }
                 }
               }
@@ -7337,19 +7399,20 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               recapBlock = generateCartConfirmationText(activeCart, o.deliveryDetails?.district);
             } else {
               const ingNames = createdOrderInfo.ingredients.map((i: any) => i.fruitName).join(', ');
-              recapBlock = `📋 RÉCAPITULATIF OFFICIEL DE LA COMMANDE\n` +
+              recapBlock = `Récapitulatif de votre commande :\n` +
                 `• Cocktail : ${o.cocktailNameSnapshot} (${ingNames})\n` +
                 `• Format : ${o.quantity}x ${o.bottleSizeLabel} (${o.cocktailPriceSnapshot.toLocaleString('fr-FR')} XAF la bouteille)\n` +
                 `• Livraison à ${o.deliveryDetails?.district || 'Yaoundé'} : 1 000 XAF\n` +
-                `👉 TOTAL À PAYER : ${o.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)\n\n` +
+                `Total à payer : ${o.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)\n\n` +
                 `Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :\n${FYS_TEAM_CONTACTS_TEXT}`;
             }
 
             // Vérifier si le message généré par l'IA contient DÉJÀ le récapitulatif complet
             const formattedTotalFr = o.totalPrice.toLocaleString('fr-FR');
             const hasRecapAlready =
-              (aiReply.includes('TOTAL À PAYER') && (aiReply.includes(formattedTotalFr) || aiReply.includes(String(o.totalPrice)))) ||
-              aiReply.includes('RÉCAPITULATIF OFFICIEL');
+              ((aiReply.includes('TOTAL À PAYER') || aiReply.includes('Total à payer')) && (aiReply.includes(formattedTotalFr) || aiReply.includes(String(o.totalPrice)))) ||
+              aiReply.includes('RÉCAPITULATIF OFFICIEL') ||
+              aiReply.includes('Récapitulatif de votre commande');
 
             if (!hasRecapAlready) {
               if (aiReply.includes('récapitulatif')) {
@@ -7547,7 +7610,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         buttonsToSend.length === 0 &&
         !orderMatch &&
         !createdOrderInfo &&
-        aiReply.includes('TOTAL À PAYER') &&
+        (aiReply.includes('TOTAL À PAYER') || aiReply.includes('Total à payer')) &&
         (aiReply.toLowerCase().includes('convient') || aiReply.toLowerCase().includes('valider') || aiReply.toLowerCase().includes('bon pour vous'))
       ) {
         buttonsToSend = [
@@ -7611,6 +7674,9 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         // Accueil initial ou salutation expresse de l'utilisateur : accueil chaleureux personnalisé avec prénom
         aiReply = sanitizeCustomerGreeting(aiReply, customerFirstName);
       }
+
+      // Sanitize standard service client professionnel (supprime emojis superflus, double astérisques et normalise la typographie)
+      aiReply = sanitizeProfessionalCustomerServiceText(aiReply);
 
       // 3. Envoi de la réponse sur WhatsApp (Option 2 : Vocal + Texte si le client a parlé en vocal)
       let sentAudio = false;
@@ -7727,7 +7793,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                 if (fBuf) {
                   const mId = await uploadWhatsAppDocument(fBuf, `Facture_${shortId}.pdf`);
                   if (mId) {
-                    await sendWhatsAppDocument(senderPhone, mId, `Facture_${shortId}.pdf`, `📄 Voici votre facture officielle FYS #${shortId}`);
+                    await sendWhatsAppDocument(senderPhone, mId, `Facture_${shortId}.pdf`, `Voici votre facture officielle FYS #${shortId}`);
                   }
                 }
               }
@@ -7740,7 +7806,7 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
                 if (nBuf) {
                   const mId = await uploadWhatsAppDocument(nBuf, `Fiche_NutriFYS_${cocktailName.slice(0, 15).replace(/\s+/g, '_')}.pdf`);
                   if (mId) {
-                    await sendWhatsAppDocument(senderPhone, mId, `Fiche_NutriFYS.pdf`, `🌿 Voici la fiche nutritionnelle de votre cocktail ${cocktailName}`);
+                    await sendWhatsAppDocument(senderPhone, mId, `Fiche_NutriFYS.pdf`, `Voici la fiche nutritionnelle de votre cocktail ${cocktailName}`);
                   }
                 }
               }
