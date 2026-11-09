@@ -6952,10 +6952,29 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
 
       // 0. ROUTEUR SÉMANTIQUE D'INTENTIONS IA (:::INTENT)
       // NutriFYS traduit les expressions naturelles du client en actions système codées en dur
+      let parsedIntent: {
+        action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'ORDER_CATALOG' | 'CATALOG' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
+        cocktails?: Array<{
+          cocktailName?: string;
+          fruits?: string[];
+          bottleSize?: '500ml' | '1L';
+          quantity?: number;
+          hasAddedSugar?: boolean;
+        }>;
+        catalogItems?: Array<{
+          cocktailName?: string;
+          quantity?: number;
+          bottleSize?: string;
+        }>;
+        district?: string;
+        quantity?: number;
+        format?: '500ml' | '1L';
+      } | null = null;
+
       const intentMatch = aiReply.match(/:::INTENT\s*([\s\S]*?)\s*:::?/);
       if (intentMatch) {
         try {
-          const parsedIntent = parseSafeJson<{
+          parsedIntent = parseSafeJson<{
             action?: 'NEW_RECIPE' | 'VALIDATE_RECIPE' | 'ORDER' | 'ORDER_CATALOG' | 'CATALOG' | 'SHOW_NUTRITION' | 'SET_FORMAT' | 'SET_QUANTITY' | 'SET_DISTRICT' | 'CONFIRM_ORDER' | 'ADD_COCKTAIL' | 'RESET' | 'QUESTION';
             cocktails?: Array<{
               cocktailName?: string;
