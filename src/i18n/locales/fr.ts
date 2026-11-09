@@ -596,7 +596,30 @@ export default {
     "oneLiter": "Un litre — option premium",
     "pageTitle": "FYS — Tarification",
     "pageDescription": "Prix des contenants et livraison.",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "bottle500Label": "Bouteille {{volume}}",
+    "bottle1LLabel": "Bouteille {{volume}}",
+    "bottleCostTitle": "Coûts de revient des bouteilles",
+    "bottleCostDesc": "Renseignez le coût d'achat unitaire des contenants vides (servant au calcul des marges nettes dans FYS Management).",
+    "bottleCost500Label": "Coût d'achat bouteille 500ml",
+    "bottleCost500Hint": "Coût unitaire du contenant 500ml vide (ex: 250 XAF)",
+    "bottleCost1LLabel": "Coût d'achat bouteille 1L",
+    "bottleCost1LHint": "Coût unitaire du contenant 1L vide (ex: 450 XAF)",
+    "labLimitsTitle": "Limites de composition du FYS Lab",
+    "labLimitsDesc": "Configurez le nombre maximum de fruits principaux et de compléments autorisés par bouteille sur-mesure.",
+    "maxMainFruitsLabel": "Maximum de fruits principaux",
+    "maxMainFruitsHint": "Nombre max de fruits de base dans un cocktail (défaut : 3)",
+    "maxSupplementsLabel": "Maximum de suppléments / boosters",
+    "maxSupplementsHint": "Nombre max de superaliments / compléments (défaut : 2)",
+    "promo": {
+      "sectionTitle": "Promotions & Liens Publics",
+      "sectionDesc": "Générez et gérez des réductions applicables automatiquement par lien public ou QR code.",
+      "statusActive": "Active",
+      "statusExpired": "Expirée",
+      "statusInactive": "Inactive",
+      "someDiscount": "une réduction exclusive",
+      "whatsappMessage": "Bonjour ! Profitez de {{discountText}} sur votre commande chez FYS via ce lien exclusif : {{url}}"
+    }
   },
   "launchNotice": {
     "cardTitle": "Délai de livraison de lancement",

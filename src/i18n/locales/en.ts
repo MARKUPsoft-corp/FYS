@@ -596,7 +596,30 @@ export default {
     "oneLiter": "One liter — premium option",
     "pageTitle": "FYS — Pricing",
     "pageDescription": "Container prices and delivery.",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "bottle500Label": "Bottle {{volume}}",
+    "bottle1LLabel": "Bottle {{volume}}",
+    "bottleCostTitle": "Bottle Cost of Goods",
+    "bottleCostDesc": "Enter the unit purchase cost of empty bottles (used to calculate net margins in FYS Management).",
+    "bottleCost500Label": "500ml bottle purchase cost",
+    "bottleCost500Hint": "Unit cost of empty 500ml bottle (e.g. 250 XAF)",
+    "bottleCost1LLabel": "1L bottle purchase cost",
+    "bottleCost1LHint": "Unit cost of empty 1L bottle (e.g. 450 XAF)",
+    "labLimitsTitle": "FYS Lab Composition Limits",
+    "labLimitsDesc": "Set the maximum number of main fruits and supplements allowed per custom creation.",
+    "maxMainFruitsLabel": "Max main fruits",
+    "maxMainFruitsHint": "Max base fruits in a cocktail (default: 3)",
+    "maxSupplementsLabel": "Max supplements / boosters",
+    "maxSupplementsHint": "Max superfoods / supplements (default: 2)",
+    "promo": {
+      "sectionTitle": "Promotions & Public Links",
+      "sectionDesc": "Generate and manage discounts automatically applied via public links or QR codes.",
+      "statusActive": "Active",
+      "statusExpired": "Expired",
+      "statusInactive": "Inactive",
+      "someDiscount": "an exclusive discount",
+      "whatsappMessage": "Hello! Enjoy {{discountText}} on your order at FYS using this exclusive link: {{url}}"
+    }
   },
   "launchNotice": {
     "cardTitle": "Launch Delivery Notice",
