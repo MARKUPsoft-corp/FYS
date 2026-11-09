@@ -1484,7 +1484,7 @@ const RootIndex: PageComponent = () => {
                 <Mail className="w-4 h-4 text-primary" /> fyscameroun@gmail.com
               </li>
               <li className="flex items-center gap-3 hover:text-foreground transition-colors cursor-pointer">
-                <MapPin className="w-4 h-4 text-primary" /> Yaoundé, Cameroun
+                <MapPin className="w-4 h-4 text-primary" /> Nsimeyong · Yaoundé, Cameroun
               </li>
             </ul>
           </div>
