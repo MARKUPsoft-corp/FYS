@@ -2414,7 +2414,75 @@ export const FRUIT_TYPO_SYNONYMS: Record<string, string[]> = {
   moringa: ['moringa'],
   persil: ['persil', 'parsley'],
   chia: ['chia', 'graines de chia'],
+  fraise: ['fraise', 'fraises', 'strawberry'],
+  kiwi: ['kiwi', 'kiwis'],
+  pamplemousse: ['pamplemousse', 'pamplemousses', 'grapefruit', 'pomelo'],
+  framboise: ['framboise', 'framboises', 'raspberry'],
+  myrtille: ['myrtille', 'myrtilles', 'mure', 'mûre', 'mures', 'mûres', 'blueberry'],
+  peche: ['peche', 'pêche', 'peches', 'pêches', 'peach'],
+  abricot: ['abricot', 'abricots', 'apricot'],
+  cerise: ['cerise', 'cerises', 'cherry'],
+  raisin: ['raisin', 'raisins', 'grape'],
+  melon: ['melon', 'melons'],
 };
+
+export function detectUnavailableFruitsInText(
+  text: string,
+  availableFruits: any[]
+): string[] {
+  if (!text || typeof text !== 'string') return [];
+  const clean = normalizeTextForMatching(text);
+  const unavailable: string[] = [];
+
+  const knownUnavailable: Record<string, string[]> = {
+    'Baobab': ['baobab', 'pain de singe', 'bouye'],
+    'Fraise': ['fraise', 'fraises', 'strawberry'],
+    'Kiwi': ['kiwi', 'kiwis'],
+    'Pamplemousse (interdit)': ['pamplemousse', 'pamplemousses', 'grapefruit', 'pomelo'],
+    'Framboise': ['framboise', 'framboises', 'raspberry'],
+    'Myrtille': ['myrtille', 'myrtilles', 'mure', 'mûre', 'blueberry'],
+    'Pêche': ['peche', 'pêche', 'peches', 'pêches', 'peach'],
+    'Abricot': ['abricot', 'abricots', 'apricot'],
+    'Cerise': ['cerise', 'cerises', 'cherry'],
+  };
+
+  for (const [fruitLabel, synonyms] of Object.entries(knownUnavailable)) {
+    for (const syn of synonyms) {
+      const reg = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${escapeRegexString(normalizeTextForMatching(syn))}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+      if (reg.test(clean)) {
+        if (!unavailable.includes(fruitLabel)) {
+          unavailable.push(fruitLabel);
+        }
+        break;
+      }
+    }
+  }
+
+  // Vérifier également les fruits de FRUIT_TYPO_SYNONYMS non présents dans availableFruits
+  if (Array.isArray(availableFruits) && availableFruits.length > 0) {
+    for (const [key, synonyms] of Object.entries(FRUIT_TYPO_SYNONYMS)) {
+      const isAvailable = availableFruits.some((af) => {
+        const afNorm = normalizeTextForMatching(af.name || '');
+        const afIdNorm = normalizeTextForMatching(af.id || '');
+        return afNorm.includes(key) || afIdNorm.includes(key);
+      });
+      if (!isAvailable) {
+        for (const syn of synonyms) {
+          const reg = new RegExp(`(?:^|[\\s,;.!?'"()•\\-–—*+])${escapeRegexString(normalizeTextForMatching(syn))}(?:$|[\\s,;.!?'"()•\\-–—*+])`, 'i');
+          if (reg.test(clean)) {
+            const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
+            if (!unavailable.includes(capitalized) && !unavailable.some(u => u.toLowerCase().includes(key))) {
+              unavailable.push(capitalized);
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return unavailable;
+}
 
 let currentActiveDeliveryZones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES;
 
@@ -3089,6 +3157,16 @@ RÈGLES D'OR MÉDICALES ET NUTRITIONNELLES ABSOLUES :
 - N'utilise JAMAIS le nom "Claude", "Gemini" ou "OpenAI". Tu es UNIQUEMENT NutriFYS.
 - INTERDICTION FORMELLE DE COLLER DES LIENS URL BRUTS DANS LE TEXTE : Ne mentionne JAMAIS de lien comme https://fys-app.com/... dans tes messages. Notre système WhatsApp attache automatiquement un bouton interactif cliquable pour ouvrir le tableau de bord du client !
 
+GESTION DES INGRÉDIENTS INDISPONIBLES ET RECETTES HORS-CATALOGUE :
+- Si un client demande un ingrédient non disponible au Lab FYS (ex: Baobab, Fraise, Framboise, Kiwi, Pêche, etc.) ou formellement exclu (Pamplemousse) :
+  1. Explique-lui avec bienveillance et courtoisie que cet ingrédient n'est pas disponible dans notre Lab FYS.
+  2. Présente-lui ce qui est réellement disponible : nos fruits frais en stock au Lab (Ananas, Papaye, Orange, Citron, Gingembre, etc.) ou nos véritables jus signatures du catalogue.
+  3. NE CRÉE JAMAIS de faux panier ni de commande avec un ingrédient manquant ou partiellement extrait.
+- Si un client demande une recette qui n'existe pas dans le catalogue (ex: "Baobab ananas", "Détox Royale", etc.) :
+  1. Informe-le avec tact que cette recette ne fait pas partie du catalogue FYS et que le baobab n'est pas disponible en stock au Lab.
+  2. Présente-lui nos 3 véritables jus signatures du catalogue disponibles : « Ananas Gingembre », « Ananas Papaye » et « Papaye Orange » (format 350ml à 500 XAF l'unité, commande minimale de 5 bouteilles au total soit 2 500 XAF).
+  3. Ou propose-lui de composer sa recette sur-mesure au Lab avec nos fruits frais en stock (formats 500ml et 1L).
+
 ORIGINE DES SOURCES & LÉGITIMITÉ NUTRITIONNELLE (OBLIGATOIRE) :
 Si le client te demande d'où viennent tes sources, tes connaissances, tes informations ou comment tes recettes et fiches nutritionnelles sont validées :
 - Explique avec clarté, pédagogie et transparence que tes recommandations s'appuient sur :
@@ -3565,6 +3643,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let matchedUserEmail = '';
       let buttonsToSend: WhatsAppInteractiveButton[] = [];
       let listToSend: WhatsAppListData | null = null;
+      let activeCart: WhatsAppCart | null = null;
 
       // DÉDUPLICATION 1 (META RETRIES) : Ignorer les retries réseau automatiques de Meta sur le même message ID
       if (db && messageId) {
@@ -3947,7 +4026,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const webDraftDistrict = (webDraft?.deliveryDetails?.district || activeCart?.district || '').trim();
+            const webDraftDistrict = (webDraft?.deliveryDetails?.district || (existingUserDoc?.data()?.activeWhatsAppCart?.district) || activeCart?.district || '').trim();
             const exactDraftDeliveryFee = getDeliveryZoneForDistrict(webDraftDistrict, activeDeliveryZones).fee;
 
             if (webDraft) {
@@ -4133,7 +4212,7 @@ CONSIGNE CRITIQUE : Tu dois d'abord réaliser son bilan de santé avec douceur e
             }, 0);
             const exactDraftPrice500 = bottle500Base + webDraftIngredientsSum;
             const exactDraftPrice1L = bottle1LBase + webDraftIngredientsSum;
-            const webDraftDistrict = (webDraft?.deliveryDetails?.district || activeCart?.district || '').trim();
+            const webDraftDistrict = (webDraft?.deliveryDetails?.district || (existingUserDoc?.data()?.activeWhatsAppCart?.district) || activeCart?.district || '').trim();
             const exactDraftDeliveryFee = getDeliveryZoneForDistrict(webDraftDistrict, activeDeliveryZones).fee;
 
             if (webDraft) {
@@ -4231,7 +4310,7 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
       }
 
       // ── CHARGEMENT & GESTION DÉTERMINISTE DU PANIER MULTI-BOISSONS (activeWhatsAppCart) ──
-      let activeCart: WhatsAppCart | null = null;
+      activeCart = null;
       const rawUserCart = existingUserDoc?.data()?.activeWhatsAppCart;
       let pendingCatalogSelection = existingUserDoc?.data()?.pendingCatalogSelection || null;
       if (pendingCatalogSelection) {
@@ -4563,7 +4642,15 @@ RÈGLE SUR LES CONTACTS : N'affiche pas les numéros de contact sauf s'il le dem
       }
 
       // 2. Détection déterministe de cocktails et fruits sur-mesure dans le message actuel
-      const extractedCurrent = extractCocktailsFromText(senderText, availableFruits);
+      const unavailableFruitsCurrent = detectUnavailableFruitsInText(senderText, availableFruits);
+      const isCatalogRequestInText = /(?:boissons?|jus|recettes?)\s+du\s+catalogue|catalogue/i.test(senderText);
+      const shouldSkipCustomExtraction =
+        unavailableFruitsCurrent.length > 0 ||
+        (isCatalogRequestInText && (!extractedCatalogOrders || extractedCatalogOrders.length === 0));
+
+      const extractedCurrent = (!shouldSkipCustomExtraction)
+        ? extractCocktailsFromText(senderText, availableFruits)
+        : null;
       if (extractedCurrent && extractedCurrent.length > 0) {
         if (isAddIntent && activeCart && activeCart.items.length > 0) {
           // Conserver les cocktails existants et ajouter le(s) nouveau(x) cocktail(s)
@@ -4796,12 +4883,28 @@ Tant que les fruits du cocktail ne sont pas connus, TU NE PEUX PAS calculer de p
 Si le client veut commander ou demande le prix, guide-le d'abord pour choisir 1 à ${maxMainFruits} fruits principaux et au maximum ${maxSupplements} suppléments parmi le catalogue officiel en stock ci-dessous afin de composer sa recette et calculer son prix exact selon la formule FYS.`;
       }
 
+      const catalogJuicesListStr = catalogCocktails && catalogCocktails.length > 0
+        ? catalogCocktails.map((c) => {
+            const containerInfo = Array.isArray(c.containers) && c.containers.length > 0
+              ? c.containers.map((ct: any) => `${ct.label} (${(Number(ct.price) || 500).toLocaleString('fr-FR')} XAF)`).join(', ')
+              : '350ml (500 XAF)';
+            const ings = Array.isArray(c.ingredients) && c.ingredients.length > 0
+              ? c.ingredients.map((i: any) => i.fruitName || i.name).filter(Boolean).join(', ')
+              : c.name;
+            return `• « ${c.name} » (${ings}) — Formats et tarifs : ${containerInfo}`;
+          }).join('\n')
+        : '• « Ananas Gingembre » (Ananas, Gingembre) — 350ml (500 XAF)\n• « Ananas Papaye » (Ananas, Papaye) — 350ml (500 XAF)\n• « Papaye Orange » (Papaye, Orange) — 350ml (500 XAF)';
+
       const dynamicPricingContext = `\n\nCATALOGUE OFFICIEL DU FYS LAB (EN STOCK DÉFINITIF) :
 A. FRUITS PRINCIPAUX (Base du cocktail - Maximum ${maxMainFruits} par bouteille) :
 ${mainFruitsCatalogStr}
 
 B. SUPPLÉMENTS & BOOSTERS (Accents thérapeutiques - Maximum ${maxSupplements} par bouteille) :
 ${supplementCatalogStr}
+
+C. JUS SIGNATURES DU CATALOGUE FYS (RECETTES PRÊTES DU CATALOGUE - MINIMUM 5 BOUTEILLES AU TOTAL) :
+${catalogJuicesListStr}
+⚠️ SEULES CES RECETTES CI-DESSUS EXISTENT DANS LE CATALOGUE FYS. TOUTE AUTRE RECETTE (ex: "Baobab ananas") N'EXISTE PAS DANS LE CATALOGUE ET DOIT ÊTRE REFUSÉE AVEC COURTOISIE.
 
 RÈGLES D'INCOMPATIBILITÉ SCIENTIFIQUE DU FYS LAB (STRICTES ET INFRANGIBLES) :
 ${incompatibilityCatalogStr}
@@ -4811,7 +4914,7 @@ TARIFS OFFICIELS DU FYS LAB :
 2. Frais de livraison (départ atelier Nsimeyong) = Selon le quartier de livraison :
    - Zone 1 (Proximité Nsimeyong, Biyem-Assi, Mendong, Damase, Jouvence, Melen...) : 1 000 XAF
    - Zone 2 (Centre-ville, Bastos, Tsinga, Nlongkak, Mokolo, Omnisports, Essos...) : 1 500 XAF
-   - Zone 3 (Périphérie / Longue distance : Odza, Messamendongo, Ngousso, Emana, Olembe...) : 2 000 XAF
+   - Zone 3 (Périphérie / Longue distance : Odza, Messamendongo, Ngousso, Emana, Olembe, Nkoabang...) : 2 000 XAF
    - Autre quartier non répertorié : 1 500 XAF
 3. TOTAL À PAYER = (Prix par bouteille x Quantité) + Frais de livraison.
 ${recipePricingDetails}
@@ -4826,7 +4929,8 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
      * Propose-lui gentiment une alternative saine et équilibrée.
      * RÈGLE FONDAMENTALE : NE BLOQUE JAMAIS LA COMMANDE ! S'il souhaite maintenir sa composition, respecte son choix avec courtoisie, donne-lui les tarifs officiels et permets-lui de commander son cocktail sans blocage.
 3. EXCLUSIVITÉ DU STOCK :
-   - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent est strictement refusé.
+   - Seuls les fruits listés dans les catalogues A et B ci-dessus sont autorisés. Tout fruit absent (ex: Baobab, Fraise, Kiwi, Pamplemousse...) est strictement indisponible.
+   - Si le client demande un ingrédient ou une recette indisponible : explique-lui avec clarté et courtoisie que ce n'est pas disponible, présente-lui nos véritables options disponibles (les 3 jus signatures du catalogue ci-dessus ou nos fruits frais du Lab), et ne crée aucun panier ni devis pour une recette inexistante.
 4. CONFIDENTIALITÉ STRICTE ET POLITIQUE DES PRIX :
    - Tu n'expliques JAMAIS au client la politique de nos prix, ni aucune décomposition (coût du contenant vide, coût par fruit, coefficient x2, marge, etc.). Tu ne justifies AUCUN calcul.
    - Tu te contentes d'afficher directement le prix unitaire total tout compris de la bouteille et les frais de livraison pour le quartier du client.
@@ -4880,7 +4984,7 @@ Lorsque la commande est prête à être validée ou vient d'être confirmée :
 1. Tu DOIS TOUJOURS écrire en texte clair et visible le récapitulatif complet de TOUTES les boissons :
    * Nom de chaque cocktail et ses fruits exacts
    * Quantité et format de chaque boisson
-   * Frais de livraison (1 000 XAF fixe)
+   * Frais de livraison selon le quartier (Zone 1 : 1 000 XAF, Zone 2 : 1 500 XAF, Zone 3 : 2 000 XAF)
    * TOTAL À PAYER en XAF (strictement le montant calculé par FYS !)
 2. Ce texte récapitulatif DOIT ÊTRE ENTIÈREMENT VISIBLE DANS LE MESSAGE TEXTE. Ne laisse JAMAIS un espace vide ou un texte coupé !`;
 
@@ -5951,9 +6055,16 @@ Propose IMPÉRATIVEMENT les boutons :::BUTTONS [{"id": "btn_order", "title": "Co
           }
         }
 
-        // Intention explicite de voir le catalogue des jus signatures par texte
-        const isCatalogText = /(?:jus\s+du\s+catalogue|recettes?\s+du\s+catalogue|catalogue\s+de\s+jus|catalogue|jus\s+standards?|recettes?\s+standards?|voir\s+(?:les|le)\s+(?:jus|catalogue|menu)|menu|carte\s+des\s+jus)/i.test(senderText);
-        if (!textHandled && isCatalogText) {
+        // Intention explicite de pure consultation du catalogue des jus signatures par texte
+        // (Uniquement si le client ne passe pas de commande, ne pose pas de question précise et ne mentionne ni quantité ni quartier)
+        const hasOrderOrQuestionIntent =
+          /\b(?:\d+\s*(?:bouteilles?|cols?|btls?)|je\s+(?:veux|voudrais|souhaite|prends|commande|suis)|commander|combien|prix|co[uû]te|livr(?:aison|er|ez)|nkoabang|bastos|odza|yaound[ée]|avez[- ]vous|y\s+a[- ]t[- ]il|proposez[- ]vous|faites[- ]vous|existe|baobab)\b/i.test(senderText);
+
+        const isPureCatalogConsultation =
+          !hasOrderOrQuestionIntent &&
+          /(?:voir\s+(?:les|le)\s+(?:jus|catalogue|menu|carte)|consulter\s+le\s+catalogue|afficher\s+le\s+catalogue|envoyer?\s+le\s+catalogue|donne\s+le\s+catalogue|d[ée]couvrir\s+(?:les|le)\s+catalogue|carte\s+des\s+jus|c['’]est\s+quoi\s+le\s+catalogue|quelles?\s+sont\s+les\s+recettes\s+du\s+catalogue|quel\s+est\s+le\s+catalogue|menu\s+des\s+jus|^catalogue$|^menu$|^carte$)/i.test(senderText.trim());
+
+        if (!textHandled && isPureCatalogConsultation) {
           const listToSendCatalog = catalogCocktails && catalogCocktails.length > 0
             ? catalogCocktails
             : await getActiveCatalogCocktails(db);
@@ -6710,7 +6821,35 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
         }
 
         if (!textHandled) {
-          if (extractedCurrent && extractedCurrent.length > 0) {
+          const isUnknownRecipeOrUnavailable =
+            unavailableFruitsCurrent.length > 0 ||
+            (isCatalogRequestInText && (!extractedCatalogOrders || extractedCatalogOrders.length === 0) && !matchCatalogCocktailFromText(senderText, catalogCocktails));
+
+          if (isUnknownRecipeOrUnavailable) {
+            const requestedItem = unavailableFruitsCurrent.length > 0
+              ? unavailableFruitsCurrent.join(', ')
+              : 'recette non répertoriée au catalogue';
+            const catalogListText = catalogCocktails && catalogCocktails.length > 0
+              ? catalogCocktails.map((c) => `• « ${c.name} » (350ml : 500 XAF)`).join('\n')
+              : '• « Ananas Gingembre » (350ml : 500 XAF)\n• « Ananas Papaye » (350ml : 500 XAF)\n• « Papaye Orange » (350ml : 500 XAF)';
+
+            currentUserParts.push({
+              text: `${senderText}\n\n[SYSTÈME FYS : Le client a demandé un ingrédient ou une recette NON DISPONIBLE dans notre Lab FYS ou notre catalogue (« ${requestedItem} »).
+CONSIGNES STRICTES POUR VOTRE NUTRITIONNISTE DE POCHE :
+1. Réponds avec beaucoup de politesse, de chaleur et de clarté.
+2. Explique-lui avec bienveillance que cet ingrédient / cette recette n'est pas disponible (ex: le baobab n'est pas en stock au Lab FYS, et « Baobab ananas » n'existe pas dans nos recettes du catalogue).
+3. Présente-lui avec clarté nos véritables options disponibles :
+   - Nos 3 jus signatures du catalogue FYS prêts à déguster :
+${catalogListText}
+     (Précise que la commande minimale au catalogue est de 5 bouteilles au total, combinables entre plusieurs jus, soit 2 500 XAF pour les 5 bouteilles).
+   - Ou la possibilité de composer un cocktail sur-mesure au Lab avec nos fruits frais en stock (formats 500ml et 1L).
+4. S'il a fait une estimation erronée de prix (ex: 1 000f pour du 350ml catalogue au lieu de 500 XAF), rectifie gentiment avec le tarif officiel.
+5. S'il a indiqué son quartier (ex: Nkoabang), confirme-lui directement les frais de livraison officiels : Nkoabang est en Zone 3 (2 000 XAF).
+6. Demande-lui laquelle de ces options disponibles il préfère, et propose OBLIGATOIREMENT les boutons :::BUTTONS [{"id": "btn_mode_catalog", "title": "Jus du catalogue"}, {"id": "btn_mode_custom", "title": "Composer sur-mesure"}].
+7. NE CRÉE AUCUN PANIER NI AUCUN DEVIS DE COMMANDE POUR UNE RECETTE INEXISTANTE (mets "action": "QUESTION" dans :::INTENT avec cocktails: [] et catalogItems: []).]`,
+            });
+            textHandled = true;
+          } else if (extractedCurrent && extractedCurrent.length > 0) {
             currentUserParts.push({
               text: `${senderText}\n\n[SYSTÈME FYS : Le client a sélectionné des fruits pour sa recette : « ${activeRecipeName} ».
 RÈGLE STRICTE ÉTAPE 2 : Félicite-le chaleureusement pour cette association de fruits frais.
@@ -7064,7 +7203,15 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
       }
 
       // Filet de sécurité anti-amnésie : si aucun panier n'est actif OU si nouvelle composition demandée, et que NutriFYS propose une recette
-      const autoProposed = extractCocktailsFromText(aiReply, availableFruits);
+      const isUnavailableOrCatalogExplanation =
+        unavailableFruitsCurrent.length > 0 ||
+        (isCatalogRequestInText && (!extractedCatalogOrders || extractedCatalogOrders.length === 0) && !matchCatalogCocktailFromText(senderText, catalogCocktails)) ||
+        parsedIntent?.action === 'QUESTION' ||
+        parsedIntent?.action === 'CATALOG';
+
+      const autoProposed = (!isUnavailableOrCatalogExplanation)
+        ? extractCocktailsFromText(aiReply, availableFruits)
+        : null;
       if (autoProposed && autoProposed.length > 0 && autoProposed[0].fruits.length >= 2) {
         if (!resetIntentRegex.test(senderText) && (!activeCart || activeCart.items.length === 0 || isNewRecipeIntent) && (!activeCart?.items?.some((i) => i.isCatalog))) {
           console.log(`[whatsapp-webhook] 🌿 Auto-persisting proposed recipe from AI reply:`, autoProposed);
@@ -7908,8 +8055,8 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
         /(?:parmi\s+nos\s+fruits|fruits\s+frais\s+du\s+jour|quels\s+fruits|vos\s+fruits\s+préférés|choix\s+de\s+fruits|ingrédients\s+frais)/i.test(aiReply);
 
       // Si le client a déjà choisi sur-mesure ou catalogue, ou si on est en train de lui demander ses fruits :
-      // INTERDICTION FORMELLE d'ajouter ou de conserver les boutons de choix de mode !
-      if (userSelectedCustom || userSelectedCatalog || isFruitPrompt) {
+      // INTERDICTION FORMELLE d'ajouter ou de conserver les boutons de choix de mode (sauf si on vient de lui expliquer qu'un ingrédient est indisponible et qu'on lui propose de re-choisir son mode) !
+      if (!isUnavailableOrCatalogExplanation && (userSelectedCustom || userSelectedCatalog || isFruitPrompt)) {
         buttonsToSend = buttonsToSend.filter(
           (b) => b.id !== 'btn_mode_custom' && b.id !== 'btn_mode_catalog'
         );
