@@ -2,6 +2,7 @@ import i18n from '@/i18n';
 import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Order } from '@/entities/order';
 import { OrderStatus } from '@/entities/order';
+import { FYS_LOGO_BASE64 } from '@/assets/logoBase64';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const PRIMARY   = '#16A34A'; // green-600
@@ -36,10 +37,11 @@ const STATUS_COLOR: Record<OrderStatus, { bg: string; text: string }> = {
 const s = StyleSheet.create({
   page:   { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 },
+  logo:   { width: 95, height: 56, marginBottom: 4 },
   brand:  { fontSize: 28, fontFamily: 'Helvetica-Bold', color: PRIMARY, letterSpacing: -1 },
   dot:    { color: '#22D3EE' },
-  tagline:{ fontSize: 9, color: MUTED, marginTop: 2 },
+  tagline:{ fontSize: 8.5, color: MUTED, marginTop: 2 },
   // Meta block (right)
   meta:   { alignItems: 'flex-end' },
   metaTitle:{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: TEXT, marginBottom: 4 },
@@ -99,8 +101,8 @@ export function FacturePDF({ order, ingredientsStr, logoUrl }: Props) {
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View>
-            <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
-            <Text style={s.tagline}>For YourSelf</Text>
+            <Image src={logoUrl || FYS_LOGO_BASE64} style={s.logo} />
+            <Text style={s.tagline}>{i18n.t('pdf.tagline')}</Text>
           </View>
           <View style={s.meta}>
             <Text style={s.metaTitle}>{i18n.t('pdf.invoiceTitle').toUpperCase()}</Text>

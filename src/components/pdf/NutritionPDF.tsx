@@ -1,6 +1,7 @@
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import type { AIAnalysis } from '@/entities/cocktail';
 import { AIVerdict } from '@/entities/cocktail';
+import { FYS_LOGO_BASE64 } from '@/assets/logoBase64';
 
 type TFunction = (key: string) => string;
 
@@ -59,9 +60,10 @@ const s = StyleSheet.create({
   page:   { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
   // Header
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  logo:   { width: 95, height: 56, marginBottom: 4 },
   brand:  { fontSize: 24, fontFamily: 'Helvetica-Bold', color: PRIMARY },
   dot:    { color: '#22D3EE' },
-  tagline:{ fontSize: 9, color: MUTED, marginTop: 2 },
+  tagline:{ fontSize: 8.5, color: MUTED, marginTop: 2 },
   metaTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: TEXT, textAlign: 'right' },
   metaSub:   { fontSize: 9, color: MUTED, textAlign: 'right', marginTop: 2 },
   divider:  { borderBottomWidth: 1, borderBottomColor: BORDER, marginVertical: 16 },
@@ -106,10 +108,11 @@ interface Props {
   cocktailName?: string;
   userName?: string;
   ingredients?: string[];
+  logoUrl?: string;
   t: TFunction;
 }
 
-export function NutritionPDF({ analysis, cocktailName, userName, ingredients, t }: Props) {
+export function NutritionPDF({ analysis, cocktailName, userName, ingredients, logoUrl, t }: Props) {
   const verdictCfg = VERDICT_CFG[analysis.verdict];
   const verdictLabel = getVerdictLabel(analysis.verdict, t);
   const nutrients = Object.entries(analysis.profilNutritionnel)
@@ -122,7 +125,7 @@ export function NutritionPDF({ analysis, cocktailName, userName, ingredients, t 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View>
-            <Text style={s.brand}>FYS<Text style={s.dot}>.</Text></Text>
+            <Image src={logoUrl || FYS_LOGO_BASE64} style={s.logo} />
             <Text style={s.tagline}>{t('pdf.tagline')}</Text>
           </View>
           <View>

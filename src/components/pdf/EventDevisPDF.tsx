@@ -1,6 +1,7 @@
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import type { FysEvent } from '@/entities/event';
 import { FYS_EVENT_STATUS_LABELS, FYS_EVENT_TYPE_LABELS } from '@/entities/event';
+import { FYS_LOGO_BASE64 } from '@/assets/logoBase64';
 
 // ── Palette (Harmonisée avec NutritionPDF) ──────────────────────────────────
 const PRIMARY   = '#16A34A'; // emerald/green-600
@@ -35,6 +36,11 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  logo: {
+    width: 95,
+    height: 56,
+    marginBottom: 4,
   },
   brand: {
     fontSize: 26,
@@ -331,9 +337,7 @@ export function EventDevisPDF({ event, supportPhone, documentType }: Props) {
         {/* ── 1. HEADER ── */}
         <View style={s.header}>
           <View>
-            <Text style={s.brand}>
-              FYS<Text style={s.dot}>.</Text>
-            </Text>
+            <Image src={FYS_LOGO_BASE64} style={s.logo} />
             <Text style={s.tagline}>
               Jus 100% naturels pressés à froid • Service Traiteur Corporate
             </Text>

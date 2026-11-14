@@ -3,6 +3,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FYS_LOGO_BASE64 } from '../src/assets/logoBase64';
 export interface DeliveryZone {
   id: string;
   name: string;
@@ -1647,7 +1648,7 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
   try {
     const pdfPkg = await import('@react-pdf/renderer');
     const React = await import('react');
-    const { Document, Page, View, Text, StyleSheet, renderToBuffer } = pdfPkg;
+    const { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } = pdfPkg;
 
     const PRIMARY = '#16A34A';
     const MUTED = '#6B7280';
@@ -1658,10 +1659,11 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
 
     const styles = StyleSheet.create({
       page: { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
-      header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
+      header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 },
+      logo: { width: 95, height: 56, marginBottom: 4 },
       brand: { fontSize: 28, fontFamily: 'Helvetica-Bold', color: PRIMARY, letterSpacing: -1 },
       dot: { color: '#22D3EE' },
-      tagline: { fontSize: 9, color: MUTED, marginTop: 2 },
+      tagline: { fontSize: 8.5, color: MUTED, marginTop: 2 },
       meta: { alignItems: 'flex-end' },
       metaTitle: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: TEXT, marginBottom: 4 },
       metaRef: { fontSize: 8, color: MUTED },
@@ -1716,8 +1718,8 @@ async function generateOrderFacturePdfBuffer(order: any, ingredientsStr?: string
           React.createElement(
             View,
             null,
-            React.createElement(Text, { style: styles.brand }, 'FYS', React.createElement(Text, { style: styles.dot }, '.')),
-            React.createElement(Text, { style: styles.tagline }, 'For YourSelf · Boissons Santé Artisanales')
+            React.createElement(Image, { src: FYS_LOGO_BASE64, style: styles.logo }),
+            React.createElement(Text, { style: styles.tagline }, 'Boissons Santé Artisanales · Yaoundé')
           ),
           React.createElement(
             View,
@@ -1898,7 +1900,7 @@ async function generateOrderNutritionPdfBuffer(
   try {
     const pdfPkg = await import('@react-pdf/renderer');
     const React = await import('react');
-    const { Document, Page, View, Text, StyleSheet, renderToBuffer } = pdfPkg;
+    const { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } = pdfPkg;
 
     const PRIMARY = '#16A34A';
     const MUTED = '#6B7280';
@@ -1910,9 +1912,10 @@ async function generateOrderNutritionPdfBuffer(
     const styles = StyleSheet.create({
       page: { fontFamily: 'Helvetica', fontSize: 10, color: TEXT, backgroundColor: WHITE, padding: 40 },
       header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+      logo: { width: 95, height: 56, marginBottom: 4 },
       brand: { fontSize: 24, fontFamily: 'Helvetica-Bold', color: PRIMARY },
       dot: { color: '#22D3EE' },
-      tagline: { fontSize: 9, color: MUTED, marginTop: 2 },
+      tagline: { fontSize: 8.5, color: MUTED, marginTop: 2 },
       metaTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: TEXT, textAlign: 'right' },
       metaSub: { fontSize: 9, color: MUTED, textAlign: 'right', marginTop: 2 },
       divider: { borderBottomWidth: 1, borderBottomColor: BORDER, marginVertical: 16 },
@@ -1978,7 +1981,7 @@ async function generateOrderNutritionPdfBuffer(
           React.createElement(
             View,
             null,
-            React.createElement(Text, { style: styles.brand }, 'FYS', React.createElement(Text, { style: styles.dot }, '.')),
+            React.createElement(Image, { src: FYS_LOGO_BASE64, style: styles.logo }),
             React.createElement(Text, { style: styles.tagline }, 'NutriFYS — Votre nutritionniste de poche')
           ),
           React.createElement(
