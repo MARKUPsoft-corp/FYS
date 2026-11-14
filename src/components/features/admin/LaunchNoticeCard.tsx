@@ -31,7 +31,8 @@ export function LaunchNoticeCard() {
   // Sync state with fetched settings
   useEffect(() => {
     if (pricing) {
-      setIsActive(pricing.launchNoticeActive !== false);
+      const is24h = pricing.delivery24hActive !== undefined ? pricing.delivery24hActive : (pricing.launchNoticeActive !== false);
+      setIsActive(is24h);
       setTextFr(pricing.launchNoticeText || DEFAULT_PRICING.launchNoticeText || '');
       setTextEn(pricing.launchNoticeTextEn || DEFAULT_PRICING.launchNoticeTextEn || '');
     }

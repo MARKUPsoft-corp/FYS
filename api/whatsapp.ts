@@ -2948,7 +2948,7 @@ export function generateCartDevisText(cart: WhatsAppCart, district?: string): st
   return lines.join('\n');
 }
 
-export function generateCartConfirmationText(cart: WhatsAppCart, district?: string): string {
+export function generateCartConfirmationText(cart: WhatsAppCart, district?: string, isDelivery24hActive = true): string {
   const targetDistrict = district || cart.district || 'Yaoundé';
   const lines: string[] = ['Récapitulatif officiel de votre commande :'];
   cart.items.forEach((item) => {
@@ -2959,6 +2959,10 @@ export function generateCartConfirmationText(cart: WhatsAppCart, district?: stri
   });
   lines.push(`• Livraison à ${targetDistrict} : ${cart.deliveryFee.toLocaleString('fr-FR')} XAF`);
   lines.push(`Total à payer : ${cart.totalPrice.toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+  if (isDelivery24hActive) {
+    lines.push('');
+    lines.push('⚠️ VEUILLEZ NOTER QUE LA LIVRAISON S\'EFFECTUE APRÈS 24H.');
+  }
   lines.push('');
   lines.push('Une question ou pour le suivi de votre livraison ? Notre équipe est à votre écoute :');
   lines.push(FYS_TEAM_CONTACTS_TEXT);
@@ -3749,6 +3753,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let deliveryFee = 1000;
       let activeDeliveryZones: DeliveryZone[] = DEFAULT_DELIVERY_ZONES;
       let catalogCocktails: CatalogCocktail[] = [];
+      let isDelivery24hActive = true;
       const availableFruits: {
         id: string;
         name: string;
@@ -3795,6 +3800,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (Array.isArray(p?.deliveryZones) && p.deliveryZones.length > 0) {
               activeDeliveryZones = p.deliveryZones;
               currentActiveDeliveryZones = p.deliveryZones;
+            }
+            if (p?.delivery24hActive !== undefined) {
+              isDelivery24hActive = p.delivery24hActive === true;
+            } else if (p?.launchNoticeActive !== undefined) {
+              isDelivery24hActive = p.launchNoticeActive === true;
             }
           }
 
@@ -5012,6 +5022,8 @@ RÈGLES D'OR OFFICIELLES DU FYS LAB (INFRANGIBLES ET CATÉGORIQUES) :
    - Tu n'expliques JAMAIS au client la politique de nos prix, ni aucune décomposition (coût du contenant vide, coût par fruit, coefficient x2, marge, etc.). Tu ne justifies AUCUN calcul.
    - Tu te contentes d'afficher directement le prix unitaire total tout compris de la bouteille et les frais de livraison pour le quartier du client.
    - Si le client demande des justificatifs, une explication ou pourquoi ce prix : réponds simplement et avec courtoisie que « c'est le prix fixé par l'équipe FYS », sans entrer dans aucun détail.
+5. RÈGLE DÉLAI DE LIVRAISON :
+   - ${isDelivery24hActive ? '⚠️ RÈGLE OBLIGATOIRE : La livraison s\'effectue après 24h. Si tu mentionnes le délai ou lors de la confirmation finale d\'une commande, indique TOUJOURS EN MAJUSCULES : « ⚠️ VEUILLEZ NOTER QUE LA LIVRAISON S\'EFFECTUE APRÈS 24H. »' : 'Aucun délai de livraison de 24h n\'est actuellement applicable. Ne précise rien sur un délai après 24h.'}
 
 RÈGLE CRITIQUE DU ROUTEUR SÉMANTIQUE D'INTENTIONS (:::INTENT) :
 Tu es le Cerveau IA du système FYS. Peu importe comment le client s'exprime en français naturel, argot camerounais, métaphores ou abréviations (ex: "oui oui on y va", "mets-moi le jus là", "lance seulement", "c'est bon pour moi", "en 1 litre stp", "je suis calé à Bastos", "compose moi un bon jus"), tu DOIS TOUJOURS traduire son intention et inclure à la TOUTE FIN de ton message le bloc technique :::INTENT :
@@ -5975,7 +5987,7 @@ Propose ensuite les boutons :::BUTTONS [{"id": "btn_confirm_order", "title": "Va
           }
         } else if (interactiveButtonId.startsWith('btn_confirm_order')) {
           if (activeCart && activeCart.items.length > 0) {
-            const recapText = generateCartConfirmationText(activeCart, activeCart.district);
+            const recapText = generateCartConfirmationText(activeCart, activeCart.district, isDelivery24hActive);
             explicitAction = `[Le client a cliqué sur 'Valider commande' : il approuve et confirme son devis !
 RÈGLE STRICTE :
 Remercie-le chaleureusement et confirme que sa commande est officiellement validée.
@@ -8040,6 +8052,11 @@ Ne saute PAS directement au choix du format ou de la livraison sans proposer la 
               lines.push(`• Format : ${o.quantity || 1}x ${o.bottleSizeLabel || 'Format 500ml'} (${(o.cocktailPriceSnapshot || 0).toLocaleString('fr-FR')} XAF la bouteille)`);
               lines.push(`• Livraison à ${targetDistrict} : 1 000 XAF`);
               lines.push(`Total à payer : ${(o.totalPrice || 0).toLocaleString('fr-FR')} XAF (Paiement Mobile Money ou à la livraison)`);
+            }
+
+            if (isDelivery24hActive) {
+              lines.push('');
+              lines.push('⚠️ VEUILLEZ NOTER QUE LA LIVRAISON S\'EFFECTUE APRÈS 24H.');
             }
 
             lines.push('');

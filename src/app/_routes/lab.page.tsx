@@ -1034,7 +1034,7 @@ const FysLab: PageComponent = () => {
                     disabled={selectedIngredients.size === 0}
                     onClick={() => handleStepChange(2)}
                   >
-                    {t('lab.nextSupplements')} <ChevronRight className="size-5" />
+                    {t('lab.nextSupplements', 'Suivant : Suppléments')} <ChevronRight className="size-5" />
                   </Button>
                 </div>
               )

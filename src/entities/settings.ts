@@ -44,6 +44,8 @@ export interface PricingSettings {
   maxSupplements?: number;
   /** Annonce de délai de livraison (mois de démarrage) activée ou non */
   launchNoticeActive?: boolean;
+  /** Livraison après 24h activée ou non (précisée en majuscules dans WhatsApp) */
+  delivery24hActive?: boolean;
   /** Texte personnalisé de l'annonce (français) */
   launchNoticeText?: string;
   /** Texte personnalisé de l'annonce (anglais) */
@@ -70,6 +72,7 @@ export const DEFAULT_PRICING: PricingSettings = {
   maxMainFruits: 5,
   maxSupplements: 3,
   launchNoticeActive: true,
+  delivery24hActive: true,
   launchNoticeText: 'Pour le mois de démarrage, les livraisons se feront après 24h.',
   launchNoticeTextEn: 'For the launch month, deliveries will be made after 24h.',
   defaultBottleCost500ml: 250,

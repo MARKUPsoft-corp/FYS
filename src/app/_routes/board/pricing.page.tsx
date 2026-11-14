@@ -78,7 +78,8 @@ const Pricing: PageComponent = () => {
     );
     setMaxMainFruits(String(pricing.maxMainFruits ?? 5));
     setMaxSupplements(String(pricing.maxSupplements ?? 3));
-    setLaunchNoticeActive(pricing.launchNoticeActive !== false);
+    const is24h = pricing.delivery24hActive !== undefined ? pricing.delivery24hActive : (pricing.launchNoticeActive !== false);
+    setLaunchNoticeActive(is24h);
     setTextOrDefault(pricing.launchNoticeText, DEFAULT_PRICING.launchNoticeText || '', setLaunchNoticeText);
     setTextOrDefault(pricing.launchNoticeTextEn, DEFAULT_PRICING.launchNoticeTextEn || '', setLaunchNoticeTextEn);
   }, [pricing]);
@@ -172,6 +173,7 @@ const Pricing: PageComponent = () => {
         maxMainFruits: Number(maxMainFruits) || 5,
         maxSupplements: Number(maxSupplements) || 3,
         launchNoticeActive,
+        delivery24hActive: launchNoticeActive,
         launchNoticeText: launchNoticeText.trim(),
         launchNoticeTextEn: launchNoticeTextEn.trim(),
       });

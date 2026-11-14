@@ -34,6 +34,7 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
     maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
     launchNoticeActive: data.launchNoticeActive ?? DEFAULT_PRICING.launchNoticeActive ?? true,
+    delivery24hActive: data.delivery24hActive ?? data.launchNoticeActive ?? DEFAULT_PRICING.delivery24hActive ?? true,
     launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
     launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
     defaultBottleCost500ml: data.defaultBottleCost500ml ?? DEFAULT_PRICING.defaultBottleCost500ml,
@@ -63,6 +64,7 @@ export async function updatePricingSettings(
       maxMainFruits: data.maxMainFruits ?? DEFAULT_PRICING.maxMainFruits,
       maxSupplements: data.maxSupplements ?? DEFAULT_PRICING.maxSupplements,
       launchNoticeActive: data.launchNoticeActive ?? true,
+      delivery24hActive: data.delivery24hActive ?? data.launchNoticeActive ?? true,
       launchNoticeText: data.launchNoticeText ?? DEFAULT_PRICING.launchNoticeText,
       launchNoticeTextEn: data.launchNoticeTextEn ?? DEFAULT_PRICING.launchNoticeTextEn,
       ...(data.defaultBottleCost500ml != null ? { defaultBottleCost500ml: data.defaultBottleCost500ml } : {}),
@@ -78,6 +80,7 @@ export async function toggleLaunchNotice(active: boolean): Promise<void> {
     doc(db, COLLECTIONS.SETTINGS, PRICING_DOC_ID),
     {
       launchNoticeActive: active,
+      delivery24hActive: active,
       updatedAt: serverTimestamp(),
     },
     { merge: true },
@@ -93,6 +96,7 @@ export async function updateLaunchNotice(
     doc(db, COLLECTIONS.SETTINGS, PRICING_DOC_ID),
     {
       launchNoticeActive: active,
+      delivery24hActive: active,
       launchNoticeText: text,
       ...(textEn !== undefined ? { launchNoticeTextEn: textEn } : {}),
       updatedAt: serverTimestamp(),

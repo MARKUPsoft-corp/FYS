@@ -41,8 +41,11 @@ export default {
         "appleFailed": "Connexion Apple impossible. Réessaie.",
         "pageTitle": "FYS — Connexion",
         "pageDescription": "Connecte-toi à ton espace FYS."
-      }
-    }
+      },
+      "pageTitle": "Connexion — FYS",
+      "pageDescription": "Connectez-vous à votre espace personnel FYS."
+    },
+    "greeting": "Bonjour, {{name}}"
   },
   "topbar": {
     "profile": "Profile",
@@ -83,7 +86,8 @@ export default {
     "deleting": "Suppression…",
     "generating": "Génération en cours…",
     "saved": "Enregistré ✓",
-    "updated": "Mis à jour ✓"
+    "updated": "Mis à jour ✓",
+    "install": "Installer"
   },
   "catalogue": {
     "title": "Catalogue",
@@ -139,7 +143,9 @@ export default {
     "periodAll": "Tous",
     "periodToday": "Aujourd'hui",
     "periodWeek": "Cette semaine",
-    "periodMonth": "Ce mois"
+    "periodMonth": "Ce mois",
+    "aiAnalysis": "Analyse nutritionnelle NutriFYS",
+    "unavailable": "Indisponible"
   },
   "lab": {
     "title": "FYS Lab",
@@ -224,7 +230,10 @@ export default {
     "fruitCount_one": "fruit",
     "fruitCount_other": "fruits",
     "supplementCount_one": "supplément",
-    "supplementCount_other": "suppléments"
+    "supplementCount_other": "suppléments",
+    "nextSupplements": "Suivant : Suppléments",
+    "analyzeMix": "Analyser ce mélange",
+    "selected": "Sélectionné"
   },
   "nutrifys": {
     "welcome": "Bonjour ! Je suis NutriFYS, votre assistant nutritionnel. Décrivez ce que vous recherchez — énergie, digestion, immunité, récupération — et je composerai un cocktail adapté à votre profil de santé.",
@@ -252,7 +261,12 @@ export default {
       "Appliquez la recette ou lancez l'analyse complète."
     ],
     "energyBoost": "Voici ma proposition pour un boost énergétique…",
-    "orangeVitaminC": "L'orange apporte un coup de vitamine C…"
+    "orangeVitaminC": "L'orange apporte un coup de vitamine C…",
+    "cardDietary": "Prise en compte de vos allergies et conditions",
+    "cardScore": "Score de santé et bénéfices ciblés",
+    "clickToReopen": "Cliquer pour rouvrir cette conversation",
+    "renameConversation": "Renommer la conversation",
+    "deleteConversation": "Supprimer la conversation"
   },
   "orders": {
     "title": "Mes commandes",
@@ -268,7 +282,14 @@ export default {
     "noOrders": "Aucune commande pour le moment.",
     "orderAgain": "Recommander",
     "total": "Total",
-    "status": "Statut",
+    "status": {
+      "pending": "En attente",
+      "confirmed": "Confirmée",
+      "preparing": "En préparation",
+      "ready": "Prête",
+      "delivered": "Livrée",
+      "cancelled": "Annulée"
+    },
     "date": "Date",
     "bottleSize": "Contenant",
     "quantity": "Quantité",
@@ -276,7 +297,17 @@ export default {
     "exportPDF": "Exporter en PDF",
     "exportNutritionPDF": "Export nutrition PDF",
     "details": "Détails",
-    "summary": "Récapitulatif",
+    "summary": {
+      "programme": "Programme Cure",
+      "cocktail": "Cocktail FYS",
+      "orderType": "Type de commande",
+      "cureJuiceOrders": "Sélection de {{count}} jus de cure",
+      "cureFullPack": "Pack Cure intégrale {{days}} jours",
+      "bottlesDetail": "Détail des bouteilles",
+      "curePack": "Formule Cure",
+      "curePackDetail": "Cure {{days}} jours · {{count}} bouteilles livrées",
+      "startDate": "Date de début"
+    },
     "ingredients": "Ingrédients",
     "phone": "Téléphone",
     "phoneDelivery": "Téléphone (Livraison)",
@@ -374,7 +405,29 @@ export default {
     "fillAddress": "Remplissez l'adresse de livraison",
     "orderWithPrice": "Commander · {{total}} XAF",
     "analyze": "Analyse NutriFYS",
-    "analyzing": "Analyse…"
+    "analyzing": "Analyse…",
+    "bottles": "{{count}} bouteilles",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer définitivement cette commande ?",
+    "tabs": {
+      "classic": "Classiques",
+      "programs": "Programmes & Cures"
+    },
+    "program": {
+      "days": "{{count}} jours",
+      "goal": "Objectif : {{goal}}",
+      "goalDefault": "Détox & Vitalité",
+      "startDate": "Débute le : {{date}}",
+      "cureWithJuices": "Cure complète avec jus livrés",
+      "cureComplete": "Pack cure intégrale",
+      "detailsTitle": "Détails de la cure",
+      "startImmediate": "Démarrage immédiat",
+      "juicesOrdered": "Jus programmés commandés :",
+      "bottlesTotal": "Total bouteilles : {{count}}",
+      "dayLabel": "Jour {{day}}",
+      "addedOn": "Souscrit le {{date}}",
+      "adminLink": "Ouvrir le suivi de la cure",
+      "clientLink": "Voir mon planning de cure"
+    }
   },
   "fruits": {
     "title": "Fruits",
@@ -404,7 +457,16 @@ export default {
     "infoText": "Un même item peut être fruit principal (étape 1) et/ou supplément (étape 2).",
     "eyebrow": "Ingrédients",
     "subtitle": "Gérez les fruits principaux, les suppléments, ou les deux.",
-    "fallbackName": "Un fruit"
+    "fallbackName": "Un fruit",
+    "soldOut": "Épuisé",
+    "viewDetails": "Voir détails",
+    "natural100": "100% Naturel",
+    "deleteConfirm": "Supprimer ce fruit ?",
+    "description": "Découvrez notre sélection de fruits frais et suppléments santé.",
+    "titleBefore": "Fruits &",
+    "titleHighlight": "suppléments",
+    "sectionBefore": "Le",
+    "sectionHighlight": "Catalogue"
   },
   "categories": {
     "title": "Catégories",
@@ -413,7 +475,12 @@ export default {
     "name": "Nom",
     "noCategories": "Aucune catégorie pour le moment.",
     "deleteConfirm": "Supprimer cette catégorie ?",
-    "highlight": "Catégories"
+    "highlight": "Catégories",
+    "subtitle": "Classez vos fruits en grands types pour le Lab et le catalogue.",
+    "structure": "Structure",
+    "the": "Les",
+    "types": "Types",
+    "nutritional": "nutritionnels"
   },
   "profile": {
     "title": "Mon profil",
@@ -514,7 +581,8 @@ export default {
       "skip": "Passer",
       "next": "Suivant",
       "complete": "Terminer"
-    }
+    },
+    "healthProfileCompleted": "complété"
   },
   "home": {
     "customer": {
@@ -555,11 +623,63 @@ export default {
       "labStatsTime": "Minutes chrono",
       "labStatsTimeShort": "{{count}} min chrono",
       "claimsTitle": "Allégations & Précautions",
-      "fallbackText": "Sélection 100% naturel pressée à froid."
+      "fallbackText": "Sélection 100% naturel pressée à froid.",
+      "heroTitle": "Quelle est votre envie du jour ?",
+      "heroPlaceholder": "Ex: J'ai besoin d'énergie pour le sport...",
+      "heroSubmit": "Demander",
+      "yourGoals": "Vos objectifs",
+      "personalizeTitle": "Personnalisons votre expérience",
+      "personalizeSub": "Pour que NutriFYS puisse créer des recettes parfaitement adaptées à votre corps, parlez-nous de vous.",
+      "healthProfile": "Profil santé",
+      "yourJourney": {
+        "prefix": "Votre",
+        "highlight": "Parcours"
+      },
+      "stats": {
+        "orders": "Commandes",
+        "ordersSub": "livrées avec soin",
+        "creations": "Créations",
+        "creationsSub": "uniques imaginées",
+        "ai": "Échanges",
+        "aiSub": "avec NutriFYS"
+      },
+      "quickAccess": {
+        "prefix": "Accès",
+        "highlight": "Rapide"
+      },
+      "quick": {
+        "manualTitle": "Composer manuellement",
+        "manualDesc": "Sélectionnez vos fruits et créez votre propre recette de jus de façon manuelle.",
+        "manualCta": "Démarrer",
+        "aiTitle": "Assistant NutriFYS",
+        "aiDesc": "L'IA s'occupe de composer la recette parfaite selon vos objectifs santé.",
+        "aiCta": "Discuter",
+        "catalogTitle": "Catalogue FYS",
+        "catalogDesc": "Découvrez nos recettes signatures validées par des nutritionnistes.",
+        "catalogCta": "Explorer"
+      },
+      "recentOrders": {
+        "prefix": "Commandes",
+        "highlight": "récentes",
+        "historyLink": "Historique",
+        "emptyTitle": "Aucune commande récente",
+        "emptyDesc": "Vous n'avez pas encore commandé de cocktail. Rendez-vous dans le Lab pour créer votre première recette !",
+        "emptyCta": "Composer maintenant"
+      },
+      "encyclopedia": {
+        "prefix": "Encyclopédie",
+        "highlight": "des fruits",
+        "desc": "Cliquez sur un ingrédient pour découvrir ses vertus nutritionnelles et ses interactions."
+      }
     },
     "admin": {
       "title": "Tableau de bord",
-      "stats": "Statistiques",
+      "stats": {
+        "fruits": "Fruits",
+        "cocktails": "Cocktails",
+        "orders": "Commandes",
+        "users": "Utilisateurs"
+      },
       "quickActions": "Actions rapides",
       "totalOrders": "Commandes totales",
       "totalFruits": "Fruits",
@@ -573,7 +693,42 @@ export default {
       "sectionHighlight": "contrôle",
       "sectionSubtitle": "Vue d'ensemble de l'activité FYS.",
       "pageTitle": "FYS — Accueil",
-      "pageDescription": "Tableau de bord FYS."
+      "pageDescription": "Tableau de bord FYS.",
+      "quick": {
+        "degustationTitle": "Dégustation 18 Octobre",
+        "degustationDesc": "Monitoring en temps réel des inscriptions, pass téléchargés et commandes VIP.",
+        "degustationCta": "Suivre l'événement",
+        "programsTitle": "FYS Programme (Gestion Cures)",
+        "programsDesc": "Pilotez les cures signatures, modifiez la vitrine, les prix et suivez les clients inscrits.",
+        "programsCta": "Gérer les Cures & Vitrine",
+        "managementTitle": "FYS Management",
+        "managementDesc": "Suivi des dépenses réelles par commande, coûts et bénéfices nets.",
+        "managementCta": "Gérer la rentabilité",
+        "landingTitle": "Images Publiques",
+        "landingDesc": "Gérez toutes les images affichées sur la vitrine publique.",
+        "landingCta": "Modifier les images",
+        "paymentsTitle": "Paiements K-Pay",
+        "paymentsDesc": "Consultez l'historique des transactions Mobile Money (Orange Money, MTN MoMo).",
+        "paymentsCta": "Voir les paiements"
+      },
+      "header": {
+        "programsCta": "Gestion FYS Programme"
+      },
+      "revenue": {
+        "title": "Chiffre d'Affaires",
+        "subtitle": "Revenus cumulés"
+      },
+      "recentOrders": {
+        "empty": "Aucune commande pour le moment."
+      },
+      "communication": {
+        "title": "Communication & Diffusion",
+        "desc": "Gérez le bandeau d'information aux clients et diffusez des notifications push en temps réel."
+      },
+      "quickActionsSubtitle": "Accédez rapidement à la gestion de vos stocks, images, prix et paiements.",
+      "viewAll": "Voir tout",
+      "sectionBefore": "Centre de",
+      "greeting": "Bonjour,"
     }
   },
   "pricing": {
@@ -667,7 +822,9 @@ export default {
     "addSlideBtn": "Ajouter un slide",
     "uploadFailed": "Échec upload",
     "addSlideHint": "Ajoutez au moins un slide.",
-    "saveFailed": "Échec de la sauvegarde"
+    "saveFailed": "Échec de la sauvegarde",
+    "imagesOf": "Images du",
+    "publicSite": "Site Public"
   },
   "users": {
     "title": "Utilisateurs",
@@ -708,7 +865,8 @@ export default {
     "incompleteWarning": "Profil incomplet — les recommandations NutriFYS restent génériques.",
     "noCustomCocktails": "Aucun cocktail personnalisé créé.",
     "totalDelivered": "Total livré",
-    "updatedAt": "Dernière mise à jour"
+    "updatedAt": "Dernière mise à jour",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?"
   },
   "onboarding": {
     "title": "Bienvenue sur FYS !",
@@ -1323,7 +1481,8 @@ export default {
       "orderSuccess": "Votre commande a été transmise avec succès !",
       "orderSuccessDesc": "Notre équipe traiteur a bien reçu votre demande et la traite en priorité. Vous pouvez télécharger votre devis ou discuter avec notre service client.",
       "backToOverview": "Retour à la synthèse"
-    }
+    },
+    "backToEvents": "Retour à mes événements"
   },
   "eventsAdmin": {
     "eyebrow": "Administration B2B",
@@ -1460,7 +1619,12 @@ export default {
     "tabs": {
       "discover": "Découvrir",
       "active": "En cours",
-      "saved": "Enregistrées"
+      "saved": "Enregistrées",
+      "discoverShort": "Découvrir",
+      "activeShort": "En cours",
+      "savedShort": "Sauvegardées",
+      "history": "Historique des cures",
+      "historyShort": "Historique"
     },
     "discover": {
       "goals": "Objectifs",
@@ -1468,13 +1632,28 @@ export default {
       "signaturesDesc": "Nos programmes créés par des nutritionnistes pour des résultats ciblés.",
       "customTitle": "Sur-mesure",
       "customDesc": "L'IA compose votre programme selon votre profil",
-      "customCta": "Créer avec NutriFYS"
+      "customCta": "Créer avec NutriFYS",
+      "nutrifysBadge1": "Conseillé par NutriFYS",
+      "nutrifysBadge2": "Sur-mesure",
+      "nutrifysTitle": "Une cure adaptée à votre santé",
+      "nutrifysDescDefault": "Consultez NutriFYS pour élaborer un programme détox personnalisé.",
+      "chefRecommendation": "Recommandé par le Chef FYS",
+      "fullPrice": "Prix du pack complet",
+      "viewCure": "Découvrir cette cure",
+      "fullPack": "Pack complet",
+      "notFoundTitle": "Aucune cure trouvée",
+      "notFoundDesc": "Essayez un autre filtre ou mot-clé."
     },
     "active": {
       "emptyTitle": "Aucune cure active pour le moment",
       "emptyDesc": "Vous n'avez pas de programme en cours de suivi. Démarrez une cure signature ou composez votre formule sur-mesure avec NutriFYS pour activer votre coaching quotidien.",
       "createCta": "Concevoir ma cure avec NutriFYS",
-      "exploreCta": "Explorer les cures signatures"
+      "exploreCta": "Explorer les cures signatures",
+      "simultaneousTitle": "Cures simultanées",
+      "simultaneousDesc": "Vous suivez plusieurs cures en même temps.",
+      "coachingDisplayed": "Coaching affiché",
+      "clickToDisplay": "Cliquer pour afficher ce coaching",
+      "progress": "Progression"
     },
     "saved": {
       "status": {
@@ -1492,6 +1671,24 @@ export default {
       "emptyTitle": "Aucun historique de cure",
       "emptyDesc": "Dès que vous aurez achevé ou suivi un protocole, vous retrouverez ici vos bilans de cure, vos statistiques d'assiduité et la possibilité de relancer votre cure en un clic.",
       "discoverCta": "Découvrir nos cures"
+    },
+    "suggestedCureBadge": "CURE CONSEILLÉE POUR VOUS • FYS PROGRAM",
+    "cureDuration": "Cure {{duration}} jours ({{bottles}} flacons)",
+    "discoverCure": "Découvrir cette cure",
+    "pricePerPack": "{{price}} XAF le pack",
+    "dailyFollowup": "Suivi quotidien NutriFYS",
+    "title": "Cures & Programmes",
+    "titleAfter": "Santé & Détox",
+    "noActiveCure": "Aucune cure active",
+    "completedBadge": "Terminée",
+    "enrollment": {
+      "success": "Votre inscription à la cure a été validée avec succès !",
+      "today": "Aujourd hui",
+      "tomorrow": "Demain",
+      "error": "Erreur lors de l inscription au programme."
+    },
+    "admin": {
+      "manageBtn": "Gérer les programmes"
     }
   },
   "programsAdmin": {
@@ -1517,7 +1714,29 @@ export default {
     "clientName": "Client",
     "progress": "Progression",
     "startDate": "Date de début",
-    "status": "Statut"
+    "status": "Statut",
+    "errorLoading": "Erreur lors du chargement des données.",
+    "dayValidated": "Jour {{day}} validé avec succès.",
+    "errorValidating": "Erreur lors de la validation du jour.",
+    "dayUnvalidated": "Validation du jour {{day}} annulée.",
+    "errorUnvalidating": "Erreur lors de l annulation.",
+    "heroUploaded": "Image de couverture téléversée avec succès.",
+    "heroUploadError": "Échec du téléversement de l image.",
+    "settingsSaved": "Paramètres de la vitrine enregistrés avec succès.",
+    "errorSaving": "Erreur lors de la sauvegarde.",
+    "confirmSync": "Voulez-vous synchroniser les 3 cures officielles FYS dans la base de données ?",
+    "syncSuccess": "{{count}} cures FYS synchronisées avec succès.",
+    "errorSync": "Erreur lors de la synchronisation.",
+    "curePublished": "Cure publiée en ligne.",
+    "cureHidden": "Cure masquée du catalogue.",
+    "errorStatus": "Erreur lors du changement de statut.",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer définitivement la cure \"{{title}}\" ?",
+    "cureDeleted": "Cure supprimée avec succès.",
+    "errorDelete": "Erreur lors de la suppression.",
+    "cureUpdated": "Cure mise à jour avec succès.",
+    "cureCreated": "Nouvelle cure créée avec succès.",
+    "viewPublic": "Voir la page publique",
+    "syncDefaults": "Synchroniser les cures FYS"
   },
   "management": {
     "eyebrow": "Finance & Rentabilité",
@@ -1556,7 +1775,49 @@ export default {
       "expenseAmount": "Montant (XAF)",
       "save": "Enregistrer les dépenses"
     },
-    "exportCsv": "Exporter en CSV"
+    "exportCsv": "Exporter en CSV",
+    "sectionBefore": "Tableau de",
+    "sectionHighlight": "Gestion",
+    "programsCta": "Cures & Programmes",
+    "kpiRevenueSub": "Chiffre d affaires brut",
+    "kpiRevenueStatus": "Commandes livrées",
+    "kpiExpensesTitle": "Dépenses totales",
+    "kpiExpensesSub": "Fruits, bouteilles, étiquettes & livraison",
+    "kpiExpensesCalculated": "Coûts réels engagés",
+    "kpiProfitTitle": "Bénéfice net global",
+    "kpiGrossMargin": "Marge nette",
+    "kpiTrackingTitle": "Suivi des fiches de coût",
+    "kpiTrackingSub": "/ {{count}} commandes",
+    "kpiTrackingCompleted": "Complétées",
+    "tabAll": "Toutes ({{count}})",
+    "tabFilled": "Renseignées ({{count}})",
+    "tabPending": "À renseigner ({{count}})",
+    "sortAsc": "Croissant",
+    "sortDesc": "Décroissant",
+    "sortDate": "Date",
+    "sortRevenue": "Chiffre d affaires",
+    "sortProfit": "Bénéfice net",
+    "sortMargin": "Taux de marge",
+    "loading": "Chargement des données de gestion...",
+    "emptyTitle": "Aucune commande livrée",
+    "emptySearchTitle": "Aucune commande trouvée",
+    "emptyDesc": "Les commandes livrées apparaîtront automatiquement ici pour renseigner les coûts.",
+    "emptySearchDesc": "Aucun résultat ne correspond à votre recherche.",
+    "tableOrder": "Commande",
+    "tableClient": "Client & Contact",
+    "tableComposition": "Composition & Formats",
+    "tableRevenue": "Chiffre d affaires",
+    "tableExpenses": "Dépenses engagées",
+    "tableProfit": "Bénéfice net",
+    "tableMargin": "Marge nette",
+    "tableAction": "Actions",
+    "itemsCount": "{{count}} commande(s) affichée(s)",
+    "badgePending": "À renseigner",
+    "actionEdit": "Modifier coûts",
+    "actionFill": "Renseigner coûts",
+    "badgeRecorded": "Renseigné",
+    "clickToCalculate": "Cliquez pour chiffrer",
+    "actionManage": "Gérer"
   },
   "payments": {
     "eyebrow": "Trésorerie & Transactions",
@@ -1586,88 +1847,22 @@ export default {
       "PENDING": "En attente",
       "PROCESSING": "En cours"
     },
-    "refresh": "Actualiser"
+    "refresh": "Actualiser",
+    "date": "Date",
+    "operator": "Opérateur",
+    "order": "Commande",
+    "reference": "Référence",
+    "searchPlaceholder": "Rechercher par téléphone, ID...",
+    "noTransactions": "Aucune transaction reçue pour le moment",
+    "noFilteredResults": "Aucun résultat pour ce filtre",
+    "statsVolume": "Volume total encaissé",
+    "successfulTransactions": "{{count}} transaction(s) réussie(s)",
+    "statsSuccessful": "Paiements réussis",
+    "statsPending": "En attente",
+    "statsFailed": "Échoués / Annulés",
+    "transactionsDisplayed": "{{count}} transaction(s) affichée(s)",
+    "webhookUrl": "URL Webhook :"
   },
-  "home.customer.heroTitle": "Quelle est votre envie du jour ?",
-  "home.customer.heroPlaceholder": "Ex: J'ai besoin d'énergie pour le sport...",
-  "home.customer.heroSubmit": "Demander",
-  "home.customer.yourGoals": "Vos objectifs",
-  "home.customer.personalizeTitle": "Personnalisons votre expérience",
-  "home.customer.personalizeSub": "Pour que NutriFYS puisse créer des recettes parfaitement adaptées à votre corps, parlez-nous de vous.",
-  "home.customer.healthProfile": "Profil santé",
-  "programs.suggestedCureBadge": "CURE CONSEILLÉE POUR VOUS • FYS PROGRAM",
-  "programs.cureDuration": "Cure {{duration}} jours ({{bottles}} flacons)",
-  "programs.discoverCure": "Découvrir cette cure",
-  "programs.pricePerPack": "{{price}} XAF le pack",
-  "programs.dailyFollowup": "Suivi quotidien NutriFYS",
-  "home.customer.yourJourney.prefix": "Votre",
-  "home.customer.yourJourney.highlight": "Parcours",
-  "home.customer.stats.orders": "Commandes",
-  "home.customer.stats.ordersSub": "livrées avec soin",
-  "home.customer.stats.creations": "Créations",
-  "home.customer.stats.creationsSub": "uniques imaginées",
-  "home.customer.stats.ai": "Échanges",
-  "home.customer.stats.aiSub": "avec NutriFYS",
-  "home.customer.quickAccess.prefix": "Accès",
-  "home.customer.quickAccess.highlight": "Rapide",
-  "home.customer.quick.manualTitle": "Composer manuellement",
-  "home.customer.quick.manualDesc": "Sélectionnez vos fruits et créez votre propre recette de jus de façon manuelle.",
-  "home.customer.quick.manualCta": "Démarrer",
-  "home.customer.quick.aiTitle": "Assistant NutriFYS",
-  "home.customer.quick.aiDesc": "L'IA s'occupe de composer la recette parfaite selon vos objectifs santé.",
-  "home.customer.quick.aiCta": "Discuter",
-  "home.customer.quick.catalogTitle": "Catalogue FYS",
-  "home.customer.quick.catalogDesc": "Découvrez nos recettes signatures validées par des nutritionnistes.",
-  "home.customer.quick.catalogCta": "Explorer",
-  "home.customer.recentOrders.prefix": "Commandes",
-  "home.customer.recentOrders.highlight": "récentes",
-  "home.customer.recentOrders.historyLink": "Historique",
-  "orders.bottles": "{{count}} bouteilles",
-  "home.customer.recentOrders.emptyTitle": "Aucune commande récente",
-  "home.customer.recentOrders.emptyDesc": "Vous n'avez pas encore commandé de cocktail. Rendez-vous dans le Lab pour créer votre première recette !",
-  "home.customer.recentOrders.emptyCta": "Composer maintenant",
-  "home.customer.encyclopedia.prefix": "Encyclopédie",
-  "home.customer.encyclopedia.highlight": "des fruits",
-  "home.customer.encyclopedia.desc": "Cliquez sur un ingrédient pour découvrir ses vertus nutritionnelles et ses interactions.",
-  "fruits.soldOut": "Épuisé",
-  "fruits.viewDetails": "Voir détails",
-  "fruits.natural100": "100% Naturel",
-  "orders.status.pending": "En attente",
-  "orders.status.confirmed": "Confirmée",
-  "orders.status.preparing": "En préparation",
-  "orders.status.ready": "Prête",
-  "orders.status.delivered": "Livrée",
-  "orders.status.cancelled": "Annulée",
-  "home.admin.stats.fruits": "Fruits",
-  "home.admin.stats.cocktails": "Cocktails",
-  "home.admin.stats.orders": "Commandes",
-  "home.admin.stats.users": "Utilisateurs",
-  "home.admin.quick.degustationTitle": "Dégustation 18 Octobre",
-  "home.admin.quick.degustationDesc": "Monitoring en temps réel des inscriptions, pass téléchargés et commandes VIP.",
-  "home.admin.quick.degustationCta": "Suivre l'événement",
-  "home.admin.quick.programsTitle": "FYS Programme (Gestion Cures)",
-  "home.admin.quick.programsDesc": "Pilotez les cures signatures, modifiez la vitrine, les prix et suivez les clients inscrits.",
-  "home.admin.quick.programsCta": "Gérer les Cures & Vitrine",
-  "home.admin.quick.managementTitle": "FYS Management",
-  "home.admin.quick.managementDesc": "Suivi des dépenses réelles par commande, coûts et bénéfices nets.",
-  "home.admin.quick.managementCta": "Gérer la rentabilité",
-  "home.admin.quick.landingTitle": "Images Publiques",
-  "home.admin.quick.landingDesc": "Gérez toutes les images affichées sur la vitrine publique.",
-  "home.admin.quick.landingCta": "Modifier les images",
-  "categories.subtitle": "Organisez vos fruits par catégories (citrus, tropical…).",
-  "home.admin.quick.paymentsTitle": "Paiements K-Pay",
-  "home.admin.quick.paymentsDesc": "Consultez l'historique des transactions Mobile Money (Orange Money, MTN MoMo).",
-  "home.admin.quick.paymentsCta": "Voir les paiements",
-  "home.admin.header.programsCta": "Gestion FYS Programme",
-  "home.admin.revenue.title": "Chiffre d'Affaires",
-  "home.admin.revenue.subtitle": "Revenus cumulés",
-  "home.admin.recentOrders.empty": "Aucune commande pour le moment.",
-  "home.admin.communication.title": "Communication & Diffusion",
-  "home.admin.communication.desc": "Gérez le bandeau d'information aux clients et diffusez des notifications push en temps réel.",
-  "home.admin.quickActionsSubtitle": "Accédez rapidement à la gestion de vos stocks, images, prix et paiements.",
-  "home.admin.viewAll": "Voir tout",
-  "home.admin.sectionBefore": "Centre de",
-  "home.admin.greeting": "Bonjour,",
   "signature": {
     "badge": "Identité & Terroir",
     "title": "La Signature FYS",
@@ -1703,6 +1898,18 @@ export default {
         "subtitle": "La Terre & Le Savoir-Faire",
         "desc": "Le trait inférieur nous relie à la terre nourricière, aux fruits gorgés de soleil et au savoir-faire de nos producteurs locaux."
       }
+    },
+    "nextPrompt": "Suivant :",
+    "restartPrompt": "Revoir :"
+  },
+  "fruit": {
+    "fallbackName": "Fruit"
+  },
+  "promo": {
+    "notification": {
+      "ariaLabel": "Offre promotionnelle",
+      "close": "Fermer l avis promo",
+      "discountActive": "Réduction exclusive activée : -{{amount}} XAF sur votre commande !"
     }
   }
 };
